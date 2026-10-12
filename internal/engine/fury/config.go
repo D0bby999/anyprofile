@@ -1,0 +1,91 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
+package fury
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"fmt"
+	"os/exec"
+	"strconv"
+	"time"
+
+	"github.com/D0bby999/anyprofile/internal/store"
+)
+
+// configCLI runs the bundled fury-config helper by absolute path (never via
+// PATH). Its inputs are not secret; its output stays in memory.
+func (f *Fury) configCLI(ctx context.Context, args ...string) ([]byte, error) {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, f.configBin, args...)
+	cmd.Env = []string{}
+	var out, errb bytes.Buffer
+	cmd.Stdout, cmd.Stderr = &out, &errb
+	if err := cmd.Run(); err != nil {
+		return nil, fmt.Errorf("fury-config %s: %v: %s", args[0], err, bytes.TrimSpace(errb.Bytes()))
+	}
+	return out.Bytes(), nil
+}
+
+// NewIdentity draws a macOS persona by population weight. Only macOS personas
+// are offered on a Mac host: a Windows persona leaks the host's speech voices.
+func (f *Fury) NewIdentity(ctx context.Context, roll uint64) (string, string, error) {
+	b, err := f.configCLI(ctx, "pick", "--os", "macos", "--roll", strconv.FormatUint(roll, 10))
+	if err != nil {
+		return "", "", err
+	}
+	var r struct {
+		PersonaID string `json:"personaId"`
+	}
+	if err := json.Unmarshal(b, &r); err != nil || r.PersonaID == "" {
+		return "", "", fmt.Errorf("fury-config pick: bad output")
+	}
+	return r.PersonaID, "macos", nil
+}
+
+// Locale is Chrome's own UI locale and language list for an exit country.
+type Locale struct {
+	UILocale  string   `json:"uiLocale"`
+	Languages []string `json:"languages"`
+}
+
+func (f *Fury) LocaleFor(ctx context.Context, country string) (Locale, error) {
+	var l Locale
+	b, err := f.configCLI(ctx, "locale", "--country", country)
+	if err != nil {
+		return l, err
+	}
+	return l, json.Unmarshal(b, &l)
+}
+
+// Persona is one catalogue entry, for display.
+type Persona struct {
+	ID     string  `json:"id"`
+	Screen string  `json:"screen"`
+	GPU    string  `json:"gpu"`
+	Weight float64 `json:"weight"`
+}
+
+func (f *Fury) Personas(ctx context.Context) ([]Persona, error) {
+	var out []Persona
+	b, err := f.configCLI(ctx, "personas", "--os", "macos")
+	if err != nil {
+		return nil, err
+	}
+	return out, json.Unmarshal(b, &out)
+}
+
+// deriveConfig produces the core's fingerprint config for a profile. The
+// same profile always yields the same bytes.
+func (f *Fury) deriveConfig(ctx context.Context, p store.Profile) ([]byte, error) {
+	args := []string{"derive", "--persona", p.PersonaID, "--seed", p.SeedHex,
+		"--timezone", p.Timezone, "--languages", p.Languages, "--ui-locale", p.UILocale,
+		"--chrome-major", ChromeMajor, "--chrome-full", Chromium}
+	if p.Lat != nil && p.Lon != nil {
+		args = append(args, "--lat", strconv.FormatFloat(*p.Lat, 'f', -1, 64),
+			"--lon", strconv.FormatFloat(*p.Lon, 'f', -1, 64))
+	}
+	return f.configCLI(ctx, args...)
+}

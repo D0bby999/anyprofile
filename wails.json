@@ -1,0 +1,18 @@
+{
+  "$schema": "https://wails.io/schemas/config.v2.json",
+  "name": "AnyProfile",
+  "outputfilename": "AnyProfile",
+  "frontend:install": "npm install",
+  "frontend:build": "npm run build",
+  "frontend:dev:watcher": "npm run dev",
+  "frontend:dev:serverUrl": "auto",
+  "author": {
+    "name": "Nguyen Minh Chau"
+  },
+  "info": {
+    "productName": "AnyProfile",
+    "productVersion": "0.1.0",
+    "copyright": "Copyright © 2026 AnyProfile contributors. AGPL-3.0-or-later.",
+    "comments": "Multi-profile browser manager for creators"
+  }
+}

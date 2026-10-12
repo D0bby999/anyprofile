@@ -1,0 +1,40 @@
+AnyProfile
+Copyright (C) 2026 AnyProfile contributors
+Licensed under the GNU Affero General Public License v3.0 or later (see LICENSE).
+
+Third-party components
+----------------------
+
+fury-shared (tools/fury-config depends on it; linked into the fury-config helper)
+  https://github.com/furyteamtop/fury-antidetect-browser, directory shared-rs
+  Copyright The Fury Authors. License: AGPL-3.0-or-later.
+  Pinned to commit 2c572eb0a02939e01c3992870c9ca84f93145348 (release v0.3.5).
+  Its persona catalogue data (directory shared/) is Apache-2.0.
+
+Fury core (downloaded at runtime, never redistributed by AnyProfile)
+  https://github.com/furyteamtop/fury-antidetect-browser/releases
+  A patched Chromium. Fury's patches: BSD-3-Clause. Chromium: BSD-3-Clause and
+  the licenses of its third-party components. AnyProfile downloads the
+  notarized release, verifies its SHA-256 and Apple signature, and executes it
+  unmodified.
+
+Widevine CDM
+  Not shipped. When Google Chrome is installed, AnyProfile copies the user's own
+  licensed CDM from the Chrome bundle into each profile on that same machine,
+  as the Fury agent does.
+
+AliasMode design tokens
+  frontend/src/styles/tokens.css adapts the palette, type scale and elevation
+  recipe of the AliasMode dashboard (https://github.com/aliasmode/aliasmode,
+  web/styles.css, commit 56c18f9). Copyright AliasMode authors.
+  License: Apache-2.0. No AliasMode source code is included.
+
+Inter typeface
+  Bundled through @fontsource-variable/inter. Copyright The Inter Project
+  Authors. License: SIL Open Font License 1.1.
+
+Go, npm and Rust dependencies are listed in go.mod, frontend/package-lock.json
+and tools/fury-config/Cargo.lock, each under its own license.
+
+tools/bench/*.mjs were written for this project during the engine evaluation
+(October 2026) and are licensed like the rest of the repository.

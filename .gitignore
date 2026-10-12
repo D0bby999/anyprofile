@@ -1,0 +1,12 @@
+research/
+.DS_Store
+build/bin
+frontend/node_modules
+frontend/dist/*
+!frontend/dist/gitkeep
+tools/fury-config/target
+*.db
+*.db-*
+*.log
+.env*
+frontend/package.json.md5

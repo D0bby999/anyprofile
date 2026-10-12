@@ -1,0 +1,72 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
+package launcher
+
+import (
+	"bytes"
+	"errors"
+	"os"
+	"path/filepath"
+	"testing"
+
+	"github.com/D0bby999/anyprofile/internal/secrets"
+)
+
+func TestCookieKeyLifecycle(t *testing.T) {
+	sec := secrets.NewMemory()
+	udd := t.TempDir()
+
+	k1, err := cookieKey(sec, "p", udd)
+	if err != nil || len(k1) != 32 {
+		t.Fatalf("first key: %v (%d bytes)", err, len(k1))
+	}
+	k2, err := cookieKey(sec, "p", udd)
+	if err != nil || !bytes.Equal(k1, k2) {
+		t.Fatal("key must be stable across launches")
+	}
+
+	// A different key in the Keychain than the profile was sealed with: refuse.
+	sec.Set(secrets.ServiceCookieKey, "p", bytes.Repeat([]byte{1}, 32))
+	if _, err := cookieKey(sec, "p", udd); err == nil {
+		t.Fatal("mismatched key accepted")
+	}
+
+	// Key gone but the profile has a fingerprint: refuse, never regenerate silently.
+	sec.Delete(secrets.ServiceCookieKey, "p")
+	if _, err := cookieKey(sec, "p", udd); !errors.Is(err, ErrCookieKeyLost) {
+		t.Fatalf("lost key err = %v", err)
+	}
+
+	// Key present, fingerprint missing (older profile): adopt the key and record it.
+	udd2 := t.TempDir()
+	sec.Set(secrets.ServiceCookieKey, "q", k1)
+	if k, err := cookieKey(sec, "q", udd2); err != nil || !bytes.Equal(k, k1) {
+		t.Fatalf("existing key: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(udd2, keyFingerprintFile)); err != nil {
+		t.Fatal("fingerprint not recorded")
+	}
+
+	sec.Set(secrets.ServiceCookieKey, "r", []byte("short"))
+	if _, err := cookieKey(sec, "r", t.TempDir()); err == nil {
+		t.Fatal("short key accepted")
+	}
+}
+
+func TestSingletonPID(t *testing.T) {
+	udd := t.TempDir()
+	if singletonPID(udd) != 0 {
+		t.Fatal("no lock must read as 0")
+	}
+	os.Symlink("my-mac.local-4242", filepath.Join(udd, "SingletonLock"))
+	if got := singletonPID(udd); got != 4242 {
+		t.Fatalf("pid = %d", got)
+	}
+	if !alive(os.Getpid()) || sameProcess(os.Getpid(), "0.0") {
+		t.Fatal("alive/sameProcess wrong for this process")
+	}
+	st, err := pidStartTime(os.Getpid())
+	if err != nil || !sameProcess(os.Getpid(), st) {
+		t.Fatalf("start time: %q %v", st, err)
+	}
+}

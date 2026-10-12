@@ -1,0 +1,189 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
+package store
+
+import (
+	"database/sql"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"strings"
+)
+
+// Profile is one browser identity. Engine, PersonaID and SeedHex are fixed at
+// creation: changing them would change the "machine" a logged-in account sees.
+type Profile struct {
+	ID            string   `json:"id"`
+	Name          string   `json:"name"`
+	Engine        string   `json:"engine"`
+	EngineVersion string   `json:"engineVersion"`
+	PersonaID     string   `json:"personaId"`
+	SeedHex       string   `json:"seedHex"`
+	Platform      string   `json:"platform"`
+	ProxyID       string   `json:"proxyId"`
+	Timezone      string   `json:"timezone"`
+	Languages     string   `json:"languages"`
+	UILocale      string   `json:"uiLocale"`
+	Lat           *float64 `json:"lat"`
+	Lon           *float64 `json:"lon"`
+	ChannelKind   string   `json:"channelKind"`
+	StartURL      string   `json:"startUrl"`
+	Notes         string   `json:"notes"`
+	Tags          []string `json:"tags"`
+	CDPNextLaunch bool     `json:"cdpNextLaunch"`
+	Pinned        bool     `json:"pinned"`
+	CreatedAt     string   `json:"createdAt"`
+	UpdatedAt     string   `json:"updatedAt"`
+	LastOpenAt    string   `json:"lastOpenAt"`
+	DeletedAt     string   `json:"deletedAt"`
+}
+
+// ProfileFilter narrows ListProfiles.
+type ProfileFilter struct {
+	Query   string `json:"query"` // substring of the name, case-insensitive
+	Tag     string `json:"tag"`
+	Trashed bool   `json:"trashed"` // list the trash instead of live profiles
+}
+
+const profileCols = `id, name, engine, engine_version, persona_id, seed_hex, platform,
+	COALESCE(proxy_id, ''), timezone, languages, ui_locale, lat, lon, channel_kind, start_url,
+	notes, tags, cdp_next_launch, pinned, created_at, updated_at, COALESCE(last_open_at, ''),
+	COALESCE(deleted_at, '')`
+
+func scanProfile(row interface{ Scan(...any) error }) (Profile, error) {
+	var p Profile
+	var tags string
+	err := row.Scan(&p.ID, &p.Name, &p.Engine, &p.EngineVersion, &p.PersonaID, &p.SeedHex,
+		&p.Platform, &p.ProxyID, &p.Timezone, &p.Languages, &p.UILocale, &p.Lat, &p.Lon,
+		&p.ChannelKind, &p.StartURL, &p.Notes, &tags, &p.CDPNextLaunch, &p.Pinned,
+		&p.CreatedAt, &p.UpdatedAt, &p.LastOpenAt, &p.DeletedAt)
+	if errors.Is(err, sql.ErrNoRows) {
+		return p, ErrNotFound
+	}
+	if err != nil {
+		return p, err
+	}
+	if err := json.Unmarshal([]byte(tags), &p.Tags); err != nil {
+		return p, fmt.Errorf("profile %s tags: %w", p.ID, err)
+	}
+	return p, nil
+}
+
+func tagsJSON(tags []string) string {
+	if tags == nil {
+		tags = []string{}
+	}
+	b, _ := json.Marshal(tags)
+	return string(b)
+}
+
+func nullStr(s string) any {
+	if s == "" {
+		return nil
+	}
+	return s
+}
+
+func (s *Store) CreateProfile(p *Profile) error {
+	if p.ID == "" || p.Name == "" || p.Engine == "" || p.PersonaID == "" || p.SeedHex == "" {
+		return errors.New("profile needs id, name, engine, persona and seed")
+	}
+	if p.ChannelKind == "" {
+		p.ChannelKind = "other"
+	}
+	p.CreatedAt, p.UpdatedAt = now(), now()
+	_, err := s.db.Exec(`INSERT INTO profiles (id, name, engine, engine_version, persona_id, seed_hex,
+		platform, proxy_id, timezone, languages, ui_locale, lat, lon, channel_kind, start_url, notes,
+		tags, cdp_next_launch, pinned, created_at, updated_at)
+		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+		p.ID, p.Name, p.Engine, p.EngineVersion, p.PersonaID, p.SeedHex, p.Platform, nullStr(p.ProxyID),
+		p.Timezone, p.Languages, p.UILocale, p.Lat, p.Lon, p.ChannelKind, p.StartURL, p.Notes,
+		tagsJSON(p.Tags), p.CDPNextLaunch, p.Pinned, p.CreatedAt, p.UpdatedAt)
+	return err
+}
+
+func (s *Store) GetProfile(id string) (Profile, error) {
+	return scanProfile(s.db.QueryRow(`SELECT `+profileCols+` FROM profiles WHERE id = ?`, id))
+}
+
+// UpdateProfile saves the editable fields. It refuses to change the identity
+// (engine, persona, seed, platform) fixed at creation.
+func (s *Store) UpdateProfile(p Profile) error {
+	cur, err := s.GetProfile(p.ID)
+	if err != nil {
+		return err
+	}
+	if p.Engine != cur.Engine || p.PersonaID != cur.PersonaID || p.SeedHex != cur.SeedHex || p.Platform != cur.Platform {
+		return errors.New("engine, persona, seed and platform cannot change after creation")
+	}
+	_, err = s.db.Exec(`UPDATE profiles SET name=?, proxy_id=?, timezone=?, languages=?, ui_locale=?,
+		lat=?, lon=?, channel_kind=?, start_url=?, notes=?, tags=?, cdp_next_launch=?, pinned=?,
+		updated_at=? WHERE id=?`,
+		p.Name, nullStr(p.ProxyID), p.Timezone, p.Languages, p.UILocale, p.Lat, p.Lon, p.ChannelKind,
+		p.StartURL, p.Notes, tagsJSON(p.Tags), p.CDPNextLaunch, p.Pinned, now(), p.ID)
+	return err
+}
+
+func (s *Store) ListProfiles(f ProfileFilter) ([]Profile, error) {
+	where := []string{"deleted_at IS NULL"}
+	if f.Trashed {
+		where[0] = "deleted_at IS NOT NULL"
+	}
+	var args []any
+	if q := strings.TrimSpace(f.Query); q != "" {
+		where = append(where, "name LIKE ? ESCAPE '\\'")
+		args = append(args, "%"+likeEscape(q)+"%")
+	}
+	if f.Tag != "" {
+		where = append(where, "EXISTS (SELECT 1 FROM json_each(profiles.tags) WHERE value = ?)")
+		args = append(args, f.Tag)
+	}
+	rows, err := s.db.Query(`SELECT `+profileCols+` FROM profiles WHERE `+strings.Join(where, " AND ")+
+		` ORDER BY pinned DESC, sort_order, created_at`, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []Profile{}
+	for rows.Next() {
+		p, err := scanProfile(rows)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, p)
+	}
+	return out, rows.Err()
+}
+
+func likeEscape(s string) string {
+	return strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`).Replace(s)
+}
+
+func (s *Store) SoftDelete(id string) error { return s.setDeleted(id, now()) }
+func (s *Store) Restore(id string) error    { return s.setDeleted(id, nil) }
+
+func (s *Store) setDeleted(id string, at any) error {
+	res, err := s.db.Exec(`UPDATE profiles SET deleted_at = ?, updated_at = ? WHERE id = ?`, at, now(), id)
+	return affected(res, err)
+}
+
+// Purge removes the row; the caller removes the profile directory and Keychain item.
+func (s *Store) Purge(id string) error {
+	res, err := s.db.Exec(`DELETE FROM profiles WHERE id = ?`, id)
+	return affected(res, err)
+}
+
+func (s *Store) MarkOpened(id string) error {
+	res, err := s.db.Exec(`UPDATE profiles SET last_open_at = ? WHERE id = ?`, now(), id)
+	return affected(res, err)
+}
+
+func affected(res sql.Result, err error) error {
+	if err != nil {
+		return err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return ErrNotFound
+	}
+	return nil
+}

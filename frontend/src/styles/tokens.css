@@ -1,0 +1,150 @@
+/* SPDX-License-Identifier: AGPL-3.0-or-later
+   Design tokens. The palette, scale and elevation recipe are adapted from the
+   AliasMode dashboard (github.com/aliasmode/aliasmode, web/styles.css,
+   Apache-2.0); see NOTICE. Every screen is built from these, so a change here
+   moves the whole app. */
+
+:root {
+  color-scheme: light;
+
+  /* Surfaces: white cards on a warm stone canvas, easier on long sessions
+     than blue greys. */
+  --bg: #ecebe7;
+  --surface: #ffffff;
+  --surface-sunken: #f8f7f5;
+  --surface-hover: #f3f2ef;
+  --surface-active: #e9e7e2;
+
+  /* Ink, from headings down to placeholders. */
+  --ink: #1b1a18;
+  --ink-soft: #45423d;
+  --muted: #76736d;
+  --faint: #a5a19a;
+
+  /* Hairlines: --line between regions, --line-soft between rows. */
+  --line: #e6e3dd;
+  --line-soft: #f0efeb;
+  --line-strong: #d3cfc7;
+
+  /* One accent for everything you can do: primary actions, links, selection. */
+  --accent: #3366e6;
+  --accent-hover: #2a58cf;
+  --accent-soft: #eef3ff;
+  --accent-soft-hover: #dfe9fd;
+  --accent-line: #c5d6fb;
+  --accent-ink: #284a9e;
+  --accent-fill: #3366e6;
+  --accent-fill-hover: #2a58cf;
+  --accent-fill-press: #2349ad;
+  --on-fill: #ffffff;
+  --glow: 0 4px 14px rgba(51, 102, 230, .22);
+  --glow-strong: 0 6px 18px rgba(51, 102, 230, .32);
+
+  --success: #12a150;
+  --success-soft: #eefaf2;
+  --success-line: #bde9cf;
+  --success-ink: #0d7a3d;
+  --running-row: #f6fcf8;
+
+  --danger: #dc3b32;
+  --danger-fill: #dc3b32;
+  --danger-fill-hover: #bd2a22;
+  --danger-soft: #fdf3f2;
+  --danger-line: #f7cbc7;
+  --danger-ink: #b32620;
+
+  --warn: #d98324;
+  --warn-soft: #fdf7ec;
+  --warn-line: #f2ddb5;
+  --warn-ink: #a3611a;
+
+  --r-xs: 6px;
+  --r-sm: 8px;
+  --r-md: 10px;
+  --r-lg: 14px;
+  --r-xl: 18px;
+  --r-pill: 999px;
+
+  /* Raised controls: near-white gradient on light, lifted grey on dark. */
+  --ctl: linear-gradient(180deg, #ffffff, #fbfaf8);
+  --ctl-hover: linear-gradient(180deg, #fbfaf8, #f2f1ee);
+  --ctl-border: var(--line);
+  --raised: #ffffff;
+
+  --shadow-rgb: 27, 26, 24;
+  --sh-ctl: 0 1px 1px rgba(var(--shadow-rgb), .04), 0 1px 2px rgba(var(--shadow-rgb), .05);
+  --sh-ctl-hover: 0 1px 2px rgba(var(--shadow-rgb), .05), 0 3px 6px rgba(var(--shadow-rgb), .07);
+  --sh-card: 0 1px 2px rgba(var(--shadow-rgb), .04), 0 6px 16px rgba(var(--shadow-rgb), .05);
+  --sh-pop: 0 14px 36px rgba(var(--shadow-rgb), .13), 0 2px 6px rgba(var(--shadow-rgb), .06);
+  --sh-modal: 0 30px 74px rgba(var(--shadow-rgb), .22), 0 4px 12px rgba(var(--shadow-rgb), .10);
+  --sh-field: inset 0 1px 1.5px rgba(var(--shadow-rgb), .03);
+  --backdrop: rgba(27, 26, 24, .40);
+  --scroll-thumb: #d3cfc7;
+  --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2376736d' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  --ring: 0 0 0 3px rgba(51, 102, 230, .18);
+  --ease: cubic-bezier(.2, .8, .3, 1);
+
+  --sidebar-w: 236px;
+  --titlebar-h: 38px; /* room for the macOS traffic lights */
+  --font: "Inter Variable", "Inter", -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+
+  --t-2xs: 10.5px;
+  --t-xs: 11.5px;
+  --t-sm: 12.5px;
+  --t-base: 13.5px;
+  --t-md: 15px;
+  --t-lg: 21px;
+}
+
+/* Dark is composed, not inverted: neutral charcoal, elevation by lighter
+   surfaces instead of shadows, and a lifted accent for text. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0a0a0e;
+  --surface: #1a1a21;
+  --surface-sunken: #15151a;
+  --surface-hover: #24242c;
+  --surface-active: #2d2d37;
+  --ink: #f1f1f4;
+  --ink-soft: #c9c9d2;
+  --muted: #90909d;
+  --faint: #66666f;
+  --line: #2e2e38;
+  --line-soft: #26262e;
+  --line-strong: #41414e;
+  --accent: #5e88f0;
+  --accent-hover: #7a9df4;
+  --accent-fill-hover: #4573e9;
+  --accent-fill-press: #2a58cf;
+  --accent-soft: #151f38;
+  --accent-soft-hover: #1b2949;
+  --accent-line: #2b3f6e;
+  --accent-ink: #b3c6f8;
+  --glow: 0 4px 16px rgba(94, 136, 240, .30);
+  --glow-strong: 0 6px 20px rgba(94, 136, 240, .42);
+  --success: #35c97d;
+  --success-soft: #12261a;
+  --success-line: #24523a;
+  --success-ink: #6fe0a4;
+  --running-row: #141f19;
+  --danger: #f0584d;
+  --danger-soft: #2a1615;
+  --danger-line: #542825;
+  --danger-ink: #ff9a92;
+  --warn: #e59a3d;
+  --warn-soft: #2a1f10;
+  --warn-line: #543d1c;
+  --warn-ink: #f3c07a;
+  --ctl: linear-gradient(180deg, #2a2a32, #232329);
+  --ctl-hover: linear-gradient(180deg, #31313b, #2a2a32);
+  --ctl-border: #32323c;
+  --raised: #2f2f39;
+  --shadow-rgb: 0, 0, 0;
+  --sh-card: 0 1px 2px rgba(0, 0, 0, .22);
+  --sh-field: inset 0 1px 2px rgba(0, 0, 0, .25);
+  --backdrop: rgba(6, 6, 8, .66);
+  --scroll-thumb: #3a3a44;
+  --ring: 0 0 0 3px rgba(94, 136, 240, .32);
+  --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2390909d' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+}
