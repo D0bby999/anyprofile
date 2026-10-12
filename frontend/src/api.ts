@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // The only module that touches the generated Wails bindings.
 export * as Api from '../wailsjs/go/main/App'
-export { engine, service, store, netproxy } from '../wailsjs/go/models'
+export { engine, service, site, store, netproxy } from '../wailsjs/go/models'
 import { EventsOn } from '../wailsjs/runtime/runtime'
 
 export type LaunchInfo = { profileId: string; state: string; pid: number; cdpPort: number; error: string }

@@ -6,15 +6,25 @@ export const en = {
   appName: 'AnyProfile',
   nav: {
     newProfile: 'New profile', all: 'All profiles', running: 'Running', proxies: 'Proxies',
-    trash: 'Trash', settings: 'Settings', channels: 'Channels',
+    trash: 'Trash', settings: 'Settings', sites: 'Platforms',
   },
   common: {
     save: 'Save', cancel: 'Cancel', close: 'Close', delete: 'Delete', loading: 'Loading…', refresh: 'Refresh',
     direct: 'No proxy', directLong: 'No proxy (this machine\u2019s real IP)',
   },
   state: { stopped: 'Stopped', starting: 'Starting', running: 'Running', stopping: 'Closing' },
-  channel: { tiktok: 'TikTok', youtube: 'YouTube', other: 'Other' } as Record<string, string>,
-  channelStartUrl: { tiktok: 'https://www.tiktok.com/tiktokstudio', youtube: 'https://studio.youtube.com' } as Record<string, string>,
+  siteGroups: {
+    video: 'Video & live', social: 'Social', messaging: 'Messaging', commerce: 'E-commerce',
+    ads: 'Ads', freelance: 'Freelance', google: 'Google', payments: 'Payments & crypto',
+    custom: 'Your platforms', other: 'Other', recent: 'Recent',
+  } as Record<string, string>,
+  sites: {
+    search: 'Search platforms', none: 'No platform matches',
+    customTitle: 'Your platforms', customDesc: 'Add any platform with its domains, start page and color. Profiles on a deleted platform move to Other.',
+    add: 'Add platform', name: 'Name', domains: 'Domains', domainsHint: 'separated by commas',
+    startUrl: 'Start page', color: 'Color', empty: 'No custom platforms yet.',
+    confirmDelete: (name: string) => `Delete ${name}? Profiles on it move to Other.`,
+  },
   engine: { ready: (v: string) => `Fury ${v} ready`, missing: 'Engine not installed' },
   profiles: {
     title: 'Profiles', total: (n: number) => `${n} profiles`,
@@ -24,7 +34,7 @@ export const en = {
     edit: 'Edit profile', focus: 'Bring window to front', trash: 'Move to trash',
     selected: (n: number) => `${n} selected`,
     openSelected: 'Open', stopSelected: 'Close', trashSelected: 'Move to trash', clearSelection: 'Clear selection',
-    colNo: '#', colName: 'Name', colChannel: 'Channel', colProxy: 'Proxy', colState: 'State', colLastOpen: 'Last opened',
+    colNo: '#', colName: 'Name', colSite: 'Platform', colProxy: 'Proxy', colState: 'State', colLastOpen: 'Last opened',
     emptyTitle: 'No profiles yet',
     emptyText: 'Each profile is its own browser with separate cookies, proxy and fingerprint. Create the first profile for one of your channels.',
     noMatchTitle: 'No matching profiles',
@@ -39,7 +49,7 @@ export const en = {
   create: {
     title: 'New profile',
     name: 'Name', namePlaceholder: 'e.g. TikTok side channel 2',
-    channel: 'Channel',
+    site: 'Platform',
     proxy: 'Proxy', proxyAuto: 'Pick a free proxy automatically', proxyAutoNone: 'Pick a free proxy automatically (none free right now; the real IP will be used)',
     proxyHint: 'The profile\u2019s timezone, location and languages follow the proxy\u2019s IP.',
     startUrl: 'Start page', tags: 'Tags', tagsPlaceholder: 'separated by commas',
@@ -109,6 +119,12 @@ export const en = {
     engine_missing: 'The browser engine is not installed. Install it in Settings.',
     folder_in_use: 'Another process already uses this profile\u2019s folder. Close it first.',
     bad_language: 'That language is not supported.',
+    unknown_site: 'That platform does not exist.',
+    site_name: 'The platform needs a name of 1-40 characters.',
+    site_domain: 'One of the domains is not valid.',
+    site_url: 'The start page must be an http(s) URL.',
+    site_color: 'Pick a color for the platform.',
+    site_builtin: 'Built-in platforms cannot be changed.',
   } as Record<string, string>,
 }
 

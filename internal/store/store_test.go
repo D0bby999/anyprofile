@@ -11,12 +11,12 @@ import (
 
 // insertV1Profile writes a profile with only the columns of migration 0001,
 // so it works on a database at any schema version.
-func insertV1Profile(t *testing.T, s *Store, id, channelKind, createdAt string) {
+func insertV1Profile(t *testing.T, s *Store, id, kind, createdAt string) {
 	t.Helper()
 	_, err := s.db.Exec(`INSERT INTO profiles (id, name, engine, engine_version, persona_id, seed_hex,
 		platform, timezone, languages, ui_locale, channel_kind, created_at, updated_at)
 		VALUES (?, ?, 'fury', '0.3.5', 'macos-m4-1710x1112', '00112233aabbccdd', 'macos',
-		'UTC', 'en-US,en', 'en-US', ?, ?, ?)`, id, "Old "+id, channelKind, createdAt, createdAt)
+		'UTC', 'en-US,en', 'en-US', ?, ?, ?)`, id, "Old "+id, kind, createdAt, createdAt)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -122,7 +122,7 @@ func TestProfileLifecycle(t *testing.T) {
 		t.Fatal(err)
 	}
 	p, err := s.GetProfile("a")
-	if err != nil || p.Tags[0] != "tiktok" || p.ChannelKind != "other" {
+	if err != nil || p.Tags[0] != "tiktok" || p.Site != "other" {
 		t.Fatalf("get = %+v, %v", p, err)
 	}
 
@@ -160,6 +160,55 @@ func TestProfileLifecycle(t *testing.T) {
 	}
 	if _, err := s.GetProfile("a"); !errors.Is(err, ErrNotFound) {
 		t.Fatalf("after purge err = %v", err)
+	}
+}
+
+func TestSitesMigration(t *testing.T) {
+	s, _ := upgradeFrom(t, 2, func(o *Store) {
+		insertV1Profile(t, o, "p1", "tiktok", "2026-10-01T00:00:00Z")
+		insertV1Profile(t, o, "p2", "other", "2026-10-02T00:00:00Z")
+	})
+	if p, err := s.GetProfile("p1"); err != nil || p.Site != "tiktok" {
+		t.Fatalf("p1 = %+v, %v", p, err)
+	}
+	if p, err := s.GetProfile("p2"); err != nil || p.Site != "other" {
+		t.Fatalf("p2 = %+v, %v", p, err)
+	}
+	if cs, err := s.ListCustomSites(); err != nil || len(cs) != 0 {
+		t.Fatalf("custom sites = %v, %v", cs, err)
+	}
+}
+
+func TestCustomSites(t *testing.T) {
+	s, _ := openTemp(t)
+	c := &CustomSite{ID: "custom-aa", Name: "Tiki", Domains: []string{"tiki.vn"}, StartURL: "https://tiki.vn", Color: "#1A94FF"}
+	if err := s.CreateCustomSite(c); err != nil {
+		t.Fatal(err)
+	}
+	p := sample("a")
+	p.Site = "custom-aa"
+	if err := s.CreateProfile(p); err != nil {
+		t.Fatal(err)
+	}
+	got, err := s.ListCustomSites()
+	if err != nil || len(got) != 1 || len(got[0].Domains) != 1 || got[0].Domains[0] != "tiki.vn" {
+		t.Fatalf("list = %+v, %v", got, err)
+	}
+	c.Name = "Tiki 2"
+	if err := s.UpdateCustomSite(*c); err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := s.ListCustomSites(); got[0].Name != "Tiki 2" {
+		t.Fatalf("after update = %+v", got)
+	}
+	if err := s.DeleteCustomSite("custom-aa"); err != nil {
+		t.Fatal(err)
+	}
+	if p, _ := s.GetProfile("a"); p.Site != "other" {
+		t.Fatalf("profile not moved to other: %+v", p)
+	}
+	if err := s.DeleteCustomSite("custom-aa"); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("second delete err = %v", err)
 	}
 }
 

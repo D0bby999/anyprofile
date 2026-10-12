@@ -30,6 +30,13 @@ AliasMode design tokens
   License: Apache-2.0. No AliasMode source code is included.
   Language catalog layout with English fallback, inspired by
   aliasmode/aliasmode web/i18n.tsx (Apache-2.0); no code copied.
+  Start pages per platform, inspired by aliasmode/aliasmode launcher.ts
+  platformHomeUrl (Apache-2.0); no code copied.
+
+Simple Icons
+  Brand icon paths in frontend/src/sites/icons.gen.ts come from simple-icons
+  16.35.0 (https://github.com/simple-icons/simple-icons), CC0-1.0. Brand marks
+  belong to their owners and only identify a platform.
 
 Inter typeface
   Bundled through @fontsource-variable/inter. Copyright The Inter Project

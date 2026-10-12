@@ -32,12 +32,12 @@ const AutoProxy = "auto"
 
 // NewProfile is what the create form sends. Identity is never chosen by hand.
 type NewProfile struct {
-	Name        string   `json:"name"`
-	ProxyID     string   `json:"proxyId"`
-	ChannelKind string   `json:"channelKind"`
-	StartURL    string   `json:"startUrl"`
-	Notes       string   `json:"notes"`
-	Tags        []string `json:"tags"`
+	Name     string   `json:"name"`
+	ProxyID  string   `json:"proxyId"`
+	Site     string   `json:"site"`
+	StartURL string   `json:"startUrl"`
+	Notes    string   `json:"notes"`
+	Tags     []string `json:"tags"`
 }
 
 func (s *Service) ListProfiles(f store.ProfileFilter) ([]ProfileRow, error) {
@@ -81,6 +81,9 @@ func (s *Service) CreateProfile(ctx context.Context, in NewProfile) (store.Profi
 	if in.Name == "" {
 		return store.Profile{}, apperr.New("name_required", "profile name is required")
 	}
+	if err := s.checkSite(in.Site); err != nil {
+		return store.Profile{}, err
+	}
 	if in.ProxyID == AutoProxy {
 		id, err := s.nextFreeProxy()
 		if err != nil {
@@ -95,7 +98,7 @@ func (s *Service) CreateProfile(ctx context.Context, in NewProfile) (store.Profi
 	p := store.Profile{
 		ID: randomHex(8), Name: in.Name, Engine: s.Engine.ID(), EngineVersion: s.Engine.Pinned().Version,
 		PersonaID: persona, SeedHex: randomHex(8), Platform: platform, ProxyID: in.ProxyID,
-		ChannelKind: in.ChannelKind, StartURL: strings.TrimSpace(in.StartURL), Notes: in.Notes, Tags: in.Tags,
+		Site: in.Site, StartURL: strings.TrimSpace(in.StartURL), Notes: in.Notes, Tags: in.Tags,
 	}
 	if err := s.applyNetwork(ctx, &p); err != nil {
 		return store.Profile{}, err
@@ -106,6 +109,9 @@ func (s *Service) CreateProfile(ctx context.Context, in NewProfile) (store.Profi
 // UpdateProfile saves editable fields; a new proxy re-derives timezone,
 // position and languages so the profile keeps matching its exit.
 func (s *Service) UpdateProfile(ctx context.Context, p store.Profile) error {
+	if err := s.checkSite(p.Site); err != nil {
+		return err
+	}
 	cur, err := s.Store.GetProfile(p.ID)
 	if err != nil {
 		return err

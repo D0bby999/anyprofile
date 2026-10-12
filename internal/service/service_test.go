@@ -172,3 +172,62 @@ func TestLanguage(t *testing.T) {
 		t.Fatalf("SetLanguage(fr) err = %v", err)
 	}
 }
+
+func TestSites(t *testing.T) {
+	s, _ := newService(t)
+	ctx := context.Background()
+	if _, err := s.CreateProfile(ctx, NewProfile{Name: "Etsy shop", Site: "etsy"}); err != nil {
+		t.Fatalf("create with etsy: %v", err)
+	}
+	if _, err := s.CreateProfile(ctx, NewProfile{Name: "Bad", Site: "nope"}); err == nil ||
+		!strings.Contains(err.Error(), "unknown_site") {
+		t.Fatalf("create with nope err = %v", err)
+	}
+	all, err := s.Sites()
+	if err != nil {
+		t.Fatal(err)
+	}
+	builtin := 0
+	for _, x := range all {
+		if !x.Custom {
+			builtin++
+		}
+	}
+	if builtin != 45 {
+		t.Fatalf("builtin sites = %d, want 45", builtin)
+	}
+
+	got, err := s.CreateSite(SiteInput{Name: "Tiki", Domains: []string{" https://www.Tiki.vn/abc "}, Color: "#1a94ff"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got.Domains) != 1 || got.Domains[0] != "tiki.vn" || got.Color != "#1A94FF" {
+		t.Fatalf("created = %+v", got)
+	}
+	if _, err := s.CreateSite(SiteInput{Name: "X", Color: "red"}); err == nil ||
+		!strings.Contains(err.Error(), "site_color") {
+		t.Fatalf("bad color err = %v", err)
+	}
+	if _, err := s.CreateSite(SiteInput{Name: "", Color: "#123456"}); err == nil ||
+		!strings.Contains(err.Error(), "site_name") {
+		t.Fatalf("bad name err = %v", err)
+	}
+	if _, err := s.CreateSite(SiteInput{Name: "X", Domains: []string{"not a domain"}, Color: "#123456"}); err == nil ||
+		!strings.Contains(err.Error(), "site_domain") {
+		t.Fatalf("bad domain err = %v", err)
+	}
+	if _, err := s.CreateSite(SiteInput{Name: "X", StartURL: "ftp://x.y", Color: "#123456"}); err == nil ||
+		!strings.Contains(err.Error(), "site_url") {
+		t.Fatalf("bad url err = %v", err)
+	}
+	if err := s.UpdateSite("etsy", SiteInput{Name: "Hacked", Color: "#123456"}); err == nil ||
+		!strings.Contains(err.Error(), "site_builtin") {
+		t.Fatalf("update builtin err = %v", err)
+	}
+	if err := s.DeleteSite(got.ID); err != nil {
+		t.Fatal(err)
+	}
+	if all, _ := s.Sites(); len(all) != builtin {
+		t.Fatalf("after delete = %d sites", len(all))
+	}
+}

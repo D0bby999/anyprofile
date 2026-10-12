@@ -4,16 +4,17 @@ import { Api, service, store } from '../api'
 import { t } from '../i18n'
 import { errorText, parseTags, relativeTime } from '../lib/format'
 import { personaLabel } from '../lib/persona'
+import type { Site } from '../lib/sites'
 import { Dialog } from './dialog'
 import { Icon } from './icons'
-import { ChannelPicker } from './new-profile-dialog'
 import { ProxySelect } from './proxy-select'
+import { SitePicker } from './site-picker'
 
-type Props = { row: service.ProfileRow; onClose: () => void; onSaved: () => void; onTrash: () => void }
+type Props = { row: service.ProfileRow; sites: Site[]; recent: string[]; onClose: () => void; onSaved: () => void; onTrash: () => void }
 
-export function ProfileEditor({ row, onClose, onSaved, onTrash }: Props) {
+export function ProfileEditor({ row, sites, recent, onClose, onSaved, onTrash }: Props) {
   const [name, setName] = useState(row.name)
-  const [channelKind, setChannelKind] = useState(row.channelKind)
+  const [site, setSite] = useState(row.site)
   const [proxyId, setProxyId] = useState(row.proxyId)
   const [startUrl, setStartUrl] = useState(row.startUrl)
   const [notes, setNotes] = useState(row.notes)
@@ -31,7 +32,7 @@ export function ProfileEditor({ row, onClose, onSaved, onTrash }: Props) {
     setError('')
     try {
       await Api.UpdateProfile(store.Profile.createFrom({
-        ...row, name: name.trim(), channelKind, proxyId, startUrl: startUrl.trim(), notes, tags: parseTags(tags), cdpNextLaunch: cdp,
+        ...row, name: name.trim(), site, proxyId, startUrl: startUrl.trim(), notes, tags: parseTags(tags), cdpNextLaunch: cdp,
       }))
       onSaved()
     } catch (e) {
@@ -56,8 +57,8 @@ export function ProfileEditor({ row, onClose, onSaved, onTrash }: Props) {
         <input className="input" value={name} onChange={(e) => setName(e.target.value)} aria-invalid={!name.trim()} />
       </label>
       <div className="field">
-        <span className="label">{t.create.channel}</span>
-        <ChannelPicker value={channelKind} onChange={setChannelKind} />
+        <span className="label">{t.create.site}</span>
+        <SitePicker value={site} onChange={setSite} sites={sites} recent={recent} />
       </div>
       <label className="field">
         <span className="label">{t.create.proxy}</span>

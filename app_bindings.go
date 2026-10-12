@@ -6,6 +6,7 @@ import (
 	"github.com/D0bby999/anyprofile/internal/engine"
 	"github.com/D0bby999/anyprofile/internal/engine/fury"
 	"github.com/D0bby999/anyprofile/internal/service"
+	"github.com/D0bby999/anyprofile/internal/site"
 	"github.com/D0bby999/anyprofile/internal/store"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
@@ -130,6 +131,30 @@ func (a *App) RenameProxy(id, label string) error {
 
 func (a *App) DeleteProxy(id string) error {
 	return a.must(func() error { return a.svc.DeleteProxy(id) })
+}
+
+// Sites
+
+func (a *App) Sites() ([]site.Site, error) {
+	if err := a.ready(); err != nil {
+		return nil, err
+	}
+	return a.svc.Sites()
+}
+
+func (a *App) CreateSite(in service.SiteInput) (site.Site, error) {
+	if err := a.ready(); err != nil {
+		return site.Site{}, err
+	}
+	return a.svc.CreateSite(in)
+}
+
+func (a *App) UpdateSite(id string, in service.SiteInput) error {
+	return a.must(func() error { return a.svc.UpdateSite(id, in) })
+}
+
+func (a *App) DeleteSite(id string) error {
+	return a.must(func() error { return a.svc.DeleteSite(id) })
 }
 
 // System

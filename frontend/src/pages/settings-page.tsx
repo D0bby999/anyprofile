@@ -4,7 +4,9 @@ import { Api, engine, onEngineProgress, type EngineProgress } from '../api'
 import { t, type Language } from '../i18n'
 import { errorText } from '../lib/format'
 import type { ThemeChoice } from '../lib/theme'
+import { useSites } from '../hooks/use-sites'
 import { Icon, type IconName } from '../components/icons'
+import { SiteSettings } from '../components/site-settings'
 import { PageHead } from '../components/page-head'
 
 const mb = (n: number) => `${Math.round(n / 1048576)} MB`
@@ -22,6 +24,7 @@ type Props = {
 export function SettingsPage({ status, onEngineChanged, theme, onTheme, fileVaultOn, lang, onLanguage }: Props) {
   const [progress, setProgress] = useState<EngineProgress | null>(null)
   const [error, setError] = useState('')
+  const { sites, reload: reloadSites } = useSites()
   useEffect(() => onEngineProgress(setProgress), [])
 
   const install = async () => {
@@ -87,6 +90,12 @@ export function SettingsPage({ status, onEngineChanged, theme, onTheme, fileVaul
             <button type="button" aria-pressed={lang === 'en'} onClick={() => onLanguage('en')}>{t.settings.languageEn}</button>
             <button type="button" aria-pressed={lang === 'vi'} onClick={() => onLanguage('vi')}>{t.settings.languageVi}</button>
           </div>
+        </section>
+
+        <section className="card pad">
+          <h2>{t.sites.customTitle}</h2>
+          <p className="desc">{t.sites.customDesc}</p>
+          <SiteSettings sites={sites} reload={reloadSites} />
         </section>
 
         <section className="card pad">

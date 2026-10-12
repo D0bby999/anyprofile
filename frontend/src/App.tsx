@@ -4,6 +4,7 @@ import { Api, engine } from './api'
 import { language, setLanguage, t, type Language } from './i18n'
 import { applyTheme, readTheme, type ThemeChoice } from './lib/theme'
 import { useProfiles } from './hooks/use-profiles'
+import { useSites } from './hooks/use-sites'
 import { Sidebar, type Page, type View } from './components/sidebar'
 import { NewProfileDialog } from './components/new-profile-dialog'
 import { Icon, LogoMark } from './components/icons'
@@ -23,6 +24,7 @@ export default function App() {
   const [theme, setTheme] = useState<ThemeChoice>(readTheme())
   const [lang, setLang] = useState<Language>(language)
   const profiles = useProfiles()
+  const { sites } = useSites()
 
   useEffect(() => applyTheme(theme), [theme])
   useEffect(() => {
@@ -34,14 +36,24 @@ export default function App() {
   useEffect(refreshProxies, [])
 
   const counts = useMemo(() => {
-    const c: Record<View, number> = { all: 0, running: 0, tiktok: 0, youtube: 0, other: 0 }
+    const c = { all: 0, running: 0 }
     for (const r of profiles.rows) {
       c.all++
       if (r.state !== 'stopped') c.running++
-      if (r.channelKind in c) c[r.channelKind as View]++
     }
     return c
   }, [profiles.rows])
+
+  const siteCounts = useMemo(() => {
+    const m = new Map<string, number>()
+    for (const r of profiles.rows) m.set(r.site, (m.get(r.site) ?? 0) + 1)
+    return m
+  }, [profiles.rows])
+
+  // Site ids ordered by how often the profiles use them, most first.
+  const recent = useMemo(() =>
+    [...siteCounts.entries()].sort((a, b) => b[1] - a[1]).map(([id]) => id),
+  [siteCounts])
 
   if (startupError) {
     return (
@@ -70,12 +82,12 @@ export default function App() {
 
   return (
     <div className="app" key={lang}>
-      <Sidebar page={page} view={view} counts={counts} proxyCount={proxyCount}
+      <Sidebar page={page} view={view} counts={counts} sites={sites} siteCounts={siteCounts} proxyCount={proxyCount}
         engineReady={engineReady} engineLabel={engineReady ? t.engine.ready(engineStatus!.version) : t.engine.missing}
         onNavigate={navigate} onNewProfile={newProfile} />
       <main className="main">
         {page === 'profiles' && (
-          <ProfilesPage rows={profiles.rows} view={view} engineReady={engineStatus === null || engineReady}
+          <ProfilesPage rows={profiles.rows} sites={sites} recent={recent} view={view} engineReady={engineStatus === null || engineReady}
             fileVaultOn={fileVaultOn} error={profiles.error} setError={profiles.setError} reload={profiles.reload}
             onNew={newProfile} onNeedEngine={() => setPage('settings')} onClearView={() => setView('all')} />
         )}
@@ -87,7 +99,7 @@ export default function App() {
         )}
       </main>
       {creating && (
-        <NewProfileDialog defaultChannel={view === 'tiktok' || view === 'youtube' ? view : 'tiktok'}
+        <NewProfileDialog defaultSite={view.startsWith('site:') ? view.slice(5) : 'other'} sites={sites} recent={recent}
           onClose={() => setCreating(false)}
           onCreated={() => { setCreating(false); setPage('profiles'); profiles.reload(); refreshProxies() }} />
       )}

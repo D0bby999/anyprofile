@@ -3,29 +3,24 @@ import { useEffect, useState } from 'react'
 import { Api, service } from '../api'
 import { t } from '../i18n'
 import { errorText, parseTags } from '../lib/format'
+import { guessSite, siteById, type Site } from '../lib/sites'
 import { Dialog } from './dialog'
-import { ChannelGlyph } from './icons'
 import { ProxySelect } from './proxy-select'
+import { SitePicker } from './site-picker'
 
-type Props = { defaultChannel: string; onClose: () => void; onCreated: () => void }
-
-export function ChannelPicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  return (
-    <div className="seg" role="group" aria-label={t.create.channel}>
-      {(['tiktok', 'youtube', 'other'] as const).map((k) => (
-        <button key={k} type="button" aria-pressed={value === k} onClick={() => onChange(k)}>
-          <ChannelGlyph kind={k} />{t.channel[k]}
-        </button>
-      ))}
-    </div>
-  )
+type Props = {
+  defaultSite: string
+  sites: Site[]
+  recent: string[]
+  onClose: () => void
+  onCreated: () => void
 }
 
-export function NewProfileDialog({ defaultChannel, onClose, onCreated }: Props) {
+export function NewProfileDialog({ defaultSite, sites, recent, onClose, onCreated }: Props) {
   const [name, setName] = useState('')
-  const [channel, setChannel] = useState(defaultChannel)
+  const [site, setSite] = useState(defaultSite)
   const [proxyId, setProxyId] = useState('auto')
-  const [startUrl, setStartUrl] = useState(t.channelStartUrl[defaultChannel] ?? '')
+  const [startUrl, setStartUrl] = useState(siteById(sites, defaultSite).startUrl)
   const [urlTouched, setUrlTouched] = useState(false)
   const [tags, setTags] = useState('')
   const [proxies, setProxies] = useState<service.ProxyRow[]>([])
@@ -34,9 +29,16 @@ export function NewProfileDialog({ defaultChannel, onClose, onCreated }: Props) 
 
   useEffect(() => { Api.ListProxies().then((p) => setProxies(p ?? [])) }, [])
 
-  const pickChannel = (k: string) => {
-    setChannel(k)
-    if (!urlTouched) setStartUrl(t.channelStartUrl[k] ?? '')
+  const pickSite = (id: string) => {
+    setSite(id)
+    if (!urlTouched) setStartUrl(siteById(sites, id).startUrl)
+  }
+
+  // Pasting a known platform's URL into an "Other" profile picks that platform.
+  const guessFromUrl = () => {
+    if (site !== 'other') return
+    const id = guessSite(startUrl, sites)
+    if (id) setSite(id)
   }
 
   const submit = async () => {
@@ -45,7 +47,7 @@ export function NewProfileDialog({ defaultChannel, onClose, onCreated }: Props) 
     setError('')
     try {
       await Api.CreateProfile(service.NewProfile.createFrom({
-        name: name.trim(), proxyId, channelKind: channel, startUrl: startUrl.trim(), notes: '', tags: parseTags(tags),
+        name: name.trim(), proxyId, site, startUrl: startUrl.trim(), notes: '', tags: parseTags(tags),
       }))
       onCreated()
     } catch (e) {
@@ -65,8 +67,8 @@ export function NewProfileDialog({ defaultChannel, onClose, onCreated }: Props) 
         <input className="input" autoFocus value={name} placeholder={t.create.namePlaceholder} onChange={(e) => setName(e.target.value)} />
       </label>
       <div className="field">
-        <span className="label">{t.create.channel}</span>
-        <ChannelPicker value={channel} onChange={pickChannel} />
+        <span className="label">{t.create.site}</span>
+        <SitePicker value={site} onChange={pickSite} sites={sites} recent={recent} />
       </div>
       <label className="field">
         <span className="label">{t.create.proxy}</span>
@@ -76,7 +78,7 @@ export function NewProfileDialog({ defaultChannel, onClose, onCreated }: Props) 
       <div className="grid2">
         <label className="field">
           <span className="label">{t.create.startUrl}</span>
-          <input className="input" value={startUrl} onChange={(e) => { setStartUrl(e.target.value); setUrlTouched(true) }} />
+          <input className="input" value={startUrl} onChange={(e) => { setStartUrl(e.target.value); setUrlTouched(true) }} onBlur={guessFromUrl} />
         </label>
         <label className="field">
           <span className="label">{t.create.tags}</span>

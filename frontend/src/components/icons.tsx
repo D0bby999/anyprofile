@@ -51,26 +51,3 @@ export function LogoMark({ className = 'mark' }: { className?: string }) {
     </svg>
   )
 }
-
-/** Platform marks, drawn filled like brand marks. */
-export function ChannelGlyph({ kind }: { kind: string }) {
-  if (kind === 'tiktok') {
-    return (
-      <span className="glyph tiktok" aria-hidden="true">
-        <svg viewBox="0 0 24 24"><path fill="currentColor" d="M14.6 3h2.6c.3 2 1.6 3.5 3.8 3.8v2.7c-1.4 0-2.7-.4-3.8-1.1v6.3a5.6 5.6 0 1 1-5.6-5.6c.3 0 .6 0 .9.1v2.8a2.9 2.9 0 1 0 2.1 2.7z" /></svg>
-      </span>
-    )
-  }
-  if (kind === 'youtube') {
-    return (
-      <span className="glyph youtube" aria-hidden="true">
-        <svg viewBox="0 0 24 24"><path fill="currentColor" d="M10 8.8v6.4l5.6-3.2z" /></svg>
-      </span>
-    )
-  }
-  return (
-    <span className="glyph other" aria-hidden="true">
-      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2" fill="currentColor" /></svg>
-    </span>
-  )
-}

@@ -3,19 +3,24 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { t } from '../i18n'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
-import { service } from '../api'
+import { service, site } from '../api'
 import { ProfileTable } from './profile-table'
 
 afterEach(cleanup)
 
+const sites = [
+  site.Site.createFrom({ id: 'tiktok', name: 'TikTok', group: 'video', domains: ['tiktok.com'], startUrl: '', icon: 'tiktok', color: '#000000', custom: false }),
+  site.Site.createFrom({ id: 'other', name: 'Other', group: 'other', domains: [], startUrl: '', icon: '', color: '#6B7280', custom: false }),
+]
+
 const row = (over: Partial<service.ProfileRow>) => service.ProfileRow.createFrom({
-  id: 'a', name: 'Kênh A', channelKind: 'tiktok', personaId: 'macos-m4pro-1728x1117',
+  id: 'a', name: 'Kênh A', site: 'tiktok', personaId: 'macos-m4pro-1728x1117',
   proxyId: 'px', proxyLabel: 'u@gw:10001', proxyCountry: 'US', proxyExitIp: '67.84.146.69',
   state: 'stopped', stateError: '', cdpPort: 0, tags: ['tiktok'], lastOpenAt: '', createdAt: '2026-10-12T00:00:00Z', ...over,
 })
 
 const props = (rows: service.ProfileRow[]) => ({
-  rows, numbers: new Map(rows.map((r, i) => [r.id, i + 1])), selected: new Set<string>(),
+  rows, sites, numbers: new Map(rows.map((r, i) => [r.id, i + 1])), selected: new Set<string>(),
   sort: { key: 'no' as const, desc: false },
   onSort: vi.fn(), onToggle: vi.fn(), onToggleAll: vi.fn(), onStart: vi.fn(), onStop: vi.fn(), onFocus: vi.fn(), onEdit: vi.fn(),
 })

@@ -3,41 +3,57 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { t } from '../i18n'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { site } from '../api'
+
+const sites = [
+  site.Site.createFrom({ id: 'tiktok', name: 'TikTok', group: 'video', domains: ['tiktok.com'], startUrl: 'https://www.tiktok.com/tiktokstudio', icon: 'tiktok', color: '#000000', custom: false }),
+  site.Site.createFrom({ id: 'etsy', name: 'Etsy', group: 'commerce', domains: ['etsy.com'], startUrl: 'https://www.etsy.com/your/shops/me/dashboard', icon: 'etsy', color: '#F16521', custom: false }),
+  site.Site.createFrom({ id: 'other', name: 'Other', group: 'other', domains: [], startUrl: '', icon: '', color: '#6B7280', custom: false }),
+]
 
 const createProfile = vi.fn().mockResolvedValue({})
 vi.mock('../api', async (orig) => ({
   ...(await orig<typeof import('../api')>()),
-  Api: { CreateProfile: (...a: unknown[]) => createProfile(...a), ListProxies: () => Promise.resolve([]) },
+  Api: {
+    CreateProfile: (...a: unknown[]) => createProfile(...a),
+    ListProxies: () => Promise.resolve([]),
+    Sites: () => Promise.resolve(sites),
+  },
 }))
 const { NewProfileDialog } = await import('./new-profile-dialog')
+
+const dialog = (over: Partial<Parameters<typeof NewProfileDialog>[0]> = {}) =>
+  render(<NewProfileDialog defaultSite="tiktok" sites={sites} recent={[]} onClose={vi.fn()} onCreated={vi.fn()} {...over} />)
 
 afterEach(() => { cleanup(); createProfile.mockClear() })
 
 describe('NewProfileDialog', () => {
-  it('creates from a name and Enter, with an automatic proxy and the channel start page', async () => {
+  it('creates from a name and Enter, with an automatic proxy and the platform start page', async () => {
     const onCreated = vi.fn()
-    render(<NewProfileDialog defaultChannel="tiktok" onClose={vi.fn()} onCreated={onCreated} />)
+    dialog({ onCreated })
     const name = screen.getByPlaceholderText(t.create.namePlaceholder)
     fireEvent.change(name, { target: { value: '  Kênh mới  ' } })
     fireEvent.submit(name.closest('form')!)
     await waitFor(() => expect(onCreated).toHaveBeenCalled())
     expect(createProfile.mock.calls[0][0]).toMatchObject({
-      name: 'Kênh mới', proxyId: 'auto', channelKind: 'tiktok', startUrl: 'https://www.tiktok.com/tiktokstudio',
+      name: 'Kênh mới', proxyId: 'auto', site: 'tiktok', startUrl: 'https://www.tiktok.com/tiktokstudio',
     })
   })
 
-  it('switches the start page with the channel until the user edits it', () => {
-    render(<NewProfileDialog defaultChannel="tiktok" onClose={vi.fn()} onCreated={vi.fn()} />)
-    fireEvent.click(screen.getByRole('button', { name: /YouTube/ }))
-    expect(screen.getByDisplayValue('https://studio.youtube.com')).toBeTruthy()
-    fireEvent.change(screen.getByDisplayValue('https://studio.youtube.com'), { target: { value: 'https://example.com' } })
-    fireEvent.click(screen.getByRole('button', { name: /TikTok/ }))
+  it('switches the start page with the platform until the user edits it', () => {
+    dialog()
+    fireEvent.click(screen.getByRole('button', { name: 'Platform' }))
+    fireEvent.click(screen.getByRole('option', { name: /Etsy/ }))
+    expect(screen.getByDisplayValue('https://www.etsy.com/your/shops/me/dashboard')).toBeTruthy()
+    fireEvent.change(screen.getByDisplayValue('https://www.etsy.com/your/shops/me/dashboard'), { target: { value: 'https://example.com' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Platform' }))
+    fireEvent.click(screen.getByRole('option', { name: /TikTok/ }))
     expect(screen.getByDisplayValue('https://example.com')).toBeTruthy()
   })
 
   it('does not submit without a name and closes on Escape', () => {
     const onClose = vi.fn()
-    render(<NewProfileDialog defaultChannel="other" onClose={onClose} onCreated={vi.fn()} />)
+    dialog({ defaultSite: 'other', onClose })
     expect((screen.getByRole('button', { name: t.create.submit }) as HTMLButtonElement).disabled).toBe(true)
     fireEvent.keyDown(window, { key: 'Escape' })
     expect(onClose).toHaveBeenCalled()

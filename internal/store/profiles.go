@@ -26,7 +26,7 @@ type Profile struct {
 	UILocale      string   `json:"uiLocale"`
 	Lat           *float64 `json:"lat"`
 	Lon           *float64 `json:"lon"`
-	ChannelKind   string   `json:"channelKind"`
+	Site          string   `json:"site"`
 	StartURL      string   `json:"startUrl"`
 	Notes         string   `json:"notes"`
 	Tags          []string `json:"tags"`
@@ -46,7 +46,7 @@ type ProfileFilter struct {
 }
 
 const profileCols = `id, name, engine, engine_version, persona_id, seed_hex, platform,
-	COALESCE(proxy_id, ''), timezone, languages, ui_locale, lat, lon, channel_kind, start_url,
+	COALESCE(proxy_id, ''), timezone, languages, ui_locale, lat, lon, site, start_url,
 	notes, tags, cdp_next_launch, pinned, created_at, updated_at, COALESCE(last_open_at, ''),
 	COALESCE(deleted_at, '')`
 
@@ -55,7 +55,7 @@ func scanProfile(row interface{ Scan(...any) error }) (Profile, error) {
 	var tags string
 	err := row.Scan(&p.ID, &p.Name, &p.Engine, &p.EngineVersion, &p.PersonaID, &p.SeedHex,
 		&p.Platform, &p.ProxyID, &p.Timezone, &p.Languages, &p.UILocale, &p.Lat, &p.Lon,
-		&p.ChannelKind, &p.StartURL, &p.Notes, &tags, &p.CDPNextLaunch, &p.Pinned,
+		&p.Site, &p.StartURL, &p.Notes, &tags, &p.CDPNextLaunch, &p.Pinned,
 		&p.CreatedAt, &p.UpdatedAt, &p.LastOpenAt, &p.DeletedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return p, ErrNotFound
@@ -88,16 +88,16 @@ func (s *Store) CreateProfile(p *Profile) error {
 	if p.ID == "" || p.Name == "" || p.Engine == "" || p.PersonaID == "" || p.SeedHex == "" {
 		return errors.New("profile needs id, name, engine, persona and seed")
 	}
-	if p.ChannelKind == "" {
-		p.ChannelKind = "other"
+	if p.Site == "" {
+		p.Site = "other"
 	}
 	p.CreatedAt, p.UpdatedAt = now(), now()
 	_, err := s.db.Exec(`INSERT INTO profiles (id, name, engine, engine_version, persona_id, seed_hex,
-		platform, proxy_id, timezone, languages, ui_locale, lat, lon, channel_kind, start_url, notes,
+		platform, proxy_id, timezone, languages, ui_locale, lat, lon, site, start_url, notes,
 		tags, cdp_next_launch, pinned, created_at, updated_at)
 		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
 		p.ID, p.Name, p.Engine, p.EngineVersion, p.PersonaID, p.SeedHex, p.Platform, nullStr(p.ProxyID),
-		p.Timezone, p.Languages, p.UILocale, p.Lat, p.Lon, p.ChannelKind, p.StartURL, p.Notes,
+		p.Timezone, p.Languages, p.UILocale, p.Lat, p.Lon, p.Site, p.StartURL, p.Notes,
 		tagsJSON(p.Tags), p.CDPNextLaunch, p.Pinned, p.CreatedAt, p.UpdatedAt)
 	return err
 }
@@ -117,9 +117,9 @@ func (s *Store) UpdateProfile(p Profile) error {
 		return errors.New("engine, persona, seed and platform cannot change after creation")
 	}
 	_, err = s.db.Exec(`UPDATE profiles SET name=?, proxy_id=?, timezone=?, languages=?, ui_locale=?,
-		lat=?, lon=?, channel_kind=?, start_url=?, notes=?, tags=?, cdp_next_launch=?, pinned=?,
+		lat=?, lon=?, site=?, start_url=?, notes=?, tags=?, cdp_next_launch=?, pinned=?,
 		updated_at=? WHERE id=?`,
-		p.Name, nullStr(p.ProxyID), p.Timezone, p.Languages, p.UILocale, p.Lat, p.Lon, p.ChannelKind,
+		p.Name, nullStr(p.ProxyID), p.Timezone, p.Languages, p.UILocale, p.Lat, p.Lon, p.Site,
 		p.StartURL, p.Notes, tagsJSON(p.Tags), p.CDPNextLaunch, p.Pinned, now(), p.ID)
 	return err
 }

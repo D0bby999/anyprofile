@@ -115,10 +115,13 @@
 .platform { display: inline-flex; align-items: center; gap: 8px; color: var(--ink-soft); white-space: nowrap; }
 .glyph { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; flex: 0 0 auto; border-radius: var(--r-xs); box-shadow: inset 0 0 0 1px rgba(27, 26, 24, .08); }
 .glyph svg { width: 13px; height: 13px; display: block; }
-.glyph.tiktok { background: #111; color: #fff; }
-.glyph.youtube { background: #ff0033; color: #fff; }
-.glyph.youtube svg { width: 15px; height: 15px; }
-.glyph.other { background: var(--surface-active); color: var(--muted); }
+.glyphletter { font-size: 11px; line-height: 1; }
+.sitebtn { display: flex; align-items: center; gap: 8px; text-align: left; }
+.sitepanel { border: 1px solid var(--line); border-radius: var(--r-md); padding: 8px; display: grid; gap: 6px; }
+.sitelist { max-height: 260px; overflow-y: auto; display: grid; gap: 2px; }
+.siteopt { display: flex; align-items: center; gap: 8px; padding: 5px 8px; border-radius: var(--r-sm); text-align: left; background: none; border: 0; cursor: pointer; color: var(--ink); font: inherit; }
+.siteopt:hover { background: var(--surface-active); }
+.siteopt.sel { background: var(--accent-soft); }
 .sorthead { display: inline-flex; align-items: center; gap: 3px; }
 .card.pad > .seg, .card.pad > .row { align-self: flex-start; }
 

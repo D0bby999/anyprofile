@@ -3,13 +3,16 @@ import { service } from '../api'
 import { t } from '../i18n'
 import { relativeTime } from '../lib/format'
 import { personaLabel } from '../lib/persona'
-import { ChannelGlyph, Icon } from './icons'
+import { siteById, type Site } from '../lib/sites'
+import { Icon } from './icons'
+import { SiteGlyph } from './site-glyph'
 
 export type SortKey = 'no' | 'name' | 'lastOpen'
 export type Sort = { key: SortKey; desc: boolean }
 
 type Props = {
   rows: service.ProfileRow[]
+  sites: Site[]
   numbers: Map<string, number>
   selected: Set<string>
   sort: Sort
@@ -62,7 +65,7 @@ export function ProfileTable(p: Props) {
           <th className="col-check"><input type="checkbox" checked={allSelected} onChange={p.onToggleAll} aria-label={t.profiles.selected(p.rows.length)} /></th>
           {head('no', t.profiles.colNo, 'col-no')}
           {head('name', t.profiles.colName)}
-          <th>{t.profiles.colChannel}</th>
+          <th>{t.profiles.colSite}</th>
           <th>{t.profiles.colProxy}</th>
           <th>{t.profiles.colState}</th>
           {head('lastOpen', t.profiles.colLastOpen, 'col-lastopen')}
@@ -73,6 +76,7 @@ export function ProfileTable(p: Props) {
         {p.rows.map((r) => {
           const running = r.state === 'running'
           const busy = r.state === 'starting' || r.state === 'stopping'
+          const s = siteById(p.sites, r.site)
           const cls = [p.selected.has(r.id) ? 'selected' : '', running ? 'running' : ''].join(' ').trim()
           return (
             <tr key={r.id} className={cls || undefined} onDoubleClick={() => (running ? p.onFocus(r.id) : !busy && p.onStart(r.id))}>
@@ -85,7 +89,7 @@ export function ProfileTable(p: Props) {
                   {r.tags.map((x) => <span key={x} className="tag">{x}</span>)}
                 </span>
               </td>
-              <td><span className="platform" title={t.channel[r.channelKind]}><ChannelGlyph kind={r.channelKind} /><span className="plabel">{t.channel[r.channelKind] ?? r.channelKind}</span></span></td>
+              <td><span className="platform" title={s.name}><SiteGlyph site={s} /><span className="plabel">{s.name}</span></span></td>
               <td><ProxyCell row={r} /></td>
               <td><StatePill row={r} /></td>
               <td className="muted nowrap col-lastopen">{relativeTime(r.lastOpenAt)}</td>

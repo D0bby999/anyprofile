@@ -8,15 +8,25 @@ export const vi: Messages = {
   appName: 'AnyProfile',
   nav: {
     newProfile: 'Profile mới', all: 'Tất cả profile', running: 'Đang chạy', proxies: 'Proxy',
-    trash: 'Thùng rác', settings: 'Cài đặt', channels: 'Kênh',
+    trash: 'Thùng rác', settings: 'Cài đặt', sites: 'Nền tảng',
   },
   common: {
     save: 'Lưu', cancel: 'Huỷ', close: 'Đóng', delete: 'Xoá', loading: 'Đang tải…', refresh: 'Làm mới',
     direct: 'Không proxy', directLong: 'Không proxy (IP thật của máy)',
   },
   state: { stopped: 'Đã đóng', starting: 'Đang mở', running: 'Đang chạy', stopping: 'Đang đóng' },
-  channel: { tiktok: 'TikTok', youtube: 'YouTube', other: 'Khác' } as Record<string, string>,
-  channelStartUrl: { tiktok: 'https://www.tiktok.com/tiktokstudio', youtube: 'https://studio.youtube.com' } as Record<string, string>,
+  siteGroups: {
+    video: 'Video và livestream', social: 'Mạng xã hội', messaging: 'Nhắn tin', commerce: 'Thương mại điện tử',
+    ads: 'Quảng cáo', freelance: 'Freelance', google: 'Google', payments: 'Thanh toán và crypto',
+    custom: 'Nền tảng của bạn', other: 'Khác', recent: 'Dùng gần đây',
+  } as Record<string, string>,
+  sites: {
+    search: 'Tìm nền tảng', none: 'Không có nền tảng phù hợp',
+    customTitle: 'Nền tảng của bạn', customDesc: 'Thêm nền tảng bất kỳ với tên miền, trang mở đầu và màu sắc. Profile của nền tảng bị xoá sẽ chuyển sang Khác.',
+    add: 'Thêm nền tảng', name: 'Tên', domains: 'Tên miền', domainsHint: 'cách nhau bằng dấu phẩy',
+    startUrl: 'Trang mở đầu', color: 'Màu', empty: 'Chưa có nền tảng tự thêm.',
+    confirmDelete: (name: string) => `Xoá ${name}? Profile trên nền tảng này sẽ chuyển sang Khác.`,
+  },
   engine: { ready: (v: string) => `Fury ${v} sẵn sàng`, missing: 'Chưa cài engine' },
   profiles: {
     title: 'Profile', total: (n: number) => `${n} profile`,
@@ -26,7 +36,7 @@ export const vi: Messages = {
     edit: 'Sửa profile', focus: 'Đưa cửa sổ lên trước', trash: 'Bỏ vào thùng rác',
     selected: (n: number) => `Đã chọn ${n}`,
     openSelected: 'Mở', stopSelected: 'Đóng', trashSelected: 'Bỏ vào thùng rác', clearSelection: 'Bỏ chọn',
-    colNo: 'STT', colName: 'Tên', colChannel: 'Kênh', colProxy: 'Proxy', colState: 'Trạng thái', colLastOpen: 'Mở lần cuối',
+    colNo: 'STT', colName: 'Tên', colSite: 'Nền tảng', colProxy: 'Proxy', colState: 'Trạng thái', colLastOpen: 'Mở lần cuối',
     emptyTitle: 'Chưa có profile nào',
     emptyText: 'Mỗi profile là một trình duyệt riêng với cookie, proxy và dấu vân tay riêng. Tạo profile đầu tiên cho một kênh của bạn.',
     noMatchTitle: 'Không có profile phù hợp',
@@ -41,7 +51,7 @@ export const vi: Messages = {
   create: {
     title: 'Profile mới',
     name: 'Tên', namePlaceholder: 'Ví dụ: TikTok kênh phụ 2',
-    channel: 'Kênh',
+    site: 'Nền tảng',
     proxy: 'Proxy', proxyAuto: 'Tự lấy proxy còn trống', proxyAutoNone: 'Tự lấy proxy còn trống (hiện không còn, sẽ dùng IP thật)',
     proxyHint: 'Múi giờ, vị trí và ngôn ngữ của profile lấy theo IP của proxy.',
     startUrl: 'Trang mở đầu', tags: 'Tag', tagsPlaceholder: 'cách nhau bằng dấu phẩy',
@@ -111,5 +121,11 @@ export const vi: Messages = {
     engine_missing: 'Chưa cài engine trình duyệt. Hãy cài trong mục Cài đặt.',
     folder_in_use: 'Một tiến trình khác đang dùng thư mục của profile này. Hãy đóng nó trước.',
     bad_language: 'Ngôn ngữ này không được hỗ trợ.',
+    unknown_site: 'Nền tảng này không tồn tại.',
+    site_name: 'Nền tảng cần có tên từ 1 đến 40 ký tự.',
+    site_domain: 'Một trong các tên miền không hợp lệ.',
+    site_url: 'Trang mở đầu phải là URL http(s).',
+    site_color: 'Hãy chọn màu cho nền tảng.',
+    site_builtin: 'Không đổi được nền tảng có sẵn.',
   } as Record<string, string>,
 }

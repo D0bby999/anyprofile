@@ -14,8 +14,16 @@ export function CreateProfile(arg1) {
   return window['go']['main']['App']['CreateProfile'](arg1);
 }
 
+export function CreateSite(arg1) {
+  return window['go']['main']['App']['CreateSite'](arg1);
+}
+
 export function DeleteProxy(arg1) {
   return window['go']['main']['App']['DeleteProxy'](arg1);
+}
+
+export function DeleteSite(arg1) {
+  return window['go']['main']['App']['DeleteSite'](arg1);
 }
 
 export function EngineStatus() {
@@ -74,6 +82,10 @@ export function SetLanguage(arg1) {
   return window['go']['main']['App']['SetLanguage'](arg1);
 }
 
+export function Sites() {
+  return window['go']['main']['App']['Sites']();
+}
+
 export function StartProfile(arg1) {
   return window['go']['main']['App']['StartProfile'](arg1);
 }
@@ -100,4 +112,8 @@ export function TrashProfile(arg1) {
 
 export function UpdateProfile(arg1) {
   return window['go']['main']['App']['UpdateProfile'](arg1);
+}
+
+export function UpdateSite(arg1, arg2) {
+  return window['go']['main']['App']['UpdateSite'](arg1, arg2);
 }

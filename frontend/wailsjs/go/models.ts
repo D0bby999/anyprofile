@@ -124,7 +124,7 @@ export namespace service {
 	export class NewProfile {
 	    name: string;
 	    proxyId: string;
-	    channelKind: string;
+	    site: string;
 	    startUrl: string;
 	    notes: string;
 	    tags: string[];
@@ -137,7 +137,7 @@ export namespace service {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.name = source["name"];
 	        this.proxyId = source["proxyId"];
-	        this.channelKind = source["channelKind"];
+	        this.site = source["site"];
 	        this.startUrl = source["startUrl"];
 	        this.notes = source["notes"];
 	        this.tags = source["tags"];
@@ -157,7 +157,7 @@ export namespace service {
 	    uiLocale: string;
 	    lat?: number;
 	    lon?: number;
-	    channelKind: string;
+	    site: string;
 	    startUrl: string;
 	    notes: string;
 	    tags: string[];
@@ -193,7 +193,7 @@ export namespace service {
 	        this.uiLocale = source["uiLocale"];
 	        this.lat = source["lat"];
 	        this.lon = source["lon"];
-	        this.channelKind = source["channelKind"];
+	        this.site = source["site"];
 	        this.startUrl = source["startUrl"];
 	        this.notes = source["notes"];
 	        this.tags = source["tags"];
@@ -251,6 +251,55 @@ export namespace service {
 	        this.usedBy = source["usedBy"];
 	    }
 	}
+	export class SiteInput {
+	    name: string;
+	    domains: string[];
+	    startUrl: string;
+	    color: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new SiteInput(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.name = source["name"];
+	        this.domains = source["domains"];
+	        this.startUrl = source["startUrl"];
+	        this.color = source["color"];
+	    }
+	}
+
+}
+
+export namespace site {
+	
+	export class Site {
+	    id: string;
+	    name: string;
+	    group: string;
+	    domains: string[];
+	    startUrl: string;
+	    icon: string;
+	    color: string;
+	    custom: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new Site(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.name = source["name"];
+	        this.group = source["group"];
+	        this.domains = source["domains"];
+	        this.startUrl = source["startUrl"];
+	        this.icon = source["icon"];
+	        this.color = source["color"];
+	        this.custom = source["custom"];
+	    }
+	}
 
 }
 
@@ -270,7 +319,7 @@ export namespace store {
 	    uiLocale: string;
 	    lat?: number;
 	    lon?: number;
-	    channelKind: string;
+	    site: string;
 	    startUrl: string;
 	    notes: string;
 	    tags: string[];
@@ -300,7 +349,7 @@ export namespace store {
 	        this.uiLocale = source["uiLocale"];
 	        this.lat = source["lat"];
 	        this.lon = source["lon"];
-	        this.channelKind = source["channelKind"];
+	        this.site = source["site"];
 	        this.startUrl = source["startUrl"];
 	        this.notes = source["notes"];
 	        this.tags = source["tags"];

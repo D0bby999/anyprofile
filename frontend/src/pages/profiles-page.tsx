@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react'
 import { Api, service } from '../api'
 import { language, t } from '../i18n'
 import { allTags, errorText } from '../lib/format'
+import { siteById, type Site } from '../lib/sites'
 import { EmptyState } from '../components/empty-state'
 import { Icon } from '../components/icons'
 import { ProfileEditor } from '../components/profile-editor'
@@ -12,6 +13,8 @@ import { PageHead } from '../components/page-head'
 
 type Props = {
   rows: service.ProfileRow[]
+  sites: Site[]
+  recent: string[]
   view: View
   engineReady: boolean
   fileVaultOn: boolean
@@ -23,9 +26,10 @@ type Props = {
   onClearView: () => void
 }
 
-const viewTitle = (v: View) => (v === 'all' ? t.nav.all : v === 'running' ? t.nav.running : t.channel[v])
+const viewTitle = (v: View, sites: Site[]) =>
+  v === 'all' ? t.nav.all : v === 'running' ? t.nav.running : siteById(sites, v.slice(5)).name
 
-export function ProfilesPage({ rows, view, engineReady, fileVaultOn, error, setError, reload, onNew, onNeedEngine, onClearView }: Props) {
+export function ProfilesPage({ rows, sites, recent, view, engineReady, fileVaultOn, error, setError, reload, onNew, onNeedEngine, onClearView }: Props) {
   const [query, setQuery] = useState('')
   const [tag, setTag] = useState('')
   const [sort, setSort] = useState<Sort>({ key: 'no', desc: false })
@@ -42,14 +46,15 @@ export function ProfilesPage({ rows, view, engineReady, fileVaultOn, error, setE
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase()
     const out = rows.filter((r) =>
-      (view === 'all' || (view === 'running' ? r.state !== 'stopped' : r.channelKind === view)) &&
+      (view === 'all' || (view === 'running' ? r.state !== 'stopped' : r.site === view.slice(5))) &&
       (!tag || r.tags.includes(tag)) &&
-      (!q || r.name.toLowerCase().includes(q) || r.tags.some((x) => x.toLowerCase().includes(q))))
+      (!q || r.name.toLowerCase().includes(q) || r.tags.some((x) => x.toLowerCase().includes(q)) ||
+        siteById(sites, r.site).name.toLowerCase().includes(q)))
     const key = (r: service.ProfileRow) =>
       sort.key === 'name' ? r.name.toLowerCase() : sort.key === 'lastOpen' ? r.lastOpenAt || '' : String(numbers.get(r.id)).padStart(6, '0')
     out.sort((a, b) => key(a).localeCompare(key(b), language) * (sort.desc ? -1 : 1))
     return out
-  }, [rows, view, tag, query, sort, numbers])
+  }, [rows, sites, view, tag, query, sort, numbers])
 
   const run = async (fn: () => Promise<unknown>) => {
     setBusy(true)
@@ -79,7 +84,7 @@ export function ProfilesPage({ rows, view, engineReady, fileVaultOn, error, setE
 
   return (
     <>
-      <PageHead title={viewTitle(view)} sub={t.profiles.total(visible.length)}>
+      <PageHead title={viewTitle(view, sites)} sub={t.profiles.total(visible.length)}>
         <button className="iconbtn nodrag" onClick={reload} aria-label={t.common.refresh} title={t.common.refresh}><Icon name="refresh" /></button>
       </PageHead>
       <div className="pagebody">
@@ -125,7 +130,7 @@ export function ProfilesPage({ rows, view, engineReady, fileVaultOn, error, setE
                 <button className="btn" onClick={() => { setQuery(''); setTag(''); onClearView() }}>{t.profiles.clearFilters}</button>
               </EmptyState>
             ) : (
-              <ProfileTable rows={visible} numbers={numbers} selected={selected} sort={sort} onSort={onSort}
+              <ProfileTable rows={visible} sites={sites} numbers={numbers} selected={selected} sort={sort} onSort={onSort}
                 onToggle={toggle} onToggleAll={toggleAll}
                 onStart={(id) => run(() => Api.StartProfile(id))} onStop={(id) => run(() => Api.StopProfile(id))}
                 onFocus={(id) => { Api.FocusProfile(id) }} onEdit={setEditing} />
@@ -138,7 +143,7 @@ export function ProfilesPage({ rows, view, engineReady, fileVaultOn, error, setE
         </section>
       </div>
       {editing && (
-        <ProfileEditor row={editing} onClose={() => setEditing(null)} onSaved={() => { setEditing(null); reload() }}
+        <ProfileEditor row={editing} sites={sites} recent={recent} onClose={() => setEditing(null)} onSaved={() => { setEditing(null); reload() }}
           onTrash={() => run(async () => { await Api.TrashProfile(editing.id); setEditing(null); reload() })} />
       )}
     </>
