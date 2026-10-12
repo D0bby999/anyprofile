@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/D0bby999/anyprofile/internal/apperr"
 	"github.com/D0bby999/anyprofile/internal/engine"
 	"github.com/D0bby999/anyprofile/internal/netproxy"
 	"github.com/D0bby999/anyprofile/internal/secrets"
@@ -30,14 +31,14 @@ func (l *Launcher) start(ctx context.Context, p *proc) error {
 		return fmt.Errorf("engine %q is not available", prof.Engine)
 	}
 	if st := eng.Status(ctx); !st.Installed {
-		return fmt.Errorf("engine %s %s is not installed", prof.Engine, st.Version.Version)
+		return apperr.Newf("engine_missing", "engine %s %s is not installed", prof.Engine, st.Version.Version)
 	}
 	udd := l.dirs.Profile(prof.ID)
 	if err := os.MkdirAll(udd, 0o700); err != nil {
 		return err
 	}
 	if pid := singletonPID(udd); pid != 0 && alive(pid) {
-		return fmt.Errorf("another process (pid %d) already uses this profile's folder; close it first", pid)
+		return apperr.Newf("folder_in_use", "another process (pid %d) already uses this profile's folder; close it first", pid)
 	}
 
 	if prof.ProxyID != "" {

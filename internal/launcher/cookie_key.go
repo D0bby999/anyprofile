@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/D0bby999/anyprofile/internal/apperr"
 	"github.com/D0bby999/anyprofile/internal/secrets"
 )
 
@@ -21,7 +22,7 @@ import (
 // the launch instead of logging the user out of every account.
 const keyFingerprintFile = ".anyprofile-key-fingerprint"
 
-var ErrCookieKeyLost = errors.New("the cookie key for this profile is missing from the Keychain; " +
+var ErrCookieKeyLost = apperr.New("cookie_key_lost", "the cookie key for this profile is missing from the Keychain; "+
 	"opening it with a new key would discard its saved logins")
 
 func keyFingerprint(key []byte) string {
@@ -41,7 +42,7 @@ func cookieKey(sec secrets.Store, profileID, userDataDir string) ([]byte, error)
 			return nil, fmt.Errorf("cookie key in Keychain has %d bytes, want 32", len(key))
 		}
 		if fpErr == nil && !bytes.Equal(bytes.TrimSpace(wantFP), []byte(keyFingerprint(key))) {
-			return nil, errors.New("the Keychain holds a different cookie key than this profile was created with")
+			return nil, apperr.New("cookie_key_mismatch", "the Keychain holds a different cookie key than this profile was created with")
 		}
 		if fpErr != nil {
 			if err := os.WriteFile(fpPath, []byte(keyFingerprint(key)), 0o600); err != nil {

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { useMemo, useState } from 'react'
 import { Api, service } from '../api'
-import { t } from '../i18n'
+import { language, t } from '../i18n'
 import { allTags, errorText } from '../lib/format'
 import { EmptyState } from '../components/empty-state'
 import { Icon } from '../components/icons'
@@ -47,7 +47,7 @@ export function ProfilesPage({ rows, view, engineReady, fileVaultOn, error, setE
       (!q || r.name.toLowerCase().includes(q) || r.tags.some((x) => x.toLowerCase().includes(q))))
     const key = (r: service.ProfileRow) =>
       sort.key === 'name' ? r.name.toLowerCase() : sort.key === 'lastOpen' ? r.lastOpenAt || '' : String(numbers.get(r.id)).padStart(6, '0')
-    out.sort((a, b) => key(a).localeCompare(key(b), 'vi') * (sort.desc ? -1 : 1))
+    out.sort((a, b) => key(a).localeCompare(key(b), language) * (sort.desc ? -1 : 1))
     return out
   }, [rows, view, tag, query, sort, numbers])
 

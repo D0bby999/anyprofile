@@ -136,6 +136,19 @@ func (a *App) DeleteProxy(id string) error {
 
 func (a *App) FileVaultOn() bool { return service.FileVaultOn() }
 
+// Settings
+
+func (a *App) Language() string {
+	if a.svc == nil {
+		return "en"
+	}
+	return a.svc.Language()
+}
+
+func (a *App) SetLanguage(lang string) error {
+	return a.must(func() error { return a.svc.SetLanguage(lang) })
+}
+
 func (a *App) must(fn func() error) error {
 	if err := a.ready(); err != nil {
 		return err

@@ -6,9 +6,12 @@ import './styles/tokens.css'
 import './styles/base.css'
 import './styles/shell.css'
 import App from './App'
+import { Api } from './api'
+import { setLanguage } from './i18n'
 
-createRoot(document.getElementById('root')!).render(
+const root = createRoot(document.getElementById('root')!)
+Api.Language().then(setLanguage).catch(() => setLanguage('en')).finally(() => root.render(
   <React.StrictMode>
     <App />
   </React.StrictMode>,
-)
+))

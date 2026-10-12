@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { useEffect, useMemo, useState } from 'react'
 import { Api, engine } from './api'
-import { t } from './i18n'
+import { language, setLanguage, t, type Language } from './i18n'
 import { applyTheme, readTheme, type ThemeChoice } from './lib/theme'
 import { useProfiles } from './hooks/use-profiles'
 import { Sidebar, type Page, type View } from './components/sidebar'
@@ -21,6 +21,7 @@ export default function App() {
   const [engineStatus, setEngineStatus] = useState<engine.Status | null>(null)
   const [proxyCount, setProxyCount] = useState(0)
   const [theme, setTheme] = useState<ThemeChoice>(readTheme())
+  const [lang, setLang] = useState<Language>(language)
   const profiles = useProfiles()
 
   useEffect(() => applyTheme(theme), [theme])
@@ -57,9 +58,18 @@ export default function App() {
   const engineReady = !!engineStatus?.installed
   const navigate = (p: Page, v?: View) => { setPage(p); if (v) setView(v) }
   const newProfile = () => setCreating(true)
+  const changeLanguage = async (l: Language) => {
+    try {
+      await Api.SetLanguage(l)
+      setLanguage(l)
+      setLang(l)
+    } catch {
+      // the language stays as it was
+    }
+  }
 
   return (
-    <div className="app">
+    <div className="app" key={lang}>
       <Sidebar page={page} view={view} counts={counts} proxyCount={proxyCount}
         engineReady={engineReady} engineLabel={engineReady ? t.engine.ready(engineStatus!.version) : t.engine.missing}
         onNavigate={navigate} onNewProfile={newProfile} />
@@ -72,7 +82,8 @@ export default function App() {
         {page === 'proxies' && <ProxiesPage onChanged={() => { refreshProxies(); profiles.reload() }} />}
         {page === 'trash' && <TrashPage onChanged={profiles.reload} />}
         {page === 'settings' && (
-          <SettingsPage status={engineStatus} onEngineChanged={setEngineStatus} theme={theme} onTheme={setTheme} fileVaultOn={fileVaultOn} />
+          <SettingsPage status={engineStatus} onEngineChanged={setEngineStatus} theme={theme} onTheme={setTheme} fileVaultOn={fileVaultOn}
+            lang={lang} onLanguage={changeLanguage} />
         )}
       </main>
       {creating && (

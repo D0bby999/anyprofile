@@ -26,7 +26,8 @@ export function allTags(rows: { tags: string[] }[]): string[] {
 }
 
 export function errorText(e: unknown): string {
-  if (typeof e === 'string') return e
-  if (e instanceof Error) return e.message
-  return String(e)
+  const raw = typeof e === 'string' ? e : e instanceof Error ? e.message : String(e)
+  const m = /^anyprofile:([a-z_]+): ([\s\S]*)$/.exec(raw)
+  if (!m) return raw
+  return t.errors[m[1]] ?? m[2]
 }

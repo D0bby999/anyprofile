@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"os"
 	"path/filepath"
 	"sort"
@@ -31,7 +32,11 @@ type Store struct {
 
 // Open opens (creating if needed) the database at path. Before applying a
 // pending migration to an existing database it copies the file into backupDir.
-func Open(path, backupDir string) (*Store, error) {
+func Open(path, backupDir string) (*Store, error) { return openUpTo(path, backupDir, math.MaxInt) }
+
+// openUpTo applies migrations up to maxVer only. Tests use it to build a
+// database as an older app left it, then upgrade it with Open.
+func openUpTo(path, backupDir string, maxVer int) (*Store, error) {
 	_, statErr := os.Stat(path)
 	existed := statErr == nil
 	dsn := "file:" + path + "?_pragma=journal_mode(WAL)&_pragma=foreign_keys(1)&_pragma=busy_timeout(5000)"
@@ -41,7 +46,7 @@ func Open(path, backupDir string) (*Store, error) {
 	}
 	db.SetMaxOpenConns(1) // one writer; the app is the only client
 	s := &Store{db: db}
-	if err := s.migrate(path, backupDir, existed); err != nil {
+	if err := s.migrate(path, backupDir, existed, maxVer); err != nil {
 		db.Close()
 		return nil, err
 	}
@@ -57,7 +62,7 @@ func Open(path, backupDir string) (*Store, error) {
 
 func (s *Store) Close() error { return s.db.Close() }
 
-func (s *Store) migrate(path, backupDir string, existed bool) error {
+func (s *Store) migrate(path, backupDir string, existed bool, maxVer int) error {
 	if _, err := s.db.Exec(`CREATE TABLE IF NOT EXISTS schema_version (version INTEGER NOT NULL)`); err != nil {
 		return err
 	}
@@ -78,6 +83,9 @@ func (s *Store) migrate(path, backupDir string, existed bool) error {
 		}
 		if ver <= cur {
 			continue
+		}
+		if ver > maxVer {
+			break
 		}
 		if existed && !backedUp {
 			if err := s.backup(path, backupDir, cur); err != nil {

@@ -7,6 +7,7 @@ import (
 	"errors"
 	"sync"
 
+	"github.com/D0bby999/anyprofile/internal/apperr"
 	"github.com/D0bby999/anyprofile/internal/launcher"
 	"github.com/D0bby999/anyprofile/internal/netproxy"
 	"github.com/D0bby999/anyprofile/internal/secrets"
@@ -139,7 +140,7 @@ func (s *Service) DeleteProxy(id string) error {
 	}
 	for _, p := range ps {
 		if p.ProxyID == id && running[p.ID] {
-			return errors.New("a running profile uses this proxy; close it first")
+			return apperr.New("proxy_in_use", "a running profile uses this proxy; close it first")
 		}
 	}
 	if err := s.Store.DeleteProxy(id); err != nil {

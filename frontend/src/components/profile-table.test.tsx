@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { t } from '../i18n'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { service } from '../api'
 import { ProfileTable } from './profile-table'
@@ -26,8 +27,8 @@ describe('ProfileTable', () => {
     expect(screen.getByText('Mac M4 Pro · 1728×1117')).toBeTruthy()
     expect(screen.getByText('67.84.146.69')).toBeTruthy()
     expect(screen.getByText('US')).toBeTruthy()
-    expect(screen.getByText('Đã đóng')).toBeTruthy()
-    fireEvent.click(screen.getByText('Mở'))
+    expect(screen.getByText(t.state.stopped)).toBeTruthy()
+    fireEvent.click(screen.getByText(t.profiles.open))
     expect(p.onStart).toHaveBeenCalledWith('a')
     fireEvent.doubleClick(screen.getByText('Kênh A'))
     expect(p.onStart).toHaveBeenCalledTimes(2)
@@ -36,29 +37,29 @@ describe('ProfileTable', () => {
   it('offers Close and Focus for a running profile and shows the CDP warning chip', () => {
     const p = props([row({ state: 'running', cdpPort: 9333 })])
     render(<ProfileTable {...p} />)
-    fireEvent.click(screen.getByText('Đóng'))
+    fireEvent.click(screen.getByText(t.profiles.stop))
     expect(p.onStop).toHaveBeenCalledWith('a')
-    fireEvent.click(screen.getByLabelText('Đưa cửa sổ lên trước'))
+    fireEvent.click(screen.getByLabelText(t.profiles.focus))
     expect(p.onFocus).toHaveBeenCalledWith('a')
     expect(screen.getByText('CDP :9333')).toBeTruthy()
-    expect(screen.getByText('Đang chạy')).toBeTruthy()
+    expect(screen.getByText(t.state.running)).toBeTruthy()
   })
 
   it('disables the action while a profile is starting', () => {
     render(<ProfileTable {...props([row({ state: 'starting' })])} />)
-    expect((screen.getByRole('button', { name: /Đang mở/ }) as HTMLButtonElement).disabled).toBe(true)
+    expect((screen.getByRole('button', { name: new RegExp(t.profiles.opening) }) as HTMLButtonElement).disabled).toBe(true)
   })
 
   it('labels a profile without proxy as direct and an unchecked proxy honestly', () => {
     render(<ProfileTable {...props([row({ id: 'b', proxyId: '' }), row({ id: 'c', proxyExitIp: '' })])} />)
-    expect(screen.getByText('Không proxy')).toBeTruthy()
-    expect(screen.getByText('Chưa kiểm tra')).toBeTruthy()
+    expect(screen.getByText(t.common.direct)).toBeTruthy()
+    expect(screen.getByText(t.proxies.unchecked)).toBeTruthy()
   })
 
   it('sorts from the header', () => {
     const p = props([row({})])
     render(<ProfileTable {...p} />)
-    fireEvent.click(screen.getByText('Tên'))
+    fireEvent.click(screen.getByText(t.profiles.colName))
     expect(p.onSort).toHaveBeenCalledWith('name')
   })
 })

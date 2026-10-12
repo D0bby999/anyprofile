@@ -155,3 +155,20 @@ func TestDeleteProxyAndPurge(t *testing.T) {
 		t.Fatal("cookie key survived purge")
 	}
 }
+
+func TestLanguage(t *testing.T) {
+	s, _ := newService(t)
+	if got := s.Language(); got != "en" {
+		t.Fatalf("default language = %q", got)
+	}
+	if err := s.SetLanguage("vi"); err != nil {
+		t.Fatal(err)
+	}
+	if got := s.Language(); got != "vi" {
+		t.Fatalf("after SetLanguage = %q", got)
+	}
+	err := s.SetLanguage("fr")
+	if err == nil || !strings.Contains(err.Error(), "bad_language") {
+		t.Fatalf("SetLanguage(fr) err = %v", err)
+	}
+}

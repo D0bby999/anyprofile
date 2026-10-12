@@ -71,6 +71,12 @@ func (a *App) init() error {
 	return nil
 }
 
+// quitText is the native quit dialog; the web UI has its own catalogs.
+var quitText = map[string]struct{ Title, Message, Confirm, Cancel string }{
+	"en": {"Quit AnyProfile?", "%d browsers are open. Quitting closes all of them.", "Close all and quit", "Cancel"},
+	"vi": {"Thoát AnyProfile?", "Đang có %d trình duyệt mở. Thoát app sẽ đóng tất cả.", "Đóng tất cả và thoát", "Huỷ"},
+}
+
 // beforeClose closes every browser before quitting: proxy relays live in this
 // process, so a browser left running would lose its network (it fails closed).
 func (a *App) beforeClose(ctx context.Context) bool {
@@ -81,15 +87,16 @@ func (a *App) beforeClose(ctx context.Context) bool {
 	if n == 0 {
 		return false
 	}
+	q := quitText[a.svc.Language()]
 	choice, err := runtime.MessageDialog(ctx, runtime.MessageDialogOptions{
 		Type:          runtime.QuestionDialog,
-		Title:         "Thoát AnyProfile?",
-		Message:       fmt.Sprintf("Đang có %d trình duyệt mở. Thoát app sẽ đóng tất cả.", n),
-		Buttons:       []string{"Đóng tất cả và thoát", "Huỷ"},
-		DefaultButton: "Huỷ",
-		CancelButton:  "Huỷ",
+		Title:         q.Title,
+		Message:       fmt.Sprintf(q.Message, n),
+		Buttons:       []string{q.Confirm, q.Cancel},
+		DefaultButton: q.Cancel,
+		CancelButton:  q.Cancel,
 	})
-	if err != nil || choice != "Đóng tất cả và thoát" {
+	if err != nil || choice != q.Confirm {
 		return true
 	}
 	a.svc.Launcher.StopAll()

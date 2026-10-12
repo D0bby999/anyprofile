@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Every user-facing string lives here, so another language is one more object.
+// The Vietnamese catalog, typed against en.ts: a missing or extra key fails
+// the typecheck.
 
-export const vi = {
+import type { Messages } from './en'
+
+export const vi: Messages = {
   appName: 'AnyProfile',
   nav: {
     newProfile: 'Profile mới', all: 'Tất cả profile', running: 'Đang chạy', proxies: 'Proxy',
@@ -86,6 +89,7 @@ export const vi = {
     installed: 'Đã cài, đã kiểm tra chữ ký', notInstalled: 'Chưa cài',
     install: 'Tải và cài', reinstall: 'Cài lại', installing: 'Đang tải',
     themeTitle: 'Giao diện', themeSystem: 'Theo hệ thống', themeLight: 'Sáng', themeDark: 'Tối',
+    languageTitle: 'Ngôn ngữ', languageEn: 'English', languageVi: 'Tiếng Việt',
     securityTitle: 'Bảo mật',
     fileVaultOn: 'FileVault đang bật. Dữ liệu profile trên ổ đĩa được mã hoá.',
     fileVaultOff: 'FileVault đang tắt. Lịch sử và dữ liệu trang của các profile nằm trên ổ đĩa không mã hoá. Nên bật trong System Settings, mục Privacy & Security.',
@@ -96,6 +100,16 @@ export const vi = {
     never: 'Chưa mở', justNow: 'vừa xong',
     minutes: (n: number) => `${n} phút trước`, hours: (n: number) => `${n} giờ trước`, days: (n: number) => `${n} ngày trước`,
   },
+  errors: {
+    name_required: 'Profile cần có tên.',
+    proxy_rotating: 'Proxy này đổi IP giữa các kết nối. Hãy dùng cổng cố định (sticky).',
+    proxy_no_timezone: 'Không xác định được múi giờ của proxy này. Hãy kiểm tra lại.',
+    profile_not_trashed: 'Hãy bỏ profile vào thùng rác trước.',
+    proxy_in_use: 'Một profile đang chạy dùng proxy này. Hãy đóng profile đó trước.',
+    cookie_key_lost: 'Khoá cookie của profile này không còn trong Keychain. Mở bằng khoá mới sẽ đăng xuất mọi trang.',
+    cookie_key_mismatch: 'Keychain đang giữ khoá cookie khác với khoá profile được tạo.',
+    engine_missing: 'Chưa cài engine trình duyệt. Hãy cài trong mục Cài đặt.',
+    folder_in_use: 'Một tiến trình khác đang dùng thư mục của profile này. Hãy đóng nó trước.',
+    bad_language: 'Ngôn ngữ này không được hỗ trợ.',
+  } as Record<string, string>,
 }
-
-export const t = vi

@@ -23,6 +23,8 @@ export function ImportProxies(arg1:string):Promise<service.ImportResult>;
 
 export function InstallEngine():Promise<void>;
 
+export function Language():Promise<string>;
+
 export function ListProfiles(arg1:store.ProfileFilter):Promise<Array<service.ProfileRow>>;
 
 export function ListProxies():Promise<Array<service.ProxyRow>>;
@@ -36,6 +38,8 @@ export function QuickCreate(arg1:string):Promise<store.Profile>;
 export function RenameProxy(arg1:string,arg2:string):Promise<void>;
 
 export function RestoreProfile(arg1:string):Promise<void>;
+
+export function SetLanguage(arg1:string):Promise<void>;
 
 export function StartProfile(arg1:string):Promise<void>;
 

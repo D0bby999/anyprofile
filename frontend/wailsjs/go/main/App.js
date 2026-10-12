@@ -38,6 +38,10 @@ export function InstallEngine() {
   return window['go']['main']['App']['InstallEngine']();
 }
 
+export function Language() {
+  return window['go']['main']['App']['Language']();
+}
+
 export function ListProfiles(arg1) {
   return window['go']['main']['App']['ListProfiles'](arg1);
 }
@@ -64,6 +68,10 @@ export function RenameProxy(arg1, arg2) {
 
 export function RestoreProfile(arg1) {
   return window['go']['main']['App']['RestoreProfile'](arg1);
+}
+
+export function SetLanguage(arg1) {
+  return window['go']['main']['App']['SetLanguage'](arg1);
 }
 
 export function StartProfile(arg1) {

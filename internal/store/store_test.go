@@ -9,6 +9,63 @@ import (
 	"testing"
 )
 
+// insertV1Profile writes a profile with only the columns of migration 0001,
+// so it works on a database at any schema version.
+func insertV1Profile(t *testing.T, s *Store, id, channelKind, createdAt string) {
+	t.Helper()
+	_, err := s.db.Exec(`INSERT INTO profiles (id, name, engine, engine_version, persona_id, seed_hex,
+		platform, timezone, languages, ui_locale, channel_kind, created_at, updated_at)
+		VALUES (?, ?, 'fury', '0.3.5', 'macos-m4-1710x1112', '00112233aabbccdd', 'macos',
+		'UTC', 'en-US,en', 'en-US', ?, ?, ?)`, id, "Old "+id, channelKind, createdAt, createdAt)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+// upgradeFrom builds a database at version ver, lets seed fill it, then
+// reopens it with Open so every later migration runs as in a real upgrade.
+func upgradeFrom(t *testing.T, ver int, seed func(s *Store)) (*Store, string) {
+	t.Helper()
+	dir := t.TempDir()
+	path := filepath.Join(dir, "anyprofile.db")
+	old, err := openUpTo(path, dir, ver)
+	if err != nil {
+		t.Fatal(err)
+	}
+	seed(old)
+	old.Close()
+	s, err := Open(path, dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { s.Close() })
+	return s, dir
+}
+
+func TestSettingsMigrationAndRoundTrip(t *testing.T) {
+	s, dir := upgradeFrom(t, 1, func(o *Store) {
+		insertV1Profile(t, o, "p1", "other", "2026-10-01T00:00:00Z")
+	})
+	if p, err := s.GetProfile("p1"); err != nil || p.ID != "p1" {
+		t.Fatalf("GetProfile after upgrade = %+v, %v", p, err)
+	}
+	if b, _ := filepath.Glob(filepath.Join(dir, "anyprofile-v1-*.db")); len(b) != 1 {
+		t.Fatalf("backup files = %v", b)
+	}
+	if err := s.SetSetting("language", "en"); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.SetSetting("language", "vi"); err != nil {
+		t.Fatal(err)
+	}
+	if v, err := s.GetSetting("language"); err != nil || v != "vi" {
+		t.Fatalf("GetSetting(language) = %q, %v", v, err)
+	}
+	if v, err := s.GetSetting("missing"); err != nil || v != "" {
+		t.Fatalf("GetSetting(missing) = %q, %v", v, err)
+	}
+}
+
 func openTemp(t *testing.T) (*Store, string) {
 	t.Helper()
 	dir := t.TempDir()

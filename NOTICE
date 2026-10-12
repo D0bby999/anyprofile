@@ -28,6 +28,8 @@ AliasMode design tokens
   recipe of the AliasMode dashboard (https://github.com/aliasmode/aliasmode,
   web/styles.css, commit 56c18f9). Copyright AliasMode authors.
   License: Apache-2.0. No AliasMode source code is included.
+  Language catalog layout with English fallback, inspired by
+  aliasmode/aliasmode web/i18n.tsx (Apache-2.0); no code copied.
 
 Inter typeface
   Bundled through @fontsource-variable/inter. Copyright The Inter Project

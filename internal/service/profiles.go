@@ -4,12 +4,12 @@ package service
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/D0bby999/anyprofile/internal/apperr"
 	"github.com/D0bby999/anyprofile/internal/launcher"
 	"github.com/D0bby999/anyprofile/internal/secrets"
 	"github.com/D0bby999/anyprofile/internal/store"
@@ -79,7 +79,7 @@ func (s *Service) QuickCreate(ctx context.Context, name string) (store.Profile, 
 func (s *Service) CreateProfile(ctx context.Context, in NewProfile) (store.Profile, error) {
 	in.Name = strings.TrimSpace(in.Name)
 	if in.Name == "" {
-		return store.Profile{}, errors.New("profile name is required")
+		return store.Profile{}, apperr.New("name_required", "profile name is required")
 	}
 	if in.ProxyID == AutoProxy {
 		id, err := s.nextFreeProxy()
@@ -135,10 +135,10 @@ func (s *Service) applyNetwork(ctx context.Context, p *store.Profile) error {
 			}
 		}
 		if px.Rotating {
-			return fmt.Errorf("proxy %s changes its IP between connections; use a sticky port", px.Label)
+			return apperr.Newf("proxy_rotating", "proxy %s changes its IP between connections; use a sticky port", px.Label)
 		}
 		if px.Timezone == "" {
-			return fmt.Errorf("could not determine the timezone of proxy %s", px.Label)
+			return apperr.Newf("proxy_no_timezone", "could not determine the timezone of proxy %s", px.Label)
 		}
 		p.Timezone, p.Lat, p.Lon, country = px.Timezone, px.Lat, px.Lon, px.Country
 	}
@@ -166,7 +166,7 @@ func (s *Service) Purge(id string) error {
 		return err
 	}
 	if p.DeletedAt == "" {
-		return errors.New("move the profile to the trash first")
+		return apperr.New("profile_not_trashed", "move the profile to the trash first")
 	}
 	if err := s.Launcher.Stop(id); err != nil {
 		return err

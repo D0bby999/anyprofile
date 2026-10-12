@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { useEffect, useState } from 'react'
 import { Api, engine, onEngineProgress, type EngineProgress } from '../api'
-import { t } from '../i18n'
+import { t, type Language } from '../i18n'
 import { errorText } from '../lib/format'
 import type { ThemeChoice } from '../lib/theme'
 import { Icon, type IconName } from '../components/icons'
@@ -15,9 +15,11 @@ type Props = {
   theme: ThemeChoice
   onTheme: (c: ThemeChoice) => void
   fileVaultOn: boolean
+  lang: Language
+  onLanguage: (l: Language) => void
 }
 
-export function SettingsPage({ status, onEngineChanged, theme, onTheme, fileVaultOn }: Props) {
+export function SettingsPage({ status, onEngineChanged, theme, onTheme, fileVaultOn, lang, onLanguage }: Props) {
   const [progress, setProgress] = useState<EngineProgress | null>(null)
   const [error, setError] = useState('')
   useEffect(() => onEngineProgress(setProgress), [])
@@ -76,6 +78,14 @@ export function SettingsPage({ status, onEngineChanged, theme, onTheme, fileVaul
             {themes.map(([c, label, icon]) => (
               <button key={c} type="button" aria-pressed={theme === c} onClick={() => onTheme(c)}><Icon name={icon} className="icon sm" />{label}</button>
             ))}
+          </div>
+        </section>
+
+        <section className="card pad">
+          <h2>{t.settings.languageTitle}</h2>
+          <div className="seg" role="group" aria-label={t.settings.languageTitle}>
+            <button type="button" aria-pressed={lang === 'en'} onClick={() => onLanguage('en')}>{t.settings.languageEn}</button>
+            <button type="button" aria-pressed={lang === 'vi'} onClick={() => onLanguage('vi')}>{t.settings.languageVi}</button>
           </div>
         </section>
 
