@@ -6,7 +6,6 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/D0bby999/anyprofile/internal/secrets"
 	"github.com/D0bby999/anyprofile/internal/store"
@@ -58,6 +57,25 @@ func (s *Service) knownIDs() (map[string]bool, error) {
 	return ids, nil
 }
 
+// orphanIDs lists the folders in the profiles directory that no profile row owns.
+func (s *Service) orphanIDs() ([]string, error) {
+	known, err := s.knownIDs()
+	if err != nil {
+		return nil, err
+	}
+	entries, err := os.ReadDir(s.Dirs.Profiles())
+	if err != nil && !os.IsNotExist(err) {
+		return nil, err
+	}
+	var ids []string
+	for _, e := range entries {
+		if e.IsDir() && !known[e.Name()] {
+			ids = append(ids, e.Name())
+		}
+	}
+	return ids, nil
+}
+
 func (s *Service) running() map[string]bool {
 	m := map[string]bool{}
 	for _, in := range s.Launcher.List() {
@@ -68,37 +86,35 @@ func (s *Service) running() map[string]bool {
 
 // Storage measures the profiles directory and finds orphan folders.
 func (s *Service) Storage() (StorageInfo, error) {
-	known, err := s.knownIDs()
+	ids, err := s.orphanIDs()
 	if err != nil {
 		return StorageInfo{}, err
 	}
 	info := StorageInfo{Orphans: []Orphan{}, ProfilesBytes: dirSize(s.Dirs.Profiles())}
-	entries, err := os.ReadDir(s.Dirs.Profiles())
-	if err != nil && !os.IsNotExist(err) {
-		return StorageInfo{}, err
-	}
-	for _, e := range entries {
-		if !e.IsDir() || known[e.Name()] {
-			continue
-		}
-		info.Orphans = append(info.Orphans, Orphan{ID: e.Name(), Bytes: dirSize(s.Dirs.Profile(e.Name()))})
+	for _, id := range ids {
+		info.Orphans = append(info.Orphans, Orphan{ID: id, Bytes: dirSize(s.Dirs.Profile(id))})
 	}
 	s.Log.Info("storage measured", "profilesBytes", info.ProfilesBytes, "orphans", len(info.Orphans))
 	return info, nil
 }
 
-// DeleteOrphans removes the listed folders and their cookie keys. It refuses
-// folders that belong to a profile, are running, or try to escape the root.
+// DeleteOrphans removes the listed folders and their Keychain items. Only ids
+// a fresh scan reports as orphans are touched, so no id can reach the
+// profiles root, a live profile or anything outside it.
 func (s *Service) DeleteOrphans(ids []string) error {
-	known, err := s.knownIDs()
+	scanned, err := s.orphanIDs()
 	if err != nil {
 		return err
+	}
+	orphan := map[string]bool{}
+	for _, id := range scanned {
+		orphan[id] = true
 	}
 	run := s.running()
 	deleted := 0
 	var bytes int64
 	for _, id := range ids {
-		if known[id] || run[id] || strings.ContainsRune(id, '/') || id == ".." {
+		if !orphan[id] || run[id] {
 			continue
 		}
 		p := s.Dirs.Profile(id)
@@ -106,7 +122,9 @@ func (s *Service) DeleteOrphans(ids []string) error {
 		if err := os.RemoveAll(p); err != nil {
 			return err
 		}
-		s.Secrets.Delete(secrets.ServiceCookieKey, id)
+		for _, svc := range []string{secrets.ServiceCookieKey, secrets.ServiceAccountPassword, secrets.ServiceTOTP} {
+			s.Secrets.Delete(svc, id)
+		}
 		deleted++
 	}
 	s.Log.Info("orphans deleted", "count", deleted, "bytes", bytes)

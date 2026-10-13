@@ -66,3 +66,27 @@ func TestStorage(t *testing.T) {
 		t.Fatal("known profile folder was deleted")
 	}
 }
+
+// DeleteOrphans must only ever remove a folder the scan would list: never the
+// profiles root itself, whatever id the caller sends.
+func TestDeleteOrphansRefusesRoot(t *testing.T) {
+	s, _ := newService(t)
+	p, err := s.CreateProfile(context.Background(), NewProfile{Name: "Kept"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(s.Dirs.Profile(p.ID), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(s.Dirs.Profiles(), "loose-file"), nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.DeleteOrphans([]string{"", ".", "..", "loose-file", `a\b`}); err != nil {
+		t.Fatal(err)
+	}
+	for _, path := range []string{s.Dirs.Profile(p.ID), filepath.Join(s.Dirs.Profiles(), "loose-file")} {
+		if _, err := os.Stat(path); err != nil {
+			t.Fatalf("%s was deleted: %v", path, err)
+		}
+	}
+}
