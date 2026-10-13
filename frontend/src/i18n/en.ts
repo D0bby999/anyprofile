@@ -103,6 +103,22 @@ export const en = {
     fileVaultOff: 'FileVault is off. Profiles\u2019 history and site data sit unencrypted on disk. Turn it on in System Settings, under Privacy & Security.',
     secretsNote: 'Proxy passwords and each profile\u2019s cookie key live in the Keychain. No control port is open unless you enable diagnostics.',
   },
+  account: {
+    title: 'Account',
+    login: 'Login (email or username)',
+    password: 'Password',
+    saved: 'Saved',
+    copy: 'Copy',
+    replace: 'Replace',
+    remove: 'Remove',
+    savePassword: 'Save password',
+    copiedPassword: 'Password copied. It is cleared from the clipboard in 90 s.',
+    totp: '2FA',
+    totpPlaceholder: '2FA secret or otpauth:// link',
+    copyCode: 'Copy code',
+    secondsLeft: (n: number) => `${n}s`,
+    note: 'The password and the 2FA secret stay in the macOS Keychain and are never shown.',
+  },
   storage: {
     title: 'Storage',
     profilesSize: (s: string) => `Profiles use ${s}`,
@@ -135,6 +151,10 @@ export const en = {
     site_url: 'The start page must be an http(s) URL.',
     site_color: 'Pick a color for the platform.',
     site_builtin: 'Built-in platforms cannot be changed.',
+    password_empty: 'Type a password.',
+    password_missing: 'No password is saved for this profile.',
+    totp_invalid: 'That is not a valid authenticator secret.',
+    totp_missing: 'No 2FA secret is saved for this profile.',
   } as Record<string, string>,
 }
 

@@ -10,7 +10,13 @@ export function CheckAllProxies():Promise<void>;
 
 export function CheckProxy(arg1:string):Promise<store.Proxy>;
 
+export function ClearAccountPassword(arg1:string):Promise<void>;
+
 export function ClearCache():Promise<number>;
+
+export function ClearTOTP(arg1:string):Promise<void>;
+
+export function CopyAccountPassword(arg1:string):Promise<void>;
 
 export function CreateProfile(arg1:service.NewProfile):Promise<store.Profile>;
 
@@ -48,7 +54,11 @@ export function RenameProxy(arg1:string,arg2:string):Promise<void>;
 
 export function RestoreProfile(arg1:string):Promise<void>;
 
+export function SetAccountPassword(arg1:string,arg2:string):Promise<void>;
+
 export function SetLanguage(arg1:string):Promise<void>;
+
+export function SetTOTP(arg1:string,arg2:string):Promise<void>;
 
 export function Sites():Promise<Array<site.Site>>;
 
@@ -63,6 +73,8 @@ export function StopProfile(arg1:string):Promise<void>;
 export function StopProfiles(arg1:Array<string>):Promise<Record<string, string>>;
 
 export function Storage():Promise<service.StorageInfo>;
+
+export function TOTPCode(arg1:string):Promise<service.TOTPCode>;
 
 export function TrashProfile(arg1:string):Promise<void>;
 

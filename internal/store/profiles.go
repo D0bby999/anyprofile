@@ -28,6 +28,9 @@ type Profile struct {
 	Lon           *float64 `json:"lon"`
 	Site          string   `json:"site"`
 	Serial        int      `json:"serial"`
+	Login         string   `json:"login"`
+	HasPassword   bool     `json:"hasPassword"`
+	HasTOTP       bool     `json:"hasTotp"`
 	StartURL      string   `json:"startUrl"`
 	Notes         string   `json:"notes"`
 	Tags          []string `json:"tags"`
@@ -49,7 +52,7 @@ type ProfileFilter struct {
 const profileCols = `id, name, engine, engine_version, persona_id, seed_hex, platform,
 	COALESCE(proxy_id, ''), timezone, languages, ui_locale, lat, lon, site, start_url,
 	notes, tags, cdp_next_launch, pinned, created_at, updated_at, COALESCE(last_open_at, ''),
-	COALESCE(deleted_at, ''), serial`
+	COALESCE(deleted_at, ''), serial, login, has_password, has_totp`
 
 func scanProfile(row interface{ Scan(...any) error }) (Profile, error) {
 	var p Profile
@@ -57,7 +60,8 @@ func scanProfile(row interface{ Scan(...any) error }) (Profile, error) {
 	err := row.Scan(&p.ID, &p.Name, &p.Engine, &p.EngineVersion, &p.PersonaID, &p.SeedHex,
 		&p.Platform, &p.ProxyID, &p.Timezone, &p.Languages, &p.UILocale, &p.Lat, &p.Lon,
 		&p.Site, &p.StartURL, &p.Notes, &tags, &p.CDPNextLaunch, &p.Pinned,
-		&p.CreatedAt, &p.UpdatedAt, &p.LastOpenAt, &p.DeletedAt, &p.Serial)
+		&p.CreatedAt, &p.UpdatedAt, &p.LastOpenAt, &p.DeletedAt, &p.Serial, &p.Login,
+		&p.HasPassword, &p.HasTOTP)
 	if errors.Is(err, sql.ErrNoRows) {
 		return p, ErrNotFound
 	}
@@ -95,11 +99,11 @@ func (s *Store) CreateProfile(p *Profile) error {
 	p.CreatedAt, p.UpdatedAt = now(), now()
 	_, err := s.db.Exec(`INSERT INTO profiles (id, name, engine, engine_version, persona_id, seed_hex,
 		platform, proxy_id, timezone, languages, ui_locale, lat, lon, site, start_url, notes,
-		tags, cdp_next_launch, pinned, created_at, updated_at, serial)
-		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,(SELECT COALESCE(MAX(serial), 0) + 1 FROM profiles))`,
+		tags, cdp_next_launch, pinned, created_at, updated_at, login, serial)
+		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,(SELECT COALESCE(MAX(serial), 0) + 1 FROM profiles))`,
 		p.ID, p.Name, p.Engine, p.EngineVersion, p.PersonaID, p.SeedHex, p.Platform, nullStr(p.ProxyID),
 		p.Timezone, p.Languages, p.UILocale, p.Lat, p.Lon, p.Site, p.StartURL, p.Notes,
-		tagsJSON(p.Tags), p.CDPNextLaunch, p.Pinned, p.CreatedAt, p.UpdatedAt)
+		tagsJSON(p.Tags), p.CDPNextLaunch, p.Pinned, p.CreatedAt, p.UpdatedAt, p.Login)
 	if err != nil {
 		return err
 	}
@@ -121,11 +125,20 @@ func (s *Store) UpdateProfile(p Profile) error {
 		return errors.New("engine, persona, seed and platform cannot change after creation")
 	}
 	_, err = s.db.Exec(`UPDATE profiles SET name=?, proxy_id=?, timezone=?, languages=?, ui_locale=?,
-		lat=?, lon=?, site=?, start_url=?, notes=?, tags=?, cdp_next_launch=?, pinned=?,
+		lat=?, lon=?, site=?, start_url=?, notes=?, tags=?, cdp_next_launch=?, pinned=?, login=?,
 		updated_at=? WHERE id=?`,
 		p.Name, nullStr(p.ProxyID), p.Timezone, p.Languages, p.UILocale, p.Lat, p.Lon, p.Site,
-		p.StartURL, p.Notes, tagsJSON(p.Tags), p.CDPNextLaunch, p.Pinned, now(), p.ID)
+		p.StartURL, p.Notes, tagsJSON(p.Tags), p.CDPNextLaunch, p.Pinned, p.Login, now(), p.ID)
 	return err
+}
+
+// SetSecretFlag records whether a Keychain secret exists; flag is "has_password" or "has_totp".
+func (s *Store) SetSecretFlag(id, flag string, on bool) error {
+	if flag != "has_password" && flag != "has_totp" {
+		return fmt.Errorf("unknown flag %q", flag)
+	}
+	res, err := s.db.Exec(`UPDATE profiles SET `+flag+` = ?, updated_at = ? WHERE id = ?`, on, now(), id)
+	return affected(res, err)
 }
 
 func (s *Store) ListProfiles(f ProfileFilter) ([]Profile, error) {
@@ -135,8 +148,8 @@ func (s *Store) ListProfiles(f ProfileFilter) ([]Profile, error) {
 	}
 	var args []any
 	if q := strings.TrimSpace(f.Query); q != "" {
-		where = append(where, "name LIKE ? ESCAPE '\\'")
-		args = append(args, "%"+likeEscape(q)+"%")
+		where = append(where, `(name LIKE ? ESCAPE '\' OR login LIKE ? ESCAPE '\')`)
+		args = append(args, "%"+likeEscape(q)+"%", "%"+likeEscape(q)+"%")
 	}
 	if f.Tag != "" {
 		where = append(where, "EXISTS (SELECT 1 FROM json_each(profiles.tags) WHERE value = ?)")

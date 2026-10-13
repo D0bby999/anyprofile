@@ -42,7 +42,7 @@ export function ProfilesPage({ rows, sites, recent, view, engineReady, fileVault
     const out = rows.filter((r) =>
       (view === 'all' || (view === 'running' ? r.state !== 'stopped' : r.site === view.slice(5))) &&
       (!tag || r.tags.includes(tag)) &&
-      (!q || r.name.toLowerCase().includes(q) || r.tags.some((x) => x.toLowerCase().includes(q)) ||
+      (!q || r.name.toLowerCase().includes(q) || r.login.toLowerCase().includes(q) || r.tags.some((x) => x.toLowerCase().includes(q)) ||
         siteById(sites, r.site).name.toLowerCase().includes(q)))
     const key = (r: service.ProfileRow) =>
       sort.key === 'name' ? r.name.toLowerCase() : sort.key === 'lastOpen' ? r.lastOpenAt || '' : String(r.serial).padStart(6, '0')

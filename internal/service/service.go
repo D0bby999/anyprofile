@@ -13,6 +13,7 @@ import (
 	"log/slog"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/D0bby999/anyprofile/internal/engine"
 	"github.com/D0bby999/anyprofile/internal/launcher"
@@ -33,6 +34,8 @@ type Service struct {
 	Locale   LocaleFunc
 	Launcher *launcher.Launcher
 	Log      *slog.Logger
+	// Clock is nil in production (time.Now); tests fix it.
+	Clock func() time.Time
 	// OnChange is told the kind of data a write changed: "profiles",
 	// "proxies", "sites" or "settings". Nil in tests that do not care.
 	OnChange func(kind string)
@@ -44,6 +47,13 @@ func (s *Service) notify(kind string) {
 	if s.OnChange != nil {
 		s.OnChange(kind)
 	}
+}
+
+func (s *Service) now() time.Time {
+	if s.Clock != nil {
+		return s.Clock()
+	}
+	return time.Now()
 }
 
 func randomHex(n int) string {

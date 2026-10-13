@@ -173,6 +173,9 @@ export namespace service {
 	    lon?: number;
 	    site: string;
 	    serial: number;
+	    login: string;
+	    hasPassword: boolean;
+	    hasTotp: boolean;
 	    startUrl: string;
 	    notes: string;
 	    tags: string[];
@@ -210,6 +213,9 @@ export namespace service {
 	        this.lon = source["lon"];
 	        this.site = source["site"];
 	        this.serial = source["serial"];
+	        this.login = source["login"];
+	        this.hasPassword = source["hasPassword"];
+	        this.hasTotp = source["hasTotp"];
 	        this.startUrl = source["startUrl"];
 	        this.notes = source["notes"];
 	        this.tags = source["tags"];
@@ -317,6 +323,20 @@ export namespace service {
 		    return a;
 		}
 	}
+	export class TOTPCode {
+	    code: string;
+	    secondsLeft: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new TOTPCode(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.code = source["code"];
+	        this.secondsLeft = source["secondsLeft"];
+	    }
+	}
 
 }
 
@@ -369,6 +389,9 @@ export namespace store {
 	    lon?: number;
 	    site: string;
 	    serial: number;
+	    login: string;
+	    hasPassword: boolean;
+	    hasTotp: boolean;
 	    startUrl: string;
 	    notes: string;
 	    tags: string[];
@@ -400,6 +423,9 @@ export namespace store {
 	        this.lon = source["lon"];
 	        this.site = source["site"];
 	        this.serial = source["serial"];
+	        this.login = source["login"];
+	        this.hasPassword = source["hasPassword"];
+	        this.hasTotp = source["hasTotp"];
 	        this.startUrl = source["startUrl"];
 	        this.notes = source["notes"];
 	        this.tags = source["tags"];

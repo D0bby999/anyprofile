@@ -3,8 +3,11 @@
 package main
 
 import (
+	"time"
+
 	"github.com/D0bby999/anyprofile/internal/engine"
 	"github.com/D0bby999/anyprofile/internal/engine/fury"
+	"github.com/D0bby999/anyprofile/internal/secrets"
 	"github.com/D0bby999/anyprofile/internal/service"
 	"github.com/D0bby999/anyprofile/internal/site"
 	"github.com/D0bby999/anyprofile/internal/store"
@@ -185,6 +188,52 @@ func (a *App) ClearCache() (int64, error) {
 		return 0, err
 	}
 	return a.svc.ClearCache()
+}
+
+// Account
+
+func (a *App) SetAccountPassword(id, pw string) error {
+	return a.must(func() error { return a.svc.SetAccountPassword(id, pw) })
+}
+
+func (a *App) ClearAccountPassword(id string) error {
+	return a.must(func() error { return a.svc.ClearAccountPassword(id) })
+}
+
+// CopyAccountPassword puts the password on the clipboard without it ever
+// reaching the web UI, and clears it after 90 s if it is still there.
+func (a *App) CopyAccountPassword(id string) error {
+	return a.must(func() error {
+		pw, err := a.svc.AccountPassword(id)
+		if err != nil {
+			return err
+		}
+		text := string(pw)
+		secrets.Wipe(pw)
+		if err := runtime.ClipboardSetText(a.ctx, text); err != nil {
+			return err
+		}
+		go func() {
+			time.Sleep(90 * time.Second)
+			if cur, err := runtime.ClipboardGetText(a.ctx); err == nil && cur == text {
+				runtime.ClipboardSetText(a.ctx, "")
+			}
+		}()
+		return nil
+	})
+}
+
+func (a *App) SetTOTP(id, secret string) error {
+	return a.must(func() error { return a.svc.SetTOTP(id, secret) })
+}
+
+func (a *App) ClearTOTP(id string) error { return a.must(func() error { return a.svc.ClearTOTP(id) }) }
+
+func (a *App) TOTPCode(id string) (service.TOTPCode, error) {
+	if err := a.ready(); err != nil {
+		return service.TOTPCode{}, err
+	}
+	return a.svc.TOTPCode(id)
 }
 
 // System

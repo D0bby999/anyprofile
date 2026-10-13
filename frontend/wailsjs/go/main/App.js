@@ -10,8 +10,20 @@ export function CheckProxy(arg1) {
   return window['go']['main']['App']['CheckProxy'](arg1);
 }
 
+export function ClearAccountPassword(arg1) {
+  return window['go']['main']['App']['ClearAccountPassword'](arg1);
+}
+
 export function ClearCache() {
   return window['go']['main']['App']['ClearCache']();
+}
+
+export function ClearTOTP(arg1) {
+  return window['go']['main']['App']['ClearTOTP'](arg1);
+}
+
+export function CopyAccountPassword(arg1) {
+  return window['go']['main']['App']['CopyAccountPassword'](arg1);
 }
 
 export function CreateProfile(arg1) {
@@ -86,8 +98,16 @@ export function RestoreProfile(arg1) {
   return window['go']['main']['App']['RestoreProfile'](arg1);
 }
 
+export function SetAccountPassword(arg1, arg2) {
+  return window['go']['main']['App']['SetAccountPassword'](arg1, arg2);
+}
+
 export function SetLanguage(arg1) {
   return window['go']['main']['App']['SetLanguage'](arg1);
+}
+
+export function SetTOTP(arg1, arg2) {
+  return window['go']['main']['App']['SetTOTP'](arg1, arg2);
 }
 
 export function Sites() {
@@ -116,6 +136,10 @@ export function StopProfiles(arg1) {
 
 export function Storage() {
   return window['go']['main']['App']['Storage']();
+}
+
+export function TOTPCode(arg1) {
+  return window['go']['main']['App']['TOTPCode'](arg1);
 }
 
 export function TrashProfile(arg1) {

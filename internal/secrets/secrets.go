@@ -11,8 +11,10 @@ import (
 
 // Keychain services. The account is the proxy or profile id.
 const (
-	ServiceProxy     = "dev.anyprofile.proxy"
-	ServiceCookieKey = "dev.anyprofile.cookie-key"
+	ServiceProxy           = "dev.anyprofile.proxy"
+	ServiceCookieKey       = "dev.anyprofile.cookie-key"
+	ServiceAccountPassword = "dev.anyprofile.account-password"
+	ServiceTOTP            = "dev.anyprofile.totp"
 )
 
 var ErrNotFound = errors.New("secret not found")

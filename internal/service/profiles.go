@@ -202,6 +202,12 @@ func (s *Service) Purge(id string) error {
 	if err := s.Secrets.Delete(secrets.ServiceCookieKey, id); err != nil {
 		return err
 	}
+	if err := s.Secrets.Delete(secrets.ServiceAccountPassword, id); err != nil {
+		return err
+	}
+	if err := s.Secrets.Delete(secrets.ServiceTOTP, id); err != nil {
+		return err
+	}
 	if err := s.Store.Purge(id); err != nil {
 		return err
 	}

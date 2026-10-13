@@ -32,6 +32,8 @@ AliasMode design tokens
   aliasmode/aliasmode web/i18n.tsx (Apache-2.0); no code copied.
   Start pages per platform, inspired by aliasmode/aliasmode launcher.ts
   platformHomeUrl (Apache-2.0); no code copied.
+  Per-profile authenticator codes, inspired by aliasmode/aliasmode totp.ts
+  (Apache-2.0); no code copied.
 
 Simple Icons
   Brand icon paths in frontend/src/sites/icons.gen.ts come from simple-icons

@@ -9,12 +9,14 @@ import { Dialog } from './dialog'
 import { Icon } from './icons'
 import { ProxySelect } from './proxy-select'
 import { SitePicker } from './site-picker'
+import { AccountPanel } from './account-panel'
 
 type Props = { row: service.ProfileRow; sites: Site[]; recent: string[]; onClose: () => void; onSaved: () => void; onTrash: () => void }
 
 export function ProfileEditor({ row, sites, recent, onClose, onSaved, onTrash }: Props) {
   const [name, setName] = useState(row.name)
   const [site, setSite] = useState(row.site)
+  const [login, setLogin] = useState(row.login)
   const [proxyId, setProxyId] = useState(row.proxyId)
   const [startUrl, setStartUrl] = useState(row.startUrl)
   const [notes, setNotes] = useState(row.notes)
@@ -32,7 +34,7 @@ export function ProfileEditor({ row, sites, recent, onClose, onSaved, onTrash }:
     setError('')
     try {
       await Api.UpdateProfile(store.Profile.createFrom({
-        ...row, name: name.trim(), site, proxyId, startUrl: startUrl.trim(), notes, tags: parseTags(tags), cdpNextLaunch: cdp,
+        ...row, name: name.trim(), site, proxyId, startUrl: startUrl.trim(), notes, tags: parseTags(tags), cdpNextLaunch: cdp, login,
       }))
       onSaved()
     } catch (e) {
@@ -79,6 +81,8 @@ export function ProfileEditor({ row, sites, recent, onClose, onSaved, onTrash }:
         <span className="label">{t.editor.notes}</span>
         <textarea className="textarea" rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} />
       </label>
+
+      <AccountPanel row={row} login={login} onLogin={setLogin} onError={setError} />
 
       <div className="panel">
         <span className="row"><Icon name="key" className="icon sm" /><b style={{ fontSize: 'var(--t-sm)' }}>{t.editor.identity}</b></span>

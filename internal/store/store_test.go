@@ -287,3 +287,50 @@ func TestSerialMigration(t *testing.T) {
 		t.Fatalf("b serial = %d, %v", p.Serial, err)
 	}
 }
+
+func TestAccountColumns(t *testing.T) {
+	s, _ := openTemp(t)
+	p := sample("p1")
+	p.Login = "me@example.com"
+	if err := s.CreateProfile(p); err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := s.GetProfile("p1"); got.Login != "me@example.com" || got.HasPassword || got.HasTOTP {
+		t.Fatalf("after create = %+v", got)
+	}
+	// UpdateProfile must not touch the secret flags.
+	p.HasPassword = true
+	p.HasTOTP = true
+	if err := s.UpdateProfile(*p); err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := s.GetProfile("p1"); got.HasPassword || got.HasTOTP {
+		t.Fatalf("UpdateProfile changed flags: %+v", got)
+	}
+	if err := s.SetSecretFlag("p1", "has_totp", true); err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := s.GetProfile("p1"); !got.HasTOTP {
+		t.Fatalf("flag not set: %+v", got)
+	}
+	if err := s.SetSecretFlag("p1", "x", true); err == nil {
+		t.Fatal("unknown flag must fail")
+	}
+	// The search matches the login too.
+	if got, _ := s.ListProfiles(ProfileFilter{Query: "me@example"}); len(got) != 1 {
+		t.Fatalf("login search = %d rows", len(got))
+	}
+}
+
+func TestAccountsMigration(t *testing.T) {
+	s, _ := upgradeFrom(t, 4, func(o *Store) {
+		insertV1Profile(t, o, "p1", "other", "2026-10-01T00:00:00Z")
+	})
+	p, err := s.GetProfile("p1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if p.Login != "" || p.HasPassword || p.HasTOTP {
+		t.Fatalf("upgraded profile = %+v", p)
+	}
+}
