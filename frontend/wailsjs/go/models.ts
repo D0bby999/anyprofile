@@ -247,6 +247,7 @@ export namespace service {
 	    proxyLabel: string;
 	    proxyCountry: string;
 	    proxyExitIp: string;
+	    proxyExpiry: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new ProfileRow(source);
@@ -287,6 +288,23 @@ export namespace service {
 	        this.proxyLabel = source["proxyLabel"];
 	        this.proxyCountry = source["proxyCountry"];
 	        this.proxyExitIp = source["proxyExitIp"];
+	        this.proxyExpiry = source["proxyExpiry"];
+	    }
+	}
+	export class ProxyMeta {
+	    label: string;
+	    note: string;
+	    expiresOn: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new ProxyMeta(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.label = source["label"];
+	        this.note = source["note"];
+	        this.expiresOn = source["expiresOn"];
 	    }
 	}
 	export class ProxyRow {
@@ -304,7 +322,10 @@ export namespace service {
 	    rotating: boolean;
 	    checkedAt: string;
 	    createdAt: string;
+	    note: string;
+	    expiresOn: string;
 	    usedBy: string[];
+	    expiry: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new ProxyRow(source);
@@ -326,7 +347,10 @@ export namespace service {
 	        this.rotating = source["rotating"];
 	        this.checkedAt = source["checkedAt"];
 	        this.createdAt = source["createdAt"];
+	        this.note = source["note"];
+	        this.expiresOn = source["expiresOn"];
 	        this.usedBy = source["usedBy"];
+	        this.expiry = source["expiry"];
 	    }
 	}
 	export class SiteInput {
@@ -524,6 +548,8 @@ export namespace store {
 	    rotating: boolean;
 	    checkedAt: string;
 	    createdAt: string;
+	    note: string;
+	    expiresOn: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new Proxy(source);
@@ -545,6 +571,8 @@ export namespace store {
 	        this.rotating = source["rotating"];
 	        this.checkedAt = source["checkedAt"];
 	        this.createdAt = source["createdAt"];
+	        this.note = source["note"];
+	        this.expiresOn = source["expiresOn"];
 	    }
 	}
 

@@ -5,7 +5,9 @@ package service
 import (
 	"context"
 	"errors"
+	"strings"
 	"sync"
+	"time"
 
 	"github.com/D0bby999/anyprofile/internal/apperr"
 	"github.com/D0bby999/anyprofile/internal/launcher"
@@ -18,6 +20,7 @@ import (
 type ProxyRow struct {
 	store.Proxy
 	UsedBy []string `json:"usedBy"`
+	Expiry string   `json:"expiry"` // "", "soon" or "expired"
 }
 
 // ImportResult reports a pasted list: how many were added and which lines failed.
@@ -37,14 +40,18 @@ func (s *Service) ListProxies() ([]ProxyRow, error) {
 	}
 	out := make([]ProxyRow, 0, len(ps))
 	for _, p := range ps {
-		out = append(out, ProxyRow{Proxy: p, UsedBy: append([]string{}, use[p.ID]...)})
+		out = append(out, ProxyRow{Proxy: p, UsedBy: append([]string{}, use[p.ID]...),
+			Expiry: expiry(p.ExpiresOn, s.now())})
 	}
 	return out, nil
 }
 
-// ImportProxies stores each valid line (password into the Keychain), then
-// checks the new proxies in parallel so the table shows their exits.
-func (s *Service) ImportProxies(ctx context.Context, text string) (ImportResult, error) {
+// ImportProxies stores each valid line (password into the Keychain) with the
+// same expiry date, then checks the new proxies in parallel.
+func (s *Service) ImportProxies(ctx context.Context, text, expiresOn string) (ImportResult, error) {
+	if err := checkDate(expiresOn); err != nil {
+		return ImportResult{}, err
+	}
 	var res ImportResult
 	var added []string
 	for _, line := range netproxy.ParseList(text) {
@@ -55,7 +62,7 @@ func (s *Service) ImportProxies(ctx context.Context, text string) (ImportResult,
 		}
 		up := line.Upstream
 		px := store.Proxy{ID: randomHex(8), Label: up.Redacted(), Scheme: up.Scheme, Host: up.Host,
-			Port: up.Port, Username: up.Username}
+			Port: up.Port, Username: up.Username, ExpiresOn: expiresOn}
 		if up.Password != "" {
 			if err := s.Secrets.Set(secrets.ServiceProxy, px.ID, []byte(up.Password)); err != nil {
 				return res, err
@@ -126,8 +133,55 @@ func (s *Service) CheckAllProxies(ctx context.Context) error {
 	return nil
 }
 
-func (s *Service) RenameProxy(id, label string) error {
-	if err := s.Store.UpdateProxyLabel(id, label); err != nil {
+// ProxyMeta is what the proxy edit form sends.
+type ProxyMeta struct {
+	Label     string `json:"label"`
+	Note      string `json:"note"`
+	ExpiresOn string `json:"expiresOn"` // "YYYY-MM-DD" or ""
+}
+
+// expiry is "", "soon" (3 days or fewer left) or "expired", seen from now.
+func expiry(expiresOn string, now time.Time) string {
+	if expiresOn == "" {
+		return ""
+	}
+	d, err := time.ParseInLocation("2006-01-02", expiresOn, now.Location())
+	if err != nil {
+		return ""
+	}
+	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	if d.Before(today) {
+		return "expired"
+	}
+	if d.Sub(today) <= 72*time.Hour {
+		return "soon"
+	}
+	return ""
+}
+
+func checkDate(s string) error {
+	if s == "" {
+		return nil
+	}
+	if _, err := time.Parse("2006-01-02", s); err != nil {
+		return apperr.New("bad_date", "use a date like 2026-12-31")
+	}
+	return nil
+}
+
+// UpdateProxy saves the proxy's label, note and expiry date.
+func (s *Service) UpdateProxy(id string, m ProxyMeta) error {
+	m.Label = strings.TrimSpace(m.Label)
+	if m.Label == "" {
+		return apperr.New("proxy_label", "type a name")
+	}
+	if len([]rune(m.Note)) > 500 {
+		return apperr.New("note_too_long", "at most 500 characters")
+	}
+	if err := checkDate(m.ExpiresOn); err != nil {
+		return err
+	}
+	if err := s.Store.UpdateProxyMeta(id, m.Label, m.Note, m.ExpiresOn); err != nil {
 		return err
 	}
 	s.notify("proxies")

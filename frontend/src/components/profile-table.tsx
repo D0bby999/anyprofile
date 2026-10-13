@@ -49,6 +49,8 @@ function ProxyCell({ row }: { row: service.ProfileRow }) {
       <span>
         {row.proxyExitIp ? <span className="mono selectable">{row.proxyExitIp}</span> : <span className="faint">{t.proxies.unchecked}</span>}
         <small>{row.proxyLabel}</small>
+        {row.proxyExpiry === 'soon' && <span className="chip warn"><span className="dot" />{t.proxies.expiringSoon}</span>}
+        {row.proxyExpiry === 'expired' && <span className="chip danger"><span className="dot" />{t.proxies.expired}</span>}
       </span>
     </span>
   )

@@ -162,11 +162,11 @@ func (a *App) ListProxies() ([]service.ProxyRow, error) {
 	return a.svc.ListProxies()
 }
 
-func (a *App) ImportProxies(text string) (service.ImportResult, error) {
+func (a *App) ImportProxies(text, expiresOn string) (service.ImportResult, error) {
 	if err := a.ready(); err != nil {
 		return service.ImportResult{}, err
 	}
-	return a.svc.ImportProxies(a.ctx, text)
+	return a.svc.ImportProxies(a.ctx, text, expiresOn)
 }
 
 func (a *App) CheckProxy(id string) (store.Proxy, error) {
@@ -180,8 +180,8 @@ func (a *App) CheckAllProxies() error {
 	return a.must(func() error { return a.svc.CheckAllProxies(a.ctx) })
 }
 
-func (a *App) RenameProxy(id, label string) error {
-	return a.must(func() error { return a.svc.RenameProxy(id, label) })
+func (a *App) UpdateProxy(id string, m service.ProxyMeta) error {
+	return a.must(func() error { return a.svc.UpdateProxy(id, m) })
 }
 
 func (a *App) DeleteProxy(id string) error {

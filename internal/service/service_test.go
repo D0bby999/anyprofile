@@ -12,6 +12,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/D0bby999/anyprofile/internal/engine"
 	"github.com/D0bby999/anyprofile/internal/launcher"
@@ -66,7 +67,7 @@ func newService(t *testing.T) (*Service, *secrets.Memory) {
 func TestImportAndQuickCreate(t *testing.T) {
 	s, sec := newService(t)
 	ctx := context.Background()
-	res, err := s.ImportProxies(ctx, "gw.example:823:u:rot\nhttp://u:secret1@gw.example:10001\ngw.example:10002:u:secret2\nnot a proxy")
+	res, err := s.ImportProxies(ctx, "gw.example:823:u:rot\nhttp://u:secret1@gw.example:10001\ngw.example:10002:u:secret2\nnot a proxy", "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -125,7 +126,7 @@ func TestImportAndQuickCreate(t *testing.T) {
 func TestDeleteProxyAndPurge(t *testing.T) {
 	s, sec := newService(t)
 	ctx := context.Background()
-	s.ImportProxies(ctx, "gw.example:10001:u:pw")
+	s.ImportProxies(ctx, "gw.example:10001:u:pw", "")
 	p, err := s.QuickCreate(ctx, "Kenh")
 	if err != nil {
 		t.Fatal(err)
@@ -254,7 +255,7 @@ func TestNotifyOnWrites(t *testing.T) {
 		return false
 	}
 
-	if _, err := s.ImportProxies(ctx, "gw.example:10001:u:pw"); err != nil {
+	if _, err := s.ImportProxies(ctx, "gw.example:10001:u:pw", ""); err != nil {
 		t.Fatal(err)
 	}
 	p, err := s.CreateProfile(ctx, NewProfile{Name: "Notify"})
@@ -322,5 +323,51 @@ func TestDefaults(t *testing.T) {
 	}
 	if err := s.SetDefaults(Defaults{Site: "nope", Proxy: "auto"}); err == nil || !strings.Contains(err.Error(), "unknown_site") {
 		t.Fatalf("unknown site err = %v", err)
+	}
+}
+
+func TestExpiry(t *testing.T) {
+	now := time.Date(2026, 10, 13, 10, 0, 0, 0, time.Local)
+	if got := expiry("2026-10-15", now); got != "soon" {
+		t.Fatalf("15/10 = %q", got)
+	}
+	if got := expiry("2026-10-17", now); got != "" {
+		t.Fatalf("17/10 = %q", got)
+	}
+	if got := expiry("2026-10-12", now); got != "expired" {
+		t.Fatalf("12/10 = %q", got)
+	}
+	if got := expiry("2026-10-13", now); got != "soon" {
+		t.Fatalf("13/10 = %q", got)
+	}
+	if got := expiry("not a date", now); got != "" {
+		t.Fatalf("bad date = %q", got)
+	}
+}
+
+func TestProxyMeta(t *testing.T) {
+	s, _ := newService(t)
+	ctx := context.Background()
+	if _, err := s.ImportProxies(ctx, "gw.example:10001:u:pw", "31/12/2026"); err == nil || !strings.Contains(err.Error(), "bad_date") {
+		t.Fatalf("bad import date err = %v", err)
+	}
+	if _, err := s.ImportProxies(ctx, "gw.example:10001:u:pw", ""); err != nil {
+		t.Fatal(err)
+	}
+	rows, _ := s.ListProxies()
+	id := rows[0].ID
+	if err := s.UpdateProxy(id, ProxyMeta{Label: "us", Note: "renew soon", ExpiresOn: "2026-10-15"}); err != nil {
+		t.Fatal(err)
+	}
+	s.Clock = func() time.Time { return time.Date(2026, 10, 13, 10, 0, 0, 0, time.Local) }
+	rows, _ = s.ListProxies()
+	if rows[0].Note != "renew soon" || rows[0].Expiry != "soon" {
+		t.Fatalf("proxy row = %+v", rows[0])
+	}
+	if err := s.UpdateProxy(id, ProxyMeta{Label: "", ExpiresOn: ""}); err == nil || !strings.Contains(err.Error(), "proxy_label") {
+		t.Fatalf("empty label err = %v", err)
+	}
+	if err := s.UpdateProxy(id, ProxyMeta{Label: "x", Note: strings.Repeat("a", 501)}); err == nil || !strings.Contains(err.Error(), "note_too_long") {
+		t.Fatalf("long note err = %v", err)
 	}
 }

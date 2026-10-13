@@ -342,3 +342,36 @@ func TestStartURLs(t *testing.T) {
 		t.Fatalf("StartURLs = %v", got)
 	}
 }
+
+func TestProxyMeta(t *testing.T) {
+	s, _ := openTemp(t)
+	px := &Proxy{ID: "px1", Label: "us-1", Scheme: "http", Host: "gw.example", Port: 10001, Username: "u", Note: "n", ExpiresOn: "2026-12-31"}
+	if err := s.CreateProxy(px); err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := s.GetProxy("px1"); got.Note != "n" || got.ExpiresOn != "2026-12-31" {
+		t.Fatalf("get = %+v", got)
+	}
+	if err := s.UpdateProxyMeta("px1", "new", "note2", "2026-11-01"); err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := s.GetProxy("px1"); got.Label != "new" || got.Note != "note2" || got.ExpiresOn != "2026-11-01" {
+		t.Fatalf("after update = %+v", got)
+	}
+}
+
+func TestProxyMetaMigration(t *testing.T) {
+	s, _ := upgradeFrom(t, 5, func(o *Store) {
+		if _, err := o.db.Exec(`INSERT INTO proxies (id, label, scheme, host, port, username, created_at)
+			VALUES ('x1', 'x1', 'http', 'h', 1, '', '2026-10-01T00:00:00Z')`); err != nil {
+			t.Fatal(err)
+		}
+	})
+	p, err := s.GetProxy("x1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if p.Note != "" || p.ExpiresOn != "" {
+		t.Fatalf("migrated proxy = %+v", p)
+	}
+}

@@ -23,7 +23,7 @@ func TestNameSeries(t *testing.T) {
 func TestBulkCreateAndDuplicate(t *testing.T) {
 	s, _ := newService(t)
 	ctx := context.Background()
-	if _, err := s.ImportProxies(ctx, "gw.example:10001:u:pw1\ngw.example:10003:u:pw2"); err != nil {
+	if _, err := s.ImportProxies(ctx, "gw.example:10001:u:pw1\ngw.example:10003:u:pw2", ""); err != nil {
 		t.Fatal(err)
 	}
 
@@ -75,7 +75,7 @@ func TestBulkCreateAndDuplicate(t *testing.T) {
 func TestBulkEdits(t *testing.T) {
 	s, _ := newService(t)
 	ctx := context.Background()
-	if _, err := s.ImportProxies(ctx, "gw.example:10001:u:pw1\ngw.example:10003:u:pw2"); err != nil {
+	if _, err := s.ImportProxies(ctx, "gw.example:10001:u:pw1\ngw.example:10003:u:pw2", ""); err != nil {
 		t.Fatal(err)
 	}
 	var ids []string

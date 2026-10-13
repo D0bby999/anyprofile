@@ -24,15 +24,17 @@ type Proxy struct {
 	Rotating  bool     `json:"rotating"`
 	CheckedAt string   `json:"checkedAt"`
 	CreatedAt string   `json:"createdAt"`
+	Note      string   `json:"note"`
+	ExpiresOn string   `json:"expiresOn"` // YYYY-MM-DD, "" = no date
 }
 
 const proxyCols = `id, label, scheme, host, port, username, COALESCE(exit_ip, ''), COALESCE(country, ''),
-	COALESCE(timezone, ''), lat, lon, rotating, COALESCE(checked_at, ''), created_at`
+	COALESCE(timezone, ''), lat, lon, rotating, COALESCE(checked_at, ''), created_at, note, expires_on`
 
 func scanProxy(row interface{ Scan(...any) error }) (Proxy, error) {
 	var p Proxy
 	err := row.Scan(&p.ID, &p.Label, &p.Scheme, &p.Host, &p.Port, &p.Username, &p.ExitIP,
-		&p.Country, &p.Timezone, &p.Lat, &p.Lon, &p.Rotating, &p.CheckedAt, &p.CreatedAt)
+		&p.Country, &p.Timezone, &p.Lat, &p.Lon, &p.Rotating, &p.CheckedAt, &p.CreatedAt, &p.Note, &p.ExpiresOn)
 	if errors.Is(err, sql.ErrNoRows) {
 		return p, ErrNotFound
 	}
@@ -44,8 +46,8 @@ func (s *Store) CreateProxy(p *Proxy) error {
 		return errors.New("proxy needs id, host and port")
 	}
 	p.CreatedAt = now()
-	_, err := s.db.Exec(`INSERT INTO proxies (id, label, scheme, host, port, username, created_at)
-		VALUES (?,?,?,?,?,?,?)`, p.ID, p.Label, p.Scheme, p.Host, p.Port, p.Username, p.CreatedAt)
+	_, err := s.db.Exec(`INSERT INTO proxies (id, label, scheme, host, port, username, created_at, note, expires_on)
+		VALUES (?,?,?,?,?,?,?,?,?)`, p.ID, p.Label, p.Scheme, p.Host, p.Port, p.Username, p.CreatedAt, p.Note, p.ExpiresOn)
 	return err
 }
 
@@ -70,8 +72,9 @@ func (s *Store) ListProxies() ([]Proxy, error) {
 	return out, rows.Err()
 }
 
-func (s *Store) UpdateProxyLabel(id, label string) error {
-	res, err := s.db.Exec(`UPDATE proxies SET label = ? WHERE id = ?`, label, id)
+// UpdateProxyMeta saves the editable proxy fields.
+func (s *Store) UpdateProxyMeta(id, label, note, expiresOn string) error {
+	res, err := s.db.Exec(`UPDATE proxies SET label = ?, note = ?, expires_on = ? WHERE id = ?`, label, note, expiresOn, id)
 	return affected(res, err)
 }
 

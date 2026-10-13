@@ -44,7 +44,7 @@ export function FileVaultOn():Promise<boolean>;
 
 export function FocusProfile(arg1:string):Promise<boolean>;
 
-export function ImportProxies(arg1:string):Promise<service.ImportResult>;
+export function ImportProxies(arg1:string,arg2:string):Promise<service.ImportResult>;
 
 export function InstallEngine():Promise<void>;
 
@@ -59,8 +59,6 @@ export function Personas():Promise<Array<fury.Persona>>;
 export function PurgeProfile(arg1:string):Promise<void>;
 
 export function QuickCreate(arg1:string):Promise<store.Profile>;
-
-export function RenameProxy(arg1:string,arg2:string):Promise<void>;
 
 export function RestoreProfile(arg1:string):Promise<void>;
 
@@ -93,5 +91,7 @@ export function TOTPCode(arg1:string):Promise<service.TOTPCode>;
 export function TrashProfile(arg1:string):Promise<void>;
 
 export function UpdateProfile(arg1:store.Profile):Promise<void>;
+
+export function UpdateProxy(arg1:string,arg2:service.ProxyMeta):Promise<void>;
 
 export function UpdateSite(arg1:string,arg2:service.SiteInput):Promise<void>;

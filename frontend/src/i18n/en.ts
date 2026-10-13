@@ -77,10 +77,12 @@ export const en = {
     added: (n: number) => `Added ${n} proxies.`,
     failedLine: (line: number, err: string) => `Line ${line}: ${err}`,
     passwordNote: 'Passwords are kept in the macOS Keychain and never shown again.',
-    checkAll: 'Check all', check: 'Check again', rename: 'Rename', renamePrompt: 'New name for the proxy',
+    checkAll: 'Check all', check: 'Check again', rename: 'Rename',
     colLabel: 'Proxy', colExit: 'Exit IP', colTimezone: 'Timezone', colUsedBy: 'Used by', colState: 'Status',
     ok: 'Working', rotating: 'rotating IP', unchecked: 'Not checked',
     checkedAgo: (s: string) => `Checked ${s}`,
+    expires: 'Expires', expiresOn: 'Expires on (optional)', expiringSoon: 'Expires soon', expired: 'Expired',
+    note: 'Note', editTitle: 'Edit proxy',
     unused: 'Unused',
     emptyTitle: 'No proxies yet',
     emptyText: 'Paste your proxy list above. The app checks each proxy through itself to get its exit IP, country and timezone.',
@@ -185,6 +187,9 @@ export const en = {
     tag_empty: 'Type a tag.',
     bad_start_url: 'One of the start pages is not an http(s) URL.',
     too_many_start_urls: 'At most 10 start pages.',
+    bad_date: 'Use a date like 2026-12-31.',
+    proxy_label: 'Type a name for the proxy.',
+    note_too_long: 'The note can have at most 500 characters.',
   } as Record<string, string>,
 }
 

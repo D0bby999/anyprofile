@@ -78,8 +78,8 @@ export function FocusProfile(arg1) {
   return window['go']['main']['App']['FocusProfile'](arg1);
 }
 
-export function ImportProxies(arg1) {
-  return window['go']['main']['App']['ImportProxies'](arg1);
+export function ImportProxies(arg1, arg2) {
+  return window['go']['main']['App']['ImportProxies'](arg1, arg2);
 }
 
 export function InstallEngine() {
@@ -108,10 +108,6 @@ export function PurgeProfile(arg1) {
 
 export function QuickCreate(arg1) {
   return window['go']['main']['App']['QuickCreate'](arg1);
-}
-
-export function RenameProxy(arg1, arg2) {
-  return window['go']['main']['App']['RenameProxy'](arg1, arg2);
 }
 
 export function RestoreProfile(arg1) {
@@ -176,6 +172,10 @@ export function TrashProfile(arg1) {
 
 export function UpdateProfile(arg1) {
   return window['go']['main']['App']['UpdateProfile'](arg1);
+}
+
+export function UpdateProxy(arg1, arg2) {
+  return window['go']['main']['App']['UpdateProxy'](arg1, arg2);
 }
 
 export function UpdateSite(arg1, arg2) {

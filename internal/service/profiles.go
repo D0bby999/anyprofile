@@ -25,6 +25,7 @@ type ProfileRow struct {
 	ProxyLabel   string         `json:"proxyLabel"`
 	ProxyCountry string         `json:"proxyCountry"`
 	ProxyExitIP  string         `json:"proxyExitIp"`
+	ProxyExpiry  string         `json:"proxyExpiry"` // "", "soon" or "expired"
 }
 
 // AutoProxy as NewProfile.ProxyID picks the next free sticky proxy (none if
@@ -66,6 +67,7 @@ func (s *Service) ListProfiles(f store.ProfileFilter) ([]ProfileRow, error) {
 		}
 		if px, ok := byID[p.ProxyID]; ok {
 			row.ProxyLabel, row.ProxyCountry, row.ProxyExitIP = px.Label, px.Country, px.ExitIP
+			row.ProxyExpiry = expiry(px.ExpiresOn, s.now())
 		}
 		out = append(out, row)
 	}

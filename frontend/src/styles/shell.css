@@ -136,6 +136,7 @@
 @media (max-width: 1240px) { .table .col-lastopen { display: none; } }
 @media (max-width: 1080px) { .table .plabel, .cellproxy small { display: none; } }
 .cellname .sub { -webkit-mask-image: linear-gradient(to right, #000 88%, transparent); mask-image: linear-gradient(to right, #000 88%, transparent); }
+.ellipsis { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 260px; }
 .table td.stack > small { display: block; margin-top: 3px; font-size: var(--t-xs); }
 .field > .seg { align-self: flex-start; }
 .actbtn { min-width: 76px; }

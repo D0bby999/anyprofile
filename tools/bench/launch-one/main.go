@@ -73,7 +73,7 @@ func run(app, persona, seed, tz, proxyURL string) error {
 	ctx := context.Background()
 	proxyID := ""
 	if proxyURL != "" {
-		res, err := svc.ImportProxies(ctx, proxyURL)
+		res, err := svc.ImportProxies(ctx, proxyURL, "")
 		if err != nil || res.Added != 1 {
 			return fmt.Errorf("proxy import failed: %v %+v", err, res.Failed)
 		}
