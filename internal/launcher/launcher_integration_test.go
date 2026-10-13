@@ -233,15 +233,23 @@ func TestFingerprintCheck(t *testing.T) {
 	}
 
 	// Launch 4: the browser survives the app closing its pipe ends.
-	before, _ := r.st.GetProfile(id)
-	prevChecked := before.FPCheckedAt
+	// fp_checked_at has one-second resolution, so clear it rather than wait
+	// for it to change: launches 3 and 4 can be measured within one second.
+	db, err = sql.Open("sqlite", "file:"+r.dirs.DB())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.Exec(`UPDATE profiles SET fp_checked_at = '' WHERE id = ?`, id); err != nil {
+		t.Fatal(err)
+	}
+	db.Close()
 	if err := l.Start(context.Background(), id); err != nil {
 		t.Fatal(err)
 	}
 	deadline := time.Now().Add(20 * time.Second)
 	for {
 		p, _ := r.st.GetProfile(id)
-		if p.FPCheckedAt != "" && p.FPCheckedAt != prevChecked {
+		if p.FPCheckedAt != "" {
 			break
 		}
 		if time.Now().After(deadline) {
