@@ -23,6 +23,7 @@ const props = (rows: service.ProfileRow[]) => ({
   rows, sites, selected: new Set<string>(),
   sort: { key: 'no' as const, desc: false },
   onSort: vi.fn(), onToggle: vi.fn(), onToggleAll: vi.fn(), onStart: vi.fn(), onStop: vi.fn(), onFocus: vi.fn(), onEdit: vi.fn(),
+  onDuplicate: vi.fn(), onTrash: vi.fn(), onMessage: vi.fn(), onError: vi.fn(),
 })
 
 describe('ProfileTable', () => {

@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import { Api, service } from '../api'
 import { t } from '../i18n'
-import { errorText, parseTags } from '../lib/format'
+import { errorText, nameSeries, parseTags } from '../lib/format'
 import { guessSite, siteById, type Site } from '../lib/sites'
 import { Dialog } from './dialog'
 import { ProxySelect } from './proxy-select'
@@ -10,16 +10,19 @@ import { SitePicker } from './site-picker'
 
 type Props = {
   defaultSite: string
+  defaults: service.Defaults
   sites: Site[]
   recent: string[]
   onClose: () => void
   onCreated: () => void
 }
 
-export function NewProfileDialog({ defaultSite, sites, recent, onClose, onCreated }: Props) {
+export function NewProfileDialog({ defaultSite, defaults, sites, recent, onClose, onCreated }: Props) {
   const [name, setName] = useState('')
+  const [count, setCount] = useState(1)
   const [site, setSite] = useState(defaultSite)
-  const [proxyId, setProxyId] = useState('auto')
+  const [proxyId, setProxyId] = useState(defaults.proxy === 'auto' ? 'auto' : '')
+  const [bulkProxy, setBulkProxy] = useState<'auto' | 'none'>(defaults.proxy === 'auto' ? 'auto' : 'none')
   const [startUrl, setStartUrl] = useState(siteById(sites, defaultSite).startUrl)
   const [urlTouched, setUrlTouched] = useState(false)
   const [tags, setTags] = useState('')
@@ -34,21 +37,28 @@ export function NewProfileDialog({ defaultSite, sites, recent, onClose, onCreate
     if (!urlTouched) setStartUrl(siteById(sites, id).startUrl)
   }
 
-  // Pasting a known platform's URL into an "Other" profile picks that platform.
   const guessFromUrl = () => {
     if (site !== 'other') return
-    const id = guessSite(startUrl, sites)
+    const id = guessSite(startUrl.split('\n')[0], sites)
     if (id) setSite(id)
   }
+
+  const bulk = count > 1
 
   const submit = async () => {
     if (!name.trim() || busy) return
     setBusy(true)
     setError('')
     try {
-      await Api.CreateProfile(service.NewProfile.createFrom({
-        name: name.trim(), proxyId, site, startUrl: startUrl.trim(), notes: '', tags: parseTags(tags),
-      }))
+      if (bulk) {
+        await Api.CreateProfiles(service.BulkCreate.createFrom({
+          baseName: name.trim(), count, proxy: bulkProxy, site, startUrl: startUrl.trim(), notes: '', tags: parseTags(tags),
+        }))
+      } else {
+        await Api.CreateProfile(service.NewProfile.createFrom({
+          name: name.trim(), proxyId, site, startUrl: startUrl.trim(), notes: '', tags: parseTags(tags),
+        }))
+      }
       onCreated()
     } catch (e) {
       setError(errorText(e))
@@ -56,35 +66,55 @@ export function NewProfileDialog({ defaultSite, sites, recent, onClose, onCreate
     }
   }
 
+  const preview = nameSeries(name.trim(), count)
+
   return (
     <Dialog title={t.create.title} icon="plus" onClose={onClose} onSubmit={submit}
       footer={<>
         <button type="button" className="btn ghost" onClick={onClose}>{t.common.cancel}</button>
         <button type="submit" className="btn primary" disabled={!name.trim() || busy}>{busy ? t.create.creating : t.create.submit}</button>
       </>}>
-      <label className="field">
-        <span className="label">{t.create.name}</span>
-        <input className="input" autoFocus value={name} placeholder={t.create.namePlaceholder} onChange={(e) => setName(e.target.value)} />
-      </label>
+      <div className="grid2">
+        <label className="field">
+          <span className="label">{bulk ? t.create.namePrefix : t.create.name}</span>
+          <input className="input" autoFocus value={name} placeholder={t.create.namePlaceholder} onChange={(e) => setName(e.target.value)} />
+        </label>
+        <label className="field">
+          <span className="label">{t.create.count}</span>
+          <input className="input" type="number" min={1} max={100} value={count} onChange={(e) => setCount(Math.max(1, Math.min(100, Number(e.target.value) || 1)))} />
+        </label>
+      </div>
       <div className="field">
         <span className="label">{t.create.site}</span>
         <SitePicker value={site} onChange={pickSite} sites={sites} recent={recent} />
       </div>
-      <label className="field">
-        <span className="label">{t.create.proxy}</span>
-        <ProxySelect value={proxyId} onChange={setProxyId} proxies={proxies} allowAuto />
-        <span className="hint">{t.create.proxyHint}</span>
-      </label>
+      {bulk ? (
+        <div className="field">
+          <span className="label">{t.create.proxy}</span>
+          <div className="seg" role="group" aria-label={t.create.proxy}>
+            <button type="button" aria-pressed={bulkProxy === 'auto'} onClick={() => setBulkProxy('auto')}>{t.duplicate.proxyAuto}</button>
+            <button type="button" aria-pressed={bulkProxy === 'none'} onClick={() => setBulkProxy('none')}>{t.duplicate.proxyNone}</button>
+          </div>
+        </div>
+      ) : (
+        <label className="field">
+          <span className="label">{t.create.proxy}</span>
+          <ProxySelect value={proxyId} onChange={setProxyId} proxies={proxies} allowAuto />
+          <span className="hint">{t.create.proxyHint}</span>
+        </label>
+      )}
       <div className="grid2">
         <label className="field">
           <span className="label">{t.create.startUrl}</span>
-          <input className="input" value={startUrl} onChange={(e) => { setStartUrl(e.target.value); setUrlTouched(true) }} onBlur={guessFromUrl} />
+          <textarea className="textarea" rows={2} value={startUrl} placeholder={t.create.startUrlHint}
+            onChange={(e) => { setStartUrl(e.target.value); setUrlTouched(true) }} onBlur={guessFromUrl} />
         </label>
         <label className="field">
           <span className="label">{t.create.tags}</span>
           <input className="input" value={tags} placeholder={t.create.tagsPlaceholder} onChange={(e) => setTags(e.target.value)} />
         </label>
       </div>
+      {bulk && <div className="hint">{t.create.preview} {preview.slice(0, 3).join(', ')}{preview.length > 3 ? ' …' : ''}</div>}
       <span className="hint muted" style={{ fontSize: 'var(--t-xs)' }}>{t.create.identityNote}</span>
       {error && <div className="banner danger" role="alert">{error}</div>}
     </Dialog>

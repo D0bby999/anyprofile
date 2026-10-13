@@ -8,6 +8,9 @@ import { EmptyState } from '../components/empty-state'
 import { Icon } from '../components/icons'
 import { ProfileEditor } from '../components/profile-editor'
 import { ProfileTable, type Sort, type SortKey } from '../components/profile-table'
+import { DuplicateDialog } from '../components/duplicate-dialog'
+import { BulkProxyDialog, BulkSiteDialog, BulkTagDialog } from '../components/bulk-dialogs'
+import { rangeSelect } from '../lib/selection'
 import type { View } from '../components/sidebar'
 import { PageHead } from '../components/page-head'
 
@@ -35,6 +38,10 @@ export function ProfilesPage({ rows, sites, recent, view, engineReady, fileVault
   const [sort, setSort] = useState<Sort>({ key: 'no', desc: false })
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [editing, setEditing] = useState<service.ProfileRow | null>(null)
+  const [duplicating, setDuplicating] = useState<service.ProfileRow | null>(null)
+  const [bulkDialog, setBulkDialog] = useState<'site' | 'tag' | 'proxy' | null>(null)
+  const [lastToggled, setLastToggled] = useState<string | null>(null)
+  const [message, setMessage] = useState('')
   const [busy, setBusy] = useState(false)
 
   const visible = useMemo(() => {
@@ -66,15 +73,22 @@ export function ProfilesPage({ rows, sites, recent, view, engineReady, fileVault
     if (errs.length) setError(errs[0])
   })
   const onSort = (key: SortKey) => setSort((s) => ({ key, desc: s.key === key ? !s.desc : key === 'lastOpen' }))
-  const toggle = (id: string) => setSelected((cur) => {
-    const next = new Set(cur)
-    if (next.has(id)) next.delete(id)
-    else next.add(id)
-    return next
-  })
+  const toggle = (id: string, shift = false) => {
+    setSelected((cur) => {
+      if (shift && lastToggled) {
+        return rangeSelect(visible.map((r) => r.id), lastToggled, id, cur)
+      }
+      const next = new Set(cur)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+    setLastToggled(id)
+  }
   const toggleAll = () => setSelected((cur) => (visible.every((r) => cur.has(r.id)) ? new Set() : new Set(visible.map((r) => r.id))))
   const runningCount = rows.filter((r) => r.state === 'running').length
   const filtered = query || tag || view !== 'all'
+  const flash = (msg: string) => { setMessage(msg); setTimeout(() => setMessage(''), 4000) }
 
   return (
     <>
@@ -87,6 +101,7 @@ export function ProfilesPage({ rows, sites, recent, view, engineReady, fileVault
             <button className="btn sm" onClick={onNeedEngine}>{t.profiles.installEngine}</button></div>
         )}
         {!fileVaultOn && <div className="banner warn"><Icon name="shield" /><span className="grow">{t.settings.fileVaultOff}</span></div>}
+        {message && <div className="banner ok"><Icon name="check" /><span className="grow">{message}</span></div>}
         {error && <div className="banner danger" role="alert"><Icon name="alert" /><span className="grow selectable">{error}</span>
           <button className="iconbtn sm" onClick={() => setError('')} aria-label={t.common.close}><Icon name="x" /></button></div>}
         <section className="card fill">
@@ -99,6 +114,9 @@ export function ProfilesPage({ rows, sites, recent, view, engineReady, fileVault
                 onClick={() => run(async () => { for (const id of selected) await Api.TrashProfile(id); setSelected(new Set()); reload() })}>
                 <Icon name="trash" className="icon sm" />{t.profiles.trashSelected}
               </button>
+              <button className="btn sm" disabled={busy} onClick={() => setBulkDialog('site')}><Icon name="pencil" className="icon sm" />{t.bulk.site}</button>
+              <button className="btn sm" disabled={busy} onClick={() => setBulkDialog('tag')}><Icon name="plus" className="icon sm" />{t.bulk.tag}</button>
+              <button className="btn sm" disabled={busy} onClick={() => setBulkDialog('proxy')}><Icon name="proxy" className="icon sm" />{t.bulk.proxy}</button>
               <span className="spacer" />
               <button className="btn sm ghost" onClick={() => setSelected(new Set())}>{t.profiles.clearSelection}</button>
             </div>
@@ -127,7 +145,9 @@ export function ProfilesPage({ rows, sites, recent, view, engineReady, fileVault
               <ProfileTable rows={visible} sites={sites} selected={selected} sort={sort} onSort={onSort}
                 onToggle={toggle} onToggleAll={toggleAll}
                 onStart={(id) => run(() => Api.StartProfile(id))} onStop={(id) => run(() => Api.StopProfile(id))}
-                onFocus={(id) => { Api.FocusProfile(id) }} onEdit={setEditing} />
+                onFocus={(id) => { Api.FocusProfile(id) }} onEdit={setEditing}
+                onDuplicate={setDuplicating} onMessage={flash} onError={setError}
+                onTrash={(row) => run(async () => { await Api.TrashProfile(row.id); reload() })} />
             )}
           </div>
           <div className="statusbar">
@@ -139,6 +159,22 @@ export function ProfilesPage({ rows, sites, recent, view, engineReady, fileVault
       {editing && (
         <ProfileEditor row={editing} sites={sites} recent={recent} onClose={() => setEditing(null)} onSaved={() => { setEditing(null); reload() }}
           onTrash={() => run(async () => { await Api.TrashProfile(editing.id); setEditing(null); reload() })} />
+      )}
+      {duplicating && (
+        <DuplicateDialog row={duplicating} onClose={() => setDuplicating(null)}
+          onDone={() => { setDuplicating(null); reload() }} />
+      )}
+      {bulkDialog === 'site' && (
+        <BulkSiteDialog ids={[...selected]} sites={sites} recent={recent} onClose={() => setBulkDialog(null)}
+          onDone={() => { setBulkDialog(null); setSelected(new Set()); reload() }} />
+      )}
+      {bulkDialog === 'tag' && (
+        <BulkTagDialog ids={[...selected]} onClose={() => setBulkDialog(null)}
+          onDone={() => { setBulkDialog(null); setSelected(new Set()); reload() }} />
+      )}
+      {bulkDialog === 'proxy' && (
+        <BulkProxyDialog ids={[...selected]} onClose={() => setBulkDialog(null)}
+          onDone={() => { setBulkDialog(null); setSelected(new Set()); reload() }} />
       )}
     </>
   )

@@ -89,6 +89,17 @@ func nullStr(s string) any {
 	return s
 }
 
+// StartURLs splits StartURL, which holds one URL per line.
+func (p Profile) StartURLs() []string {
+	var out []string
+	for _, l := range strings.Split(p.StartURL, "\n") {
+		if l = strings.TrimSpace(l); l != "" {
+			out = append(out, l)
+		}
+	}
+	return out
+}
+
 func (s *Store) CreateProfile(p *Profile) error {
 	if p.ID == "" || p.Name == "" || p.Engine == "" || p.PersonaID == "" || p.SeedHex == "" {
 		return errors.New("profile needs id, name, engine, persona and seed")

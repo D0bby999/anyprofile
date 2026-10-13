@@ -334,3 +334,11 @@ func TestAccountsMigration(t *testing.T) {
 		t.Fatalf("upgraded profile = %+v", p)
 	}
 }
+
+func TestStartURLs(t *testing.T) {
+	p := Profile{StartURL: "a\n\n b \n"}
+	got := p.StartURLs()
+	if len(got) != 2 || got[0] != "a" || got[1] != "b" {
+		t.Fatalf("StartURLs = %v", got)
+	}
+}

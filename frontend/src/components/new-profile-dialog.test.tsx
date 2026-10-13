@@ -3,7 +3,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { t } from '../i18n'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { site } from '../api'
+import { service, site } from '../api'
 
 const sites = [
   site.Site.createFrom({ id: 'tiktok', name: 'TikTok', group: 'video', domains: ['tiktok.com'], startUrl: 'https://www.tiktok.com/tiktokstudio', icon: 'tiktok', color: '#000000', custom: false }),
@@ -12,20 +12,23 @@ const sites = [
 ]
 
 const createProfile = vi.fn().mockResolvedValue({})
+const createProfiles = vi.fn().mockResolvedValue([])
 vi.mock('../api', async (orig) => ({
   ...(await orig<typeof import('../api')>()),
   Api: {
     CreateProfile: (...a: unknown[]) => createProfile(...a),
+    CreateProfiles: (...a: unknown[]) => createProfiles(...a),
     ListProxies: () => Promise.resolve([]),
     Sites: () => Promise.resolve(sites),
   },
 }))
 const { NewProfileDialog } = await import('./new-profile-dialog')
 
+const defaults = service.Defaults.createFrom({ site: 'other', proxy: 'auto' })
 const dialog = (over: Partial<Parameters<typeof NewProfileDialog>[0]> = {}) =>
-  render(<NewProfileDialog defaultSite="tiktok" sites={sites} recent={[]} onClose={vi.fn()} onCreated={vi.fn()} {...over} />)
+  render(<NewProfileDialog defaultSite="tiktok" defaults={defaults} sites={sites} recent={[]} onClose={vi.fn()} onCreated={vi.fn()} {...over} />)
 
-afterEach(() => { cleanup(); createProfile.mockClear() })
+afterEach(() => { cleanup(); createProfile.mockClear(); createProfiles.mockClear() })
 
 describe('NewProfileDialog', () => {
   it('creates from a name and Enter, with an automatic proxy and the platform start page', async () => {
@@ -57,5 +60,19 @@ describe('NewProfileDialog', () => {
     expect((screen.getByRole('button', { name: t.create.submit }) as HTMLButtonElement).disabled).toBe(true)
     fireEvent.keyDown(window, { key: 'Escape' })
     expect(onClose).toHaveBeenCalled()
+  })
+
+  it('bulk-creates with a name prefix and proxy mode', async () => {
+    const onCreated = vi.fn()
+    dialog({ onCreated })
+    const name = screen.getByPlaceholderText(t.create.namePlaceholder)
+    fireEvent.change(name, { target: { value: 'Shop' } })
+    const count = document.querySelector('input[type="number"]') as HTMLInputElement
+    fireEvent.change(count, { target: { value: '3' } })
+    fireEvent.click(screen.getByRole('button', { name: /No proxy/ }))
+    fireEvent.submit(name.closest('form')!)
+    await waitFor(() => expect(onCreated).toHaveBeenCalled())
+    expect(createProfiles).toHaveBeenCalledWith(expect.objectContaining({ baseName: 'Shop', count: 3, proxy: 'none' }))
+    expect(createProfile).not.toHaveBeenCalled()
   })
 })

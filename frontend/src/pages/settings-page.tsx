@@ -8,6 +8,7 @@ import { useSites } from '../hooks/use-sites'
 import { Icon, type IconName } from '../components/icons'
 import { SiteSettings } from '../components/site-settings'
 import { StorageSettings } from '../components/storage-settings'
+import { DefaultsSettings } from '../components/defaults-settings'
 import { PageHead } from '../components/page-head'
 
 const mb = (n: number) => `${Math.round(n / 1048576)} MB`
@@ -91,6 +92,11 @@ export function SettingsPage({ status, onEngineChanged, theme, onTheme, fileVaul
             <button type="button" aria-pressed={lang === 'en'} onClick={() => onLanguage('en')}>{t.settings.languageEn}</button>
             <button type="button" aria-pressed={lang === 'vi'} onClick={() => onLanguage('vi')}>{t.settings.languageVi}</button>
           </div>
+        </section>
+
+        <section className="card pad">
+          <h2>{t.defaults.title}</h2>
+          <DefaultsSettings />
         </section>
 
         <section className="card pad">

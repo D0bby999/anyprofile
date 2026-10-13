@@ -60,8 +60,8 @@ func (l *Launcher) start(ctx context.Context, p *proc) error {
 	if p.relay != nil {
 		rt.RelayPort = p.relay.Port()
 	}
-	if prof.StartURL != "" && !hasSession(udd) {
-		rt.StartURLs = []string{prof.StartURL}
+	if urls := prof.StartURLs(); len(urls) > 0 && !hasSession(udd) {
+		rt.StartURLs = urls
 	}
 	if err := eng.PrepareProfile(prof, rt); err != nil {
 		l.log.Warn("prepare profile", "profile", prof.ID, "err", err)

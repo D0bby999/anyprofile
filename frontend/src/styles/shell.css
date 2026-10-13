@@ -122,6 +122,13 @@
 .siteopt { display: flex; align-items: center; gap: 8px; padding: 5px 8px; border-radius: var(--r-sm); text-align: left; background: none; border: 0; cursor: pointer; color: var(--ink); font: inherit; }
 .siteopt:hover { background: var(--surface-active); }
 .siteopt.sel { background: var(--accent-soft); }
+.rowmenu-wrap { position: relative; display: inline-flex; }
+.rowmenu { position: absolute; right: 0; top: calc(100% + 4px); z-index: 20; min-width: 200px;
+  padding: 4px; border: 1px solid var(--line); border-radius: var(--r-md);
+  background: var(--surface); box-shadow: var(--sh-pop); display: grid; }
+.rowmenu button { text-align: left; padding: 6px 10px; border-radius: var(--r-sm); }
+.rowmenu button:hover:not(:disabled) { background: var(--surface-hover); }
+.rowmenu hr { border: 0; height: 1px; background: var(--line-soft); margin: 4px 0; }
 .sorthead { display: inline-flex; align-items: center; gap: 3px; }
 .card.pad > .seg, .card.pad > .row { align-self: flex-start; }
 

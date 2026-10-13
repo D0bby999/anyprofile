@@ -53,6 +53,8 @@ export const en = {
     proxy: 'Proxy', proxyAuto: 'Pick a free proxy automatically', proxyAutoNone: 'Pick a free proxy automatically (none free right now; the real IP will be used)',
     proxyHint: 'The profile\u2019s timezone, location and languages follow the proxy\u2019s IP.',
     startUrl: 'Start page', tags: 'Tags', tagsPlaceholder: 'separated by commas',
+    startUrlHint: 'One URL per line',
+    count: 'How many', namePrefix: 'Name prefix', preview: 'Will create:',
     submit: 'Create profile', creating: 'Creating…',
     identityNote: 'The simulated machine and seed are picked at random on creation and stay fixed for the profile\u2019s whole life.',
   },
@@ -103,6 +105,22 @@ export const en = {
     fileVaultOff: 'FileVault is off. Profiles\u2019 history and site data sit unencrypted on disk. Turn it on in System Settings, under Privacy & Security.',
     secretsNote: 'Proxy passwords and each profile\u2019s cookie key live in the Keychain. No control port is open unless you enable diagnostics.',
   },
+  bulk: {
+    site: 'Platform…', tag: 'Add tag…', proxy: 'Proxies…',
+    siteTitle: 'Set platform', tagTitle: 'Add tag', proxyTitle: 'Assign proxies',
+    proxyAuto: 'Next free proxy', proxyNone: 'No proxy', apply: 'Apply',
+  },
+  menu: {
+    more: 'More', edit: 'Edit', duplicate: 'Duplicate…', copyLogin: 'Copy login',
+    copyPassword: 'Copy password', copyCode: 'Copy 2FA code', copiedLogin: 'Login copied',
+    copiedCode: (n: number) => `2FA code copied, valid for ${n}s`, trash: 'Move to trash',
+  },
+  duplicate: {
+    title: 'Duplicate profile', name: 'Name', count: 'How many',
+    proxyAuto: 'Free proxy for each', proxyNone: 'No proxy', preview: 'Will create:',
+    note: 'New copies get their own fingerprint. Account, password, 2FA and cookies are not copied.',
+    submit: 'Duplicate',
+  },
   account: {
     title: 'Account',
     login: 'Login (email or username)',
@@ -118,6 +136,10 @@ export const en = {
     copyCode: 'Copy code',
     secondsLeft: (n: number) => `${n}s`,
     note: 'The password and the 2FA secret stay in the macOS Keychain and are never shown.',
+  },
+  defaults: {
+    title: 'New profiles', site: 'Default platform', proxy: 'Proxy',
+    proxyAuto: 'Next free proxy', proxyNone: 'No proxy',
   },
   storage: {
     title: 'Storage',
@@ -155,6 +177,14 @@ export const en = {
     password_missing: 'No password is saved for this profile.',
     totp_invalid: 'That is not a valid authenticator secret.',
     totp_missing: 'No 2FA secret is saved for this profile.',
+    bad_count: 'Choose between 1 and 100 profiles.',
+    not_enough_proxies: 'Not enough free sticky proxies.',
+    bad_proxy_mode: 'Proxy must be auto or none.',
+    profile_trashed: 'Move the profile out of the trash first.',
+    profile_running: 'Close the profile first.',
+    tag_empty: 'Type a tag.',
+    bad_start_url: 'One of the start pages is not an http(s) URL.',
+    too_many_start_urls: 'At most 10 start pages.',
   } as Record<string, string>,
 }
 

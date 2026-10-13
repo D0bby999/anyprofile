@@ -55,6 +55,8 @@ export const vi: Messages = {
     proxy: 'Proxy', proxyAuto: 'Tự lấy proxy còn trống', proxyAutoNone: 'Tự lấy proxy còn trống (hiện không còn, sẽ dùng IP thật)',
     proxyHint: 'Múi giờ, vị trí và ngôn ngữ của profile lấy theo IP của proxy.',
     startUrl: 'Trang mở đầu', tags: 'Tag', tagsPlaceholder: 'cách nhau bằng dấu phẩy',
+    startUrlHint: 'Mỗi dòng một URL',
+    count: 'Số lượng', namePrefix: 'Tiền tố tên', preview: 'Sẽ tạo:',
     submit: 'Tạo profile', creating: 'Đang tạo…',
     identityNote: 'Máy giả lập và seed được chọn ngẫu nhiên lúc tạo và giữ cố định suốt đời profile.',
   },
@@ -105,6 +107,22 @@ export const vi: Messages = {
     fileVaultOff: 'FileVault đang tắt. Lịch sử và dữ liệu trang của các profile nằm trên ổ đĩa không mã hoá. Nên bật trong System Settings, mục Privacy & Security.',
     secretsNote: 'Mật khẩu proxy và khoá cookie của từng profile nằm trong Keychain. Không có cổng điều khiển nào mở khi bạn chưa bật chẩn đoán.',
   },
+  bulk: {
+    site: 'Nền tảng…', tag: 'Thêm tag…', proxy: 'Proxy…',
+    siteTitle: 'Đặt nền tảng', tagTitle: 'Thêm tag', proxyTitle: 'Gán proxy',
+    proxyAuto: 'Proxy trống kế tiếp', proxyNone: 'Không proxy', apply: 'Áp dụng',
+  },
+  menu: {
+    more: 'Thêm', edit: 'Sửa', duplicate: 'Nhân bản…', copyLogin: 'Chép tên đăng nhập',
+    copyPassword: 'Chép mật khẩu', copyCode: 'Chép mã 2FA', copiedLogin: 'Đã chép tên đăng nhập',
+    copiedCode: (n: number) => `Đã chép mã 2FA, còn ${n} giây`, trash: 'Bỏ vào thùng rác',
+  },
+  duplicate: {
+    title: 'Nhân bản profile', name: 'Tên', count: 'Số lượng',
+    proxyAuto: 'Proxy trống cho mỗi bản', proxyNone: 'Không proxy', preview: 'Sẽ tạo:',
+    note: 'Bản mới có dấu vân tay riêng. Tài khoản, mật khẩu, 2FA và cookie không được chép theo.',
+    submit: 'Nhân bản',
+  },
   account: {
     title: 'Tài khoản',
     login: 'Tên đăng nhập (email hoặc username)',
@@ -120,6 +138,10 @@ export const vi: Messages = {
     copyCode: 'Chép mã',
     secondsLeft: (n: number) => `${n} giây`,
     note: 'Mật khẩu và secret 2FA nằm trong Keychain của macOS và không bao giờ hiện ra.',
+  },
+  defaults: {
+    title: 'Profile mới', site: 'Nền tảng mặc định', proxy: 'Proxy',
+    proxyAuto: 'Proxy trống kế tiếp', proxyNone: 'Không proxy',
   },
   storage: {
     title: 'Lưu trữ',
@@ -157,5 +179,13 @@ export const vi: Messages = {
     password_missing: 'Profile này chưa lưu mật khẩu.',
     totp_invalid: 'Secret xác thực không hợp lệ.',
     totp_missing: 'Profile này chưa lưu secret 2FA.',
+    bad_count: 'Chọn từ 1 đến 100 profile.',
+    not_enough_proxies: 'Không đủ proxy trống cố định.',
+    bad_proxy_mode: 'Proxy phải là auto hoặc none.',
+    profile_trashed: 'Hãy bỏ profile ra khỏi thùng rác trước.',
+    profile_running: 'Hãy đóng profile trước.',
+    tag_empty: 'Hãy nhập tag.',
+    bad_start_url: 'Một trong các trang mở đầu không phải URL http(s).',
+    too_many_start_urls: 'Tối đa 10 trang mở đầu.',
   } as Record<string, string>,
 }

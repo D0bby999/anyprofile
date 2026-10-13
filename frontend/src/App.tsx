@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { useEffect, useMemo, useState } from 'react'
-import { Api, engine, onDataChanged } from './api'
+import { Api, engine, onDataChanged, service } from './api'
 import { language, setLanguage, t, type Language } from './i18n'
 import { applyTheme, readTheme, type ThemeChoice } from './lib/theme'
 import { useProfiles } from './hooks/use-profiles'
@@ -23,6 +23,7 @@ export default function App() {
   const [proxyCount, setProxyCount] = useState(0)
   const [theme, setTheme] = useState<ThemeChoice>(readTheme())
   const [lang, setLang] = useState<Language>(language)
+  const [defaults, setDefaults] = useState<service.Defaults>(service.Defaults.createFrom({ site: 'other', proxy: 'auto' }))
   const profiles = useProfiles()
   const { sites } = useSites()
 
@@ -31,7 +32,9 @@ export default function App() {
     Api.StartupError().then(setStartupError)
     Api.FileVaultOn().then(setFileVaultOn)
     Api.EngineStatus().then(setEngineStatus).catch(() => {})
+    Api.Defaults().then(setDefaults).catch(() => {})
   }, [])
+  useEffect(() => onDataChanged(['settings'], () => { Api.Defaults().then(setDefaults).catch(() => {}) }), [])
   const refreshProxies = () => { Api.ListProxies().then((p) => setProxyCount((p ?? []).length)).catch(() => {}) }
   useEffect(refreshProxies, [])
   useEffect(() => onDataChanged(['proxies'], refreshProxies), [])
@@ -100,7 +103,7 @@ export default function App() {
         )}
       </main>
       {creating && (
-        <NewProfileDialog defaultSite={view.startsWith('site:') ? view.slice(5) : 'other'} sites={sites} recent={recent}
+        <NewProfileDialog defaultSite={view.startsWith('site:') ? view.slice(5) : defaults.site} defaults={defaults} sites={sites} recent={recent}
           onClose={() => setCreating(false)}
           onCreated={() => { setCreating(false); setPage('profiles'); profiles.reload(); refreshProxies() }} />
       )}

@@ -26,3 +26,39 @@ func (s *Service) SetLanguage(lang string) error {
 	s.notify("settings")
 	return nil
 }
+
+// Defaults are the new-profile defaults: the platform and the proxy mode.
+type Defaults struct {
+	Site  string `json:"site"`  // default "other"
+	Proxy string `json:"proxy"` // "auto" (default) or "none"
+}
+
+// Defaults reads the saved new-profile defaults, falling back to other/auto.
+func (s *Service) Defaults() Defaults {
+	d := Defaults{Site: "other", Proxy: "auto"}
+	if v, err := s.Store.GetSetting("default_site"); err == nil && v != "" && s.checkSite(v) == nil {
+		d.Site = v
+	}
+	if v, err := s.Store.GetSetting("default_proxy"); err == nil && v == "none" {
+		d.Proxy = "none"
+	}
+	return d
+}
+
+// SetDefaults saves the new-profile defaults.
+func (s *Service) SetDefaults(d Defaults) error {
+	if err := s.checkSite(d.Site); err != nil {
+		return err
+	}
+	if d.Proxy != "auto" && d.Proxy != "none" {
+		return apperr.New("bad_proxy_mode", "proxy must be auto or none")
+	}
+	if err := s.Store.SetSetting("default_site", d.Site); err != nil {
+		return err
+	}
+	if err := s.Store.SetSetting("default_proxy", d.Proxy); err != nil {
+		return err
+	}
+	s.notify("settings")
+	return nil
+}

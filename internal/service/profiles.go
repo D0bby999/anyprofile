@@ -5,6 +5,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -76,6 +77,22 @@ func (s *Service) QuickCreate(ctx context.Context, name string) (store.Profile, 
 	return s.CreateProfile(ctx, NewProfile{Name: name, ProxyID: AutoProxy})
 }
 
+// normalizeStartURLs checks each line is an http(s) URL; at most 10.
+func normalizeStartURLs(s string) (string, error) {
+	var keep []string
+	for _, l := range (store.Profile{StartURL: s}).StartURLs() {
+		u, err := url.Parse(l)
+		if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
+			return "", apperr.Newf("bad_start_url", "%q is not an http(s) URL", l)
+		}
+		keep = append(keep, l)
+	}
+	if len(keep) > 10 {
+		return "", apperr.New("too_many_start_urls", "at most 10 start pages")
+	}
+	return strings.Join(keep, "\n"), nil
+}
+
 func (s *Service) CreateProfile(ctx context.Context, in NewProfile) (store.Profile, error) {
 	in.Name = strings.TrimSpace(in.Name)
 	if in.Name == "" {
@@ -95,10 +112,14 @@ func (s *Service) CreateProfile(ctx context.Context, in NewProfile) (store.Profi
 	if err != nil {
 		return store.Profile{}, err
 	}
+	startURL, err := normalizeStartURLs(in.StartURL)
+	if err != nil {
+		return store.Profile{}, err
+	}
 	p := store.Profile{
 		ID: randomHex(8), Name: in.Name, Engine: s.Engine.ID(), EngineVersion: s.Engine.Pinned().Version,
 		PersonaID: persona, SeedHex: randomHex(8), Platform: platform, ProxyID: in.ProxyID,
-		Site: in.Site, StartURL: strings.TrimSpace(in.StartURL), Notes: in.Notes, Tags: in.Tags,
+		Site: in.Site, StartURL: startURL, Notes: in.Notes, Tags: in.Tags,
 	}
 	if err := s.applyNetwork(ctx, &p); err != nil {
 		return store.Profile{}, err
@@ -125,6 +146,11 @@ func (s *Service) UpdateProfile(ctx context.Context, p store.Profile) error {
 			return err
 		}
 	}
+	startURL, err := normalizeStartURLs(p.StartURL)
+	if err != nil {
+		return err
+	}
+	p.StartURL = startURL
 	if err := s.Store.UpdateProfile(p); err != nil {
 		return err
 	}

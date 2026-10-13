@@ -6,6 +6,7 @@ import { personaLabel } from '../lib/persona'
 import { siteById, type Site } from '../lib/sites'
 import { Icon } from './icons'
 import { SiteGlyph } from './site-glyph'
+import { RowMenu } from './row-menu'
 
 export type SortKey = 'no' | 'name' | 'lastOpen'
 export type Sort = { key: SortKey; desc: boolean }
@@ -16,12 +17,16 @@ type Props = {
   selected: Set<string>
   sort: Sort
   onSort: (key: SortKey) => void
-  onToggle: (id: string) => void
+  onToggle: (id: string, shift?: boolean) => void
   onToggleAll: () => void
   onStart: (id: string) => void
   onStop: (id: string) => void
   onFocus: (id: string) => void
   onEdit: (row: service.ProfileRow) => void
+  onDuplicate: (row: service.ProfileRow) => void
+  onTrash: (row: service.ProfileRow) => void
+  onMessage: (msg: string) => void
+  onError: (msg: string) => void
 }
 
 const pillClass: Record<string, string> = { running: 'ok', starting: 'warn', stopping: 'warn' }
@@ -79,7 +84,8 @@ export function ProfileTable(p: Props) {
           const cls = [p.selected.has(r.id) ? 'selected' : '', running ? 'running' : ''].join(' ').trim()
           return (
             <tr key={r.id} className={cls || undefined} onDoubleClick={() => (running ? p.onFocus(r.id) : !busy && p.onStart(r.id))}>
-              <td className="col-check"><input type="checkbox" checked={p.selected.has(r.id)} onChange={() => p.onToggle(r.id)} aria-label={r.name} /></td>
+              <td className="col-check"><input type="checkbox" checked={p.selected.has(r.id)}
+                onClick={(e) => p.onToggle(r.id, e.shiftKey)} onChange={() => {}} aria-label={r.name} /></td>
               <td className="col-no">{r.serial}</td>
               <td className="cellname">
                 <b className="selectable">{r.name}</b>
@@ -99,9 +105,8 @@ export function ProfileTable(p: Props) {
                       <Icon name="focus" />
                     </button>
                   )}
-                  <button className="iconbtn sm" onClick={() => p.onEdit(r)} aria-label={t.profiles.edit} title={t.profiles.edit}>
-                    <Icon name="pencil" />
-                  </button>
+                  <RowMenu row={r} onEdit={() => p.onEdit(r)} onDuplicate={() => p.onDuplicate(r)}
+                    onTrash={() => p.onTrash(r)} onMessage={p.onMessage} onError={p.onError} />
                   {running || r.state === 'stopping' ? (
                     <button className="btn sm stop actbtn" disabled={busy} onClick={() => p.onStop(r.id)}>
                       <Icon name="stop" className="icon sm" />{busy ? t.profiles.stopping : t.profiles.stop}

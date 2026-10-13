@@ -40,3 +40,9 @@ export function formatBytes(n: number): string {
   if (n < 1024 * 1024 * 1024) return `${(n / (1024 * 1024)).toFixed(1)} MB`
   return `${(n / (1024 * 1024 * 1024)).toFixed(1)} GB`
 }
+
+/** "base" alone, or "base 1" .. "base n". Mirrors the Go nameSeries. */
+export function nameSeries(base: string, n: number): string[] {
+  if (n === 1) return [base]
+  return Array.from({ length: n }, (_, i) => `${base} ${i + 1}`)
+}

@@ -296,3 +296,31 @@ func TestNotifyOnWrites(t *testing.T) {
 		t.Fatalf("failed write notified: %v", kinds)
 	}
 }
+
+func TestNormalizeStartURLs(t *testing.T) {
+	if _, err := normalizeStartURLs("https://a.com\nftp://x"); err == nil || !strings.Contains(err.Error(), "bad_start_url") {
+		t.Fatalf("ftp err = %v", err)
+	}
+	got, err := normalizeStartURLs("https://a.com\n\n https://b.com \n")
+	if err != nil || got != "https://a.com\nhttps://b.com" {
+		t.Fatalf("normalize = %q, %v", got, err)
+	}
+}
+
+func TestDefaults(t *testing.T) {
+	s, _ := newService(t)
+	d := s.Defaults()
+	if d.Site != "other" || d.Proxy != "auto" {
+		t.Fatalf("defaults = %+v", d)
+	}
+	if err := s.SetDefaults(Defaults{Site: "etsy", Proxy: "none"}); err != nil {
+		t.Fatal(err)
+	}
+	d = s.Defaults()
+	if d.Site != "etsy" || d.Proxy != "none" {
+		t.Fatalf("after set = %+v", d)
+	}
+	if err := s.SetDefaults(Defaults{Site: "nope", Proxy: "auto"}); err == nil || !strings.Contains(err.Error(), "unknown_site") {
+		t.Fatalf("unknown site err = %v", err)
+	}
+}

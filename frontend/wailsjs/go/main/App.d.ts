@@ -6,6 +6,10 @@ import {site} from '../models';
 import {engine} from '../models';
 import {fury} from '../models';
 
+export function AddTagMany(arg1:Array<string>,arg2:string):Promise<void>;
+
+export function AssignProxiesMany(arg1:Array<string>,arg2:string):Promise<Record<string, string>>;
+
 export function CheckAllProxies():Promise<void>;
 
 export function CheckProxy(arg1:string):Promise<store.Proxy>;
@@ -20,13 +24,19 @@ export function CopyAccountPassword(arg1:string):Promise<void>;
 
 export function CreateProfile(arg1:service.NewProfile):Promise<store.Profile>;
 
+export function CreateProfiles(arg1:service.BulkCreate):Promise<Array<store.Profile>>;
+
 export function CreateSite(arg1:service.SiteInput):Promise<site.Site>;
+
+export function Defaults():Promise<service.Defaults>;
 
 export function DeleteOrphans(arg1:Array<string>):Promise<void>;
 
 export function DeleteProxy(arg1:string):Promise<void>;
 
 export function DeleteSite(arg1:string):Promise<void>;
+
+export function DuplicateProfile(arg1:service.DuplicateInput):Promise<Array<store.Profile>>;
 
 export function EngineStatus():Promise<engine.Status>;
 
@@ -56,7 +66,11 @@ export function RestoreProfile(arg1:string):Promise<void>;
 
 export function SetAccountPassword(arg1:string,arg2:string):Promise<void>;
 
+export function SetDefaults(arg1:service.Defaults):Promise<void>;
+
 export function SetLanguage(arg1:string):Promise<void>;
+
+export function SetSiteMany(arg1:Array<string>,arg2:string):Promise<void>;
 
 export function SetTOTP(arg1:string,arg2:string):Promise<void>;
 

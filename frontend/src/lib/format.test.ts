@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { describe, expect, it } from 'vitest'
 import { t } from '../i18n'
-import { allTags, errorText, formatBytes, parseTags, relativeTime } from './format'
+import { allTags, errorText, formatBytes, nameSeries, parseTags, relativeTime } from './format'
 
 describe('relativeTime', () => {
   const now = new Date('2026-10-12T12:00:00Z')
@@ -45,5 +45,14 @@ describe('formatBytes', () => {
     expect(formatBytes(1536 * 1024)).toBe('1.5 MB')
     expect(formatBytes(2.5 * 1024 * 1024 * 1024)).toBe('2.5 GB')
     expect(formatBytes(-5)).toBe('0 B')
+  })
+})
+
+describe('nameSeries', () => {
+  it('names a single copy without a number', () => {
+    expect(nameSeries('Shop', 1)).toEqual(['Shop'])
+  })
+  it('numbers copies from 1', () => {
+    expect(nameSeries('Shop', 3)).toEqual(['Shop 1', 'Shop 2', 'Shop 3'])
   })
 })

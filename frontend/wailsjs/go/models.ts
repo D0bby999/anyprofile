@@ -89,6 +89,62 @@ export namespace netproxy {
 
 export namespace service {
 	
+	export class BulkCreate {
+	    baseName: string;
+	    count: number;
+	    proxy: string;
+	    site: string;
+	    startUrl: string;
+	    notes: string;
+	    tags: string[];
+	
+	    static createFrom(source: any = {}) {
+	        return new BulkCreate(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.baseName = source["baseName"];
+	        this.count = source["count"];
+	        this.proxy = source["proxy"];
+	        this.site = source["site"];
+	        this.startUrl = source["startUrl"];
+	        this.notes = source["notes"];
+	        this.tags = source["tags"];
+	    }
+	}
+	export class Defaults {
+	    site: string;
+	    proxy: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Defaults(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.site = source["site"];
+	        this.proxy = source["proxy"];
+	    }
+	}
+	export class DuplicateInput {
+	    sourceId: string;
+	    baseName: string;
+	    count: number;
+	    proxy: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new DuplicateInput(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.sourceId = source["sourceId"];
+	        this.baseName = source["baseName"];
+	        this.count = source["count"];
+	        this.proxy = source["proxy"];
+	    }
+	}
 	export class ImportResult {
 	    added: number;
 	    failed: netproxy.ParsedLine[];

@@ -49,6 +49,48 @@ func (a *App) ListProfiles(f store.ProfileFilter) ([]service.ProfileRow, error) 
 	return a.svc.ListProfiles(f)
 }
 
+// Bulk
+
+func (a *App) CreateProfiles(in service.BulkCreate) ([]store.Profile, error) {
+	if err := a.ready(); err != nil {
+		return nil, err
+	}
+	return a.svc.CreateProfiles(a.ctx, in)
+}
+
+func (a *App) DuplicateProfile(in service.DuplicateInput) ([]store.Profile, error) {
+	if err := a.ready(); err != nil {
+		return nil, err
+	}
+	return a.svc.DuplicateProfile(a.ctx, in)
+}
+
+func (a *App) SetSiteMany(ids []string, site string) error {
+	return a.must(func() error { return a.svc.SetSiteMany(ids, site) })
+}
+
+func (a *App) AddTagMany(ids []string, tag string) error {
+	return a.must(func() error { return a.svc.AddTagMany(ids, tag) })
+}
+
+func (a *App) AssignProxiesMany(ids []string, mode string) map[string]string {
+	if a.svc == nil {
+		return nil
+	}
+	return a.svc.AssignProxiesMany(a.ctx, ids, mode)
+}
+
+func (a *App) Defaults() service.Defaults {
+	if a.svc == nil {
+		return service.Defaults{Site: "other", Proxy: "auto"}
+	}
+	return a.svc.Defaults()
+}
+
+func (a *App) SetDefaults(d service.Defaults) error {
+	return a.must(func() error { return a.svc.SetDefaults(d) })
+}
+
 func (a *App) QuickCreate(name string) (store.Profile, error) {
 	if err := a.ready(); err != nil {
 		return store.Profile{}, err
