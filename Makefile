@@ -12,12 +12,16 @@ fury-config:
 dev: fury-config
 	$(WAILS) dev
 
+# Signing identity: "AnyProfile Dev" from scripts/make-dev-cert.sh when it
+# exists, so Keychain "Always Allow" survives rebuilds; ad hoc otherwise.
+SIGN_ID ?= $(shell security find-identity -v -p codesigning 2>/dev/null | grep -q '"AnyProfile Dev"' && echo 'AnyProfile Dev' || echo -)
+
 # wails build signs the bundle ad hoc; adding the helper breaks that seal,
 # so the bundle is re-signed after the copy.
 build: fury-config
 	$(WAILS) build -clean -platform darwin/arm64
 	cp $(FURY_CONFIG) $(APP)/Contents/Resources/fury-config
-	codesign --force --deep --sign - $(APP)
+	codesign --force --deep --sign "$(SIGN_ID)" $(APP)
 	codesign --verify --deep --strict $(APP)
 
 test: fury-config
