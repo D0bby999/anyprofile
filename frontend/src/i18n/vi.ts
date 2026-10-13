@@ -125,6 +125,12 @@ export const vi: Messages = {
     note: 'Bản mới có dấu vân tay riêng. Tài khoản, mật khẩu, 2FA và cookie không được chép theo.',
     submit: 'Nhân bản',
   },
+  fp: {
+    ok: 'Fingerprint khớp', drift: 'Fingerprint đã đổi', baseline: 'Đã lưu fingerprint',
+    unchecked: 'Chưa kiểm', diff: (s: string) => `Khác: ${s}`,
+    reset: 'Đặt lại mốc', title: 'Fingerprint',
+    confirmReset: 'Dùng lần mở tới làm mốc mới? Chỉ làm khi bạn chủ động đổi engine.',
+  },
   account: {
     title: 'Tài khoản',
     login: 'Tên đăng nhập (email hoặc username)',

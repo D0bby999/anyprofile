@@ -33,17 +33,19 @@ type Runtime struct {
 	UserDataDir string
 	RelayPort   int    // 0: no proxy, connect directly
 	CDP         bool   // open a loopback DevTools port (diagnostics only)
+	CDPPipe     bool   // DevTools over inherited pipes (fds 3 and 4); data pipes then start at fd 5
 	CookieKey   []byte // 32 bytes, delivered on a pipe
 	StartURLs   []string
 }
 
 // LaunchSpec is everything needed to exec the browser. Pipes[i] is written to
-// a pipe the child inherits as fd 3+i, so nothing secret reaches argv or env.
+// a pipe the child inherits as fd 3+i, or 5+i when CDPPipe is set.
 type LaunchSpec struct {
-	Binary string
-	Args   []string
-	Env    []string // appended to the parent's environment
-	Pipes  [][]byte
+	Binary  string
+	Args    []string
+	Env     []string // appended to the parent's environment
+	Pipes   [][]byte
+	CDPPipe bool
 }
 
 // Engine is one browser engine implementation.

@@ -150,6 +150,17 @@ func TestBuildLaunchKeepsSecretsOffArgv(t *testing.T) {
 	if !strings.Contains(argv, "--remote-debugging-port=0") || strings.Contains(argv, "--proxy-server") {
 		t.Fatalf("direct + diagnostics argv wrong: %s", argv)
 	}
+
+	spec, _ = f.BuildLaunch(context.Background(), testProfile(), engine.Runtime{UserDataDir: "/tmp/p1", CDPPipe: true, CookieKey: key})
+	argv = strings.Join(spec.Args, " ")
+	for _, want := range []string{"--fury-fp-fd=5", "--fury-oscrypt-fd=6", "--remote-debugging-pipe"} {
+		if !strings.Contains(argv, want) {
+			t.Errorf("pipe argv lacks %q: %s", want, argv)
+		}
+	}
+	if strings.Contains(argv, "--remote-debugging-port") {
+		t.Errorf("pipe argv must not open a TCP port: %s", argv)
+	}
 }
 
 func TestStageWidevineFromFakeChrome(t *testing.T) {

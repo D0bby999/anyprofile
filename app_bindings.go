@@ -116,6 +116,10 @@ func (a *App) TrashProfile(id string) error { return a.must(func() error { retur
 func (a *App) RestoreProfile(id string) error {
 	return a.must(func() error { return a.svc.Restore(id) })
 }
+
+func (a *App) ResetFingerprint(id string) error {
+	return a.must(func() error { return a.svc.ResetFingerprint(id) })
+}
 func (a *App) PurgeProfile(id string) error { return a.must(func() error { return a.svc.Purge(id) }) }
 
 func (a *App) StartProfile(id string) error {

@@ -60,6 +60,8 @@ export function PurgeProfile(arg1:string):Promise<void>;
 
 export function QuickCreate(arg1:string):Promise<store.Profile>;
 
+export function ResetFingerprint(arg1:string):Promise<void>;
+
 export function RestoreProfile(arg1:string):Promise<void>;
 
 export function SetAccountPassword(arg1:string,arg2:string):Promise<void>;

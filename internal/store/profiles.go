@@ -31,6 +31,9 @@ type Profile struct {
 	Login         string   `json:"login"`
 	HasPassword   bool     `json:"hasPassword"`
 	HasTOTP       bool     `json:"hasTotp"`
+	FPVerdict     string   `json:"fpVerdict"`
+	FPDiff        []string `json:"fpDiff"`
+	FPCheckedAt   string   `json:"fpCheckedAt"`
 	StartURL      string   `json:"startUrl"`
 	Notes         string   `json:"notes"`
 	Tags          []string `json:"tags"`
@@ -52,16 +55,18 @@ type ProfileFilter struct {
 const profileCols = `id, name, engine, engine_version, persona_id, seed_hex, platform,
 	COALESCE(proxy_id, ''), timezone, languages, ui_locale, lat, lon, site, start_url,
 	notes, tags, cdp_next_launch, pinned, created_at, updated_at, COALESCE(last_open_at, ''),
-	COALESCE(deleted_at, ''), serial, login, has_password, has_totp`
+	COALESCE(deleted_at, ''), serial, login, has_password, has_totp,
+	fp_verdict, fp_diff, fp_checked_at`
 
 func scanProfile(row interface{ Scan(...any) error }) (Profile, error) {
 	var p Profile
 	var tags string
+	var fpDiff string
 	err := row.Scan(&p.ID, &p.Name, &p.Engine, &p.EngineVersion, &p.PersonaID, &p.SeedHex,
 		&p.Platform, &p.ProxyID, &p.Timezone, &p.Languages, &p.UILocale, &p.Lat, &p.Lon,
 		&p.Site, &p.StartURL, &p.Notes, &tags, &p.CDPNextLaunch, &p.Pinned,
 		&p.CreatedAt, &p.UpdatedAt, &p.LastOpenAt, &p.DeletedAt, &p.Serial, &p.Login,
-		&p.HasPassword, &p.HasTOTP)
+		&p.HasPassword, &p.HasTOTP, &p.FPVerdict, &fpDiff, &p.FPCheckedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return p, ErrNotFound
 	}
@@ -70,6 +75,9 @@ func scanProfile(row interface{ Scan(...any) error }) (Profile, error) {
 	}
 	if err := json.Unmarshal([]byte(tags), &p.Tags); err != nil {
 		return p, fmt.Errorf("profile %s tags: %w", p.ID, err)
+	}
+	if err := json.Unmarshal([]byte(fpDiff), &p.FPDiff); err != nil {
+		return p, fmt.Errorf("profile %s fp_diff: %w", p.ID, err)
 	}
 	return p, nil
 }
@@ -149,6 +157,39 @@ func (s *Store) SetSecretFlag(id, flag string, on bool) error {
 		return fmt.Errorf("unknown flag %q", flag)
 	}
 	res, err := s.db.Exec(`UPDATE profiles SET `+flag+` = ?, updated_at = ? WHERE id = ?`, on, now(), id)
+	return affected(res, err)
+}
+
+// FingerprintBaseline returns the stored baseline sample (JSON), or "".
+func (s *Store) FingerprintBaseline(id string) (string, error) {
+	var v string
+	err := s.db.QueryRow(`SELECT fp_baseline FROM profiles WHERE id = ?`, id).Scan(&v)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", ErrNotFound
+	}
+	return v, err
+}
+
+// SaveFingerprint stores a measurement. An empty baseline keeps the old one;
+// an empty last sample also keeps the old one (an unchecked run overwrites
+// nothing).
+func (s *Store) SaveFingerprint(id, baseline, last, verdict string, diff []string) error {
+	if diff == nil {
+		diff = []string{}
+	}
+	b, _ := json.Marshal(diff)
+	_, err := s.db.Exec(`UPDATE profiles SET
+		fp_baseline = CASE WHEN ? = '' THEN fp_baseline ELSE ? END,
+		fp_last = CASE WHEN ? = '' THEN fp_last ELSE ? END,
+		fp_verdict = ?, fp_diff = ?, fp_checked_at = ? WHERE id = ?`,
+		baseline, baseline, last, last, verdict, string(b), now(), id)
+	return err
+}
+
+// ResetFingerprint clears the baseline, last sample and verdict.
+func (s *Store) ResetFingerprint(id string) error {
+	res, err := s.db.Exec(`UPDATE profiles SET fp_baseline = '', fp_last = '', fp_verdict = '',
+		fp_diff = '[]', fp_checked_at = '' WHERE id = ?`, id)
 	return affected(res, err)
 }
 

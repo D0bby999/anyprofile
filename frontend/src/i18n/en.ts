@@ -123,6 +123,12 @@ export const en = {
     note: 'New copies get their own fingerprint. Account, password, 2FA and cookies are not copied.',
     submit: 'Duplicate',
   },
+  fp: {
+    ok: 'Fingerprint OK', drift: 'Fingerprint changed', baseline: 'Fingerprint saved',
+    unchecked: 'Not checked', diff: (s: string) => `Changed: ${s}`,
+    reset: 'Reset baseline', title: 'Fingerprint',
+    confirmReset: 'Use the next launch as the new reference? Do this only after you changed the engine on purpose.',
+  },
   account: {
     title: 'Account',
     login: 'Login (email or username)',

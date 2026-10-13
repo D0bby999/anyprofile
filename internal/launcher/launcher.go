@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/D0bby999/anyprofile/internal/cdppipe"
 	"github.com/D0bby999/anyprofile/internal/engine"
 	"github.com/D0bby999/anyprofile/internal/netproxy"
 	"github.com/D0bby999/anyprofile/internal/paths"
@@ -40,6 +41,7 @@ type Info struct {
 type proc struct {
 	info  Info
 	relay *netproxy.Relay
+	cdp   *cdppipe.Conn
 	done  chan struct{} // closed when the browser has exited and been cleaned up
 }
 
@@ -55,6 +57,11 @@ type Launcher struct {
 	procs map[string]*proc
 
 	readyTimeout, termGrace time.Duration
+
+	// Capture measures the fingerprint at each launch; the app turns it on.
+	Capture bool
+	// OnData is told "profiles" after a measurement is saved; may be nil.
+	OnData func(kind string)
 }
 
 func New(st *store.Store, sec secrets.Store, dirs paths.Dirs, engines []engine.Engine, onChange func(Info), log *slog.Logger) *Launcher {

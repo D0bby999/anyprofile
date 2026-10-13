@@ -110,6 +110,10 @@ export function QuickCreate(arg1) {
   return window['go']['main']['App']['QuickCreate'](arg1);
 }
 
+export function ResetFingerprint(arg1) {
+  return window['go']['main']['App']['ResetFingerprint'](arg1);
+}
+
 export function RestoreProfile(arg1) {
   return window['go']['main']['App']['RestoreProfile'](arg1);
 }

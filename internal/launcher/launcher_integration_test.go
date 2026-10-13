@@ -10,6 +10,7 @@ package launcher
 
 import (
 	"context"
+	"database/sql"
 	"io"
 	"log/slog"
 	"os"
@@ -18,8 +19,11 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"syscall"
 	"testing"
 	"time"
+
+	_ "modernc.org/sqlite"
 
 	"github.com/D0bby999/anyprofile/internal/engine"
 	"github.com/D0bby999/anyprofile/internal/engine/fury"
@@ -156,6 +160,109 @@ func TestLifecycleFiveProfiles(t *testing.T) {
 		t.Errorf("launch rows left: %+v", ls)
 	}
 	_ = pid0
+}
+
+func TestFingerprintCheck(t *testing.T) {
+	r := newRig(t)
+	l := r.launcher(t)
+	l.Capture = true
+	id := r.profile(t, 20)
+
+	waitVerdict := func(want string, timeout time.Duration) {
+		t.Helper()
+		deadline := time.Now().Add(timeout)
+		for time.Now().Before(deadline) {
+			if p, err := r.st.GetProfile(id); err == nil && p.FPVerdict == want {
+				return
+			}
+			time.Sleep(200 * time.Millisecond)
+		}
+		p, _ := r.st.GetProfile(id)
+		t.Fatalf("verdict never became %q: %+v", want, p)
+	}
+
+	// Launch 1: baseline, no TCP listeners.
+	if err := l.Start(context.Background(), id); err != nil {
+		t.Fatal(err)
+	}
+	waitVerdict("baseline", 20*time.Second)
+	l.mu.Lock()
+	pid := l.procs[id].info.PID
+	l.mu.Unlock()
+	if ports := listeningPorts(t, pid); ports != "" {
+		t.Fatalf("baseline launch listens: %s", ports)
+	}
+	if err := l.Stop(id); err != nil {
+		t.Fatal(err)
+	}
+
+	// Launch 2: match.
+	if err := l.Start(context.Background(), id); err != nil {
+		t.Fatal(err)
+	}
+	waitVerdict("match", 20*time.Second)
+	if err := l.Stop(id); err != nil {
+		t.Fatal(err)
+	}
+
+	// Change the seed: the next launch must drift.
+	db, err := sql.Open("sqlite", "file:"+r.dirs.DB())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.Exec(`UPDATE profiles SET seed_hex = '99887766aabbccdd' WHERE id = ?`, id); err != nil {
+		t.Fatal(err)
+	}
+	db.Close()
+	if err := l.Start(context.Background(), id); err != nil {
+		t.Fatal(err)
+	}
+	waitVerdict("drift", 20*time.Second)
+	p, _ := r.st.GetProfile(id)
+	found := false
+	for _, d := range p.FPDiff {
+		if d == "canvas" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("drift fields = %v, want canvas", p.FPDiff)
+	}
+	if err := l.Stop(id); err != nil {
+		t.Fatal(err)
+	}
+
+	// Launch 4: the browser survives the app closing its pipe ends.
+	before, _ := r.st.GetProfile(id)
+	prevChecked := before.FPCheckedAt
+	if err := l.Start(context.Background(), id); err != nil {
+		t.Fatal(err)
+	}
+	deadline := time.Now().Add(20 * time.Second)
+	for {
+		p, _ := r.st.GetProfile(id)
+		if p.FPCheckedAt != "" && p.FPCheckedAt != prevChecked {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("no new measurement")
+		}
+		time.Sleep(200 * time.Millisecond)
+	}
+	l.mu.Lock()
+	proc := l.procs[id]
+	l.mu.Unlock()
+	proc.cdp.Close()
+	time.Sleep(3 * time.Second)
+	l.mu.Lock()
+	pid = l.procs[id].info.PID
+	l.mu.Unlock()
+	if err := syscall.Kill(pid, 0); err != nil {
+		t.Fatalf("browser died after the app closed its pipe: %v", err)
+	}
+	if err := l.Stop(id); err != nil {
+		t.Fatal(err)
+	}
 }
 
 func TestCookieKeyAndDiagnostics(t *testing.T) {

@@ -64,6 +64,8 @@ func (a *App) init() error {
 	sec := secrets.Keychain{}
 	l := launcher.New(st, sec, dirs, []engine.Engine{a.fury},
 		func(in launcher.Info) { runtime.EventsEmit(a.ctx, "launch:changed", in) }, log)
+	l.Capture = true
+	l.OnData = func(kind string) { runtime.EventsEmit(a.ctx, "data:changed", kind) }
 	a.svc = &service.Service{Dirs: dirs, Store: st, Secrets: sec, Engine: a.fury, Launcher: l, Log: log,
 		OnChange:   func(kind string) { runtime.EventsEmit(a.ctx, "data:changed", kind) },
 		CheckProxy: netproxy.Check,

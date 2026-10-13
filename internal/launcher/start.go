@@ -56,7 +56,7 @@ func (l *Launcher) start(ctx context.Context, p *proc) error {
 		return err
 	}
 	defer secrets.Wipe(key)
-	rt := engine.Runtime{UserDataDir: udd, CDP: prof.CDPNextLaunch, CookieKey: key}
+	rt := engine.Runtime{UserDataDir: udd, CDP: prof.CDPNextLaunch, CDPPipe: l.Capture, CookieKey: key}
 	if p.relay != nil {
 		rt.RelayPort = p.relay.Port()
 	}
@@ -70,11 +70,15 @@ func (l *Launcher) start(ctx context.Context, p *proc) error {
 	if err != nil {
 		return err
 	}
-	pid, wait, err := spawn(spec, udd, filepath.Join(l.dirs.Logs(), "browser-"+prof.ID+".log"))
+	pid, wait, conn, err := spawn(spec, udd, filepath.Join(l.dirs.Logs(), "browser-"+prof.ID+".log"))
 	if err != nil {
 		return err
 	}
+	p.cdp = conn
 	if err := l.waitReady(udd, pid, wait); err != nil {
+		if p.cdp != nil {
+			p.cdp.Close()
+		}
 		signalGroup(pid, unix.SIGKILL)
 		return err
 	}
@@ -101,6 +105,9 @@ func (l *Launcher) start(ctx context.Context, p *proc) error {
 	p.info.PID, p.info.CDPPort = pid, cdp
 	l.mu.Unlock()
 	l.set(p, Running, "")
+	if p.cdp != nil {
+		go l.capture(prof, p.cdp)
+	}
 	go l.watch(p, pid, wait)
 	return nil
 }

@@ -375,3 +375,42 @@ func TestProxyMetaMigration(t *testing.T) {
 		t.Fatalf("migrated proxy = %+v", p)
 	}
 }
+
+func TestFingerprint(t *testing.T) {
+	s, _ := openTemp(t)
+	p := sample("p1")
+	if err := s.CreateProfile(p); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.SaveFingerprint("p1", "{b}", "{b}", "baseline", nil); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.SaveFingerprint("p1", "", "{x}", "drift", []string{"canvas"}); err != nil {
+		t.Fatal(err)
+	}
+	if b, _ := s.FingerprintBaseline("p1"); b != "{b}" {
+		t.Fatalf("baseline = %q", b)
+	}
+	if got, _ := s.GetProfile("p1"); got.FPVerdict != "drift" || len(got.FPDiff) != 1 || got.FPDiff[0] != "canvas" {
+		t.Fatalf("profile = %+v", got)
+	}
+	if err := s.ResetFingerprint("p1"); err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := s.GetProfile("p1"); got.FPVerdict != "" || len(got.FPDiff) != 0 {
+		t.Fatalf("after reset = %+v", got)
+	}
+}
+
+func TestFingerprintMigration(t *testing.T) {
+	s, _ := upgradeFrom(t, 6, func(o *Store) {
+		insertV1Profile(t, o, "p1", "other", "2026-10-01T00:00:00Z")
+	})
+	p, err := s.GetProfile("p1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if p.FPVerdict != "" || len(p.FPDiff) != 0 {
+		t.Fatalf("migrated profile = %+v", p)
+	}
+}

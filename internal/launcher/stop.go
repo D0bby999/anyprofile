@@ -23,6 +23,9 @@ func (l *Launcher) watch(p *proc, pid int, wait <-chan error) {
 	if p.relay != nil {
 		p.relay.Close()
 	}
+	if p.cdp != nil {
+		p.cdp.Close()
+	}
 	_ = l.st.DeleteLaunch(p.info.ProfileID)
 	l.mu.Lock()
 	delete(l.procs, p.info.ProfileID)

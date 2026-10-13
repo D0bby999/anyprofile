@@ -12,6 +12,7 @@ and are forbidden in the app (see Security in the top-level README).
 | `launch-one/` | Opens one throwaway profile through AnyProfile's real launcher with the diagnostics port on and prints the port. Closing stdin stops it. |
 | `detect-sites.mjs` | Visits ipinfo, CreepJS, BrowserScan, deviceandbrowserinfo and Pixelscan, then prints their verdicts. With `CDP_PORT` it attaches to a running browser, for example one from `launch-one`. |
 | `chromium-bench.mjs` | Opens N profiles at once and reports memory per process type. |
+| `pipe-spike/` | Checks the DevTools pipe the fingerprint check relies on: fds 5/6, `--remote-debugging-pipe`, a hidden probe tab, survival after the pipe closes. `SPIKE_SEED=<16 hex>`. |
 | `proxy-relay.mjs` | A minimal authenticated-upstream relay. The app uses `internal/netproxy` instead. |
 
 Check the profile the app would really produce:

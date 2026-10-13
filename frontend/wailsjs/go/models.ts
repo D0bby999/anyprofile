@@ -232,6 +232,9 @@ export namespace service {
 	    login: string;
 	    hasPassword: boolean;
 	    hasTotp: boolean;
+	    fpVerdict: string;
+	    fpDiff: string[];
+	    fpCheckedAt: string;
 	    startUrl: string;
 	    notes: string;
 	    tags: string[];
@@ -273,6 +276,9 @@ export namespace service {
 	        this.login = source["login"];
 	        this.hasPassword = source["hasPassword"];
 	        this.hasTotp = source["hasTotp"];
+	        this.fpVerdict = source["fpVerdict"];
+	        this.fpDiff = source["fpDiff"];
+	        this.fpCheckedAt = source["fpCheckedAt"];
 	        this.startUrl = source["startUrl"];
 	        this.notes = source["notes"];
 	        this.tags = source["tags"];
@@ -472,6 +478,9 @@ export namespace store {
 	    login: string;
 	    hasPassword: boolean;
 	    hasTotp: boolean;
+	    fpVerdict: string;
+	    fpDiff: string[];
+	    fpCheckedAt: string;
 	    startUrl: string;
 	    notes: string;
 	    tags: string[];
@@ -506,6 +515,9 @@ export namespace store {
 	        this.login = source["login"];
 	        this.hasPassword = source["hasPassword"];
 	        this.hasTotp = source["hasTotp"];
+	        this.fpVerdict = source["fpVerdict"];
+	        this.fpDiff = source["fpDiff"];
+	        this.fpCheckedAt = source["fpCheckedAt"];
 	        this.startUrl = source["startUrl"];
 	        this.notes = source["notes"];
 	        this.tags = source["tags"];

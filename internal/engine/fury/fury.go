@@ -62,6 +62,10 @@ func (f *Fury) BuildLaunch(ctx context.Context, p store.Profile, rt engine.Runti
 	if err != nil {
 		return engine.LaunchSpec{}, err
 	}
+	fd := 3
+	if rt.CDPPipe {
+		fd = 5
+	}
 	args := []string{
 		"--user-data-dir=" + rt.UserDataDir,
 		"--no-default-browser-check",
@@ -75,8 +79,8 @@ func (f *Fury) BuildLaunch(ctx context.Context, p store.Profile, rt engine.Runti
 		"--disk-cache-size=20971520",
 		"--lang=" + p.UILocale,
 		"--window-name=" + windowName(p),
-		"--fury-fp-fd=3",
-		"--fury-oscrypt-fd=4",
+		"--fury-fp-fd=" + strconv.Itoa(fd),
+		"--fury-oscrypt-fd=" + strconv.Itoa(fd+1),
 	}
 	if rt.RelayPort > 0 {
 		args = append(args,
@@ -90,12 +94,16 @@ func (f *Fury) BuildLaunch(ctx context.Context, p store.Profile, rt engine.Runti
 		// Loopback only, and deliberately no --remote-allow-origins.
 		args = append(args, "--remote-debugging-port=0")
 	}
+	if rt.CDPPipe {
+		args = append(args, "--remote-debugging-pipe")
+	}
 	args = append(args, rt.StartURLs...)
 	return engine.LaunchSpec{
-		Binary: f.BinaryPath(),
-		Args:   args,
-		Env:    []string{"TZ=" + p.Timezone},
-		Pipes:  [][]byte{cfg, rt.CookieKey},
+		Binary:  f.BinaryPath(),
+		Args:    args,
+		Env:     []string{"TZ=" + p.Timezone},
+		Pipes:   [][]byte{cfg, rt.CookieKey},
+		CDPPipe: rt.CDPPipe,
 	}, nil
 }
 

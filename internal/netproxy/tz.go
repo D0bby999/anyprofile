@@ -45,14 +45,20 @@ func NormalizeTimezone(country, tz string) string {
 	if z, ok := singleZone[strings.ToUpper(country)]; ok {
 		return z
 	}
-	if z, ok := legacyZones[tz]; ok {
-		tz = z
-	}
 	if tz == "" {
 		return ""
 	}
 	if _, err := time.LoadLocation(tz); err != nil {
 		return ""
+	}
+	return CanonicalZone(tz)
+}
+
+// CanonicalZone maps a deprecated IANA link (for example "Asia/Saigon") to its
+// canonical name, so literal comparisons match. Unknown names pass through.
+func CanonicalZone(tz string) string {
+	if z, ok := legacyZones[tz]; ok {
+		return z
 	}
 	return tz
 }

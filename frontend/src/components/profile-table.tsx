@@ -7,6 +7,7 @@ import { siteById, type Site } from '../lib/sites'
 import { Icon } from './icons'
 import { SiteGlyph } from './site-glyph'
 import { RowMenu } from './row-menu'
+import { FpChip } from './fp-chip'
 
 export type SortKey = 'no' | 'name' | 'lastOpen'
 export type Sort = { key: SortKey; desc: boolean }
@@ -93,6 +94,7 @@ export function ProfileTable(p: Props) {
                 <b className="selectable">{r.name}</b>
                 <span className="sub">
                   <span>{personaLabel(r.personaId)}</span>
+                  <FpChip row={r} />
                   {r.tags.map((x) => <span key={x} className="tag">{x}</span>)}
                 </span>
               </td>

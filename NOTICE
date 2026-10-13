@@ -40,6 +40,11 @@ Hidemyacc workflow
   workflow described in Hidemyacc's public documentation
   (docs.hidemyacc.com); no code or assets used.
 
+Fingerprint capture
+  Fingerprint capture and comparison at launch, inspired by aliasmode/aliasmode
+  fingerprint-capture.ts and fingerprint-attestation.ts (Apache-2.0); no code
+  copied.
+
 Simple Icons
   Brand icon paths in frontend/src/sites/icons.gen.ts come from simple-icons
   16.35.0 (https://github.com/simple-icons/simple-icons), CC0-1.0. Brand marks

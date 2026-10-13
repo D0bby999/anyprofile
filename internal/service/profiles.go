@@ -272,3 +272,13 @@ func parallel(ids []string, fn func(string) error) map[string]string {
 	}
 	return errs
 }
+
+// ResetFingerprint clears the saved baseline and verdict; the next launch
+// becomes the new reference.
+func (s *Service) ResetFingerprint(id string) error {
+	if err := s.Store.ResetFingerprint(id); err != nil {
+		return err
+	}
+	s.notify("profiles")
+	return nil
+}

@@ -10,6 +10,7 @@ import { Icon } from './icons'
 import { ProxySelect } from './proxy-select'
 import { SitePicker } from './site-picker'
 import { AccountPanel } from './account-panel'
+import { FpChip } from './fp-chip'
 
 type Props = { row: service.ProfileRow; sites: Site[]; recent: string[]; onClose: () => void; onSaved: () => void; onTrash: () => void }
 
@@ -93,6 +94,18 @@ export function ProfileEditor({ row, sites, recent, onClose, onSaved, onTrash }:
           <dt>{t.editor.languages}</dt><dd>{row.languages}</dd>
           <dt>{t.editor.seed}</dt><dd className="mono">{row.seedHex}</dd>
           <dt>{t.editor.created}</dt><dd>{relativeTime(row.createdAt)}</dd>
+          <dt>{t.fp.title}</dt>
+          <dd className="row">
+            <FpChip row={row} />
+            {row.fpCheckedAt && <span className="muted">{relativeTime(row.fpCheckedAt)}</span>}
+            {row.fpVerdict === 'drift' && <span className="muted">{t.fp.diff(row.fpDiff.join(', '))}</span>}
+            {row.fpVerdict && (
+              <button type="button" className="btn sm ghost"
+                onClick={() => window.confirm(t.fp.confirmReset) && Api.ResetFingerprint(row.id).then(() => onSaved()).catch((e) => setError(errorText(e)))}>
+                {t.fp.reset}
+              </button>
+            )}
+          </dd>
         </dl>
         <span className="hint muted" style={{ fontSize: 'var(--t-xs)' }}>{t.editor.identityHint}</span>
       </div>
