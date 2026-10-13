@@ -20,5 +20,9 @@ func (s *Service) SetLanguage(lang string) error {
 	if !languages[lang] {
 		return apperr.Newf("bad_language", "unsupported language %q", lang)
 	}
-	return s.Store.SetSetting("language", lang)
+	if err := s.Store.SetSetting("language", lang); err != nil {
+		return err
+	}
+	s.notify("settings")
+	return nil
 }

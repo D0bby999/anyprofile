@@ -110,6 +110,7 @@ func (s *Service) CreateSite(in SiteInput) (site.Site, error) {
 	if err := s.Store.CreateCustomSite(&c); err != nil {
 		return site.Site{}, err
 	}
+	s.notify("sites")
 	return site.Site{ID: c.ID, Name: c.Name, Group: "custom", Domains: c.Domains,
 		StartURL: c.StartURL, Color: c.Color, Custom: true}, nil
 }
@@ -123,8 +124,12 @@ func (s *Service) UpdateSite(id string, in SiteInput) error {
 	if err != nil {
 		return err
 	}
-	return s.Store.UpdateCustomSite(store.CustomSite{ID: id, Name: n.Name,
-		Domains: n.Domains, StartURL: n.StartURL, Color: n.Color})
+	if err := s.Store.UpdateCustomSite(store.CustomSite{ID: id, Name: n.Name,
+		Domains: n.Domains, StartURL: n.StartURL, Color: n.Color}); err != nil {
+		return err
+	}
+	s.notify("sites")
+	return nil
 }
 
 // DeleteSite removes a custom platform; its profiles move to other.
@@ -132,5 +137,10 @@ func (s *Service) DeleteSite(id string) error {
 	if !strings.HasPrefix(id, "custom-") {
 		return apperr.New("site_builtin", "built-in platforms cannot be changed")
 	}
-	return s.Store.DeleteCustomSite(id)
+	if err := s.Store.DeleteCustomSite(id); err != nil {
+		return err
+	}
+	s.notify("sites")
+	s.notify("profiles")
+	return nil
 }

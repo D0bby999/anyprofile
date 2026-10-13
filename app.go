@@ -62,6 +62,7 @@ func (a *App) init() error {
 	l := launcher.New(st, sec, dirs, []engine.Engine{a.fury},
 		func(in launcher.Info) { runtime.EventsEmit(a.ctx, "launch:changed", in) }, log)
 	a.svc = &service.Service{Dirs: dirs, Store: st, Secrets: sec, Engine: a.fury, Launcher: l, Log: log,
+		OnChange:   func(kind string) { runtime.EventsEmit(a.ctx, "data:changed", kind) },
 		CheckProxy: netproxy.Check,
 		Locale: func(ctx context.Context, cc string) (string, []string, error) {
 			loc, err := a.fury.LocaleFor(ctx, cc)

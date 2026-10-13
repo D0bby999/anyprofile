@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/D0bby999/anyprofile/internal/engine"
@@ -229,5 +230,69 @@ func TestSites(t *testing.T) {
 	}
 	if all, _ := s.Sites(); len(all) != builtin {
 		t.Fatalf("after delete = %d sites", len(all))
+	}
+}
+
+func TestNotifyOnWrites(t *testing.T) {
+	s, _ := newService(t)
+	ctx := context.Background()
+	var mu sync.Mutex
+	var kinds []string
+	s.OnChange = func(kind string) {
+		mu.Lock()
+		kinds = append(kinds, kind)
+		mu.Unlock()
+	}
+	contains := func(k string) bool {
+		mu.Lock()
+		defer mu.Unlock()
+		for _, x := range kinds {
+			if x == k {
+				return true
+			}
+		}
+		return false
+	}
+
+	if _, err := s.ImportProxies(ctx, "gw.example:10001:u:pw"); err != nil {
+		t.Fatal(err)
+	}
+	p, err := s.CreateProfile(ctx, NewProfile{Name: "Notify"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	p.Name = "Renamed"
+	if err := s.UpdateProfile(ctx, p); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Trash(p.ID); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Restore(p.ID); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.CreateSite(SiteInput{Name: "Tiki", Color: "#1A94FF"}); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.SetLanguage("vi"); err != nil {
+		t.Fatal(err)
+	}
+	for _, k := range []string{"proxies", "profiles", "sites", "settings"} {
+		if !contains(k) {
+			t.Fatalf("kinds %v missing %q", kinds, k)
+		}
+	}
+
+	mu.Lock()
+	before := len(kinds)
+	mu.Unlock()
+	if _, err := s.CreateProfile(ctx, NewProfile{Name: "  "}); err == nil {
+		t.Fatal("empty name must fail")
+	}
+	mu.Lock()
+	after := len(kinds)
+	mu.Unlock()
+	if before != after {
+		t.Fatalf("failed write notified: %v", kinds)
 	}
 }

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { useCallback, useEffect, useState } from 'react'
-import { Api, service } from '../api'
+import { Api, onDataChanged, service } from '../api'
 import { t } from '../i18n'
 import { errorText, relativeTime } from '../lib/format'
 import { EmptyState } from '../components/empty-state'
@@ -22,6 +22,7 @@ export function ProxiesPage({ onChanged }: { onChanged: () => void }) {
 
   const load = useCallback(() => { Api.ListProxies().then((r) => setRows(r ?? [])).catch((e) => setErrors([errorText(e)])) }, [])
   useEffect(load, [load])
+  useEffect(() => onDataChanged(['proxies', 'profiles'], load), [load])
 
   const run = async (what: string, fn: () => Promise<unknown>) => {
     setBusy(what)

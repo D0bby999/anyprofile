@@ -74,11 +74,21 @@ func (a *App) RestoreProfile(id string) error {
 func (a *App) PurgeProfile(id string) error { return a.must(func() error { return a.svc.Purge(id) }) }
 
 func (a *App) StartProfile(id string) error {
-	return a.must(func() error { return a.svc.Launcher.Start(a.ctx, id) })
+	return a.must(func() error {
+		a.svc.Log.Info("ui asked to start", "profile", id)
+		err := a.svc.Launcher.Start(a.ctx, id)
+		a.svc.Log.Info("start returned", "profile", id, "err", err)
+		return err
+	})
 }
 
 func (a *App) StopProfile(id string) error {
-	return a.must(func() error { return a.svc.Launcher.Stop(id) })
+	return a.must(func() error {
+		a.svc.Log.Info("ui asked to stop", "profile", id)
+		err := a.svc.Launcher.Stop(id)
+		a.svc.Log.Info("stop returned", "profile", id, "err", err)
+		return err
+	})
 }
 
 func (a *App) FocusProfile(id string) bool { return a.svc != nil && a.svc.Launcher.Focus(id) }

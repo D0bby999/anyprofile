@@ -69,6 +69,7 @@ func (s *Service) ImportProxies(ctx context.Context, text string) (ImportResult,
 	}
 	res.Added = len(added)
 	s.checkMany(ctx, added)
+	s.notify("proxies")
 	return res, nil
 }
 
@@ -108,6 +109,7 @@ func (s *Service) CheckProxyByID(ctx context.Context, id string) (store.Proxy, e
 	if err := s.Store.SaveProxyCheck(px); err != nil {
 		return px, err
 	}
+	s.notify("proxies")
 	return s.Store.GetProxy(id)
 }
 
@@ -124,7 +126,13 @@ func (s *Service) CheckAllProxies(ctx context.Context) error {
 	return nil
 }
 
-func (s *Service) RenameProxy(id, label string) error { return s.Store.UpdateProxyLabel(id, label) }
+func (s *Service) RenameProxy(id, label string) error {
+	if err := s.Store.UpdateProxyLabel(id, label); err != nil {
+		return err
+	}
+	s.notify("proxies")
+	return nil
+}
 
 // DeleteProxy refuses while a running profile depends on it.
 func (s *Service) DeleteProxy(id string) error {
@@ -146,7 +154,12 @@ func (s *Service) DeleteProxy(id string) error {
 	if err := s.Store.DeleteProxy(id); err != nil {
 		return err
 	}
-	return s.Secrets.Delete(secrets.ServiceProxy, id)
+	if err := s.Secrets.Delete(secrets.ServiceProxy, id); err != nil {
+		return err
+	}
+	s.notify("proxies")
+	s.notify("profiles")
+	return nil
 }
 
 // nextFreeProxy is the oldest sticky proxy no live profile uses, or "" for none.

@@ -3,9 +3,18 @@
 export * as Api from '../wailsjs/go/main/App'
 export { engine, service, site, store, netproxy } from '../wailsjs/go/models'
 import { EventsOn } from '../wailsjs/runtime/runtime'
+import { debounce } from './lib/debounce'
 
 export type LaunchInfo = { profileId: string; state: string; pid: number; cdpPort: number; error: string }
 export type EngineProgress = { done: number; total: number }
+export type DataKind = 'profiles' | 'proxies' | 'sites' | 'settings'
+
+/** Runs fn (debounced) when the backend reports a write of one of these kinds. */
+export function onDataChanged(kinds: DataKind[], fn: () => void): () => void {
+  const run = debounce(fn, 150)
+  const off = EventsOn('data:changed', (kind: DataKind) => { if (kinds.includes(kind)) run() })
+  return () => { run.cancel(); off() }
+}
 
 export function onLaunchChanged(fn: (info: LaunchInfo) => void): () => void {
   return EventsOn('launch:changed', fn)

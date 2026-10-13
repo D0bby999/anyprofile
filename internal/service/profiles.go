@@ -103,7 +103,11 @@ func (s *Service) CreateProfile(ctx context.Context, in NewProfile) (store.Profi
 	if err := s.applyNetwork(ctx, &p); err != nil {
 		return store.Profile{}, err
 	}
-	return p, s.Store.CreateProfile(&p)
+	if err := s.Store.CreateProfile(&p); err != nil {
+		return store.Profile{}, err
+	}
+	s.notify("profiles")
+	return p, nil
 }
 
 // UpdateProfile saves editable fields; a new proxy re-derives timezone,
@@ -121,7 +125,11 @@ func (s *Service) UpdateProfile(ctx context.Context, p store.Profile) error {
 			return err
 		}
 	}
-	return s.Store.UpdateProfile(p)
+	if err := s.Store.UpdateProfile(p); err != nil {
+		return err
+	}
+	s.notify("profiles")
+	return nil
 }
 
 // applyNetwork fills timezone, position and languages from the profile's proxy exit.
@@ -160,10 +168,20 @@ func (s *Service) Trash(id string) error {
 	if err := s.Launcher.Stop(id); err != nil {
 		return err
 	}
-	return s.Store.SoftDelete(id)
+	if err := s.Store.SoftDelete(id); err != nil {
+		return err
+	}
+	s.notify("profiles")
+	return nil
 }
 
-func (s *Service) Restore(id string) error { return s.Store.Restore(id) }
+func (s *Service) Restore(id string) error {
+	if err := s.Store.Restore(id); err != nil {
+		return err
+	}
+	s.notify("profiles")
+	return nil
+}
 
 // Purge deletes a trashed profile for good: its folder, cookie key and row.
 func (s *Service) Purge(id string) error {
@@ -184,7 +202,11 @@ func (s *Service) Purge(id string) error {
 	if err := s.Secrets.Delete(secrets.ServiceCookieKey, id); err != nil {
 		return err
 	}
-	return s.Store.Purge(id)
+	if err := s.Store.Purge(id); err != nil {
+		return err
+	}
+	s.notify("profiles")
+	return nil
 }
 
 // StartMany and StopMany run in parallel and report per-profile errors.

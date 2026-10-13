@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { useEffect, useMemo, useState } from 'react'
-import { Api, engine } from './api'
+import { Api, engine, onDataChanged } from './api'
 import { language, setLanguage, t, type Language } from './i18n'
 import { applyTheme, readTheme, type ThemeChoice } from './lib/theme'
 import { useProfiles } from './hooks/use-profiles'
@@ -34,6 +34,7 @@ export default function App() {
   }, [])
   const refreshProxies = () => { Api.ListProxies().then((p) => setProxyCount((p ?? []).length)).catch(() => {}) }
   useEffect(refreshProxies, [])
+  useEffect(() => onDataChanged(['proxies'], refreshProxies), [])
 
   const counts = useMemo(() => {
     const c = { all: 0, running: 0 }

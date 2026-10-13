@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { useCallback, useEffect, useState } from 'react'
-import { Api, onLaunchChanged, service, store } from '../api'
+import { Api, onDataChanged, onLaunchChanged, service, store } from '../api'
 
 /** Live (not trashed) profiles, kept current by launch events. One source for
  *  the sidebar counts and the table. */
@@ -17,6 +17,7 @@ export function useProfiles() {
   }, [])
 
   useEffect(reload, [reload])
+  useEffect(() => onDataChanged(['profiles', 'proxies', 'sites'], reload), [reload])
   useEffect(() => onLaunchChanged((info) => {
     setRows((cur) => cur.map((r) => (r.id !== info.profileId ? r : service.ProfileRow.createFrom({
       ...r, state: info.state, stateError: info.error, cdpPort: info.cdpPort,

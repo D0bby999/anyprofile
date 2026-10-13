@@ -33,8 +33,17 @@ type Service struct {
 	Locale   LocaleFunc
 	Launcher *launcher.Launcher
 	Log      *slog.Logger
+	// OnChange is told the kind of data a write changed: "profiles",
+	// "proxies", "sites" or "settings". Nil in tests that do not care.
+	OnChange func(kind string)
 	// CheckProxy measures a proxy's exit; netproxy.Check outside tests.
 	CheckProxy func(ctx context.Context, up netproxy.Upstream) (netproxy.Exit, error)
+}
+
+func (s *Service) notify(kind string) {
+	if s.OnChange != nil {
+		s.OnChange(kind)
+	}
 }
 
 func randomHex(n int) string {
