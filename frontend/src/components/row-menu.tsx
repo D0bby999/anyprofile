@@ -36,6 +36,7 @@ export function RowMenu({ row, onEdit, onDuplicate, onTrash, onMessage, onError 
   const copyPassword = async () => {
     try {
       await Api.CopyAccountPassword(row.id)
+      onMessage(t.account.copiedPassword)
     } catch (e) {
       onError(errorText(e))
     }

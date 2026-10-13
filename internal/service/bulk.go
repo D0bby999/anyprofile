@@ -135,6 +135,7 @@ func (s *Service) SetSiteMany(ids []string, siteID string) error {
 	if err := s.checkSite(siteID); err != nil {
 		return err
 	}
+	defer s.notify("profiles") // also after a partial failure: earlier rows did change
 	for _, id := range ids {
 		p, err := s.Store.GetProfile(id)
 		if err != nil {
@@ -145,7 +146,6 @@ func (s *Service) SetSiteMany(ids []string, siteID string) error {
 			return err
 		}
 	}
-	s.notify("profiles")
 	return nil
 }
 
@@ -155,6 +155,7 @@ func (s *Service) AddTagMany(ids []string, tag string) error {
 	if tag == "" {
 		return apperr.New("tag_empty", "type a tag")
 	}
+	defer s.notify("profiles") // also after a partial failure: earlier rows did change
 	for _, id := range ids {
 		p, err := s.Store.GetProfile(id)
 		if err != nil {
@@ -174,7 +175,6 @@ func (s *Service) AddTagMany(ids []string, tag string) error {
 			}
 		}
 	}
-	s.notify("profiles")
 	return nil
 }
 

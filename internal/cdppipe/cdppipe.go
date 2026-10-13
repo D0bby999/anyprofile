@@ -49,6 +49,7 @@ func New(w, r *os.File) *Conn {
 }
 
 func (c *Conn) readLoop(r *os.File) {
+	defer r.Close()
 	br := bufio.NewReader(r)
 	for {
 		b, err := br.ReadBytes(0)
