@@ -104,3 +104,19 @@ func (f *Fury) Install(ctx context.Context, progress engine.Progress) error {
 	}
 	return f.writeStamp()
 }
+
+// CleanStale removes what an interrupted Install left behind: staging
+// folders and the downloaded archive. The verified version folder is kept.
+func (f *Fury) CleanStale() error {
+	f.mu.Lock() // never while Install runs
+	defer f.mu.Unlock()
+	parent := filepath.Dir(f.dir())
+	stale, _ := filepath.Glob(filepath.Join(parent, ".staging-*"))
+	stale = append(stale, filepath.Join(parent, tarballName))
+	for _, p := range stale {
+		if err := os.RemoveAll(p); err != nil {
+			return err
+		}
+	}
+	return nil
+}

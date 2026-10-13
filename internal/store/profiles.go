@@ -27,6 +27,7 @@ type Profile struct {
 	Lat           *float64 `json:"lat"`
 	Lon           *float64 `json:"lon"`
 	Site          string   `json:"site"`
+	Serial        int      `json:"serial"`
 	StartURL      string   `json:"startUrl"`
 	Notes         string   `json:"notes"`
 	Tags          []string `json:"tags"`
@@ -48,7 +49,7 @@ type ProfileFilter struct {
 const profileCols = `id, name, engine, engine_version, persona_id, seed_hex, platform,
 	COALESCE(proxy_id, ''), timezone, languages, ui_locale, lat, lon, site, start_url,
 	notes, tags, cdp_next_launch, pinned, created_at, updated_at, COALESCE(last_open_at, ''),
-	COALESCE(deleted_at, '')`
+	COALESCE(deleted_at, ''), serial`
 
 func scanProfile(row interface{ Scan(...any) error }) (Profile, error) {
 	var p Profile
@@ -56,7 +57,7 @@ func scanProfile(row interface{ Scan(...any) error }) (Profile, error) {
 	err := row.Scan(&p.ID, &p.Name, &p.Engine, &p.EngineVersion, &p.PersonaID, &p.SeedHex,
 		&p.Platform, &p.ProxyID, &p.Timezone, &p.Languages, &p.UILocale, &p.Lat, &p.Lon,
 		&p.Site, &p.StartURL, &p.Notes, &tags, &p.CDPNextLaunch, &p.Pinned,
-		&p.CreatedAt, &p.UpdatedAt, &p.LastOpenAt, &p.DeletedAt)
+		&p.CreatedAt, &p.UpdatedAt, &p.LastOpenAt, &p.DeletedAt, &p.Serial)
 	if errors.Is(err, sql.ErrNoRows) {
 		return p, ErrNotFound
 	}
@@ -94,12 +95,15 @@ func (s *Store) CreateProfile(p *Profile) error {
 	p.CreatedAt, p.UpdatedAt = now(), now()
 	_, err := s.db.Exec(`INSERT INTO profiles (id, name, engine, engine_version, persona_id, seed_hex,
 		platform, proxy_id, timezone, languages, ui_locale, lat, lon, site, start_url, notes,
-		tags, cdp_next_launch, pinned, created_at, updated_at)
-		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+		tags, cdp_next_launch, pinned, created_at, updated_at, serial)
+		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,(SELECT COALESCE(MAX(serial), 0) + 1 FROM profiles))`,
 		p.ID, p.Name, p.Engine, p.EngineVersion, p.PersonaID, p.SeedHex, p.Platform, nullStr(p.ProxyID),
 		p.Timezone, p.Languages, p.UILocale, p.Lat, p.Lon, p.Site, p.StartURL, p.Notes,
 		tagsJSON(p.Tags), p.CDPNextLaunch, p.Pinned, p.CreatedAt, p.UpdatedAt)
-	return err
+	if err != nil {
+		return err
+	}
+	return s.db.QueryRow(`SELECT serial FROM profiles WHERE id = ?`, p.ID).Scan(&p.Serial)
 }
 
 func (s *Store) GetProfile(id string) (Profile, error) {

@@ -7,6 +7,7 @@ import type { ThemeChoice } from '../lib/theme'
 import { useSites } from '../hooks/use-sites'
 import { Icon, type IconName } from '../components/icons'
 import { SiteSettings } from '../components/site-settings'
+import { StorageSettings } from '../components/storage-settings'
 import { PageHead } from '../components/page-head'
 
 const mb = (n: number) => `${Math.round(n / 1048576)} MB`
@@ -96,6 +97,11 @@ export function SettingsPage({ status, onEngineChanged, theme, onTheme, fileVaul
           <h2>{t.sites.customTitle}</h2>
           <p className="desc">{t.sites.customDesc}</p>
           <SiteSettings sites={sites} reload={reloadSites} />
+        </section>
+
+        <section className="card pad">
+          <h2>{t.storage.title}</h2>
+          <StorageSettings />
         </section>
 
         <section className="card pad">

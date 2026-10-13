@@ -167,6 +167,26 @@ func (a *App) DeleteSite(id string) error {
 	return a.must(func() error { return a.svc.DeleteSite(id) })
 }
 
+// Storage
+
+func (a *App) Storage() (service.StorageInfo, error) {
+	if err := a.ready(); err != nil {
+		return service.StorageInfo{}, err
+	}
+	return a.svc.Storage()
+}
+
+func (a *App) DeleteOrphans(ids []string) error {
+	return a.must(func() error { return a.svc.DeleteOrphans(ids) })
+}
+
+func (a *App) ClearCache() (int64, error) {
+	if err := a.ready(); err != nil {
+		return 0, err
+	}
+	return a.svc.ClearCache()
+}
+
 // System
 
 func (a *App) FileVaultOn() bool { return service.FileVaultOn() }

@@ -103,6 +103,16 @@ export const en = {
     fileVaultOff: 'FileVault is off. Profiles\u2019 history and site data sit unencrypted on disk. Turn it on in System Settings, under Privacy & Security.',
     secretsNote: 'Proxy passwords and each profile\u2019s cookie key live in the Keychain. No control port is open unless you enable diagnostics.',
   },
+  storage: {
+    title: 'Storage',
+    profilesSize: (s: string) => `Profiles use ${s}`,
+    clearCache: 'Clear cache of closed profiles',
+    clearCacheHint: 'Cookies and logins are kept.',
+    cleared: (s: string) => `Freed ${s}`,
+    orphans: (n: number, s: string) => `${n} leftover folders (${s}) belong to no profile`,
+    confirmOrphans: (n: number) => `Delete ${n} leftover folders? This cannot be undone.`,
+    deleteOrphans: 'Delete',
+  },
   system: { startupFailed: 'AnyProfile failed to start' },
   time: {
     never: 'Never opened', justNow: 'just now',

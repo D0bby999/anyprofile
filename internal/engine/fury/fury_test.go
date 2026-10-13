@@ -90,7 +90,16 @@ func TestInstallVerifiesThenStamps(t *testing.T) {
 func testProfile() store.Profile {
 	lat, lon := 40.71, -74.0
 	return store.Profile{ID: "p1", Name: "Kenh 1", PersonaID: "macos-m4-1710x1112", SeedHex: "00112233aabbccdd",
-		Timezone: "America/New_York", Languages: "en-US,en", UILocale: "en-US", Lat: &lat, Lon: &lon}
+		Timezone: "America/New_York", Languages: "en-US,en", UILocale: "en-US", Lat: &lat, Lon: &lon, Serial: 7}
+}
+
+func TestWindowName(t *testing.T) {
+	if got := windowName(store.Profile{Name: "Shop A"}); got != "Shop A" {
+		t.Fatalf("serial 0 name = %q", got)
+	}
+	if got := windowName(store.Profile{Name: "Shop A", Serial: 12}); got != "#12 Shop A" {
+		t.Fatalf("serial 12 name = %q", got)
+	}
 }
 
 func TestDeriveIsDeterministic(t *testing.T) {
@@ -127,7 +136,7 @@ func TestBuildLaunchKeepsSecretsOffArgv(t *testing.T) {
 			t.Errorf("argv contains %q", bad)
 		}
 	}
-	for _, want := range []string{"--fury-fp-fd=3", "--fury-oscrypt-fd=4", "--proxy-server=http://127.0.0.1:4567", "--disable-quic"} {
+	for _, want := range []string{"--fury-fp-fd=3", "--fury-oscrypt-fd=4", "--proxy-server=http://127.0.0.1:4567", "--disable-quic", "--window-name=#7 Kenh 1"} {
 		if !strings.Contains(argv, want) {
 			t.Errorf("argv lacks %q", want)
 		}
@@ -160,5 +169,40 @@ func TestStageWidevineFromFakeChrome(t *testing.T) {
 	}
 	if err := stageWidevine([]string{"/nope"}, ud); err != errNoChrome {
 		t.Fatalf("no chrome err = %v", err)
+	}
+}
+
+func TestCleanStale(t *testing.T) {
+	dirs := paths.Dirs{Root: t.TempDir()}
+	f := New(dirs, "/nonexistent")
+	if err := os.MkdirAll(f.dir(), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(f.dir(), "keep"), []byte("x"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	parent := filepath.Dir(f.dir())
+	staging := filepath.Join(parent, ".staging-0.3.5", "Fury.app")
+	if err := os.MkdirAll(staging, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(staging, "x"), []byte("x"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	tarball := filepath.Join(parent, tarballName)
+	if err := os.WriteFile(tarball, []byte("x"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := f.CleanStale(); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Join(parent, ".staging-0.3.5")); !os.IsNotExist(err) {
+		t.Fatal("staging survived")
+	}
+	if _, err := os.Stat(tarball); !os.IsNotExist(err) {
+		t.Fatal("tarball survived")
+	}
+	if _, err := os.Stat(filepath.Join(f.dir(), "keep")); err != nil {
+		t.Fatal("installed version was removed")
 	}
 }

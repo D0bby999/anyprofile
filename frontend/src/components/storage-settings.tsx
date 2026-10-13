@@ -1,0 +1,74 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+import { useCallback, useEffect, useState } from 'react'
+import { Api, service } from '../api'
+import { t } from '../i18n'
+import { errorText, formatBytes } from '../lib/format'
+import { Icon } from './icons'
+
+/** Storage use of the profiles folder, with cache and orphan cleanup. */
+export function StorageSettings() {
+  const [info, setInfo] = useState<service.StorageInfo | null>(null)
+  const [error, setError] = useState('')
+  const [freed, setFreed] = useState('')
+  const [busy, setBusy] = useState('')
+
+  const load = useCallback(() => {
+    Api.Storage().then(setInfo).catch((e) => setError(errorText(e)))
+  }, [])
+  useEffect(load, [load])
+
+  const orphanBytes = (info?.orphans ?? []).reduce((n, o) => n + Number(o.bytes), 0)
+
+  const clearCache = async () => {
+    setBusy('cache')
+    setError('')
+    setFreed('')
+    try {
+      const n = await Api.ClearCache()
+      setFreed(t.storage.cleared(formatBytes(Number(n))))
+      load()
+    } catch (e) {
+      setError(errorText(e))
+    } finally {
+      setBusy('')
+    }
+  }
+
+  const deleteOrphans = async () => {
+    const ids = (info?.orphans ?? []).map((o) => o.id)
+    if (!ids.length || !window.confirm(t.storage.confirmOrphans(ids.length))) return
+    setBusy('orphans')
+    setError('')
+    try {
+      await Api.DeleteOrphans(ids)
+      load()
+    } catch (e) {
+      setError(errorText(e))
+    } finally {
+      setBusy('')
+    }
+  }
+
+  return (
+    <div className="field">
+      <p className="desc" style={{ margin: 0 }}>
+        {info ? t.storage.profilesSize(formatBytes(Number(info.profilesBytes))) : t.common.loading}
+      </p>
+      <div className="row">
+        <button className="btn" disabled={busy !== ''} onClick={clearCache}>
+          <Icon name="trash" className="icon sm" />{t.storage.clearCache}
+        </button>
+      </div>
+      <span className="hint">{t.storage.clearCacheHint}</span>
+      {!!info?.orphans?.length && (
+        <div className="banner warn">
+          <Icon name="alert" />
+          <span className="grow">{t.storage.orphans(info.orphans.length, formatBytes(orphanBytes))}</span>
+          <button className="btn sm danger" disabled={busy !== ''} onClick={deleteOrphans}>{t.storage.deleteOrphans}</button>
+        </div>
+      )}
+      {freed && <div className="banner ok"><Icon name="check" /><span className="grow">{freed}</span></div>}
+      {error && <div className="banner danger" role="alert"><Icon name="alert" /><span className="grow">{error}</span></div>}
+    </div>
+  )
+}

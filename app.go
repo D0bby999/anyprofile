@@ -58,6 +58,9 @@ func (a *App) init() error {
 		return fmt.Errorf("open database: %w", err)
 	}
 	a.fury = fury.New(dirs, cfgBin)
+	if err := a.fury.CleanStale(); err != nil {
+		log.Warn("clean stale engine files", "err", err)
+	}
 	sec := secrets.Keychain{}
 	l := launcher.New(st, sec, dirs, []engine.Engine{a.fury},
 		func(in launcher.Info) { runtime.EventsEmit(a.ctx, "launch:changed", in) }, log)

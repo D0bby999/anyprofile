@@ -10,9 +10,13 @@ export function CheckAllProxies():Promise<void>;
 
 export function CheckProxy(arg1:string):Promise<store.Proxy>;
 
+export function ClearCache():Promise<number>;
+
 export function CreateProfile(arg1:service.NewProfile):Promise<store.Profile>;
 
 export function CreateSite(arg1:service.SiteInput):Promise<site.Site>;
+
+export function DeleteOrphans(arg1:Array<string>):Promise<void>;
 
 export function DeleteProxy(arg1:string):Promise<void>;
 
@@ -57,6 +61,8 @@ export function StartupError():Promise<string>;
 export function StopProfile(arg1:string):Promise<void>;
 
 export function StopProfiles(arg1:Array<string>):Promise<Record<string, string>>;
+
+export function Storage():Promise<service.StorageInfo>;
 
 export function TrashProfile(arg1:string):Promise<void>;
 

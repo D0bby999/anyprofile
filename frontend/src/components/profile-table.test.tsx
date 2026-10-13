@@ -14,13 +14,13 @@ const sites = [
 ]
 
 const row = (over: Partial<service.ProfileRow>) => service.ProfileRow.createFrom({
-  id: 'a', name: 'Kênh A', site: 'tiktok', personaId: 'macos-m4pro-1728x1117',
+  id: 'a', name: 'Kênh A', site: 'tiktok', serial: 1, personaId: 'macos-m4pro-1728x1117',
   proxyId: 'px', proxyLabel: 'u@gw:10001', proxyCountry: 'US', proxyExitIp: '67.84.146.69',
   state: 'stopped', stateError: '', cdpPort: 0, tags: ['tiktok'], lastOpenAt: '', createdAt: '2026-10-12T00:00:00Z', ...over,
 })
 
 const props = (rows: service.ProfileRow[]) => ({
-  rows, sites, numbers: new Map(rows.map((r, i) => [r.id, i + 1])), selected: new Set<string>(),
+  rows, sites, selected: new Set<string>(),
   sort: { key: 'no' as const, desc: false },
   onSort: vi.fn(), onToggle: vi.fn(), onToggleAll: vi.fn(), onStart: vi.fn(), onStop: vi.fn(), onFocus: vi.fn(), onEdit: vi.fn(),
 })

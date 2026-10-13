@@ -250,3 +250,40 @@ func TestProxyDetachAndLaunches(t *testing.T) {
 		t.Fatalf("launch survived purge: %+v", ls)
 	}
 }
+
+func TestSerial(t *testing.T) {
+	s, _ := openTemp(t)
+	ids := []string{"p1", "p2", "p3"}
+	for i, id := range ids {
+		p := sample(id)
+		if err := s.CreateProfile(p); err != nil {
+			t.Fatal(err)
+		}
+		if p.Serial != i+1 {
+			t.Fatalf("%s serial = %d, want %d", id, p.Serial, i+1)
+		}
+	}
+	if err := s.SoftDelete("p2"); err != nil {
+		t.Fatal(err)
+	}
+	p4 := sample("p4")
+	if err := s.CreateProfile(p4); err != nil {
+		t.Fatal(err)
+	}
+	if p4.Serial != 4 {
+		t.Fatalf("p4 serial = %d, want 4", p4.Serial)
+	}
+}
+
+func TestSerialMigration(t *testing.T) {
+	s, _ := upgradeFrom(t, 3, func(o *Store) {
+		insertV1Profile(t, o, "b", "other", "2026-10-02T00:00:00Z")
+		insertV1Profile(t, o, "a", "other", "2026-10-01T00:00:00Z")
+	})
+	if p, err := s.GetProfile("a"); err != nil || p.Serial != 1 {
+		t.Fatalf("a serial = %d, %v", p.Serial, err)
+	}
+	if p, err := s.GetProfile("b"); err != nil || p.Serial != 2 {
+		t.Fatalf("b serial = %d, %v", p.Serial, err)
+	}
+}

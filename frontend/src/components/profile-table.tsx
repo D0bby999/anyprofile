@@ -13,7 +13,6 @@ export type Sort = { key: SortKey; desc: boolean }
 type Props = {
   rows: service.ProfileRow[]
   sites: Site[]
-  numbers: Map<string, number>
   selected: Set<string>
   sort: Sort
   onSort: (key: SortKey) => void
@@ -81,7 +80,7 @@ export function ProfileTable(p: Props) {
           return (
             <tr key={r.id} className={cls || undefined} onDoubleClick={() => (running ? p.onFocus(r.id) : !busy && p.onStart(r.id))}>
               <td className="col-check"><input type="checkbox" checked={p.selected.has(r.id)} onChange={() => p.onToggle(r.id)} aria-label={r.name} /></td>
-              <td className="col-no">{p.numbers.get(r.id)}</td>
+              <td className="col-no">{r.serial}</td>
               <td className="cellname">
                 <b className="selectable">{r.name}</b>
                 <span className="sub">

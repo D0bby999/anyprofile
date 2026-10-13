@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { describe, expect, it } from 'vitest'
 import { t } from '../i18n'
-import { allTags, errorText, parseTags, relativeTime } from './format'
+import { allTags, errorText, formatBytes, parseTags, relativeTime } from './format'
 
 describe('relativeTime', () => {
   const now = new Date('2026-10-12T12:00:00Z')
@@ -35,5 +35,15 @@ describe('errorText', () => {
     expect(errorText('anyprofile:proxy_in_use: x')).toBe(t.errors.proxy_in_use)
     expect(errorText(new Error('anyprofile:unknown_code: hello'))).toBe('hello')
     expect(errorText('plain')).toBe('plain')
+  })
+})
+
+describe('formatBytes', () => {
+  it('scales units with one decimal from MB up', () => {
+    expect(formatBytes(512)).toBe('512 B')
+    expect(formatBytes(2048)).toBe('2 KB')
+    expect(formatBytes(1536 * 1024)).toBe('1.5 MB')
+    expect(formatBytes(2.5 * 1024 * 1024 * 1024)).toBe('2.5 GB')
+    expect(formatBytes(-5)).toBe('0 B')
   })
 })

@@ -37,12 +37,6 @@ export function ProfilesPage({ rows, sites, recent, view, engineReady, fileVault
   const [editing, setEditing] = useState<service.ProfileRow | null>(null)
   const [busy, setBusy] = useState(false)
 
-  // Numbers follow creation order and never change with filters or sorting.
-  const numbers = useMemo(() => {
-    const byAge = [...rows].sort((a, b) => a.createdAt.localeCompare(b.createdAt))
-    return new Map(byAge.map((r, i) => [r.id, i + 1]))
-  }, [rows])
-
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase()
     const out = rows.filter((r) =>
@@ -51,10 +45,10 @@ export function ProfilesPage({ rows, sites, recent, view, engineReady, fileVault
       (!q || r.name.toLowerCase().includes(q) || r.tags.some((x) => x.toLowerCase().includes(q)) ||
         siteById(sites, r.site).name.toLowerCase().includes(q)))
     const key = (r: service.ProfileRow) =>
-      sort.key === 'name' ? r.name.toLowerCase() : sort.key === 'lastOpen' ? r.lastOpenAt || '' : String(numbers.get(r.id)).padStart(6, '0')
+      sort.key === 'name' ? r.name.toLowerCase() : sort.key === 'lastOpen' ? r.lastOpenAt || '' : String(r.serial).padStart(6, '0')
     out.sort((a, b) => key(a).localeCompare(key(b), language) * (sort.desc ? -1 : 1))
     return out
-  }, [rows, sites, view, tag, query, sort, numbers])
+  }, [rows, sites, view, tag, query, sort])
 
   const run = async (fn: () => Promise<unknown>) => {
     setBusy(true)
@@ -130,7 +124,7 @@ export function ProfilesPage({ rows, sites, recent, view, engineReady, fileVault
                 <button className="btn" onClick={() => { setQuery(''); setTag(''); onClearView() }}>{t.profiles.clearFilters}</button>
               </EmptyState>
             ) : (
-              <ProfileTable rows={visible} sites={sites} numbers={numbers} selected={selected} sort={sort} onSort={onSort}
+              <ProfileTable rows={visible} sites={sites} selected={selected} sort={sort} onSort={onSort}
                 onToggle={toggle} onToggleAll={toggleAll}
                 onStart={(id) => run(() => Api.StartProfile(id))} onStop={(id) => run(() => Api.StopProfile(id))}
                 onFocus={(id) => { Api.FocusProfile(id) }} onEdit={setEditing} />

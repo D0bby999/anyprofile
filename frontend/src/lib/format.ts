@@ -31,3 +31,12 @@ export function errorText(e: unknown): string {
   if (!m) return raw
   return t.errors[m[1]] ?? m[2]
 }
+
+/** Human-readable size, base 1024, one decimal from MB up. */
+export function formatBytes(n: number): string {
+  if (!Number.isFinite(n) || n < 0) n = 0
+  if (n < 1024) return `${Math.round(n)} B`
+  if (n < 1024 * 1024) return `${Math.round(n / 1024)} KB`
+  if (n < 1024 * 1024 * 1024) return `${(n / (1024 * 1024)).toFixed(1)} MB`
+  return `${(n / (1024 * 1024 * 1024)).toFixed(1)} GB`
+}

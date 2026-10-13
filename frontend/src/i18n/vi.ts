@@ -105,7 +105,17 @@ export const vi: Messages = {
     fileVaultOff: 'FileVault đang tắt. Lịch sử và dữ liệu trang của các profile nằm trên ổ đĩa không mã hoá. Nên bật trong System Settings, mục Privacy & Security.',
     secretsNote: 'Mật khẩu proxy và khoá cookie của từng profile nằm trong Keychain. Không có cổng điều khiển nào mở khi bạn chưa bật chẩn đoán.',
   },
-  system: { startupFailed: 'AnyProfile không khởi động được' },
+  storage: {
+    title: 'Lưu trữ',
+    profilesSize: (s: string) => `Các profile chiếm ${s}`,
+    clearCache: 'Xoá cache của profile đang đóng',
+    clearCacheHint: 'Cookie và phiên đăng nhập được giữ nguyên.',
+    cleared: (s: string) => `Đã giải phóng ${s}`,
+    orphans: (n: number, s: string) => `${n} thư mục (${s}) không thuộc profile nào`,
+    confirmOrphans: (n: number) => `Xoá ${n} thư mục thừa? Không khôi phục được.`,
+    deleteOrphans: 'Xoá',
+  },
+  system: { startupFailed: 'AnyProfile không khởi động được'},
   time: {
     never: 'Chưa mở', justNow: 'vừa xong',
     minutes: (n: number) => `${n} phút trước`, hours: (n: number) => `${n} giờ trước`, days: (n: number) => `${n} ngày trước`,

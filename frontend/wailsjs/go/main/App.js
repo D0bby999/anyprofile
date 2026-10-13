@@ -10,12 +10,20 @@ export function CheckProxy(arg1) {
   return window['go']['main']['App']['CheckProxy'](arg1);
 }
 
+export function ClearCache() {
+  return window['go']['main']['App']['ClearCache']();
+}
+
 export function CreateProfile(arg1) {
   return window['go']['main']['App']['CreateProfile'](arg1);
 }
 
 export function CreateSite(arg1) {
   return window['go']['main']['App']['CreateSite'](arg1);
+}
+
+export function DeleteOrphans(arg1) {
+  return window['go']['main']['App']['DeleteOrphans'](arg1);
 }
 
 export function DeleteProxy(arg1) {
@@ -104,6 +112,10 @@ export function StopProfile(arg1) {
 
 export function StopProfiles(arg1) {
   return window['go']['main']['App']['StopProfiles'](arg1);
+}
+
+export function Storage() {
+  return window['go']['main']['App']['Storage']();
 }
 
 export function TrashProfile(arg1) {
