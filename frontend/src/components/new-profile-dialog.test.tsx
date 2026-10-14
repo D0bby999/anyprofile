@@ -56,18 +56,32 @@ describe('NewProfileDialog', () => {
     const urls = () => (screen.getByPlaceholderText(t.create.startUrlHint) as HTMLTextAreaElement).value
     expect(urls()).toBe(tiktok)
     fireEvent.change(screen.getByPlaceholderText(t.create.startUrlHint), { target: { value: `${tiktok}\nhttps://mine.example/` } })
-    fireEvent.click(screen.getByRole('button', { name: 'Platform' }))
+    fireEvent.click(screen.getByRole('button', { name: t.sites.change }))
     fireEvent.click(screen.getByRole('option', { name: /Etsy/ }))
+    fireEvent.click(screen.getByRole('button', { name: t.sites.done }))
     expect(urls()).toBe(`${tiktok}\nhttps://mine.example/\n${etsy}`)
-    // The panel stays open for more picks; picking TikTok again removes it.
-    fireEvent.click(screen.getByRole('option', { name: /TikTok/ }))
+    // Removing TikTok's chip drops its start page and keeps the typed one.
+    fireEvent.click(screen.getByRole('button', { name: t.sites.remove('TikTok') }))
     expect(urls()).toBe(`https://mine.example/\n${etsy}`)
-    expect(screen.queryByRole('option', { name: /Other/ })).toBeNull()
     const name = screen.getByPlaceholderText(t.create.namePlaceholder)
     fireEvent.change(name, { target: { value: 'Shop' } })
     fireEvent.submit(name.closest('form')!)
     await waitFor(() => expect(onCreated).toHaveBeenCalled())
     expect(createProfile.mock.calls[0][0]).toMatchObject({ sites: ['etsy'], startUrl: `https://mine.example/\n${etsy}` })
+  })
+
+  it('closes only the platform modal on Escape, and Enter there does not create the profile', () => {
+    const onClose = vi.fn(), onCreated = vi.fn()
+    dialog({ onClose, onCreated })
+    fireEvent.change(screen.getByPlaceholderText(t.create.namePlaceholder), { target: { value: 'Shop' } })
+    fireEvent.click(screen.getByRole('button', { name: t.sites.change }))
+    fireEvent.submit(screen.getByRole('dialog', { name: t.sites.pick }))
+    expect(createProfile).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: t.sites.change }))
+    fireEvent.keyDown(window, { key: 'Escape' })
+    expect(screen.queryByRole('dialog', { name: t.sites.pick })).toBeNull()
+    expect(screen.getByRole('dialog', { name: t.create.title })).toBeTruthy()
+    expect(onClose).not.toHaveBeenCalled()
   })
 
   it('does not submit without a name and closes on Escape', () => {

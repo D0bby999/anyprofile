@@ -238,6 +238,19 @@ kbd { display: inline-flex; align-items: center; min-width: 22px; height: 20px; 
 .siteopt { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px 4px 5px; border-radius: var(--r-sm); border: 1px solid var(--line); background: var(--surface); cursor: pointer; color: var(--ink); font: inherit; white-space: nowrap; }
 .siteopt:hover { background: var(--surface-hover); }
 .siteopt.sel { background: var(--accent-soft); border-color: var(--accent-line); }
+.siteopt.sel .icon { color: var(--accent); }
+.sitechips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.sitechip { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 2px 0 5px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface); font-size: var(--t-sm); }
+.chipx { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; padding: 0; border: 0; border-radius: var(--r-xs); background: none; color: var(--muted); cursor: pointer; }
+.chipx:hover { background: var(--surface-hover); color: var(--ink); }
+.chipx .icon { width: 14px; height: 14px; }
+.dialog.sitedialog { width: 680px; height: min(680px, 100%); }
+.sitedialog .dialog-body { flex: 1; min-height: 0; overflow: hidden; gap: 12px; }
+.sitepanel.big { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 10px; padding: 0; border: 0; }
+.sitepanel.big .sitelist { flex: 1; min-height: 0; max-height: none; align-content: start; padding-right: 4px; }
+.sitepanel.big .siterow { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+.sitepanel.big .siteopt { padding: 7px 10px 7px 7px; min-width: 0; }
+.sitepanel.big .siteopt .grow { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; }
 .rowmenu-wrap { position: relative; display: inline-flex; }
 .rowmenu { position: absolute; right: 0; top: calc(100% + 4px); z-index: 20; min-width: 200px;
   padding: 4px; border: 1px solid var(--line); border-radius: var(--r-md);

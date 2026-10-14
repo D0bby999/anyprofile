@@ -36,6 +36,9 @@ export const vi: Messages = {
   } as Record<string, string>,
   sites: {
     search: 'Tìm nền tảng', none: 'Không có nền tảng phù hợp',
+    pick: 'Chọn nền tảng', change: 'Đổi nền tảng', done: 'Xong', noneChosen: 'Chưa có nền tảng',
+    remove: (name: string) => `Bỏ ${name}`,
+    chosen: (n: number) => n === 0 ? 'Chưa chọn: profile được tính là Other' : `Đã chọn ${n} nền tảng`,
     multiHint: 'Chọn mọi nền tảng mà profile này có tài khoản. Hai tài khoản cùng một nền tảng cần hai profile.',
     samePerson: 'Chỉ thêm nền tảng của cùng một người hoặc một kênh. Tài khoản của người hay khách khác nhau nên để ở profile riêng.',
     customTitle: 'Nền tảng của bạn', customDesc: 'Thêm nền tảng bất kỳ với tên miền, trang mở đầu và màu sắc. Nền tảng bị xoá sẽ được gỡ khỏi các profile của nó.',

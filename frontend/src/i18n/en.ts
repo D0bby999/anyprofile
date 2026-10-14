@@ -34,6 +34,9 @@ export const en = {
   } as Record<string, string>,
   sites: {
     search: 'Search platforms', none: 'No platform matches',
+    pick: 'Choose platforms', change: 'Change platforms', done: 'Done', noneChosen: 'No platform yet',
+    remove: (name: string) => `Remove ${name}`,
+    chosen: (n: number) => n === 0 ? 'None chosen: the profile counts as Other' : n === 1 ? '1 platform chosen' : `${n} platforms chosen`,
     multiHint: 'Pick each platform this profile has an account on. Two accounts of the same platform need two profiles.',
     samePerson: 'Only add platforms of the same person or channel. Accounts of different people or clients belong in separate profiles.',
     customTitle: 'Your platforms', customDesc: 'Add any platform with its domains, start page and color. A deleted platform is removed from its profiles.',

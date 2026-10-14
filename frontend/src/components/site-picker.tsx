@@ -2,6 +2,8 @@
 import { useMemo, useRef, useState } from 'react'
 import { t } from '../i18n'
 import { siteById, type Site } from '../lib/sites'
+import { Dialog } from './dialog'
+import { Icon } from './icons'
 import { SiteGlyph } from './site-glyph'
 
 const groupOrder = ['video', 'social', 'messaging', 'commerce', 'ads', 'freelance', 'google', 'payments', 'custom', 'other']
@@ -13,10 +15,13 @@ type PanelProps = {
   /** Returns true when the panel should close. */
   onPick: (id: string) => boolean
   onClose: () => void
+  /** Enter on an empty search; without it Enter picks the first platform. */
+  onEnterEmpty?: () => void
+  className?: string
 }
 
-/** The searchable, grouped list of platforms below a picker button. */
-function SitePanel({ sites, recent, isOn, onPick, onClose }: PanelProps) {
+/** The searchable, grouped list of platforms. */
+function SitePanel({ sites, recent, isOn, onPick, onClose, onEnterEmpty, className = 'sitepanel' }: PanelProps) {
   const [query, setQuery] = useState('')
   const q = query.trim().toLowerCase()
   const visible = useMemo(() => {
@@ -44,9 +49,10 @@ function SitePanel({ sites, recent, isOn, onPick, onClose }: PanelProps) {
   }
 
   const onKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
+    if (e.key === 'Enter' && (e.target as Element).tagName === 'INPUT') {
       e.preventDefault()
-      if (flat.length) pick(flat[0].id)
+      if (!q && onEnterEmpty) onEnterEmpty()
+      else if (flat.length) pick(flat[0].id)
     } else if (e.key === 'Escape') {
       e.stopPropagation() // close the panel, not the dialog around it
       onClose()
@@ -54,7 +60,7 @@ function SitePanel({ sites, recent, isOn, onPick, onClose }: PanelProps) {
   }
 
   return (
-    <div className="sitepanel" onKeyDown={onKeyDown}>
+    <div className={className} onKeyDown={onKeyDown}>
       <input className="input" autoFocus placeholder={t.sites.search}
         value={query} onChange={(e) => setQuery(e.target.value)} aria-label={t.sites.search} />
       <div className="sitelist">
@@ -67,7 +73,8 @@ function SitePanel({ sites, recent, isOn, onPick, onClose }: PanelProps) {
                 <button key={`${i}-${s.id}`} type="button" role="option" aria-selected={isOn(s.id)}
                   className={`siteopt${isOn(s.id) ? ' sel' : ''}`} onClick={() => pick(s.id)}>
                   <SiteGlyph site={s} />
-                  <span>{s.name}</span>
+                  <span className="grow">{s.name}</span>
+                  {isOn(s.id) && <Icon name="check" className="icon sm" />}
                 </button>
               ))}
             </div>
@@ -96,33 +103,70 @@ export function SitePicker({ value, onChange, sites, recent }: PickerProps & { v
   )
 }
 
-/** Inline chooser for a profile's platforms: each one at most once, so one
- *  profile never holds two accounts of the same platform. None means "Other". */
+/** The chosen platforms as chips, each removable. */
+function SiteChips({ chosen, onRemove }: { chosen: Site[]; onRemove: (id: string) => void }) {
+  return (
+    <>
+      {chosen.map((s) => (
+        <span key={s.id} className="sitechip">
+          <SiteGlyph site={s} />
+          <span>{s.name}</span>
+          <button type="button" className="chipx" aria-label={t.sites.remove(s.name)} title={t.sites.remove(s.name)} onClick={() => onRemove(s.id)}>
+            <Icon name="x" />
+          </button>
+        </span>
+      ))}
+    </>
+  )
+}
+
+/** A modal for choosing several platforms at once; nothing changes until Done. */
+function SitesDialog({ value, sites, recent, onDone, onClose }: PickerProps & { value: string[]; onDone: (ids: string[]) => void; onClose: () => void }) {
+  const [draft, setDraft] = useState(() => value.filter((id) => id !== 'other'))
+  const toggle = (id: string) => {
+    setDraft((d) => (d.includes(id) ? d.filter((x) => x !== id) : [...d, id]))
+    return false
+  }
+  const done = () => onDone(draft)
+  return (
+    <Dialog title={t.sites.pick} icon="plus" className="sitedialog" onClose={onClose} onSubmit={done}
+      footer={<>
+        <span className="grow hint muted">{t.sites.chosen(draft.length)}</span>
+        <button type="button" className="btn ghost" onClick={onClose}>{t.common.cancel}</button>
+        <button type="submit" className="btn primary">{t.sites.done}</button>
+      </>}>
+      {draft.length > 0 && (
+        <div className="sitechips" aria-label={t.sites.chosen(draft.length)}>
+          <SiteChips chosen={draft.map((id) => siteById(sites, id))} onRemove={toggle} />
+        </div>
+      )}
+      <SitePanel className="sitepanel big" sites={sites.filter((s) => s.id !== 'other')} recent={recent}
+        isOn={(id) => draft.includes(id)} onPick={toggle} onClose={onClose} onEnterEmpty={done} />
+      <span className="hint">{draft.length > 1 ? t.sites.samePerson : t.sites.multiHint}</span>
+    </Dialog>
+  )
+}
+
+/** A profile's platforms as chips, with a button that opens the chooser.
+ *  Each platform at most once, so one profile never holds two accounts of
+ *  the same platform. None means "Other". */
 export function SitesPicker({ value, onChange, sites, recent }: PickerProps & { value: string[]; onChange: (ids: string[]) => void }) {
   const [open, setOpen] = useState(false)
   const btnRef = useRef<HTMLButtonElement>(null)
   const chosen = value.filter((id) => id !== 'other').map((id) => siteById(sites, id))
-  const shown = chosen.length ? chosen : [siteById(sites, 'other')]
-  const names = shown.map((s) => s.name).join(', ')
-  const toggle = (id: string) => {
-    onChange(value.includes(id) ? value.filter((x) => x !== id) : [...value.filter((x) => x !== 'other'), id])
-    return false
-  }
+  const close = () => { setOpen(false); btnRef.current?.focus() }
   return (
     <div className="field">
-      <button ref={btnRef} type="button" className="select sitebtn" aria-expanded={open} aria-label={t.create.site} title={names}
-        onClick={() => setOpen(!open)}>
-        <span className="glyphs">{shown.map((s) => <SiteGlyph key={s.id} site={s} />)}</span>
-        <span className="grow sitenames">{names}</span>
-      </button>
+      <div className="sitechips">
+        {chosen.length === 0 && <span className="hint muted">{t.sites.noneChosen}</span>}
+        <SiteChips chosen={chosen} onRemove={(id) => onChange(value.filter((x) => x !== id))} />
+        <button ref={btnRef} type="button" className="btn sm" aria-haspopup="dialog" onClick={() => setOpen(true)}>
+          <Icon name={chosen.length ? 'pencil' : 'plus'} className="icon sm" />{chosen.length ? t.sites.change : t.sites.add}
+        </button>
+      </div>
       {chosen.length > 1 && <span className="hint">{t.sites.samePerson}</span>}
-      {open && (
-        <>
-          <SitePanel sites={sites.filter((s) => s.id !== 'other')} recent={recent} isOn={(id) => value.includes(id)}
-            onPick={toggle} onClose={() => { setOpen(false); btnRef.current?.focus() }} />
-          <span className="hint">{t.sites.multiHint}</span>
-        </>
-      )}
+      {open && <SitesDialog value={value} sites={sites} recent={recent} onClose={close}
+        onDone={(ids) => { onChange(ids); close() }} />}
     </div>
   )
 }

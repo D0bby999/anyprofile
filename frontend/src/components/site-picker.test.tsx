@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { site } from '../api'
 import { t } from '../i18n'
 import { SitePicker, SitesPicker } from './site-picker'
@@ -51,22 +51,37 @@ describe('SitePicker', () => {
     expect(options[0]).toContain('Etsy')
   })
 
-  it('picks several platforms, each once, and shows Other when none', () => {
+  it('chooses several platforms in a modal and applies them only on Done', () => {
     const onChange = vi.fn()
     const { rerender } = render(<SitesPicker value={[]} onChange={onChange} sites={sites} recent={[]} />)
-    expect(screen.getByRole('button', { name: 'Platform' }).textContent).toContain('Other')
-    fireEvent.click(screen.getByRole('button', { name: 'Platform' }))
-    expect(screen.queryByRole('option', { name: /Other/ })).toBeNull()
-    fireEvent.click(screen.getByRole('option', { name: /Etsy/ }))
-    expect(onChange).toHaveBeenLastCalledWith(['etsy'])
-    rerender(<SitesPicker value={['etsy']} onChange={onChange} sites={sites} recent={[]} />)
-    expect(screen.queryByText(t.sites.samePerson)).toBeNull()
-    fireEvent.click(screen.getByRole('option', { name: /TikTok/ }))
+    expect(screen.getByText(t.sites.noneChosen)).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: t.sites.add }))
+    const modal = screen.getByRole('dialog', { name: t.sites.pick })
+    expect(within(modal).queryByRole('option', { name: /Other/ })).toBeNull()
+    fireEvent.click(within(modal).getByRole('option', { name: /Etsy/ }))
+    fireEvent.click(within(modal).getByRole('option', { name: /TikTok/ }))
+    expect(within(modal).getByText(t.sites.samePerson)).toBeTruthy()
+    expect(onChange).not.toHaveBeenCalled()
+    fireEvent.click(within(modal).getByRole('button', { name: t.sites.done }))
     expect(onChange).toHaveBeenLastCalledWith(['etsy', 'tiktok'])
+    expect(screen.queryByRole('dialog')).toBeNull()
+
     rerender(<SitesPicker value={['etsy', 'tiktok']} onChange={onChange} sites={sites} recent={[]} />)
-    expect(screen.getByRole('button', { name: 'Platform' }).textContent).toContain('Etsy, TikTok')
     expect(screen.getByText(t.sites.samePerson)).toBeTruthy()
-    fireEvent.click(screen.getByRole('option', { name: /Etsy/ }))
+    fireEvent.click(screen.getByRole('button', { name: t.sites.remove('Etsy') }))
     expect(onChange).toHaveBeenLastCalledWith(['tiktok'])
+  })
+
+  it('keeps the platforms when the modal is cancelled, and toggles the first match with Enter', () => {
+    const onChange = vi.fn()
+    render(<SitesPicker value={['etsy']} onChange={onChange} sites={sites} recent={[]} />)
+    fireEvent.click(screen.getByRole('button', { name: t.sites.change }))
+    const search = screen.getByPlaceholderText(/Search platforms/)
+    fireEvent.change(search, { target: { value: 'tik' } })
+    fireEvent.keyDown(search, { key: 'Enter' })
+    expect(screen.getByRole('option', { name: /TikTok/ }).getAttribute('aria-selected')).toBe('true')
+    fireEvent.click(screen.getByRole('button', { name: t.common.cancel }))
+    expect(onChange).not.toHaveBeenCalled()
+    expect(screen.queryByRole('dialog')).toBeNull()
   })
 })

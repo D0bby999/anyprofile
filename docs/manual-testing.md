@@ -92,8 +92,11 @@ Mỗi mục ghi điều phải thấy. Thử ở cả giao diện sáng và tố
     còn tab trống. Settings → "Khi mở profile" chọn "Luôn mở trang mở đầu", đóng rồi mở lại: chỉ còn
     trang mở đầu của profile. Chọn lại "Mở lại các tab lần trước" sau khi thử.
 19. **Nhiều nền tảng.** Cột nền tảng của "TikTok VN 01" có ba biểu tượng và chữ "TikTok +2"; bấm "YouTube"
-    ở cột trái thì profile này vẫn hiện. New profile: chọn TikTok, YouTube, Gmail; ô Trang mở đầu có đủ ba
-    dòng; bỏ YouTube thì dòng YouTube Studio biến mất, dòng tự gõ thì giữ nguyên. Không chọn được "Other"
+    ở cột trái thì profile này vẫn hiện. New profile: bấm "Change platforms" mở một modal riêng; chọn thêm
+    YouTube, Gmail rồi Done: ô Platform có ba thẻ, ô Trang mở đầu có đủ ba dòng. Trong modal, Cancel hoặc Esc
+    thì không đổi gì; gõ tên rồi Enter bật/tắt nền tảng đầu tiên khớp. Bấm × trên thẻ YouTube thì dòng
+    YouTube Studio biến mất, dòng tự gõ thì giữ nguyên. Ngăn chi tiết và "Set platforms" hàng loạt dùng
+    cùng modal; Esc trong modal chỉ đóng modal, không đóng ngăn chi tiết hay form New profile. Không chọn được "Other"
     cùng nền tảng khác, và mỗi nền tảng chỉ chọn được một lần. Từ nền tảng thứ hai, dưới ô Platform có dòng
     nhắc "Chỉ thêm nền tảng của cùng một người hoặc một kênh"; bỏ bớt còn một thì dòng đó mất.
 20. **Extension.** Settings → Extensions → "Add folder…", chọn thư mục `/tmp/ext-spike/ext` hoặc một extension

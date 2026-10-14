@@ -1,13 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { useEffect, useRef, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import { Icon, type IconName } from './icons'
 import { t } from '../i18n'
 
-type Props = { title: string; icon: IconName; onClose: () => void; footer: ReactNode; children: ReactNode; onSubmit?: () => void }
+type Props = { title: string; icon: IconName; onClose: () => void; footer: ReactNode; children: ReactNode; onSubmit?: () => void; className?: string }
 
 /** A centered dialog. Escape and the backdrop close it; Enter submits its form.
- *  With dialogs stacked, only the top one answers Escape. */
-export function Dialog({ title, icon, onClose, footer, children, onSubmit }: Props) {
+ *  It renders into <body>, so a dialog can open another without nesting forms;
+ *  with dialogs stacked, only the top one answers Escape. */
+export function Dialog({ title, icon, onClose, footer, children, onSubmit, className }: Props) {
   const ref = useRef<HTMLDivElement>(null)
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -19,10 +21,10 @@ export function Dialog({ title, icon, onClose, footer, children, onSubmit }: Pro
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
 
-  return (
+  return createPortal(
     <div className="backdrop" ref={ref} onMouseDown={(e) => { if (e.target === e.currentTarget) onClose() }}>
-      <form className="dialog" role="dialog" aria-modal="true" aria-label={title}
-        onSubmit={(e) => { e.preventDefault(); onSubmit?.() }}>
+      <form className={className ? `dialog ${className}` : 'dialog'} role="dialog" aria-modal="true" aria-label={title}
+        onSubmit={(e) => { e.preventDefault(); e.stopPropagation(); onSubmit?.() }}>
         <div className="dialog-head">
           <Icon name={icon} />
           <h2>{title}</h2>
@@ -34,6 +36,7 @@ export function Dialog({ title, icon, onClose, footer, children, onSubmit }: Pro
         <div className="dialog-body">{children}</div>
         <div className="dialog-foot">{footer}</div>
       </form>
-    </div>
+    </div>,
+    document.body,
   )
 }
