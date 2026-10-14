@@ -4,6 +4,10 @@ package store
 
 import "database/sql"
 
+// SettingOnOpen says what a profile opens with: "restore" (the tabs of last
+// time, the default) or "start" (its start pages, every time).
+const SettingOnOpen = "on_open"
+
 // GetSetting returns the stored value for key, or "" and nil when unset.
 func (s *Store) GetSetting(key string) (string, error) {
 	var v string

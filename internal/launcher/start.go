@@ -67,7 +67,12 @@ func (l *Launcher) start(ctx context.Context, p *proc) error {
 	if p.relay != nil {
 		rt.RelayPort = p.relay.Port()
 	}
-	if urls := prof.StartURLs(); len(urls) > 0 && !hasSession(udd) {
+	// "start" opens the start pages every time; otherwise Chromium restores the
+	// last session, and the start pages open only when there is none yet.
+	onOpen, _ := l.st.GetSetting(store.SettingOnOpen)
+	rt.FreshStart = onOpen == "start"
+	hadSession := hasSession(udd)
+	if urls := prof.StartURLs(); len(urls) > 0 && (rt.FreshStart || !hadSession) {
 		rt.StartURLs = urls
 	}
 	if err := eng.PrepareProfile(prof, rt); err != nil {
@@ -122,6 +127,9 @@ func (l *Launcher) start(ctx context.Context, p *proc) error {
 	l.set(p, Running, "")
 	if p.cdp != nil {
 		go l.capture(prof, eng, p.cdp, p.sessionID)
+		if !rt.FreshStart {
+			go l.keepTabs(prof.ID, udd, prof.StartURLs(), hadSession, p.cdp)
+		}
 	}
 	go l.watch(p, pid, wait)
 	return nil

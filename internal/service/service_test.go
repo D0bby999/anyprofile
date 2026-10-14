@@ -325,18 +325,24 @@ func TestNormalizeStartURLs(t *testing.T) {
 func TestDefaults(t *testing.T) {
 	s, _ := newService(t)
 	d := s.Defaults()
-	if d.Site != "other" || d.Proxy != "auto" {
+	if d.Site != "other" || d.Proxy != "auto" || d.OnOpen != "restore" {
 		t.Fatalf("defaults = %+v", d)
 	}
-	if err := s.SetDefaults(Defaults{Engine: "fury", Site: "etsy", Proxy: "none"}); err != nil {
+	if err := s.SetDefaults(Defaults{Engine: "fury", Site: "etsy", Proxy: "none", OnOpen: "start"}); err != nil {
 		t.Fatal(err)
 	}
 	d = s.Defaults()
-	if d.Site != "etsy" || d.Proxy != "none" {
+	if d.Site != "etsy" || d.Proxy != "none" || d.OnOpen != "start" {
 		t.Fatalf("after set = %+v", d)
 	}
-	if err := s.SetDefaults(Defaults{Engine: "fury", Site: "nope", Proxy: "auto"}); err == nil || !strings.Contains(err.Error(), "unknown_site") {
+	if v, _ := s.Store.GetSetting(store.SettingOnOpen); v != "start" {
+		t.Fatalf("on_open stored as %q", v)
+	}
+	if err := s.SetDefaults(Defaults{Engine: "fury", Site: "nope", Proxy: "auto", OnOpen: "restore"}); err == nil || !strings.Contains(err.Error(), "unknown_site") {
 		t.Fatalf("unknown site err = %v", err)
+	}
+	if err := s.SetDefaults(Defaults{Engine: "fury", Site: "etsy", Proxy: "auto", OnOpen: "tabs"}); err == nil || !strings.Contains(err.Error(), "bad_on_open") {
+		t.Fatalf("bad on-open err = %v", err)
 	}
 }
 

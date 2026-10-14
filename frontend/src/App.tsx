@@ -36,7 +36,7 @@ export default function App() {
   const [proxyCount, setProxyCount] = useState(0)
   const [theme, setTheme] = useState<ThemeChoice>(readTheme())
   const [lang, setLang] = useState<Language>(language)
-  const [defaults, setDefaults] = useState<service.Defaults>(service.Defaults.createFrom({ site: 'other', proxy: 'auto' }))
+  const [defaults, setDefaults] = useState<service.Defaults>(service.Defaults.createFrom({ site: 'other', proxy: 'auto', onOpen: 'restore' }))
   const profiles = useProfiles()
   const { sites } = useSites()
 

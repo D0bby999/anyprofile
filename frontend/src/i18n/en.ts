@@ -279,6 +279,11 @@ export const en = {
     secondsLeft: (n: number) => `${n}s`,
     note: 'The password and the 2FA secret stay in the macOS Keychain and are never shown.',
   },
+  onOpen: {
+    title: 'Opening a profile', restore: 'Reopen last tabs', start: 'Open start pages',
+    restoreHint: 'Brings back the tabs from last time, even when the window was closed before the profile stopped. With nothing to bring back, the start pages open.',
+    startHint: 'Opens the profile\u2019s start pages every time. Tabs from last time are not reopened.',
+  },
   defaults: {
     title: 'New profiles', site: 'Default platform', proxy: 'Proxy',
     proxyAuto: 'Next free proxy', proxyNone: 'No proxy',
@@ -333,6 +338,7 @@ export const en = {
     bad_engine: 'Unknown browser engine.',
     not_enough_proxies: 'Not enough free sticky proxies.',
     bad_proxy_mode: 'Proxy must be auto or none.',
+    bad_on_open: 'Opening must be restore or start.',
     profile_trashed: 'Move the profile out of the trash first.',
     profile_running: 'Close the profile first.',
     tag_empty: 'Type a tag.',

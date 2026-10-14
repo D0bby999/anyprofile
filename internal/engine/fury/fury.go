@@ -62,18 +62,22 @@ func (f *Fury) BuildLaunch(ctx context.Context, p store.Profile, rt engine.Runti
 		"--user-data-dir=" + rt.UserDataDir,
 		"--no-default-browser-check",
 		"--no-first-run",
-		"--restore-last-session",
+	}
+	if !rt.FreshStart {
+		args = append(args, "--restore-last-session")
+	}
+	args = append(args,
 		"--disable-background-networking",
 		"--disable-domain-reliability",
 		"--disable-breakpad",
 		"--safebrowsing-disable-auto-update",
 		"--disable-field-trial-config",
 		"--disk-cache-size=20971520",
-		"--lang=" + p.UILocale,
-		"--window-name=" + engine.WindowName(p),
-		"--fury-fp-fd=" + strconv.Itoa(fd),
-		"--fury-oscrypt-fd=" + strconv.Itoa(fd+1),
-	}
+		"--lang="+p.UILocale,
+		"--window-name="+engine.WindowName(p),
+		"--fury-fp-fd="+strconv.Itoa(fd),
+		"--fury-oscrypt-fd="+strconv.Itoa(fd+1),
+	)
 	if rt.RelayPort > 0 {
 		args = append(args,
 			"--proxy-server=http://127.0.0.1:"+strconv.Itoa(rt.RelayPort),

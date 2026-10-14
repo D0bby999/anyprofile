@@ -117,5 +117,8 @@ func (c *Conn) Call(ctx context.Context, session, method string, params any) (js
 // Events delivers protocol events; it is closed when the browser side goes away.
 func (c *Conn) Events() <-chan Event { return c.events }
 
+// Done is closed when the browser side goes away.
+func (c *Conn) Done() <-chan struct{} { return c.closed }
+
 // Close closes the app's ends. The browser keeps its own copies (fds 7 and 8).
 func (c *Conn) Close() error { return c.w.Close() }

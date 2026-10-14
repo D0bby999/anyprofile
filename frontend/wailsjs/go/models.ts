@@ -189,6 +189,7 @@ export namespace service {
 	    engine: string;
 	    site: string;
 	    proxy: string;
+	    onOpen: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new Defaults(source);
@@ -199,6 +200,7 @@ export namespace service {
 	        this.engine = source["engine"];
 	        this.site = source["site"];
 	        this.proxy = source["proxy"];
+	        this.onOpen = source["onOpen"];
 	    }
 	}
 	export class DuplicateInput {

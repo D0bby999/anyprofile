@@ -121,7 +121,11 @@ func (a *Apostate) BuildLaunch(ctx context.Context, p store.Profile, rt engine.R
 		"--user-data-dir=" + rt.UserDataDir,
 		"--no-default-browser-check",
 		"--no-first-run",
-		"--restore-last-session",
+	}
+	if !rt.FreshStart {
+		args = append(args, "--restore-last-session")
+	}
+	args = append(args,
 		// Quiet the background traffic a fresh Chromium makes on its own.
 		"--disable-background-networking",
 		"--disable-domain-reliability",
@@ -129,11 +133,11 @@ func (a *Apostate) BuildLaunch(ctx context.Context, p store.Profile, rt engine.R
 		"--safebrowsing-disable-auto-update",
 		"--disable-field-trial-config",
 		"--disk-cache-size=20971520",
-		"--window-name=" + engine.WindowName(p),
+		"--window-name="+engine.WindowName(p),
 		// The seed fixes the machine; the platform keeps it a Mac.
-		"--fingerprint=" + p.SeedHex,
+		"--fingerprint="+p.SeedHex,
 		"--fingerprint-platform=macos",
-	}
+	)
 	if p.Timezone != "" {
 		// Apostate's own default is the host zone even behind a proxy.
 		args = append(args, "--fingerprint-timezone="+p.Timezone)

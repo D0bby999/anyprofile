@@ -6,7 +6,7 @@ import { useSites } from '../hooks/use-sites'
 import { Icon, type IconName } from '../components/icons'
 import { SiteSettings } from '../components/site-settings'
 import { StorageSettings } from '../components/storage-settings'
-import { DefaultsSettings } from '../components/defaults-settings'
+import { DefaultsSettings, OnOpenSettings } from '../components/defaults-settings'
 import { PageHead } from '../components/page-head'
 import { EngineSettings } from '../components/engine-settings'
 
@@ -51,6 +51,11 @@ export function SettingsPage({ engines, engineCounts, defaults, onEnginesChanged
             <button type="button" aria-pressed={lang === 'en'} onClick={() => onLanguage('en')}>{t.settings.languageEn}</button>
             <button type="button" aria-pressed={lang === 'vi'} onClick={() => onLanguage('vi')}>{t.settings.languageVi}</button>
           </div>
+        </section>
+
+        <section className="card pad">
+          <h2>{t.onOpen.title}</h2>
+          <OnOpenSettings />
         </section>
 
         <section className="card pad">

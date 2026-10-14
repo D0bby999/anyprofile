@@ -281,6 +281,11 @@ export const vi: Messages = {
     secondsLeft: (n: number) => `${n} giây`,
     note: 'Mật khẩu và secret 2FA nằm trong Keychain của macOS và không bao giờ hiện ra.',
   },
+  onOpen: {
+    title: 'Khi mở profile', restore: 'Mở lại các tab lần trước', start: 'Luôn mở trang mở đầu',
+    restoreHint: 'Mở lại các tab của lần trước, kể cả khi bạn đã đóng cửa sổ trước khi tắt profile. Nếu không có tab nào, mở trang mở đầu.',
+    startHint: 'Mỗi lần mở chỉ mở các trang mở đầu của profile; không mở lại tab cũ.',
+  },
   defaults: {
     title: 'Profile mới', site: 'Nền tảng mặc định', proxy: 'Proxy',
     proxyAuto: 'Proxy trống kế tiếp', proxyNone: 'Không proxy',
@@ -335,6 +340,7 @@ export const vi: Messages = {
     bad_engine: 'Engine trình duyệt không hợp lệ.',
     not_enough_proxies: 'Không đủ proxy trống cố định.',
     bad_proxy_mode: 'Proxy phải là auto hoặc none.',
+    bad_on_open: 'Cách mở phải là restore hoặc start.',
     profile_trashed: 'Hãy bỏ profile ra khỏi thùng rác trước.',
     profile_running: 'Hãy đóng profile trước.',
     tag_empty: 'Hãy nhập tag.',

@@ -7,6 +7,7 @@ import (
 
 	"github.com/D0bby999/anyprofile/internal/apperr"
 	"github.com/D0bby999/anyprofile/internal/engine"
+	"github.com/D0bby999/anyprofile/internal/store"
 )
 
 // Languages the UI ships. English is the default for a new install.
@@ -63,21 +64,26 @@ func (s *Service) engineFor(id string) (engine.Engine, error) {
 	return nil, apperr.New("bad_engine", "unknown engine")
 }
 
-// Defaults are the new-profile defaults: the engine, the platform and the proxy mode.
+// Defaults are the new-profile defaults (engine, platform, proxy mode) and
+// what every profile opens with.
 type Defaults struct {
 	Engine string `json:"engine"`
-	Site   string `json:"site"`  // default "other"
-	Proxy  string `json:"proxy"` // "auto" (default) or "none"
+	Site   string `json:"site"`   // default "other"
+	Proxy  string `json:"proxy"`  // "auto" (default) or "none"
+	OnOpen string `json:"onOpen"` // "restore" (default) or "start"
 }
 
-// Defaults reads the saved new-profile defaults, falling back to other/auto.
+// Defaults reads the saved defaults, falling back to other/auto/restore.
 func (s *Service) Defaults() Defaults {
-	d := Defaults{Engine: s.DefaultEngine(), Site: "other", Proxy: "auto"}
+	d := Defaults{Engine: s.DefaultEngine(), Site: "other", Proxy: "auto", OnOpen: "restore"}
 	if v, err := s.Store.GetSetting("default_site"); err == nil && v != "" && s.checkSite(v) == nil {
 		d.Site = v
 	}
 	if v, err := s.Store.GetSetting("default_proxy"); err == nil && v == "none" {
 		d.Proxy = "none"
+	}
+	if v, err := s.Store.GetSetting(store.SettingOnOpen); err == nil && v == "start" {
+		d.OnOpen = "start"
 	}
 	return d
 }
@@ -90,6 +96,9 @@ func (s *Service) SetDefaults(d Defaults) error {
 	if d.Proxy != "auto" && d.Proxy != "none" {
 		return apperr.New("bad_proxy_mode", "proxy must be auto or none")
 	}
+	if d.OnOpen != "restore" && d.OnOpen != "start" {
+		return apperr.New("bad_on_open", "on open must be restore or start")
+	}
 	if s.Engines[d.Engine] == nil {
 		return apperr.New("bad_engine", "unknown engine")
 	}
@@ -100,6 +109,9 @@ func (s *Service) SetDefaults(d Defaults) error {
 		return err
 	}
 	if err := s.Store.SetSetting("default_proxy", d.Proxy); err != nil {
+		return err
+	}
+	if err := s.Store.SetSetting(store.SettingOnOpen, d.OnOpen); err != nil {
 		return err
 	}
 	s.notify("settings")

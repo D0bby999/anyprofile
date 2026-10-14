@@ -83,6 +83,20 @@ func TestBuildLaunchNoProxy(t *testing.T) {
 	}
 }
 
+func TestBuildLaunchFreshStart(t *testing.T) {
+	spec, err := testEngine(t).BuildLaunch(context.Background(), testProfile(),
+		engine.Runtime{UserDataDir: "/u", FreshStart: true, StartURLs: []string{"https://a.example/"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if slices.Contains(spec.Args, "--restore-last-session") {
+		t.Fatal("a fresh start must not restore the last session")
+	}
+	if spec.Args[len(spec.Args)-1] != "https://a.example/" {
+		t.Fatalf("start page not last: %v", spec.Args)
+	}
+}
+
 func TestBuildLaunchClampsHost(t *testing.T) {
 	p := testProfile()
 	p.EngineMeta = store.EngineMeta{HWC: 16, MemGiB: 64}

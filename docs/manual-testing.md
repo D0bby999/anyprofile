@@ -83,7 +83,11 @@ Mỗi mục ghi điều phải thấy. Thử ở cả giao diện sáng và tố
 15. **Ảnh chụp phiên.** Mở "Thử trực tiếp 1", vào `example.com`, để chạy **hơn 2 phút**, rồi đóng. Tab Snapshots có một ảnh chụp lý do "close". Bấm "Take snapshot", rồi khôi phục ảnh cũ; toast có nút Undo. Settings → Storage hiện tổng dung lượng ảnh chụp.
 16. **Cookie.** Ở "Thử trực tiếp 3", chọn Import cookies và chọn file `internal/cookies/testdata/cookies.txt` trong repo (cookie giả của `example.com`). Toast báo đã nhập 2 cookie và có cảnh báo cookie không thuộc TikTok. Khi profile đang mở, Export cookies hiện cảnh báo rồi lưu file JSON. Xoá file đó sau khi xem.
 17. **Ngôn ngữ.** Settings đổi sang Tiếng Việt: mọi chữ đổi theo, không còn chữ tiếng Anh sót.
-18. **Màn hình chào.** Thoát app rồi mở với một thư mục trống:
+18. **Mở lại tab.** Mở "Thử trực tiếp 4", mở thêm tab `example.com` và `example.org`, chờ vài giây,
+    **đóng cửa sổ trình duyệt bằng nút đỏ**, rồi bấm Stop trong app. Mở lại: hai tab đó hiện lại, không
+    còn tab trống. Settings → "Khi mở profile" chọn "Luôn mở trang mở đầu", đóng rồi mở lại: chỉ còn
+    trang mở đầu của profile. Chọn lại "Mở lại các tab lần trước" sau khi thử.
+19. **Màn hình chào.** Thoát app rồi mở với một thư mục trống:
     `open -n build/bin/AnyProfile.app --env ANYPROFILE_DATA_DIR=/tmp/ap-fresh`. Phải thấy hướng dẫn 3 bước. Xoá `/tmp/ap-fresh` sau khi xong.
 
 ## Phần B: test với tài khoản thật
