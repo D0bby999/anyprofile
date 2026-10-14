@@ -164,3 +164,31 @@ func (s *Store) CloseStaleSessions(running map[string]bool) error {
 	}
 	return nil
 }
+
+// LatestChecks gives, per profile, the checks of its newest session that has any.
+func (s *Store) LatestChecks(profileIDs []string) (map[string]json.RawMessage, error) {
+	out := map[string]json.RawMessage{}
+	if len(profileIDs) == 0 {
+		return out, nil
+	}
+	args := make([]any, len(profileIDs))
+	for i, id := range profileIDs {
+		args[i] = id
+	}
+	rows, err := s.db.Query(`SELECT profile_id, checks FROM (
+		SELECT profile_id, checks, ROW_NUMBER() OVER (PARTITION BY profile_id ORDER BY id DESC) AS rn FROM sessions
+		WHERE checks <> '[]' AND profile_id IN (?`+strings.Repeat(",?", len(args)-1)+`)
+	) WHERE rn = 1`, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var id, checks string
+		if err := rows.Scan(&id, &checks); err != nil {
+			return nil, err
+		}
+		out[id] = json.RawMessage(checks)
+	}
+	return out, rows.Err()
+}

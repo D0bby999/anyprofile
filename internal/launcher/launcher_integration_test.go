@@ -190,6 +190,7 @@ func TestFingerprintCheck(t *testing.T) {
 		t.Fatal(err)
 	}
 	waitVerdict("baseline", 20*time.Second)
+	requireChecksPass(t, r.st, id)
 	l.mu.Lock()
 	pid := l.procs[id].info.PID
 	l.mu.Unlock()
@@ -389,6 +390,7 @@ func TestApostateLifecycle(t *testing.T) {
 	if ss, _ := r.st.Sessions(id, 10); len(ss) != 1 || ss[0].StoppedAt != "" || ss[0].Engine != "apostate" {
 		t.Fatalf("sessions after launch 1 = %+v", ss)
 	}
+	requireChecksPass(t, r.st, id)
 	p1, pid := conn()
 	if ports := listeningPorts(t, pid); ports != "" {
 		t.Fatalf("launch listens: %s", ports)
@@ -433,4 +435,24 @@ func TestApostateLifecycle(t *testing.T) {
 	if out, _ := exec.Command("pgrep", "-f", udd).Output(); len(strings.TrimSpace(string(out))) > 0 {
 		t.Fatalf("processes left for %s: %s", udd, out)
 	}
+}
+
+// requireChecksPass fails the test with every check that did not pass on the
+// profile's newest session.
+func requireChecksPass(t *testing.T, st *store.Store, id string) {
+	t.Helper()
+	ss, err := st.Sessions(id, 1)
+	if err != nil || len(ss) == 0 {
+		t.Fatalf("no session: %v", err)
+	}
+	var checks []fingerprint.Check
+	if err := json.Unmarshal(ss[0].Checks, &checks); err != nil || len(checks) == 0 {
+		t.Fatalf("session has no checks: %s %v", ss[0].Checks, err)
+	}
+	for _, c := range checks {
+		if !c.OK {
+			t.Errorf("check %s failed: got %q, want %q", c.ID, c.Got, c.Want)
+		}
+	}
+	t.Logf("%d checks passed", len(checks))
 }

@@ -2,7 +2,10 @@
 
 package fingerprint
 
-import "testing"
+import (
+	"encoding/json"
+	"testing"
+)
 
 func TestCompare(t *testing.T) {
 	base := Sample{Canvas: "a", WebGLVendor: "v", WebGLRenderer: "r", UA: "u", Platform: "p", HWC: 8, Mem: 8, Screen: "1710x1112", TZ: "America/New_York", Langs: "en-US,en"}
@@ -59,5 +62,16 @@ func TestLangsMatch(t *testing.T) {
 	base := Sample{Langs: "vi"}
 	if v, d := Compare(base, base, "", "vi-VN,vi,en", true); v != "match" {
 		t.Fatalf("primary-only compare = %q %v", v, d)
+	}
+}
+
+func TestSampleReadsConsistencySignals(t *testing.T) {
+	var s Sample
+	raw := `{"canvas":"a","ua":"Chrome/155.0.0.0","webdriver":true,"chromeH":87,"geo":"denied","ice":["abc.local","203.0.113.7"]}`
+	if err := json.Unmarshal([]byte(raw), &s); err != nil {
+		t.Fatal(err)
+	}
+	if !s.WebDriver || s.ChromeH != 87 || s.Geo != "denied" || len(s.ICE) != 2 {
+		t.Fatalf("sample = %+v", s)
 	}
 }

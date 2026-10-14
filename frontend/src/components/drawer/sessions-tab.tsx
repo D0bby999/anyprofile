@@ -38,12 +38,23 @@ export function SessionsTab({ profileId }: { profileId: string }) {
             <td title={new Date(s.startedAt).toLocaleString()}>{relativeTime(s.startedAt)}</td>
             <td className="nowrap">{s.stoppedAt ? spanBetween(s.startedAt, s.stoppedAt) : t.sessions.running}</td>
             <td><span className="mono selectable">{s.exitIp || '–'}</span>{s.exitCountry && <small title={countryName(s.exitCountry)}> {s.exitCountry}</small>}</td>
-            <td>{notesFor(list, i).map((n) => <span key={n.text} className={`chip ${n.tone}`}>{n.text}</span>)}</td>
+            <td>
+              {checkChip(s.checks)}
+              {notesFor(list, i).map((n) => <span key={n.text} className={`chip ${n.tone}`}>{n.text}</span>)}
+            </td>
           </tr>
         ))}
       </tbody>
     </table>
   )
+}
+
+/** "9/9" when every check passed, "7/9" otherwise; nothing when none ran. */
+function checkChip(raw: unknown) {
+  const list = Array.isArray(raw) ? (raw as { ok: boolean }[]) : []
+  if (!list.length) return null
+  const ok = list.filter((c) => c.ok).length
+  return <span className={`chip ${ok === list.length ? 'ok' : 'warn'}`} title={t.checks.title}>{ok}/{list.length}</span>
 }
 
 function spanBetween(from: string, to: string): string {

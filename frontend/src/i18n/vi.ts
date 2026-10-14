@@ -147,6 +147,26 @@ export const vi: Messages = {
     exit_failed: 'Chưa kiểm IP', exit_failedText: (err: string) => `Không kiểm được IP lúc mở: ${err}.`,
     direct: 'IP thật', directText: 'Mở bằng IP thật của bạn.',
   } as Record<string, string | ((...a: string[]) => string)>,
+  checks: {
+    title: 'Kiểm tra', allPassed: (n: number) => `Đạt cả ${n} điều kiện`, someFailed: (bad: number, n: number) => `${bad} trên ${n} điều kiện cần chú ý`,
+    never: 'App kiểm mỗi lần mở profile.', got: 'Đo được', want: 'Mong đợi',
+    text: {
+      webdriver: 'Trang web biết được trình duyệt này đang bị điều khiển tự động.',
+      webrtc_ip: 'WebRTC để lộ một địa chỉ IP không phải của proxy.',
+      tz_profile: 'Đồng hồ của trình duyệt dùng múi giờ khác với profile.',
+      langs: 'Ngôn ngữ của trình duyệt khác với profile.',
+      ua_version: 'Trình duyệt báo phiên bản Chrome khác với engine.',
+      platform: 'Trình duyệt không báo là máy Mac.',
+      chrome_height: 'Có một thanh chiếm chỗ ở đầu trang. Trang web đo được nó.',
+      geolocation: 'Trang web có thể đọc vị trí thật của bạn.',
+      hwc_pin: 'Số nhân CPU khác với giá trị đã ghim cho profile này.',
+    } as Record<string, string>,
+    name: {
+      webdriver: 'Dấu tự động hoá', webrtc_ip: 'Địa chỉ WebRTC', tz_profile: 'Múi giờ', langs: 'Ngôn ngữ',
+      ua_version: 'Phiên bản Chrome', platform: 'Hệ điều hành', chrome_height: 'Thanh trình duyệt', geolocation: 'Quyền vị trí',
+      hwc_pin: 'Số nhân CPU',
+    } as Record<string, string>,
+  },
   sessions: {
     tab: 'Phiên', opened: 'Mở lúc', length: 'Thời lượng', exitIp: 'IP ra', country: 'Quốc gia', notes: 'Ghi chú',
     empty: 'Chưa có phiên nào. Mở profile để bắt đầu.', running: 'Đang chạy', matchIp: 'Khớp theo IP',

@@ -31,6 +31,11 @@ type Sample struct {
 	TZ            string  `json:"tz"`
 	Langs         string  `json:"langs"`
 	Secure        bool    `json:"secure"`
+	// Consistency signals, not identity: Compare ignores them.
+	WebDriver bool     `json:"webdriver"`
+	ChromeH   int      `json:"chromeH"` // outer minus inner height; -1 when the tab has none
+	Geo       string   `json:"geo"`     // geolocation permission state
+	ICE       []string `json:"ice"`     // WebRTC candidate addresses
 }
 
 const origin = "https://fp.anyprofile.invalid/" // .invalid never resolves; the page is served locally

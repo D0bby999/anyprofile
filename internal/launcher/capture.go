@@ -5,6 +5,7 @@ package launcher
 import (
 	"context"
 	"encoding/json"
+	"runtime"
 	"strings"
 	"time"
 
@@ -16,7 +17,7 @@ import (
 
 // capture measures the browser once and records the verdict. It never fails
 // the launch: any error is logged and recorded as "unchecked".
-func (l *Launcher) capture(prof store.Profile, eng engine.Engine, c *cdppipe.Conn) {
+func (l *Launcher) capture(prof store.Profile, eng engine.Engine, c *cdppipe.Conn, sessionID int64) {
 	pl, ok := eng.(engine.PrimaryLanguageProbe)
 	primaryOnly := ok && pl.ProbeSeesPrimaryLanguageOnly()
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
@@ -27,6 +28,9 @@ func (l *Launcher) capture(prof store.Profile, eng engine.Engine, c *cdppipe.Con
 	} else {
 		b, _ := json.Marshal(s)
 		last = string(b)
+		if sessionID > 0 {
+			l.saveChecks(prof, eng, s, primaryOnly, sessionID)
+		}
 		prev, _ := l.st.FingerprintBaseline(prof.ID)
 		var base fingerprint.Sample
 		if prev == "" || json.Unmarshal([]byte(prev), &base) != nil {
@@ -41,5 +45,19 @@ func (l *Launcher) capture(prof store.Profile, eng engine.Engine, c *cdppipe.Con
 	l.log.Info("fingerprint", "profile", prof.ID, "verdict", verdict, "diff", strings.Join(diff, ","))
 	if l.OnData != nil {
 		l.OnData("profiles")
+	}
+}
+
+// saveChecks records the consistency checks of this launch on its session.
+func (l *Launcher) saveChecks(prof store.Profile, eng engine.Engine, s fingerprint.Sample, primaryOnly bool, sessionID int64) {
+	e := fingerprint.Expect{Engine: prof.Engine, Timezone: prof.Timezone, Languages: prof.Languages,
+		ChromiumMajor: fingerprint.MajorVersion(eng.Pinned().Chromium), Proxied: prof.ProxyID != "",
+		PrimaryLangOnly: primaryOnly}
+	if prof.Engine == "apostate" && prof.EngineMeta.HWC > 0 {
+		e.HWC = min(prof.EngineMeta.HWC, runtime.NumCPU()) // the engine clamps to the host the same way
+	}
+	b, _ := json.Marshal(fingerprint.Checks(s, e))
+	if err := l.st.SetSessionChecks(sessionID, b); err != nil {
+		l.log.Warn("save checks", "profile", prof.ID, "err", err)
 	}
 }

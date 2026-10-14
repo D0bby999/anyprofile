@@ -50,4 +50,11 @@ describe('health', () => {
     expect(needsAttention({ ...base, fpVerdict: 'match', flags: [{ id: 'direct', level: 'info', params: {} }] })).toBe(false)
     expect(needsAttention({ ...base, fpVerdict: 'match', flags: [{ id: 'tz_mismatch', level: 'warn', params: { profile: 'Asia/Taipei', ip: 'Asia/Tokyo' } }] })).toBe(true)
   })
+
+  it('reports a failed consistency check', () => {
+    const h = health({ ...base, fpVerdict: 'match', checks: [{ id: 'webrtc_ip', ok: false, level: 'danger' }, { id: 'langs', ok: true, level: 'warn' }] })
+    expect(h.level).toBe('danger')
+    expect(h.reasons).toContain(t.checks.text.webrtc_ip)
+    expect(h.reasons).toHaveLength(2)
+  })
 })

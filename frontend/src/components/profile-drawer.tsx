@@ -18,6 +18,7 @@ import { NotesGroup } from './drawer/notes-group'
 import { PlatformGroup } from './drawer/platform-group'
 import { TagsGroup } from './drawer/tags-group'
 import { SessionsTab } from './drawer/sessions-tab'
+import { ChecksPanel } from './drawer/checks-panel'
 
 type Tab = 'overview' | 'account' | 'sessions'
 const TABS: Tab[] = ['overview', 'account', 'sessions']
@@ -137,6 +138,7 @@ export function ProfileDrawer({ row, sites, recent, knownTags, onClose, onStart,
               onSite={(id) => update({ site: id })} onStartUrl={(startUrl) => update({ startUrl })} />
             <TagsGroup tags={row.tags} known={knownTags} onChange={(tags) => update({ tags })} />
             <NotesGroup value={row.notes} onSave={(notes) => update({ notes })} />
+            <ChecksPanel checks={row.checks ?? []} />
             <IdentityGroup row={row} />
             <section className="dgroup">
               <button type="button" className="disclosure" aria-expanded={advanced} onClick={() => setAdvanced(!advanced)}>

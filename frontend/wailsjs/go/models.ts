@@ -23,6 +23,31 @@ export namespace engine {
 
 }
 
+export namespace fingerprint {
+	
+	export class Check {
+	    id: string;
+	    ok: boolean;
+	    level: string;
+	    got?: string;
+	    want?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Check(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.ok = source["ok"];
+	        this.level = source["level"];
+	        this.got = source["got"];
+	        this.want = source["want"];
+	    }
+	}
+
+}
+
 export namespace fury {
 	
 	export class Persona {
@@ -324,6 +349,7 @@ export namespace service {
 	    proxyExpiry: string;
 	    lastExit?: ExitSummary;
 	    flags: Flag[];
+	    checks: fingerprint.Check[];
 	
 	    static createFrom(source: any = {}) {
 	        return new ProfileRow(source);
@@ -372,6 +398,7 @@ export namespace service {
 	        this.proxyExpiry = source["proxyExpiry"];
 	        this.lastExit = this.convertValues(source["lastExit"], ExitSummary);
 	        this.flags = this.convertValues(source["flags"], Flag);
+	        this.checks = this.convertValues(source["checks"], fingerprint.Check);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {

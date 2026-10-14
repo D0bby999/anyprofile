@@ -145,6 +145,26 @@ export const en = {
     exit_failed: 'IP not checked', exit_failedText: (err: string) => `Could not check the IP at launch: ${err}.`,
     direct: 'Real IP', directText: 'Opens with your real IP.',
   } as Record<string, string | ((...a: string[]) => string)>,
+  checks: {
+    title: 'Checks', allPassed: (n: number) => `All ${n} checks passed`, someFailed: (bad: number, n: number) => `${bad} of ${n} checks need attention`,
+    never: 'Checks run each time the profile opens.', got: 'Got', want: 'Expected',
+    text: {
+      webdriver: 'Sites can tell this browser is automated.',
+      webrtc_ip: 'WebRTC reveals an IP address that is not the proxy\u2019s.',
+      tz_profile: 'The browser clock uses a different timezone than the profile.',
+      langs: 'The browser languages differ from the profile.',
+      ua_version: 'The browser reports a different Chrome version than the engine.',
+      platform: 'The browser does not report a Mac.',
+      chrome_height: 'A bar is taking space at the top of the page. Sites can measure it.',
+      geolocation: 'Sites could read your real location.',
+      hwc_pin: 'The CPU core count differs from the value pinned for this profile.',
+    } as Record<string, string>,
+    name: {
+      webdriver: 'Automation flag', webrtc_ip: 'WebRTC address', tz_profile: 'Timezone', langs: 'Languages',
+      ua_version: 'Chrome version', platform: 'Operating system', chrome_height: 'Browser bars', geolocation: 'Location access',
+      hwc_pin: 'CPU cores',
+    } as Record<string, string>,
+  },
   sessions: {
     tab: 'Sessions', opened: 'Opened', length: 'Length', exitIp: 'Exit IP', country: 'Country', notes: 'Notes',
     empty: 'No sessions yet. Open the profile to start one.', running: 'Running', matchIp: 'Match the IP',

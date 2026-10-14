@@ -265,6 +265,20 @@ kbd { display: inline-flex; align-items: center; min-width: 22px; height: 20px; 
 .tabs [role="tab"]:hover { color: var(--ink); background: var(--surface-hover); }
 .tabs [role="tab"][aria-selected="true"] { color: var(--accent-ink); background: var(--accent-soft); }
 .drawer-body { flex: 1; min-height: 0; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 20px; }
+.checksummary { font-weight: 500; }
+.dotmark { width: 8px; height: 8px; border-radius: 50%; background: var(--faint); }
+.dotmark.ok { background: var(--success); }
+.dotmark.warn { background: var(--warn); }
+.dotmark.danger { background: var(--danger); }
+.checklist { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.checklist li { display: grid; grid-template-columns: 16px 1fr; gap: 8px; font-size: var(--t-sm); }
+.checklist li > .icon { margin-top: 2px; }
+.checklist li.ok > .icon { color: var(--success); }
+.checklist li.warn > .icon { color: var(--warn); }
+.checklist li.danger > .icon { color: var(--danger); }
+.checklist p { margin: 2px 0 0; color: var(--ink-soft); }
+.checklist small { display: block; margin-top: 2px; color: var(--muted); overflow-wrap: anywhere; }
+.table.sessions td .chip + .chip { margin-left: 4px; }
 .sessions-empty { margin: 0; color: var(--muted); font-size: var(--t-sm); }
 .table.sessions td, .table.sessions th { height: auto; padding: 8px 6px; font-size: var(--t-sm); }
 .table.sessions small { color: var(--muted); }

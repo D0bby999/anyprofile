@@ -4,6 +4,7 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/url"
 	"os"
@@ -11,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/D0bby999/anyprofile/internal/apperr"
+	"github.com/D0bby999/anyprofile/internal/fingerprint"
 	"github.com/D0bby999/anyprofile/internal/launcher"
 	"github.com/D0bby999/anyprofile/internal/secrets"
 	"github.com/D0bby999/anyprofile/internal/store"
@@ -28,6 +30,8 @@ type ProfileRow struct {
 	ProxyExpiry  string         `json:"proxyExpiry"` // "", "soon" or "expired"
 	LastExit     *ExitSummary   `json:"lastExit"`    // nil until a launch measured one
 	Flags        []Flag         `json:"flags"`
+	// Checks are the consistency checks of the newest measured launch.
+	Checks []fingerprint.Check `json:"checks"`
 }
 
 // AutoProxy as NewProfile.ProxyID picks the next free sticky proxy (none if
@@ -70,11 +74,19 @@ func (s *Service) ListProfiles(f store.ProfileFilter) ([]ProfileRow, error) {
 	if err != nil {
 		return nil, err
 	}
+	checks, err := s.Store.LatestChecks(ids)
+	if err != nil {
+		return nil, err
+	}
 	out := make([]ProfileRow, 0, len(ps))
 	for _, p := range ps {
 		row := ProfileRow{Profile: p, State: launcher.Stopped}
 		pair := exits[p.ID]
 		row.Flags = exitFlags(p, &pair[0], &pair[1])
+		row.Checks = []fingerprint.Check{}
+		if raw, ok := checks[p.ID]; ok {
+			_ = json.Unmarshal(raw, &row.Checks)
+		}
 		if pair[0].ExitIP != "" {
 			row.LastExit = &ExitSummary{IP: pair[0].ExitIP, Country: pair[0].ExitCountry, At: pair[0].StartedAt}
 		}
