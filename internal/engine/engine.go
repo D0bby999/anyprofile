@@ -37,7 +37,8 @@ type Runtime struct {
 	CDPPipe     bool   // DevTools over inherited pipes (fds 3 and 4); data pipes then start at fd 5
 	CookieKey   []byte // 32 bytes, delivered on a pipe
 	StartURLs   []string
-	FreshStart  bool // skip the last session; StartURLs alone open
+	FreshStart  bool     // skip the last session; StartURLs alone open
+	Extensions  []string // unpacked extension folders to load
 }
 
 // LaunchSpec is everything needed to exec the browser. Pipes[i] is written to

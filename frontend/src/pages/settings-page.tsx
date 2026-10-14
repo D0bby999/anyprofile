@@ -8,6 +8,7 @@ import { SiteSettings } from '../components/site-settings'
 import { StorageSettings } from '../components/storage-settings'
 import { DefaultsSettings, OnOpenSettings } from '../components/defaults-settings'
 import { APISettings } from '../components/api-settings'
+import { ExtensionSettings } from '../components/extension-settings'
 import { PageHead } from '../components/page-head'
 import { EngineSettings } from '../components/engine-settings'
 
@@ -68,6 +69,11 @@ export function SettingsPage({ engines, engineCounts, defaults, onEnginesChanged
           <h2>{t.sites.customTitle}</h2>
           <p className="desc">{t.sites.customDesc}</p>
           <SiteSettings sites={sites} reload={reloadSites} />
+        </section>
+
+        <section className="card pad">
+          <h2>{t.extensions.title}</h2>
+          <ExtensionSettings />
         </section>
 
         <section className="card pad">

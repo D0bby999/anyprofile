@@ -44,9 +44,13 @@ func (d Dirs) ProfileSnapshots(id string) string {
 	return filepath.Join(d.Snapshots(), id)
 }
 
+// Extensions holds the unpacked extensions of the library, one folder each.
+func (d Dirs) Extensions() string         { return filepath.Join(d.Root, "extensions") }
+func (d Dirs) Extension(id string) string { return filepath.Join(d.Extensions(), id) }
+
 // Ensure creates every directory with owner-only permissions, tightening any that exist.
 func (d Dirs) Ensure() error {
-	for _, p := range []string{d.Root, d.Engines(), d.Profiles(), d.Logs(), d.Backups(), d.Snapshots()} {
+	for _, p := range []string{d.Root, d.Engines(), d.Profiles(), d.Logs(), d.Backups(), d.Snapshots(), d.Extensions()} {
 		if err := os.MkdirAll(p, 0o700); err != nil {
 			return fmt.Errorf("create %s: %w", p, err)
 		}

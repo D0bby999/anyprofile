@@ -6,6 +6,7 @@ import { errorText } from '../lib/format'
 import { machineLabel } from '../lib/persona'
 import { siteById, type Site } from '../lib/sites'
 import { AccountsPanel } from './account-panel'
+import { ProfileExtensions } from './extension-settings'
 import { useConfirm } from './confirm'
 import { HealthPill } from './health-pill'
 import { Icon } from './icons'
@@ -135,6 +136,7 @@ export function ProfileDrawer({ row, sites, recent, knownTags, onClose, onStart,
             <NetworkGroup row={row} proxies={proxies} running={running} onApply={(proxyId) => update({ proxyId })} onMatchIp={matchIp} />
             <PlatformGroup value={row.sites} startUrl={row.startUrl} sites={sites} recent={recent} running={running}
               onSites={(ids, startUrl) => update({ sites: ids, startUrl })} onStartUrl={(startUrl) => update({ startUrl })} />
+            <ProfileExtensions profileId={row.id} on={row.extensions ?? []} running={running} onError={toast.error} />
             <TagsGroup tags={row.tags} known={knownTags} onChange={(tags) => update({ tags })} />
             <NotesGroup value={row.notes} onSave={(notes) => update({ notes })} />
             <ChecksPanel checks={row.checks ?? []} />

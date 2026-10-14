@@ -12,6 +12,7 @@ import (
 	"regexp"
 	"runtime"
 	"strconv"
+	"strings"
 	"sync"
 
 	"github.com/D0bby999/anyprofile/internal/engine"
@@ -175,6 +176,9 @@ func (a *Apostate) BuildLaunch(ctx context.Context, p store.Profile, rt engine.R
 	}
 	if rt.CDPPipe {
 		args = append(args, "--remote-debugging-pipe")
+	}
+	if len(rt.Extensions) > 0 {
+		args = append(args, "--load-extension="+strings.Join(rt.Extensions, ","))
 	}
 	args = append(args, rt.StartURLs...)
 	return engine.LaunchSpec{Binary: a.BinaryPath(), Args: args, Env: env, CDPPipe: rt.CDPPipe}, nil

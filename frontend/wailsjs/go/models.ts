@@ -377,6 +377,7 @@ export namespace service {
 	    sites: string[];
 	    serial: number;
 	    accounts: store.Account[];
+	    extensions: string[];
 	    fpVerdict: string;
 	    fpDiff: string[];
 	    fpCheckedAt: string;
@@ -424,6 +425,7 @@ export namespace service {
 	        this.sites = source["sites"];
 	        this.serial = source["serial"];
 	        this.accounts = this.convertValues(source["accounts"], store.Account);
+	        this.extensions = source["extensions"];
 	        this.fpVerdict = source["fpVerdict"];
 	        this.fpDiff = source["fpDiff"];
 	        this.fpCheckedAt = source["fpCheckedAt"];
@@ -677,6 +679,26 @@ export namespace store {
 	        this.memGiB = source["memGiB"];
 	    }
 	}
+	export class Extension {
+	    id: string;
+	    name: string;
+	    version: string;
+	    createdAt: string;
+	    profiles: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new Extension(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.name = source["name"];
+	        this.version = source["version"];
+	        this.createdAt = source["createdAt"];
+	        this.profiles = source["profiles"];
+	    }
+	}
 	export class Profile {
 	    id: string;
 	    name: string;
@@ -695,6 +717,7 @@ export namespace store {
 	    sites: string[];
 	    serial: number;
 	    accounts: Account[];
+	    extensions: string[];
 	    fpVerdict: string;
 	    fpDiff: string[];
 	    fpCheckedAt: string;
@@ -732,6 +755,7 @@ export namespace store {
 	        this.sites = source["sites"];
 	        this.serial = source["serial"];
 	        this.accounts = this.convertValues(source["accounts"], Account);
+	        this.extensions = source["extensions"];
 	        this.fpVerdict = source["fpVerdict"];
 	        this.fpDiff = source["fpDiff"];
 	        this.fpCheckedAt = source["fpCheckedAt"];

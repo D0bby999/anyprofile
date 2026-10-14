@@ -35,10 +35,12 @@ type Profile struct {
 	Serial int      `json:"serial"`
 	// Accounts are the saved logins, at most one per platform. One whose
 	// platform was removed from Sites stays until the user forgets it.
-	Accounts    []Account `json:"accounts"`
-	FPVerdict   string    `json:"fpVerdict"`
-	FPDiff      []string  `json:"fpDiff"`
-	FPCheckedAt string    `json:"fpCheckedAt"`
+	Accounts []Account `json:"accounts"`
+	// Extensions are the library extensions this profile loads.
+	Extensions  []string `json:"extensions"`
+	FPVerdict   string   `json:"fpVerdict"`
+	FPDiff      []string `json:"fpDiff"`
+	FPCheckedAt string   `json:"fpCheckedAt"`
 	// Machine is the emulated machine from the fingerprint baseline, for
 	// example "Apple M4 Pro · 1512×982"; empty before the first measurement.
 	Machine       string   `json:"machine"`
@@ -187,7 +189,11 @@ func (s *Store) GetProfile(id string) (Profile, error) {
 		return p, err
 	}
 	accs, err := s.accountsByProfile(id)
-	p.Accounts = accs[id]
+	if err != nil {
+		return p, err
+	}
+	exts, err := s.extensionsByProfile(id)
+	p.Accounts, p.Extensions = accs[id], exts[id]
 	return p, err
 }
 
@@ -285,8 +291,12 @@ func (s *Store) ListProfiles(f ProfileFilter) ([]Profile, error) {
 	if err != nil {
 		return nil, err
 	}
+	exts, err := s.extensionsByProfile("")
+	if err != nil {
+		return nil, err
+	}
 	for i := range out {
-		out[i].Accounts = accs[out[i].ID]
+		out[i].Accounts, out[i].Extensions = accs[out[i].ID], exts[out[i].ID]
 	}
 	return out, nil
 }

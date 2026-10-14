@@ -62,6 +62,15 @@ export function RowMenu({ row, sites, onEdit, onDuplicate, onTrash, onMessage, o
     }
   }
 
+  const importBookmarks = async () => {
+    try {
+      const n = await Api.ImportBookmarks(row.id, t.bookmarks.folder)
+      if (n) onMessage(t.bookmarks.imported(n))
+    } catch (e) {
+      onError(errorText(e))
+    }
+  }
+
   const copyLogin = async (login: string) => {
     try {
       await copyText(login)
@@ -95,6 +104,8 @@ export function RowMenu({ row, sites, onEdit, onDuplicate, onTrash, onMessage, o
           <button role="menuitem" disabled={cookies.importing} onClick={() => act(cookies.importCookies)}>{t.cookies.import}</button>
           <button role="menuitem" disabled={!cookies.canExport} title={cookies.canExport ? undefined : t.cookies.openFirst}
             onClick={() => act(cookies.exportCookies)}>{t.cookies.export}</button>
+          <button role="menuitem" disabled={row.state !== 'stopped'} title={row.state !== 'stopped' ? t.bookmarks.closeFirst : undefined}
+            onClick={() => act(importBookmarks)}>{t.bookmarks.import}</button>
           <hr />
           <button role="menuitem" disabled={row.state !== 'stopped'} onClick={() => act(onTrash)}>{t.menu.trash}</button>
         </div>

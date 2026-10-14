@@ -133,8 +133,17 @@ func (s *Service) DuplicateProfile(ctx context.Context, in DuplicateInput) ([]st
 		base = src.Name + " copy"
 	}
 	tags := append([]string(nil), src.Tags...)
-	return s.CreateProfiles(ctx, BulkCreate{Engine: in.Engine, BaseName: base, Count: in.Count, Proxy: in.Proxy,
+	out, err := s.CreateProfiles(ctx, BulkCreate{Engine: in.Engine, BaseName: base, Count: in.Count, Proxy: in.Proxy,
 		Sites: src.Sites, StartURL: src.StartURL, Notes: src.Notes, Tags: tags})
+	for i := range out {
+		for _, ext := range src.Extensions {
+			if err := s.Store.SetProfileExtension(out[i].ID, ext, true); err != nil {
+				return out, err
+			}
+		}
+		out[i].Extensions = src.Extensions
+	}
+	return out, err
 }
 
 // SetSitesMany gives several profiles the same platforms. Each profile's

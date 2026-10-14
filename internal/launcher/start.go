@@ -72,6 +72,11 @@ func (l *Launcher) start(ctx context.Context, p *proc) error {
 	onOpen, _ := l.st.GetSetting(store.SettingOnOpen)
 	rt.FreshStart = onOpen == "start"
 	hadSession := hasSession(udd)
+	for _, id := range prof.Extensions {
+		if dir := l.dirs.Extension(id); isDir(dir) {
+			rt.Extensions = append(rt.Extensions, dir)
+		}
+	}
 	if urls := prof.StartURLs(); len(urls) > 0 && (rt.FreshStart || !hadSession) {
 		rt.StartURLs = urls
 	}

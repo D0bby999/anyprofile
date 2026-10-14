@@ -8,9 +8,13 @@ import { service, site } from '../api'
 
 const updateProfile = vi.fn().mockResolvedValue(undefined)
 const trashProfile = vi.fn().mockResolvedValue(undefined)
+const setExtensionMany = vi.fn().mockResolvedValue(undefined)
 vi.mock('../api', async (orig) => ({
   ...(await orig<typeof import('../api')>()),
+  onDataChanged: () => () => {},
   Api: {
+    ListExtensions: () => Promise.resolve([{ id: 'ext-1', name: 'Helper', version: '1.0', createdAt: '', profiles: 1 }]),
+    SetExtensionMany: (...a: unknown[]) => setExtensionMany(...a),
     ListProxies: () => Promise.resolve([
       { id: 'px', label: 'gw.example:10001', country: 'US', exitIp: '1.1.1.1', rotating: false, usedBy: ['Kênh A'] },
       { id: 'py', label: 'gw.example:10002', country: 'DE', exitIp: '2.2.2.2', rotating: false, usedBy: [] },
@@ -116,5 +120,14 @@ describe('profile drawer', () => {
     const dialog = await screen.findByRole('dialog')
     fireEvent.click(within(dialog).getByRole('button', { name: t.confirm.trash('Kênh A').confirm }))
     await waitFor(() => expect(trashProfile).toHaveBeenCalledWith('a'))
+  })
+
+  it('turns an extension on for this profile', async () => {
+    page()
+    openRow('Kênh A')
+    const box = await screen.findByRole('checkbox', { name: /Helper/ })
+    expect((box as HTMLInputElement).checked).toBe(false)
+    fireEvent.click(box)
+    await waitFor(() => expect(setExtensionMany).toHaveBeenCalledWith(['a'], 'ext-1', true))
   })
 })

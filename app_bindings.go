@@ -133,6 +133,63 @@ func (a *App) ImportCookies(profileID string) (service.CookieImport, error) {
 	return a.svc.ImportCookies(a.ctx, profileID, path)
 }
 
+var extensionDialogTitle = map[string][3]string{
+	"en": {"Add an extension (.zip or .crx)", "Add an unpacked extension folder", "Import bookmarks"},
+	"vi": {"Thêm extension (.zip hoặc .crx)", "Thêm thư mục extension đã giải nén", "Nhập bookmark"},
+}
+
+// AddExtension asks for an extension (a folder when folder is true, else a
+// .zip or .crx) and adds it to the library. Cancelling returns a zero value.
+func (a *App) AddExtension(folder bool) (store.Extension, error) {
+	if err := a.ready(); err != nil {
+		return store.Extension{}, err
+	}
+	titles := extensionDialogTitle[a.svc.Language()]
+	var path string
+	var err error
+	if folder {
+		path, err = runtime.OpenDirectoryDialog(a.ctx, runtime.OpenDialogOptions{Title: titles[1]})
+	} else {
+		path, err = runtime.OpenFileDialog(a.ctx, runtime.OpenDialogOptions{Title: titles[0],
+			Filters: []runtime.FileFilter{{DisplayName: "Extensions (*.zip, *.crx)", Pattern: "*.zip;*.crx"}}})
+	}
+	if err != nil || path == "" {
+		return store.Extension{}, err
+	}
+	return a.svc.AddExtension(path)
+}
+
+func (a *App) ListExtensions() ([]store.Extension, error) {
+	if err := a.ready(); err != nil {
+		return nil, err
+	}
+	return a.svc.ListExtensions()
+}
+
+func (a *App) DeleteExtension(id string) error {
+	return a.must(func() error { return a.svc.DeleteExtension(id) })
+}
+
+func (a *App) SetExtensionMany(ids []string, extID string, on bool) error {
+	return a.must(func() error { return a.svc.SetExtensionMany(ids, extID, on) })
+}
+
+// ImportBookmarks asks for a bookmark HTML file and adds it to a closed
+// profile; 0 with no error means the dialog was cancelled.
+func (a *App) ImportBookmarks(profileID, folder string) (int, error) {
+	if err := a.ready(); err != nil {
+		return 0, err
+	}
+	path, err := runtime.OpenFileDialog(a.ctx, runtime.OpenDialogOptions{
+		Title:   extensionDialogTitle[a.svc.Language()][2],
+		Filters: []runtime.FileFilter{{DisplayName: "Bookmarks (*.html, *.htm)", Pattern: "*.html;*.htm"}},
+	})
+	if err != nil || path == "" {
+		return 0, err
+	}
+	return a.svc.ImportBookmarks(profileID, path, folder)
+}
+
 func (a *App) ExportCookies(profileID string) (int, error) {
 	if err := a.ready(); err != nil {
 		return 0, err

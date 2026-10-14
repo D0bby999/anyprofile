@@ -7,6 +7,7 @@ import type { Site } from '../lib/sites'
 import { Dialog } from './dialog'
 import { RealIpWarning } from './proxy-select'
 import { SitesPicker } from './site-picker'
+import { useExtensions } from '../hooks/use-extensions'
 
 type BulkProps = { ids: string[]; sites: Site[]; recent: string[]; onClose: () => void; onDone: () => void }
 
@@ -92,6 +93,48 @@ export function BulkProxyDialog({ ids, onClose, onDone }: { ids: string[]; onClo
       </div>
       {mode === 'none' && <RealIpWarning />}
       {errors.map((m) => <div key={m} className="banner danger" role="alert"><span className="grow">{m}</span></div>)}
+    </Dialog>
+  )
+}
+
+export function BulkExtensionDialog({ ids, onClose, onDone }: { ids: string[]; onClose: () => void; onDone: () => void }) {
+  const { exts } = useExtensions()
+  const [ext, setExt] = useState('')
+  const [on, setOn] = useState(true)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const chosen = ext || exts[0]?.id || ''
+  const apply = async () => {
+    if (!chosen) return
+    setBusy(true)
+    setError('')
+    try {
+      await Api.SetExtensionMany(ids, chosen, on)
+      onDone()
+    } catch (e) {
+      setError(errorText(e))
+      setBusy(false)
+    }
+  }
+  return (
+    <Dialog title={t.bulk.extensionTitle} icon="puzzle" onClose={onClose} onSubmit={apply}
+      footer={<>
+        <button type="button" className="btn ghost" onClick={onClose}>{t.common.cancel}</button>
+        <button type="submit" className="btn primary" disabled={busy || !chosen}>{t.bulk.apply}</button>
+      </>}>
+      {exts.length === 0 ? <span className="hint muted">{t.extensions.noneInLibrary}</span> : (
+        <>
+          <select className="select" value={chosen} onChange={(e) => setExt(e.target.value)} aria-label={t.extensions.title}>
+            {exts.map((e) => <option key={e.id} value={e.id}>{e.name} {e.version}</option>)}
+          </select>
+          <div className="seg" role="group" aria-label={t.bulk.extensionTitle} style={{ alignSelf: 'flex-start' }}>
+            <button type="button" aria-pressed={on} onClick={() => setOn(true)}>{t.bulk.extensionOn}</button>
+            <button type="button" aria-pressed={!on} onClick={() => setOn(false)}>{t.bulk.extensionOff}</button>
+          </div>
+          <span className="hint">{t.bulk.extensionHint}</span>
+        </>
+      )}
+      {error && <div className="banner danger" role="alert">{error}</div>}
     </Dialog>
   )
 }

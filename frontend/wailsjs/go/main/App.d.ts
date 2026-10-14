@@ -9,6 +9,8 @@ import {fury} from '../models';
 
 export function APIStatus():Promise<main.APIStatus>;
 
+export function AddExtension(arg1:boolean):Promise<store.Extension>;
+
 export function AddTagMany(arg1:Array<string>,arg2:string):Promise<void>;
 
 export function AssignProxiesMany(arg1:Array<string>,arg2:string):Promise<Record<string, string>>;
@@ -37,6 +39,8 @@ export function Defaults():Promise<service.Defaults>;
 
 export function DeleteAllSnapshots():Promise<void>;
 
+export function DeleteExtension(arg1:string):Promise<void>;
+
 export function DeleteOrphans(arg1:Array<string>):Promise<void>;
 
 export function DeleteProxy(arg1:string):Promise<void>;
@@ -61,6 +65,8 @@ export function FocusProfile(arg1:string):Promise<boolean>;
 
 export function ForgetAccount(arg1:string,arg2:string):Promise<void>;
 
+export function ImportBookmarks(arg1:string,arg2:string):Promise<number>;
+
 export function ImportCookies(arg1:string):Promise<service.CookieImport>;
 
 export function ImportProxies(arg1:string,arg2:string):Promise<service.ImportResult>;
@@ -68,6 +74,8 @@ export function ImportProxies(arg1:string,arg2:string):Promise<service.ImportRes
 export function InstallEngine(arg1:string):Promise<void>;
 
 export function Language():Promise<string>;
+
+export function ListExtensions():Promise<Array<store.Extension>>;
 
 export function ListProfiles(arg1:store.ProfileFilter):Promise<Array<service.ProfileRow>>;
 
@@ -100,6 +108,8 @@ export function SetAccountLogin(arg1:string,arg2:string,arg3:string):Promise<voi
 export function SetAccountPassword(arg1:string,arg2:string,arg3:string):Promise<void>;
 
 export function SetDefaults(arg1:service.Defaults):Promise<void>;
+
+export function SetExtensionMany(arg1:Array<string>,arg2:string,arg3:boolean):Promise<void>;
 
 export function SetLanguage(arg1:string):Promise<void>;
 

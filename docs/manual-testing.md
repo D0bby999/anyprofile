@@ -95,7 +95,18 @@ Mỗi mục ghi điều phải thấy. Thử ở cả giao diện sáng và tố
     ở cột trái thì profile này vẫn hiện. New profile: chọn TikTok, YouTube, Gmail; ô Trang mở đầu có đủ ba
     dòng; bỏ YouTube thì dòng YouTube Studio biến mất, dòng tự gõ thì giữ nguyên. Không chọn được "Other"
     cùng nền tảng khác, và mỗi nền tảng chỉ chọn được một lần.
-20. **Màn hình chào.** Thoát app rồi mở với một thư mục trống:
+20. **Extension.** Settings → Extensions → "Add folder…", chọn thư mục `/tmp/ext-spike/ext` hoặc một extension
+    đã giải nén bất kỳ. Bật nó cho "Thử trực tiếp 1" trong ngăn chi tiết, mở profile, vào `chrome://extensions`:
+    extension có mặt. Mở "Thử trực tiếp 2": không có. Xoá extension trong Settings hỏi xác nhận và nói số profile
+    đang dùng.
+21. **Bookmark.** Xuất bookmark từ Chrome thật (Bookmark manager → ⋮ → Export bookmarks). Menu ⋯ của
+    "Thử trực tiếp 1" (đang đóng) → "Import bookmarks…": toast báo số bookmark; mở profile, thanh bookmark có
+    thư mục "Imported". Khi profile đang mở, mục này bị mờ.
+22. **API trên máy.** Settings → Local API → On, Copy token. Chạy
+    `curl -s -H "Authorization: Bearer <token>" http://127.0.0.1:51525/v1/profiles` ra danh sách profile; thiếu
+    token ra 401. Theo `docs/local-api.md` mở "Thử trực tiếp 1" với `devtools`, rồi đóng. Tắt API thì
+    `lsof -nP -iTCP:51525 -sTCP:LISTEN` không còn gì.
+23. **Màn hình chào.** Thoát app rồi mở với một thư mục trống:
     `open -n build/bin/AnyProfile.app --env ANYPROFILE_DATA_DIR=/tmp/ap-fresh`. Phải thấy hướng dẫn 3 bước. Xoá `/tmp/ap-fresh` sau khi xong.
 
 ## Phần B: test với tài khoản thật

@@ -97,6 +97,23 @@ func TestBuildLaunchFreshStart(t *testing.T) {
 	}
 }
 
+func TestBuildLaunchExtensions(t *testing.T) {
+	spec, err := testEngine(t).BuildLaunch(context.Background(), testProfile(),
+		engine.Runtime{UserDataDir: "/u", Extensions: []string{"/lib/a", "/lib/b"}, StartURLs: []string{"https://a.example/"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !slices.Contains(spec.Args, "--load-extension=/lib/a,/lib/b") || spec.Args[len(spec.Args)-1] != "https://a.example/" {
+		t.Fatalf("args = %v", spec.Args)
+	}
+	spec, _ = testEngine(t).BuildLaunch(context.Background(), testProfile(), engine.Runtime{UserDataDir: "/u"})
+	for _, a := range spec.Args {
+		if strings.HasPrefix(a, "--load-extension") {
+			t.Fatalf("%s with no extension", a)
+		}
+	}
+}
+
 func TestBuildLaunchClampsHost(t *testing.T) {
 	p := testProfile()
 	p.EngineMeta = store.EngineMeta{HWC: 16, MemGiB: 64}

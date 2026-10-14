@@ -108,6 +108,11 @@ func spawn(spec engine.LaunchSpec, udd, logPath string) (int, <-chan error, *cdp
 
 // hasSession reports whether Chromium has a session to restore, in which case
 // the start URL is not opened again.
+func isDir(p string) bool {
+	st, err := os.Stat(p)
+	return err == nil && st.IsDir()
+}
+
 func hasSession(udd string) bool {
 	entries, err := os.ReadDir(filepath.Join(udd, "Default", "Sessions"))
 	return err == nil && len(entries) > 0

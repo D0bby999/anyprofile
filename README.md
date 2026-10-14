@@ -50,6 +50,12 @@ AnyProfile is built to be handed to other people, so:
   access) opens only when you enable diagnostics for a profile's next launch.
   Even then it is loopback-only, never with `--remote-allow-origins`, and it
   turns itself off afterwards.
+- **The local API is off by default.** When on, it listens on `127.0.0.1` only,
+  needs a token kept in the Keychain, and refuses requests carrying an `Origin`
+  header or a foreign `Host`, so web pages cannot reach it. A DevTools port
+  opens only for a launch a script asks for. See `docs/local-api.md`.
+- **Extensions run only where you turn them on.** Each one is unpacked into
+  the app's library and loaded with `--load-extension` in the profiles chosen.
 - **Pinned supply chain.** The Fury core is pinned by SHA-256 of the archive
   and of the binary, plus Apple team ID `JKN8WHX7FS`, and downloaded only from
   a hard-coded GitHub Releases URL. `fury-shared` is pinned by commit, and Go,

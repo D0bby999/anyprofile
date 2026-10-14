@@ -6,6 +6,10 @@ export function APIStatus() {
   return window['go']['main']['App']['APIStatus']();
 }
 
+export function AddExtension(arg1) {
+  return window['go']['main']['App']['AddExtension'](arg1);
+}
+
 export function AddTagMany(arg1, arg2) {
   return window['go']['main']['App']['AddTagMany'](arg1, arg2);
 }
@@ -62,6 +66,10 @@ export function DeleteAllSnapshots() {
   return window['go']['main']['App']['DeleteAllSnapshots']();
 }
 
+export function DeleteExtension(arg1) {
+  return window['go']['main']['App']['DeleteExtension'](arg1);
+}
+
 export function DeleteOrphans(arg1) {
   return window['go']['main']['App']['DeleteOrphans'](arg1);
 }
@@ -110,6 +118,10 @@ export function ForgetAccount(arg1, arg2) {
   return window['go']['main']['App']['ForgetAccount'](arg1, arg2);
 }
 
+export function ImportBookmarks(arg1, arg2) {
+  return window['go']['main']['App']['ImportBookmarks'](arg1, arg2);
+}
+
 export function ImportCookies(arg1) {
   return window['go']['main']['App']['ImportCookies'](arg1);
 }
@@ -124,6 +136,10 @@ export function InstallEngine(arg1) {
 
 export function Language() {
   return window['go']['main']['App']['Language']();
+}
+
+export function ListExtensions() {
+  return window['go']['main']['App']['ListExtensions']();
 }
 
 export function ListProfiles(arg1) {
@@ -188,6 +204,10 @@ export function SetAccountPassword(arg1, arg2, arg3) {
 
 export function SetDefaults(arg1) {
   return window['go']['main']['App']['SetDefaults'](arg1);
+}
+
+export function SetExtensionMany(arg1, arg2, arg3) {
+  return window['go']['main']['App']['SetExtensionMany'](arg1, arg2, arg3);
 }
 
 export function SetLanguage(arg1) {

@@ -9,7 +9,7 @@ import { Icon } from '../components/icons'
 import { ProfileDrawer } from '../components/profile-drawer'
 import { ProfileTable, type Sort, type SortKey } from '../components/profile-table'
 import { DuplicateDialog } from '../components/duplicate-dialog'
-import { BulkProxyDialog, BulkSiteDialog, BulkTagDialog } from '../components/bulk-dialogs'
+import { BulkExtensionDialog, BulkProxyDialog, BulkSiteDialog, BulkTagDialog } from '../components/bulk-dialogs'
 import { rangeSelect } from '../lib/selection'
 import { readTablePrefs, writeTablePrefs, type TablePrefs } from '../lib/table-prefs'
 import { ViewMenu } from '../components/view-menu'
@@ -56,7 +56,7 @@ export function ProfilesPage({ rows, sites, recent, view, engineReady, fileVault
   const [sort, setSort] = useState<Sort>({ key: 'no', desc: false })
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [duplicating, setDuplicating] = useState<service.ProfileRow | null>(null)
-  const [bulkDialog, setBulkDialog] = useState<'site' | 'tag' | 'proxy' | null>(null)
+  const [bulkDialog, setBulkDialog] = useState<'site' | 'tag' | 'proxy' | 'extension' | null>(null)
   const [lastToggled, setLastToggled] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const toast = useToast()
@@ -189,6 +189,7 @@ export function ProfilesPage({ rows, sites, recent, view, engineReady, fileVault
                 <button className="btn sm" disabled={busy} onClick={() => setBulkDialog('site')}><Icon name="pencil" className="icon sm" />{t.bulk.site}</button>
                 <button className="btn sm" disabled={busy} onClick={() => setBulkDialog('tag')}><Icon name="plus" className="icon sm" />{t.bulk.tag}</button>
                 <button className="btn sm" disabled={busy} onClick={() => setBulkDialog('proxy')}><Icon name="proxy" className="icon sm" />{t.bulk.proxy}</button>
+                <button className="btn sm" disabled={busy} onClick={() => setBulkDialog('extension')}><Icon name="puzzle" className="icon sm" />{t.bulk.extension}</button>
                 <button className="btn sm" disabled={busy} onClick={() => run(() => Api.SetPinnedMany([...selected], true))}><Icon name="pin" className="icon sm" />{t.profiles.pinSelected}</button>
                 <button className="btn sm" disabled={busy} onClick={() => run(() => Api.SetPinnedMany([...selected], false))}>{t.profiles.unpinSelected}</button>
                 <span className="spacer" />
@@ -249,6 +250,10 @@ export function ProfilesPage({ rows, sites, recent, view, engineReady, fileVault
       )}
       {bulkDialog === 'site' && (
         <BulkSiteDialog ids={[...selected]} sites={sites} recent={recent} onClose={() => setBulkDialog(null)}
+          onDone={() => { setBulkDialog(null); setSelected(new Set()); reload() }} />
+      )}
+      {bulkDialog === 'extension' && (
+        <BulkExtensionDialog ids={[...selected]} onClose={() => setBulkDialog(null)}
           onDone={() => { setBulkDialog(null); setSelected(new Set()); reload() }} />
       )}
       {bulkDialog === 'tag' && (
