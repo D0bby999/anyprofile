@@ -37,6 +37,7 @@ export const vi: Messages = {
   sites: {
     search: 'Tìm nền tảng', none: 'Không có nền tảng phù hợp',
     multiHint: 'Chọn mọi nền tảng mà profile này có tài khoản. Hai tài khoản cùng một nền tảng cần hai profile.',
+    samePerson: 'Chỉ thêm nền tảng của cùng một người hoặc một kênh. Tài khoản của người hay khách khác nhau nên để ở profile riêng.',
     customTitle: 'Nền tảng của bạn', customDesc: 'Thêm nền tảng bất kỳ với tên miền, trang mở đầu và màu sắc. Nền tảng bị xoá sẽ được gỡ khỏi các profile của nó.',
     add: 'Thêm nền tảng', name: 'Tên', domains: 'Tên miền', domainsHint: 'cách nhau bằng dấu phẩy',
     startUrl: 'Trang mở đầu', color: 'Màu', empty: 'Chưa có nền tảng tự thêm.',

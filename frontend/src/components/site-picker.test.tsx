@@ -3,6 +3,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { site } from '../api'
+import { t } from '../i18n'
 import { SitePicker, SitesPicker } from './site-picker'
 
 const mk = (id: string, name: string, group = 'other', domains: string[] = []) =>
@@ -59,10 +60,12 @@ describe('SitePicker', () => {
     fireEvent.click(screen.getByRole('option', { name: /Etsy/ }))
     expect(onChange).toHaveBeenLastCalledWith(['etsy'])
     rerender(<SitesPicker value={['etsy']} onChange={onChange} sites={sites} recent={[]} />)
+    expect(screen.queryByText(t.sites.samePerson)).toBeNull()
     fireEvent.click(screen.getByRole('option', { name: /TikTok/ }))
     expect(onChange).toHaveBeenLastCalledWith(['etsy', 'tiktok'])
     rerender(<SitesPicker value={['etsy', 'tiktok']} onChange={onChange} sites={sites} recent={[]} />)
     expect(screen.getByRole('button', { name: 'Platform' }).textContent).toContain('Etsy, TikTok')
+    expect(screen.getByText(t.sites.samePerson)).toBeTruthy()
     fireEvent.click(screen.getByRole('option', { name: /Etsy/ }))
     expect(onChange).toHaveBeenLastCalledWith(['tiktok'])
   })

@@ -94,7 +94,8 @@ Mỗi mục ghi điều phải thấy. Thử ở cả giao diện sáng và tố
 19. **Nhiều nền tảng.** Cột nền tảng của "TikTok VN 01" có ba biểu tượng và chữ "TikTok +2"; bấm "YouTube"
     ở cột trái thì profile này vẫn hiện. New profile: chọn TikTok, YouTube, Gmail; ô Trang mở đầu có đủ ba
     dòng; bỏ YouTube thì dòng YouTube Studio biến mất, dòng tự gõ thì giữ nguyên. Không chọn được "Other"
-    cùng nền tảng khác, và mỗi nền tảng chỉ chọn được một lần.
+    cùng nền tảng khác, và mỗi nền tảng chỉ chọn được một lần. Từ nền tảng thứ hai, dưới ô Platform có dòng
+    nhắc "Chỉ thêm nền tảng của cùng một người hoặc một kênh"; bỏ bớt còn một thì dòng đó mất.
 20. **Extension.** Settings → Extensions → "Add folder…", chọn thư mục `/tmp/ext-spike/ext` hoặc một extension
     đã giải nén bất kỳ. Bật nó cho "Thử trực tiếp 1" trong ngăn chi tiết, mở profile, vào `chrome://extensions`:
     extension có mặt. Mở "Thử trực tiếp 2": không có. Xoá extension trong Settings hỏi xác nhận và nói số profile

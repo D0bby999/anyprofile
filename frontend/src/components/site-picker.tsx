@@ -115,6 +115,7 @@ export function SitesPicker({ value, onChange, sites, recent }: PickerProps & { 
         <span className="glyphs">{shown.map((s) => <SiteGlyph key={s.id} site={s} />)}</span>
         <span className="grow sitenames">{names}</span>
       </button>
+      {chosen.length > 1 && <span className="hint">{t.sites.samePerson}</span>}
       {open && (
         <>
           <SitePanel sites={sites.filter((s) => s.id !== 'other')} recent={recent} isOn={(id) => value.includes(id)}

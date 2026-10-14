@@ -35,6 +35,7 @@ export const en = {
   sites: {
     search: 'Search platforms', none: 'No platform matches',
     multiHint: 'Pick each platform this profile has an account on. Two accounts of the same platform need two profiles.',
+    samePerson: 'Only add platforms of the same person or channel. Accounts of different people or clients belong in separate profiles.',
     customTitle: 'Your platforms', customDesc: 'Add any platform with its domains, start page and color. A deleted platform is removed from its profiles.',
     add: 'Add platform', name: 'Name', domains: 'Domains', domainsHint: 'separated by commas',
     startUrl: 'Start page', color: 'Color', empty: 'No custom platforms yet.',
