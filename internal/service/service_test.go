@@ -479,4 +479,29 @@ func TestProxyCheckErrorHasCode(t *testing.T) {
 	if _, err := s.CheckProxyByID(ctx, rows[0].ID); err == nil || !strings.HasPrefix(err.Error(), "anyprofile:proxy_unreachable:") {
 		t.Fatalf("err = %v", err)
 	}
+	res, err := s.ImportProxies(ctx, "gw.example:10010:u:pw", "")
+	if err != nil || len(res.Unreachable) != 1 || res.Unreachable[0] != "gw.example:10010" {
+		t.Fatalf("import of an unreachable proxy = %+v %v", res, err)
+	}
+}
+
+func TestOnboarding(t *testing.T) {
+	s, _ := newService(t)
+	if s.Onboarded() {
+		t.Fatal("empty database reported onboarded")
+	}
+	if _, err := s.CreateProfile(context.Background(), NewProfile{Name: "Old", Site: "other"}); err != nil {
+		t.Fatal(err)
+	}
+	if !s.Onboarded() {
+		t.Fatal("existing profile must count as onboarded")
+	}
+	if v, _ := s.Store.GetSetting("onboarded"); v != "1" {
+		t.Fatalf("setting = %q", v)
+	}
+
+	s2, _ := newService(t)
+	if err := s2.FinishOnboarding(); err != nil || !s2.Onboarded() {
+		t.Fatalf("finish = %v", err)
+	}
 }

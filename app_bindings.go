@@ -101,6 +101,18 @@ func (a *App) SetSiteMany(ids []string, site string) error {
 	return a.must(func() error { return a.svc.SetSiteMany(ids, site) })
 }
 
+// Onboarded is false only on a fresh install that has not finished setup.
+func (a *App) Onboarded() bool {
+	if a.svc == nil {
+		return true
+	}
+	return a.svc.Onboarded()
+}
+
+func (a *App) FinishOnboarding() error {
+	return a.must(func() error { return a.svc.FinishOnboarding() })
+}
+
 func (a *App) SetPinnedMany(ids []string, pinned bool) error {
 	return a.must(func() error { return a.svc.SetPinnedMany(ids, pinned) })
 }

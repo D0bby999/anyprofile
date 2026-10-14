@@ -105,3 +105,27 @@ func (s *Service) SetDefaults(d Defaults) error {
 	s.notify("settings")
 	return nil
 }
+
+// Onboarded reports whether first-run setup is done. Someone who already has
+// profiles (from before setup existed) counts as done, and that is saved.
+func (s *Service) Onboarded() bool {
+	if v, err := s.Store.GetSetting("onboarded"); err == nil && v == "1" {
+		return true
+	}
+	if n, err := s.Store.ProfileCount(); err == nil && n > 0 {
+		if err := s.Store.SetSetting("onboarded", "1"); err != nil {
+			s.Log.Warn("save onboarded", "err", err)
+		}
+		return true
+	}
+	return false
+}
+
+// FinishOnboarding marks first-run setup as done (finished or skipped).
+func (s *Service) FinishOnboarding() error {
+	if err := s.Store.SetSetting("onboarded", "1"); err != nil {
+		return err
+	}
+	s.notify("settings")
+	return nil
+}

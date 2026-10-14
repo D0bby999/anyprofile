@@ -50,10 +50,14 @@ func (a *App) init() error {
 	if err != nil {
 		return err
 	}
+	relativeOverride := os.Getenv(paths.EnvDataDir) != "" && !filepath.IsAbs(os.Getenv(paths.EnvDataDir))
 	if err := dirs.Ensure(); err != nil {
 		return err
 	}
 	log := openLog(dirs)
+	if relativeOverride {
+		log.Warn("ignoring a relative data directory override", "env", paths.EnvDataDir)
+	}
 	cfgBin, err := furyConfigPath()
 	if err != nil {
 		return err

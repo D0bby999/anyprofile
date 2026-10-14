@@ -15,7 +15,7 @@
   background: var(--surface); border-right: 1px solid var(--line);
 }
 .brandrow { display: flex; align-items: center; gap: 9px; padding: 6px 6px 14px; }
-.brandrow .mark { width: 24px; height: 24px; flex: 0 0 auto; }
+.mark { width: 24px; height: 24px; flex: 0 0 auto; }
 .brandrow b { font-size: 15px; font-weight: 700; letter-spacing: -0.02em; }
 .sidebar .newbtn { height: 36px; font-size: 13px; }
 .sidenav { display: flex; flex-direction: column; gap: 2px; margin-top: 14px; overflow-y: auto; min-height: 0; }
@@ -77,6 +77,29 @@ kbd { display: inline-flex; align-items: center; min-width: 22px; height: 20px; 
 .keyrow { display: grid; grid-template-columns: 90px 1fr; align-items: center; gap: 12px; font-size: var(--t-sm); }
 .keyrow dd { margin: 0; color: var(--ink-soft); }
 @media (prefers-reduced-motion: reduce) { .palette { animation: none; } }
+
+/* First-run setup: a page of its own, no sidebar. */
+.welcome { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow-y: auto; background: var(--bg); }
+.welcome-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 18px 24px 0 84px; min-height: 52px; }
+.welcome-col { width: 100%; max-width: 600px; margin: 0 auto; padding: 32px 24px 40px; display: flex; flex-direction: column; gap: 14px; }
+.welcome-col h1 { font-size: var(--t-lg); font-weight: 700; letter-spacing: -0.03em; text-wrap: balance; }
+.welcome-sub { margin: -8px 0 10px; color: var(--muted); }
+.wstep { display: grid; grid-template-columns: 28px 1fr; gap: 14px; padding: 16px 18px; border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface); }
+.wstep.later { opacity: .55; }
+.wstep.done { background: var(--surface-sunken); }
+.wnum { width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%; border: 1px solid var(--line); color: var(--ink-soft); font-size: var(--t-sm); font-weight: 650; font-variant-numeric: tabular-nums; }
+.wstep.active .wnum { background: var(--accent-fill); border-color: var(--accent-fill); color: var(--on-fill); }
+.wstep.done .wnum { background: var(--success-soft); border-color: var(--success-line); color: var(--success-ink); }
+.wbody { min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+.wbody h2 { font-size: var(--t-md); line-height: 28px; }
+.wbody p { margin: 0; color: var(--ink-soft); font-size: var(--t-sm); }
+.wbody .wsummary { color: var(--muted); margin-top: -6px; }
+.wbtn { align-self: flex-start; }
+.wnote { display: flex; align-items: flex-start; gap: 8px; }
+.wnote .icon { margin-top: 2px; color: var(--muted); }
+.wproxies { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; font-size: var(--t-sm); color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+.welcome-skip { align-self: center; margin-top: 6px; padding: 6px 10px; border: 0; border-radius: var(--r-sm); background: none; color: var(--muted); font: inherit; font-size: var(--t-sm); cursor: pointer; }
+.welcome-skip:hover { color: var(--ink); background: var(--surface-hover); }
 
 .advanced { display: flex; flex-direction: column; gap: 10px; }
 .disclosure { align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; padding: 4px 6px; margin-left: -6px; border: 0; border-radius: var(--r-sm); background: none; color: var(--ink-soft); font-size: var(--t-sm); font-weight: 600; cursor: pointer; }

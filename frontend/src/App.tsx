@@ -14,6 +14,7 @@ import { ProfilesPage } from './pages/profiles-page'
 import { ProxiesPage } from './pages/proxies-page'
 import { TrashPage } from './pages/trash-page'
 import { SettingsPage } from './pages/settings-page'
+import { WelcomePage } from './pages/welcome-page'
 import { CommandPalette, type Command } from './components/command-palette'
 import { ShortcutSheet } from './components/shortcut-sheet'
 import { useToast } from './components/toast'
@@ -25,6 +26,7 @@ export default function App() {
   const [view, setView] = useState<View>('all')
   const [creating, setCreating] = useState<number | false>(false) // false, or the count to start with
   const [activeId, setActiveId] = useState<string | null>(null)
+  const [onboarded, setOnboarded] = useState<boolean | null>(null)
   const [palette, setPalette] = useState(false)
   const [sheet, setSheet] = useState(false)
   const toast = useToast()
@@ -41,6 +43,7 @@ export default function App() {
   useEffect(() => applyTheme(theme), [theme])
   useEffect(() => {
     Api.StartupError().then(setStartupError)
+    Api.Onboarded().then(setOnboarded).catch(() => setOnboarded(true))
     Api.FileVaultOn().then(setFileVaultOn)
   }, [])
   const refreshEngines = () => {
@@ -98,6 +101,27 @@ export default function App() {
     )
   }
 
+  const changeLanguage = async (l: Language) => {
+    try {
+      await Api.SetLanguage(l)
+      setLanguage(l)
+      setLang(l)
+    } catch {
+      // the language stays as it was
+    }
+  }
+
+  if (onboarded === null) return null
+  if (!onboarded) {
+    return (
+      // Not keyed by language: switching it must keep the setup progress.
+      <div className="app">
+        <WelcomePage sites={sites} fileVaultOn={fileVaultOn} lang={lang} onLanguage={changeLanguage}
+          onDone={(id) => { setOnboarded(true); setPage('profiles'); setView('all'); setActiveId(id); profiles.reload(); refreshEngines(); refreshProxies() }} />
+      </div>
+    )
+  }
+
   const defaultEngine = engines?.find((e) => e.default)
   const engineReady = !!defaultEngine?.installed
   const engineName = defaultEngine ? (t.engines.names[defaultEngine.engine] ?? defaultEngine.engine) : ''
@@ -127,16 +151,6 @@ export default function App() {
     const go = row.state === 'running' ? Api.FocusProfile(row.id) : Api.StartProfile(row.id)
     Promise.resolve(go).catch((e: unknown) => toast.error(errorText(e)))
   }
-  const changeLanguage = async (l: Language) => {
-    try {
-      await Api.SetLanguage(l)
-      setLanguage(l)
-      setLang(l)
-    } catch {
-      // the language stays as it was
-    }
-  }
-
   return (
     <div className="app" key={lang}>
       <Sidebar page={page} view={view} counts={counts} tags={tags} sites={sites} siteCounts={siteCounts} proxyCount={proxyCount}

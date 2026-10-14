@@ -114,8 +114,14 @@ export function ProfilesPage({ rows, sites, recent, view, engineReady, fileVault
   }
   const toggleAll = () => setSelected((cur) => (visible.every((r) => cur.has(r.id)) ? new Set() : new Set(visible.map((r) => r.id))))
   const active = activeId ? rows.find((r) => r.id === activeId) ?? null : null
-  // A profile that left the list (trashed, filtered away elsewhere) closes the drawer.
-  useEffect(() => { if (activeId && !rows.some((r) => r.id === activeId)) setActiveId(null) }, [rows, activeId])
+  // A profile that left the list (trashed, purged) closes the drawer. One that
+  // is not in it yet (just created, the list still loading) keeps it open.
+  const wasListed = useRef(false)
+  useEffect(() => {
+    const listed = !!activeId && rows.some((r) => r.id === activeId)
+    if (activeId && wasListed.current && !listed) setActiveId(null)
+    wasListed.current = listed
+  }, [rows, activeId])
   const select = (id: string) => setActiveId((cur) => (cur === id ? null : id))
 
   // Keyboard: arrows move a cursor row (and the drawer with it), Enter opens

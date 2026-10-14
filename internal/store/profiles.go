@@ -169,6 +169,13 @@ func (s *Store) CreateProfile(p *Profile) error {
 	return s.db.QueryRow(`SELECT serial FROM profiles WHERE id = ?`, p.ID).Scan(&p.Serial)
 }
 
+// ProfileCount counts every profile, trashed ones included.
+func (s *Store) ProfileCount() (int, error) {
+	var n int
+	err := s.db.QueryRow(`SELECT COUNT(*) FROM profiles`).Scan(&n)
+	return n, err
+}
+
 func (s *Store) GetProfile(id string) (Profile, error) {
 	return scanProfile(s.db.QueryRow(`SELECT `+profileCols+` FROM profiles WHERE id = ?`, id))
 }

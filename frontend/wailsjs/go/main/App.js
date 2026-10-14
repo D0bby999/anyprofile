@@ -78,6 +78,10 @@ export function FileVaultOn() {
   return window['go']['main']['App']['FileVaultOn']();
 }
 
+export function FinishOnboarding() {
+  return window['go']['main']['App']['FinishOnboarding']();
+}
+
 export function FocusProfile(arg1) {
   return window['go']['main']['App']['FocusProfile'](arg1);
 }
@@ -100,6 +104,10 @@ export function ListProfiles(arg1) {
 
 export function ListProxies() {
   return window['go']['main']['App']['ListProxies']();
+}
+
+export function Onboarded() {
+  return window['go']['main']['App']['Onboarded']();
 }
 
 export function Personas() {

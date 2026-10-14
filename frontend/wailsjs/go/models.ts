@@ -181,6 +181,7 @@ export namespace service {
 	export class ImportResult {
 	    added: number;
 	    failed: netproxy.ParsedLine[];
+	    unreachable: string[];
 	
 	    static createFrom(source: any = {}) {
 	        return new ImportResult(source);
@@ -190,6 +191,7 @@ export namespace service {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.added = source["added"];
 	        this.failed = this.convertValues(source["failed"], netproxy.ParsedLine);
+	        this.unreachable = source["unreachable"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {

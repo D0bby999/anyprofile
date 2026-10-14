@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -28,6 +29,8 @@ type ProxyRow struct {
 type ImportResult struct {
 	Added  int                   `json:"added"`
 	Failed []netproxy.ParsedLine `json:"failed"`
+	// Unreachable lists the labels of added proxies whose first check failed.
+	Unreachable []string `json:"unreachable"`
 }
 
 func (s *Service) ListProxies() ([]ProxyRow, error) {
@@ -76,14 +79,21 @@ func (s *Service) ImportProxies(ctx context.Context, text, expiresOn string) (Im
 		added = append(added, px.ID)
 	}
 	res.Added = len(added)
-	s.checkMany(ctx, added)
+	for _, id := range s.checkMany(ctx, added) {
+		if px, err := s.Store.GetProxy(id); err == nil {
+			res.Unreachable = append(res.Unreachable, px.Label)
+		}
+	}
 	s.notify("proxies")
 	return res, nil
 }
 
-func (s *Service) checkMany(ctx context.Context, ids []string) {
+// checkMany checks proxies eight at a time and returns the ids that failed.
+func (s *Service) checkMany(ctx context.Context, ids []string) []string {
 	sem := make(chan struct{}, 8)
 	var wg sync.WaitGroup
+	var mu sync.Mutex
+	var failed []string
 	for _, id := range ids {
 		wg.Add(1)
 		sem <- struct{}{}
@@ -91,10 +101,15 @@ func (s *Service) checkMany(ctx context.Context, ids []string) {
 			defer func() { <-sem; wg.Done() }()
 			if _, err := s.CheckProxyByID(ctx, id); err != nil {
 				s.Log.Warn("proxy check", "proxy", id, "err", err)
+				mu.Lock()
+				failed = append(failed, id)
+				mu.Unlock()
 			}
 		}(id)
 	}
 	wg.Wait()
+	sort.Strings(failed)
+	return failed
 }
 
 // CheckProxyByID measures the exit through the proxy and stores it.

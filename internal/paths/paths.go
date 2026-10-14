@@ -14,8 +14,17 @@ type Dirs struct {
 	Root string
 }
 
-// Default is ~/Library/Application Support/AnyProfile on macOS.
+// EnvDataDir overrides the data directory with an absolute path.
+// Development and acceptance runs only; lets a fresh install be tested
+// without touching the user's data.
+const EnvDataDir = "ANYPROFILE_DATA_DIR"
+
+// Default is ~/Library/Application Support/AnyProfile on macOS, or the
+// absolute path in ANYPROFILE_DATA_DIR. A relative override is ignored.
 func Default() (Dirs, error) {
+	if v := os.Getenv(EnvDataDir); v != "" && filepath.IsAbs(v) {
+		return Dirs{Root: filepath.Clean(v)}, nil
+	}
 	base, err := os.UserConfigDir()
 	if err != nil {
 		return Dirs{}, err

@@ -4,8 +4,8 @@ import { Api, main, onEngineProgress, service, type EngineProgress } from '../ap
 import { t } from '../i18n'
 import { errorText } from '../lib/format'
 import { Icon } from './icons'
+import { InstallProgress } from './install-progress'
 
-const mb = (n: number) => `${Math.round(n / 1048576)} MB`
 const engineName = (id: string) => t.engines.names[id] ?? id
 
 type Props = {
@@ -49,7 +49,6 @@ export function EngineSettings({ engines, counts, defaults, onChanged }: Props) 
     <div className="engines">
       {engines.map((e) => {
         const busy = progress?.engine === e.engine
-        const pct = busy && progress.total > 0 ? Math.round((progress.done / progress.total) * 100) : 0
         return (
           <div key={e.engine} className="engine" aria-busy={busy}>
             <div className="engine-head">
@@ -70,10 +69,7 @@ export function EngineSettings({ engines, counts, defaults, onChanged }: Props) 
             </div>
             {e.problem && <div className="banner danger"><Icon name="alert" /><span className="grow">{e.problem}</span></div>}
             {busy ? (
-              <div className="field">
-                <span className="hint">{t.engines.installing(pct, progress.total > 0 ? `${mb(progress.done)} / ${mb(progress.total)}` : '')}</span>
-                <div className="progress" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}><div style={{ width: `${pct}%` }} /></div>
-              </div>
+              <InstallProgress progress={progress} />
             ) : (
               <div className="engine-actions">
                 <button type="button" className={`btn${e.installed ? '' : ' primary'}`} disabled={!!progress} onClick={() => install(e.engine)}>

@@ -45,6 +45,8 @@ export function Engines():Promise<Array<main.EngineInfo>>;
 
 export function FileVaultOn():Promise<boolean>;
 
+export function FinishOnboarding():Promise<void>;
+
 export function FocusProfile(arg1:string):Promise<boolean>;
 
 export function ImportProxies(arg1:string,arg2:string):Promise<service.ImportResult>;
@@ -56,6 +58,8 @@ export function Language():Promise<string>;
 export function ListProfiles(arg1:store.ProfileFilter):Promise<Array<service.ProfileRow>>;
 
 export function ListProxies():Promise<Array<service.ProxyRow>>;
+
+export function Onboarded():Promise<boolean>;
 
 export function Personas():Promise<Array<fury.Persona>>;
 
