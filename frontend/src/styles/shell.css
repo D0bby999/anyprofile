@@ -246,7 +246,11 @@ kbd { display: inline-flex; align-items: center; min-width: 22px; height: 20px; 
 @container (max-width: 1100px) { .table .col-lastopen { display: none; } }
 @container (max-width: 880px) {
   .cellproxy small { display: none; }
+  /* The hidden name is anchored in its cell; anchored anywhere else it would sit
+     outside the table's scroll area and stretch the whole window. The header
+     cell is sticky, which anchors it already. */
   .table .col-site { width: 1%; }
+  .table td.col-site { position: relative; }
   .table .col-site .plabel, .table .col-site .sitehead {
     position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap;
   }
