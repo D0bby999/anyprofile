@@ -19,7 +19,7 @@ const rows = [service.ProfileRow.createFrom({
 })]
 const page = (view: View = 'all', onClearView = vi.fn()) => render(
   <ProfilesPage rows={rows} sites={sites} recent={[]} view={view} engineReady fileVaultOn error="" setError={vi.fn()}
-    reload={vi.fn()} onNew={vi.fn()} onNeedEngine={vi.fn()} onClearView={onClearView} activeId={null} setActiveId={vi.fn()} />,
+    reload={vi.fn()} onNew={vi.fn()} onNeedEngine={vi.fn()} onClearView={onClearView} onView={vi.fn()} activeId={null} setActiveId={vi.fn()} />,
 )
 
 afterEach(() => { cleanup(); localStorage.clear() })

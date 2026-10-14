@@ -32,6 +32,7 @@ type Props = {
   onNew: () => void
   onNeedEngine: () => void
   onClearView: () => void
+  onView: (v: View) => void
   /** The profile whose details drawer is open; App owns it so ⌘K can open one. */
   activeId: string | null
   setActiveId: (id: string | null | ((cur: string | null) => string | null)) => void
@@ -49,7 +50,7 @@ function inView(r: service.ProfileRow, v: View): boolean {
   return r.sites.includes(v.slice(5))
 }
 
-export function ProfilesPage({ rows, sites, recent, view, engineReady, fileVaultOn, error, setError, reload, onNew, onNeedEngine, onClearView, activeId, setActiveId }: Props) {
+export function ProfilesPage({ rows, sites, recent, view, engineReady, fileVaultOn, error, setError, reload, onNew, onNeedEngine, onClearView, onView, activeId, setActiveId }: Props) {
   const [query, setQuery] = useState('')
   const [prefs, setPrefs] = useState<TablePrefs>(readTablePrefs)
   const changePrefs = (p: TablePrefs) => { setPrefs(p); writeTablePrefs(p) }
@@ -160,6 +161,9 @@ export function ProfilesPage({ rows, sites, recent, view, engineReady, fileVault
   }
 
   const runningCount = rows.filter((r) => r.state === 'running').length
+  const attentionCount = rows.filter(needsAttention).length
+  // The status bar filters by state; a second click shows everything again.
+  const statusFilter = (v: View) => () => (view === v ? onClearView() : onView(v))
   const filtered = query || view !== 'all'
   const filterLabel = view === 'all' ? '' : view === 'running' ? t.filters.running : view === 'attention' ? t.filters.attention
     : view.startsWith('tag:') ? t.filters.tag(view.slice(4)) : t.filters.site(siteById(sites, view.slice(5)).name)
@@ -235,7 +239,14 @@ export function ProfilesPage({ rows, sites, recent, view, engineReady, fileVault
             </div>
             <div className="statusbar">
               <span><b>{filtered ? `${visible.length}/${rows.length}` : rows.length}</b> {t.profiles.statusTotal}</span>
-              <span><span className={`live${runningCount ? ' on' : ''}`} /><b>{runningCount}</b> {t.profiles.statusRunning}</span>
+              <button type="button" className="statusbtn" aria-pressed={view === 'running'} onClick={statusFilter('running')}>
+                <span className={`live${runningCount ? ' on' : ''}`} /><b>{runningCount}</b> {t.profiles.statusRunning}
+              </button>
+              {attentionCount > 0 && (
+                <button type="button" className="statusbtn" aria-pressed={view === 'attention'} onClick={statusFilter('attention')}>
+                  <Icon name="alert" className="icon sm warnicon" /><b>{attentionCount}</b> {t.profiles.statusAttention(attentionCount)}
+                </button>
+              )}
             </div>
           </section>
           {active && (

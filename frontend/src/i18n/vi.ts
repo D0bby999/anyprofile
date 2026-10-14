@@ -92,7 +92,7 @@ export const vi: Messages = {
     clearFilters: 'Bỏ bộ lọc',
     engineMissing: 'Chưa cài engine nên chưa mở được profile.',
     installEngine: 'Cài engine',
-    statusTotal: 'profile', statusRunning: 'đang chạy',
+    statusTotal: 'profile', statusRunning: 'đang chạy', statusAttention: (_n: number): string => 'cần chú ý',
     rotating: 'IP xoay',
   },
   create: {

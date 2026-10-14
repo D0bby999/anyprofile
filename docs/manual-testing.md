@@ -66,7 +66,9 @@ Mở một profile "Mẫu" sẽ ghi đè trạng thái giả bằng kết quả 
 
 Mỗi mục ghi điều phải thấy. Thử ở cả giao diện sáng và tối (Settings), và một lần với cửa sổ hẹp.
 
-1. **Thanh bên.** "Needs attention" đếm đúng 9 (mọi profile "Mẫu" trừ "đổi IP", vốn chỉ là thông tin). Nhóm Tags có 8 tag với 8 màu. Bấm một tag thì bảng chỉ còn profile có tag đó.
+1. **Thanh bên và thanh trạng thái.** Thanh bên không còn mục Running và Needs attention. Thanh trạng thái
+   dưới bảng ghi "9 need attention" (mọi profile "Mẫu" trừ "đổi IP", vốn chỉ là thông tin); bấm vào thì bảng
+   chỉ còn 9 profile đó, bấm lần nữa thì hiện lại tất cả. "N running" lọc profile đang chạy theo cùng cách. Nhóm Tags có 8 tag với 8 màu. Bấm một tag thì bảng chỉ còn profile có tag đó.
 2. **Tìm kiếm.** Gõ `tai khoan nuoi` (không dấu) thì ra "TikTok VN 02" nhờ ghi chú. Gõ `#12` thì ra profile số 12.
 3. **Bộ lọc và View.** Bật tắt chip lọc trên thanh công cụ. Menu View đổi mật độ và ẩn hiện cột; tắt app rồi mở lại vẫn giữ.
 4. **Ghim.** 3 kênh US nằm trên cùng. Chọn vài hàng, ghim nhiều cùng lúc, rồi bỏ ghim.

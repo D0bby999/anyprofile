@@ -8,7 +8,7 @@ import { Icon, LogoMark, type IconName } from './icons'
 
 export type Page = 'profiles' | 'proxies' | 'trash' | 'settings'
 /** What the profile table shows: everything, the running ones, the ones that
- *  need attention, one platform, or one tag. */
+ *  need attention (both picked from the status bar), one platform, or one tag. */
 export type View = 'all' | 'running' | 'attention' | `site:${string}` | `tag:${string}`
 
 const TAGS_SHOWN = 12
@@ -16,7 +16,7 @@ const TAGS_SHOWN = 12
 type Props = {
   page: Page
   view: View
-  counts: { all: number; running: number; attention: number }
+  counts: { all: number }
   /** Tags with profile counts, most used first. */
   tags: [string, number][]
   sites: Site[]
@@ -57,8 +57,6 @@ export function Sidebar({ page, view, counts, tags, sites, siteCounts, proxyCoun
       </button>
       <nav className="sidenav" aria-label={t.appName}>
         {item(t.nav.all, 'profiles', onProfiles('all'), () => onNavigate('profiles', 'all'), counts.all)}
-        {item(t.nav.running, 'running', onProfiles('running'), () => onNavigate('profiles', 'running'), counts.running, 'live')}
-        {item(t.nav.attention, 'alert', onProfiles('attention'), () => onNavigate('profiles', 'attention'), counts.attention, 'warn')}
         {item(t.nav.proxies, 'proxy', page === 'proxies', () => onNavigate('proxies'), proxyCount)}
         {item(t.nav.trash, 'trash', page === 'trash', () => onNavigate('trash'))}
 

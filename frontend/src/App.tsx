@@ -162,7 +162,7 @@ export default function App() {
         {page === 'profiles' && (
           <ProfilesPage rows={profiles.rows} sites={sites} recent={recent} view={view} engineReady={engines === null || engineReady}
             fileVaultOn={fileVaultOn} error={profiles.error} setError={profiles.setError} reload={profiles.reload}
-            onNew={newProfile} onNeedEngine={() => setPage('settings')} onClearView={() => setView('all')}
+            onNew={newProfile} onNeedEngine={() => setPage('settings')} onClearView={() => setView('all')} onView={setView}
             activeId={activeId} setActiveId={setActiveId} />
         )}
         {page === 'proxies' && <ProxiesPage onChanged={() => { refreshProxies(); profiles.reload() }} />}

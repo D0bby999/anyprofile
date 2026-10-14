@@ -90,7 +90,7 @@ export const en = {
     clearFilters: 'Clear filters',
     engineMissing: 'The engine is not installed, so profiles cannot be opened.',
     installEngine: 'Install engine',
-    statusTotal: 'profiles', statusRunning: 'running',
+    statusTotal: 'profiles', statusRunning: 'running', statusAttention: (n: number): string => n === 1 ? 'needs attention' : 'need attention',
     rotating: 'rotating IP',
   },
   create: {

@@ -27,6 +27,7 @@ vi.mock('../api', async (orig) => ({
   },
 }))
 const { ProfilesPage } = await import('../pages/profiles-page')
+type View = import('../components/sidebar').View
 const { ConfirmProvider } = await import('./confirm')
 
 const sites = [
@@ -43,9 +44,11 @@ const rows = [row('a', 'Kênh A', 1), row('b', 'Kênh B', 2), row('c', 'Kênh C'
 
 function Harness() {
   const [activeId, setActiveId] = useState<string | null>(null)
+  const [view, setView] = useState<View>('all')
   return (
-    <ProfilesPage rows={rows} sites={sites} recent={[]} view="all" engineReady fileVaultOn error="" setError={vi.fn()}
-      reload={vi.fn()} onNew={vi.fn()} onNeedEngine={vi.fn()} onClearView={vi.fn()} activeId={activeId} setActiveId={setActiveId} />
+    <ProfilesPage rows={rows} sites={sites} recent={[]} view={view} engineReady fileVaultOn error="" setError={vi.fn()}
+      reload={vi.fn()} onNew={vi.fn()} onNeedEngine={vi.fn()} onClearView={() => setView('all')} onView={setView}
+      activeId={activeId} setActiveId={setActiveId} />
   )
 }
 const page = () => render(<ConfirmProvider><Harness /></ConfirmProvider>)
@@ -129,5 +132,16 @@ describe('profile drawer', () => {
     expect((box as HTMLInputElement).checked).toBe(false)
     fireEvent.click(box)
     await waitFor(() => expect(setExtensionMany).toHaveBeenCalledWith(['a'], 'ext-1', true))
+  })
+
+  it('filters running profiles from the status bar, and shows all again on a second click', () => {
+    page()
+    const running = screen.getByRole('button', { name: new RegExp(t.profiles.statusRunning) })
+    expect(running.textContent).toContain('0')
+    fireEvent.click(running)
+    expect(running.getAttribute('aria-pressed')).toBe('true')
+    expect(screen.queryByText('Kênh A')).toBeNull()
+    fireEvent.click(running)
+    expect(screen.getByText('Kênh A')).toBeTruthy()
   })
 })

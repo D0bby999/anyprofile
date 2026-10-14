@@ -23,13 +23,11 @@ const sidebar = (onNavigate = vi.fn(), many = 0) => render(
 )
 
 describe('Sidebar', () => {
-  it('counts the profiles that need attention', () => {
-    const onNavigate = vi.fn()
-    sidebar(onNavigate)
-    const item = screen.getByRole('button', { name: new RegExp(t.nav.attention) })
-    expect(item.textContent).toContain('2')
-    fireEvent.click(item)
-    expect(onNavigate).toHaveBeenCalledWith('profiles', 'attention')
+  it('leaves Running and Needs attention to the status bar', () => {
+    sidebar()
+    expect(screen.getByRole('button', { name: new RegExp(t.nav.all) }).textContent).toContain('3')
+    expect(screen.queryByRole('button', { name: new RegExp(t.nav.running) })).toBeNull()
+    expect(screen.queryByRole('button', { name: new RegExp(t.nav.attention) })).toBeNull()
   })
 
   it('lists tags with counts and opens one', () => {
