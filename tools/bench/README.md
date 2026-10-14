@@ -14,6 +14,8 @@ and are forbidden in the app (see Security in the top-level README).
 | `chromium-bench.mjs` | Opens N profiles at once and reports memory per process type. |
 | `pipe-spike/` | Checks the DevTools pipe the fingerprint check relies on: fds 5/6, `--remote-debugging-pipe`, a hidden probe tab, survival after the pipe closes. `SPIKE_SEED=<16 hex>`. |
 | `proxy-relay.mjs` | A minimal authenticated-upstream relay. The app uses `internal/netproxy` instead. |
+| `apostate-pipe-check.mjs` | Runs BrowserScan in Apostate the way the app launches it (relay, DevTools pipe, GOOGLE_* variables). `UPSTREAM=<proxy url>`, args: binary, relay script, seeds, first seed. |
+| `apostate-cookie-check.mjs` | Checks that a persistent cookie survives a restart with the real Keychain. Pass `mock` only to self-test the script. |
 
 Check the profile the app would really produce:
 
