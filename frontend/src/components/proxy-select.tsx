@@ -37,3 +37,8 @@ export function ProxySelect({ value, onChange, proxies, allowAuto, currentProfil
 export function RealIpWarning() {
   return <div className="realip" role="note"><Icon name="alert" className="icon sm" /><span>{t.create.realIpWarning}</span></div>
 }
+
+/** Said when a new profile would share a proxy, and so an IP, with other profiles. */
+export function SharedProxyWarning({ usedBy }: { usedBy: string[] }) {
+  return <div className="realip" role="note"><Icon name="alert" className="icon sm" /><span>{t.create.proxyShared(usedBy.join(', '))}</span></div>
+}

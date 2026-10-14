@@ -34,7 +34,7 @@ const defaults = service.Defaults.createFrom({ site: 'other', proxy: 'auto' })
 const dialog = (over: Partial<Parameters<typeof NewProfileDialog>[0]> = {}) =>
   render(<NewProfileDialog defaultSite="tiktok" defaults={defaults} sites={sites} recent={[]} onClose={vi.fn()} onCreated={vi.fn()} {...over} />)
 
-afterEach(() => { cleanup(); createProfile.mockClear(); createProfiles.mockClear(); proxyList = [freeProxy('10001')] })
+afterEach(() => { cleanup(); createProfile.mockClear(); createProfiles.mockClear(); proxyList = [freeProxy('10001')]; localStorage.clear() })
 
 describe('NewProfileDialog', () => {
   it('creates from a name and Enter, with an automatic proxy and the platform start page', async () => {
@@ -128,5 +128,38 @@ describe('NewProfileDialog', () => {
     dialog()
     const auto = await screen.findByRole('option', { name: t.create.proxyAutoFree(2) })
     expect(auto.textContent).toContain('2')
+  })
+
+  it('offers the proxy chosen for the last profile, and warns that it is shared', async () => {
+    proxyList = [freeProxy('10001'), freeProxy('10002')]
+    const first = dialog({ onCreated: vi.fn() })
+    const name = screen.getByPlaceholderText(t.create.namePlaceholder)
+    fireEvent.change(name, { target: { value: 'One' } })
+    await screen.findByRole('option', { name: /gw.example:10002/ })
+    fireEvent.change(screen.getByRole('combobox', { name: t.create.proxy }), { target: { value: '10002' } })
+    fireEvent.submit(name.closest('form')!)
+    await waitFor(() => expect(createProfile).toHaveBeenCalled())
+    expect(createProfile.mock.calls[0][0]).toMatchObject({ proxyId: '10002' })
+    first.unmount()
+
+    proxyList = [freeProxy('10001'), { ...freeProxy('10002'), usedBy: ['One'] }]
+    dialog()
+    await screen.findByText(t.create.proxyShared('One'))
+    expect((screen.getByRole('combobox', { name: t.create.proxy }) as HTMLSelectElement).value).toBe('10002')
+  })
+
+  it('falls back to the default when the remembered proxy is gone, and never remembers No proxy', async () => {
+    localStorage.setItem('anyprofile.lastProxy', 'deleted')
+    const onCreated = vi.fn()
+    dialog({ onCreated })
+    await screen.findByRole('option', { name: t.create.proxyAutoFree(1) })
+    const select = screen.getByRole('combobox', { name: t.create.proxy }) as HTMLSelectElement
+    expect(select.value).toBe('auto')
+    fireEvent.change(select, { target: { value: '' } })
+    const name = screen.getByPlaceholderText(t.create.namePlaceholder)
+    fireEvent.change(name, { target: { value: 'Direct' } })
+    fireEvent.submit(name.closest('form')!)
+    await waitFor(() => expect(onCreated).toHaveBeenCalled())
+    expect(localStorage.getItem('anyprofile.lastProxy')).toBeNull()
   })
 })

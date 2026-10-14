@@ -94,6 +94,7 @@ export const en = {
     proxyAutoFree: (n: number) => `Next free proxy (${n} free)`, proxyAutoEmpty: 'Next free proxy (none free)',
     proxyDirect: 'No proxy: uses your real IP', proxyChoose: 'Choose a proxy…',
     realIpWarning: 'This profile will show your real IP address and location to every site.',
+    proxyShared: (names: string) => `Also used by ${names}. Sites can link accounts that share an IP.`,
     proxyHint: 'The profile\u2019s timezone, location and languages follow the proxy\u2019s IP.',
     startUrl: 'Start page', tags: 'Tags', tagsPlaceholder: 'separated by commas',
     startUrlHint: 'One URL per line',

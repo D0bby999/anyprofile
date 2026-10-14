@@ -96,6 +96,7 @@ export const vi: Messages = {
     proxyAutoFree: (n: number) => `Proxy trống kế tiếp (còn ${n})`, proxyAutoEmpty: 'Proxy trống kế tiếp (không còn cái nào)',
     proxyDirect: 'Không proxy: dùng IP thật của bạn', proxyChoose: 'Chọn proxy…',
     realIpWarning: 'Profile này sẽ cho mọi trang web thấy IP và vị trí thật của bạn.',
+    proxyShared: (names: string) => `Proxy này đang dùng cho ${names}. Các trang có thể liên kết những tài khoản dùng chung một IP.`,
     proxyHint: 'Múi giờ, vị trí và ngôn ngữ của profile lấy theo IP của proxy.',
     startUrl: 'Trang mở đầu', tags: 'Tag', tagsPlaceholder: 'cách nhau bằng dấu phẩy',
     startUrlHint: 'Mỗi dòng một URL',

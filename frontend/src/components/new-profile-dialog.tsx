@@ -3,9 +3,10 @@ import { useEffect, useState } from 'react'
 import { Api, service } from '../api'
 import { t } from '../i18n'
 import { errorText, nameSeries, parseTags } from '../lib/format'
+import { readLastProxy, usableLastProxy, writeLastProxy } from '../lib/last-proxy'
 import { guessSite, siteById, type Site } from '../lib/sites'
 import { Dialog } from './dialog'
-import { CHOOSE_PROXY, freeProxies, ProxySelect, RealIpWarning } from './proxy-select'
+import { CHOOSE_PROXY, freeProxies, ProxySelect, RealIpWarning, SharedProxyWarning } from './proxy-select'
 import { SitePicker } from './site-picker'
 import { EngineAdvanced } from './engine-advanced'
 
@@ -24,7 +25,9 @@ export function NewProfileDialog({ defaultSite, defaults, sites, recent, onClose
   const [name, setName] = useState('')
   const [count, setCount] = useState(initialCount)
   const [site, setSite] = useState(defaultSite)
-  const [proxyId, setProxyId] = useState(defaults.proxy === 'auto' ? 'auto' : '')
+  // null until the user picks in this dialog: the last profile's choice is offered first.
+  const [proxyId, setProxyId] = useState<string | null>(null)
+  const [lastProxy] = useState(() => readLastProxy())
   const [bulkProxy, setBulkProxy] = useState<'auto' | 'none'>(defaults.proxy === 'auto' ? 'auto' : 'none')
   const [startUrl, setStartUrl] = useState(siteById(sites, defaultSite).startUrl)
   const [urlTouched, setUrlTouched] = useState(false)
@@ -35,8 +38,10 @@ export function NewProfileDialog({ defaultSite, defaults, sites, recent, onClose
   const [error, setError] = useState('')
 
   useEffect(() => { Api.ListProxies().then((p) => setProxies(p ?? [])).catch(() => setProxies([])) }, [])
+  const chosen = proxyId ?? usableLastProxy(lastProxy, proxies, defaults.proxy === 'auto' ? 'auto' : '')
   // Auto with nothing free must not quietly become "no proxy": ask instead.
-  const pick = proxyId === 'auto' && proxies !== null && freeProxies(proxies) === 0 ? CHOOSE_PROXY : proxyId
+  const pick = chosen === 'auto' && proxies !== null && freeProxies(proxies) === 0 ? CHOOSE_PROXY : chosen
+  const sharedWith = proxies?.find((p) => p.id === pick)?.usedBy ?? []
 
   const pickSite = (id: string) => {
     setSite(id)
@@ -66,6 +71,7 @@ export function NewProfileDialog({ defaultSite, defaults, sites, recent, onClose
         await Api.CreateProfile(service.NewProfile.createFrom({
           engine, name: name.trim(), proxyId: pick, site, startUrl: startUrl.trim(), notes: '', tags: parseTags(tags),
         }))
+        writeLastProxy(pick)
       }
       onCreated()
     } catch (e) {
@@ -112,6 +118,7 @@ export function NewProfileDialog({ defaultSite, defaults, sites, recent, onClose
         </label>
       )}
       {direct && <RealIpWarning />}
+      {!bulk && sharedWith.length > 0 && <SharedProxyWarning usedBy={sharedWith} />}
       <div className="grid2">
         <label className="field">
           <span className="label">{t.create.startUrl}</span>
