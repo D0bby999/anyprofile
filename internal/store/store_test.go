@@ -414,3 +414,37 @@ func TestFingerprintMigration(t *testing.T) {
 		t.Fatalf("migrated profile = %+v", p)
 	}
 }
+
+func TestEngineMetaMigration(t *testing.T) {
+	s, _ := upgradeFrom(t, 7, func(o *Store) {
+		insertV1Profile(t, o, "p1", "other", "2026-10-01T00:00:00Z")
+	})
+	p, err := s.GetProfile("p1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if p.EngineMeta != (EngineMeta{}) {
+		t.Fatalf("migrated meta = %+v", p.EngineMeta)
+	}
+}
+
+func TestEngineMetaIsPinnedAtCreation(t *testing.T) {
+	s, _ := openTemp(t)
+	p := sample("m1")
+	p.EngineMeta = EngineMeta{HWC: 8, MemGiB: 16}
+	if err := s.CreateProfile(p); err != nil {
+		t.Fatal(err)
+	}
+	got, err := s.GetProfile("m1")
+	if err != nil || got.EngineMeta != (EngineMeta{HWC: 8, MemGiB: 16}) {
+		t.Fatalf("meta = %+v %v", got.EngineMeta, err)
+	}
+	got.EngineMeta = EngineMeta{HWC: 1}
+	if err := s.UpdateProfile(got); err != nil {
+		t.Fatal(err)
+	}
+	got, _ = s.GetProfile("m1")
+	if got.EngineMeta != (EngineMeta{HWC: 8, MemGiB: 16}) {
+		t.Fatalf("meta after update = %+v", got.EngineMeta)
+	}
+}

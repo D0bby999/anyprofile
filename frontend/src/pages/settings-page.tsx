@@ -31,10 +31,11 @@ export function SettingsPage({ status, onEngineChanged, theme, onTheme, fileVaul
 
   const install = async () => {
     setError('')
-    setProgress({ done: 0, total: -1 })
+    if (!status) return
+    setProgress({ engine: status.engine, done: 0, total: -1 })
     try {
-      await Api.InstallEngine()
-      onEngineChanged(await Api.EngineStatus())
+      await Api.InstallEngine(status.engine)
+      onEngineChanged(await Api.EngineStatus(status.engine))
     } catch (e) {
       setError(errorText(e))
     } finally {

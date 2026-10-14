@@ -73,12 +73,12 @@ func (r *rig) launcher(t *testing.T) *Launcher {
 
 func (r *rig) profile(t *testing.T, i int) string {
 	id := "it" + strconv.Itoa(i)
-	persona, platform, err := r.eng.NewIdentity(context.Background(), uint64(i)*0x9e3779b97f4a7c15)
+	ident, err := r.eng.NewIdentity(context.Background(), uint64(i)*0x9e3779b97f4a7c15)
 	if err != nil {
 		t.Fatal(err)
 	}
 	p := &store.Profile{ID: id, Name: "Kenh " + strconv.Itoa(i), Engine: "fury", EngineVersion: fury.Version,
-		PersonaID: persona, SeedHex: "00000000000000" + strconv.Itoa(10+i), Platform: platform,
+		PersonaID: ident.PersonaID, SeedHex: "00000000000000" + strconv.Itoa(10+i), Platform: ident.Platform,
 		Timezone: "Asia/Ho_Chi_Minh", Languages: "en-US,en", UILocale: "en-US"}
 	if err := r.st.CreateProfile(p); err != nil {
 		t.Fatal(err)

@@ -13,36 +13,43 @@ import (
 // Profile is one browser identity. Engine, PersonaID and SeedHex are fixed at
 // creation: changing them would change the "machine" a logged-in account sees.
 type Profile struct {
-	ID            string   `json:"id"`
-	Name          string   `json:"name"`
-	Engine        string   `json:"engine"`
-	EngineVersion string   `json:"engineVersion"`
-	PersonaID     string   `json:"personaId"`
-	SeedHex       string   `json:"seedHex"`
-	Platform      string   `json:"platform"`
-	ProxyID       string   `json:"proxyId"`
-	Timezone      string   `json:"timezone"`
-	Languages     string   `json:"languages"`
-	UILocale      string   `json:"uiLocale"`
-	Lat           *float64 `json:"lat"`
-	Lon           *float64 `json:"lon"`
-	Site          string   `json:"site"`
-	Serial        int      `json:"serial"`
-	Login         string   `json:"login"`
-	HasPassword   bool     `json:"hasPassword"`
-	HasTOTP       bool     `json:"hasTotp"`
-	FPVerdict     string   `json:"fpVerdict"`
-	FPDiff        []string `json:"fpDiff"`
-	FPCheckedAt   string   `json:"fpCheckedAt"`
-	StartURL      string   `json:"startUrl"`
-	Notes         string   `json:"notes"`
-	Tags          []string `json:"tags"`
-	CDPNextLaunch bool     `json:"cdpNextLaunch"`
-	Pinned        bool     `json:"pinned"`
-	CreatedAt     string   `json:"createdAt"`
-	UpdatedAt     string   `json:"updatedAt"`
-	LastOpenAt    string   `json:"lastOpenAt"`
-	DeletedAt     string   `json:"deletedAt"`
+	ID            string     `json:"id"`
+	Name          string     `json:"name"`
+	Engine        string     `json:"engine"`
+	EngineVersion string     `json:"engineVersion"`
+	EngineMeta    EngineMeta `json:"engineMeta"`
+	PersonaID     string     `json:"personaId"`
+	SeedHex       string     `json:"seedHex"`
+	Platform      string     `json:"platform"`
+	ProxyID       string     `json:"proxyId"`
+	Timezone      string     `json:"timezone"`
+	Languages     string     `json:"languages"`
+	UILocale      string     `json:"uiLocale"`
+	Lat           *float64   `json:"lat"`
+	Lon           *float64   `json:"lon"`
+	Site          string     `json:"site"`
+	Serial        int        `json:"serial"`
+	Login         string     `json:"login"`
+	HasPassword   bool       `json:"hasPassword"`
+	HasTOTP       bool       `json:"hasTotp"`
+	FPVerdict     string     `json:"fpVerdict"`
+	FPDiff        []string   `json:"fpDiff"`
+	FPCheckedAt   string     `json:"fpCheckedAt"`
+	StartURL      string     `json:"startUrl"`
+	Notes         string     `json:"notes"`
+	Tags          []string   `json:"tags"`
+	CDPNextLaunch bool       `json:"cdpNextLaunch"`
+	Pinned        bool       `json:"pinned"`
+	CreatedAt     string     `json:"createdAt"`
+	UpdatedAt     string     `json:"updatedAt"`
+	LastOpenAt    string     `json:"lastOpenAt"`
+	DeletedAt     string     `json:"deletedAt"`
+}
+
+// EngineMeta holds what an engine pins at creation. Zero values mean "not pinned".
+type EngineMeta struct {
+	HWC    int `json:"hwc,omitempty"`    // navigator.hardwareConcurrency
+	MemGiB int `json:"memGiB,omitempty"` // installed memory in GiB
 }
 
 // ProfileFilter narrows ListProfiles.
@@ -56,17 +63,17 @@ const profileCols = `id, name, engine, engine_version, persona_id, seed_hex, pla
 	COALESCE(proxy_id, ''), timezone, languages, ui_locale, lat, lon, site, start_url,
 	notes, tags, cdp_next_launch, pinned, created_at, updated_at, COALESCE(last_open_at, ''),
 	COALESCE(deleted_at, ''), serial, login, has_password, has_totp,
-	fp_verdict, fp_diff, fp_checked_at`
+	fp_verdict, fp_diff, fp_checked_at, engine_meta`
 
 func scanProfile(row interface{ Scan(...any) error }) (Profile, error) {
 	var p Profile
 	var tags string
-	var fpDiff string
+	var fpDiff, meta string
 	err := row.Scan(&p.ID, &p.Name, &p.Engine, &p.EngineVersion, &p.PersonaID, &p.SeedHex,
 		&p.Platform, &p.ProxyID, &p.Timezone, &p.Languages, &p.UILocale, &p.Lat, &p.Lon,
 		&p.Site, &p.StartURL, &p.Notes, &tags, &p.CDPNextLaunch, &p.Pinned,
 		&p.CreatedAt, &p.UpdatedAt, &p.LastOpenAt, &p.DeletedAt, &p.Serial, &p.Login,
-		&p.HasPassword, &p.HasTOTP, &p.FPVerdict, &fpDiff, &p.FPCheckedAt)
+		&p.HasPassword, &p.HasTOTP, &p.FPVerdict, &fpDiff, &p.FPCheckedAt, &meta)
 	if errors.Is(err, sql.ErrNoRows) {
 		return p, ErrNotFound
 	}
@@ -79,6 +86,8 @@ func scanProfile(row interface{ Scan(...any) error }) (Profile, error) {
 	if err := json.Unmarshal([]byte(fpDiff), &p.FPDiff); err != nil {
 		return p, fmt.Errorf("profile %s fp_diff: %w", p.ID, err)
 	}
+	// An empty or broken value reads as "nothing pinned".
+	_ = json.Unmarshal([]byte(meta), &p.EngineMeta)
 	return p, nil
 }
 
@@ -87,6 +96,11 @@ func tagsJSON(tags []string) string {
 		tags = []string{}
 	}
 	b, _ := json.Marshal(tags)
+	return string(b)
+}
+
+func metaJSON(m EngineMeta) string {
+	b, _ := json.Marshal(m)
 	return string(b)
 }
 
@@ -118,11 +132,11 @@ func (s *Store) CreateProfile(p *Profile) error {
 	p.CreatedAt, p.UpdatedAt = now(), now()
 	_, err := s.db.Exec(`INSERT INTO profiles (id, name, engine, engine_version, persona_id, seed_hex,
 		platform, proxy_id, timezone, languages, ui_locale, lat, lon, site, start_url, notes,
-		tags, cdp_next_launch, pinned, created_at, updated_at, login, serial)
-		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,(SELECT COALESCE(MAX(serial), 0) + 1 FROM profiles))`,
+		tags, cdp_next_launch, pinned, created_at, updated_at, login, engine_meta, serial)
+		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,(SELECT COALESCE(MAX(serial), 0) + 1 FROM profiles))`,
 		p.ID, p.Name, p.Engine, p.EngineVersion, p.PersonaID, p.SeedHex, p.Platform, nullStr(p.ProxyID),
 		p.Timezone, p.Languages, p.UILocale, p.Lat, p.Lon, p.Site, p.StartURL, p.Notes,
-		tagsJSON(p.Tags), p.CDPNextLaunch, p.Pinned, p.CreatedAt, p.UpdatedAt, p.Login)
+		tagsJSON(p.Tags), p.CDPNextLaunch, p.Pinned, p.CreatedAt, p.UpdatedAt, p.Login, metaJSON(p.EngineMeta))
 	if err != nil {
 		return err
 	}

@@ -46,6 +46,33 @@ export namespace fury {
 
 }
 
+export namespace main {
+	
+	export class EngineInfo {
+	    engine: string;
+	    version: string;
+	    chromium: string;
+	    installed: boolean;
+	    problem: string;
+	    default: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new EngineInfo(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.engine = source["engine"];
+	        this.version = source["version"];
+	        this.chromium = source["chromium"];
+	        this.installed = source["installed"];
+	        this.problem = source["problem"];
+	        this.default = source["default"];
+	    }
+	}
+
+}
+
 export namespace netproxy {
 	
 	export class ParsedLine {
@@ -90,6 +117,7 @@ export namespace netproxy {
 export namespace service {
 	
 	export class BulkCreate {
+	    engine: string;
 	    baseName: string;
 	    count: number;
 	    proxy: string;
@@ -104,6 +132,7 @@ export namespace service {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.engine = source["engine"];
 	        this.baseName = source["baseName"];
 	        this.count = source["count"];
 	        this.proxy = source["proxy"];
@@ -114,6 +143,7 @@ export namespace service {
 	    }
 	}
 	export class Defaults {
+	    engine: string;
 	    site: string;
 	    proxy: string;
 	
@@ -123,11 +153,13 @@ export namespace service {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.engine = source["engine"];
 	        this.site = source["site"];
 	        this.proxy = source["proxy"];
 	    }
 	}
 	export class DuplicateInput {
+	    engine: string;
 	    sourceId: string;
 	    baseName: string;
 	    count: number;
@@ -139,6 +171,7 @@ export namespace service {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.engine = source["engine"];
 	        this.sourceId = source["sourceId"];
 	        this.baseName = source["baseName"];
 	        this.count = source["count"];
@@ -178,6 +211,7 @@ export namespace service {
 		}
 	}
 	export class NewProfile {
+	    engine: string;
 	    name: string;
 	    proxyId: string;
 	    site: string;
@@ -191,6 +225,7 @@ export namespace service {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.engine = source["engine"];
 	        this.name = source["name"];
 	        this.proxyId = source["proxyId"];
 	        this.site = source["site"];
@@ -218,6 +253,7 @@ export namespace service {
 	    name: string;
 	    engine: string;
 	    engineVersion: string;
+	    engineMeta: store.EngineMeta;
 	    personaId: string;
 	    seedHex: string;
 	    platform: string;
@@ -262,6 +298,7 @@ export namespace service {
 	        this.name = source["name"];
 	        this.engine = source["engine"];
 	        this.engineVersion = source["engineVersion"];
+	        this.engineMeta = this.convertValues(source["engineMeta"], store.EngineMeta);
 	        this.personaId = source["personaId"];
 	        this.seedHex = source["seedHex"];
 	        this.platform = source["platform"];
@@ -296,6 +333,24 @@ export namespace service {
 	        this.proxyExitIp = source["proxyExitIp"];
 	        this.proxyExpiry = source["proxyExpiry"];
 	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
 	}
 	export class ProxyMeta {
 	    label: string;
@@ -459,11 +514,26 @@ export namespace site {
 
 export namespace store {
 	
+	export class EngineMeta {
+	    hwc?: number;
+	    memGiB?: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new EngineMeta(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.hwc = source["hwc"];
+	        this.memGiB = source["memGiB"];
+	    }
+	}
 	export class Profile {
 	    id: string;
 	    name: string;
 	    engine: string;
 	    engineVersion: string;
+	    engineMeta: EngineMeta;
 	    personaId: string;
 	    seedHex: string;
 	    platform: string;
@@ -501,6 +571,7 @@ export namespace store {
 	        this.name = source["name"];
 	        this.engine = source["engine"];
 	        this.engineVersion = source["engineVersion"];
+	        this.engineMeta = this.convertValues(source["engineMeta"], EngineMeta);
 	        this.personaId = source["personaId"];
 	        this.seedHex = source["seedHex"];
 	        this.platform = source["platform"];
@@ -528,6 +599,24 @@ export namespace store {
 	        this.lastOpenAt = source["lastOpenAt"];
 	        this.deletedAt = source["deletedAt"];
 	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
 	}
 	export class ProfileFilter {
 	    query: string;

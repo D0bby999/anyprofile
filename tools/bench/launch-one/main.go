@@ -64,7 +64,8 @@ func run(app, persona, seed, tz, proxyURL string) error {
 	sec := secrets.NewMemory()
 	log := slog.New(slog.NewTextHandler(io.Discard, nil))
 	l := launcher.New(st, sec, dirs, []engine.Engine{f}, nil, log)
-	svc := &service.Service{Dirs: dirs, Store: st, Secrets: sec, Engine: f, Launcher: l, Log: log,
+	svc := &service.Service{Dirs: dirs, Store: st, Secrets: sec, Launcher: l, Log: log,
+		Engines: map[string]engine.Engine{"fury": f}, Preferred: "fury",
 		CheckProxy: netproxy.Check,
 		Locale: func(ctx context.Context, cc string) (string, []string, error) {
 			loc, err := f.LocaleFor(ctx, cc)

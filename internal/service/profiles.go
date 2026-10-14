@@ -34,6 +34,7 @@ const AutoProxy = "auto"
 
 // NewProfile is what the create form sends. Identity is never chosen by hand.
 type NewProfile struct {
+	Engine   string   `json:"engine"` // "" means the default engine
 	Name     string   `json:"name"`
 	ProxyID  string   `json:"proxyId"`
 	Site     string   `json:"site"`
@@ -103,6 +104,10 @@ func (s *Service) CreateProfile(ctx context.Context, in NewProfile) (store.Profi
 	if err := s.checkSite(in.Site); err != nil {
 		return store.Profile{}, err
 	}
+	eng, err := s.engineFor(in.Engine)
+	if err != nil {
+		return store.Profile{}, err
+	}
 	if in.ProxyID == AutoProxy {
 		id, err := s.nextFreeProxy()
 		if err != nil {
@@ -110,7 +115,7 @@ func (s *Service) CreateProfile(ctx context.Context, in NewProfile) (store.Profi
 		}
 		in.ProxyID = id
 	}
-	persona, platform, err := s.Engine.NewIdentity(ctx, randomU64())
+	id, err := eng.NewIdentity(ctx, randomU64())
 	if err != nil {
 		return store.Profile{}, err
 	}
@@ -119,8 +124,8 @@ func (s *Service) CreateProfile(ctx context.Context, in NewProfile) (store.Profi
 		return store.Profile{}, err
 	}
 	p := store.Profile{
-		ID: randomHex(8), Name: in.Name, Engine: s.Engine.ID(), EngineVersion: s.Engine.Pinned().Version,
-		PersonaID: persona, SeedHex: randomHex(8), Platform: platform, ProxyID: in.ProxyID,
+		ID: randomHex(8), Name: in.Name, Engine: eng.ID(), EngineVersion: eng.Pinned().Version,
+		EngineMeta: id.Meta, PersonaID: id.PersonaID, SeedHex: randomHex(8), Platform: id.Platform, ProxyID: in.ProxyID,
 		Site: in.Site, StartURL: startURL, Notes: in.Notes, Tags: in.Tags,
 	}
 	if err := s.applyNetwork(ctx, &p); err != nil {

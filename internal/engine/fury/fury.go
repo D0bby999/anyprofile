@@ -46,14 +46,6 @@ func (f *Fury) PrepareProfile(p store.Profile, rt engine.Runtime) error {
 
 // BuildLaunch mirrors the switches the Fury agent passes its core
 // (agent/src/launcher.rs), minus everything AnyProfile does not use.
-// windowName prefixes the table number so windows of many profiles are told apart.
-func windowName(p store.Profile) string {
-	if p.Serial > 0 {
-		return fmt.Sprintf("#%d %s", p.Serial, p.Name)
-	}
-	return p.Name
-}
-
 func (f *Fury) BuildLaunch(ctx context.Context, p store.Profile, rt engine.Runtime) (engine.LaunchSpec, error) {
 	if len(rt.CookieKey) != 32 {
 		return engine.LaunchSpec{}, fmt.Errorf("cookie key must be 32 bytes")
@@ -78,7 +70,7 @@ func (f *Fury) BuildLaunch(ctx context.Context, p store.Profile, rt engine.Runti
 		"--disable-field-trial-config",
 		"--disk-cache-size=20971520",
 		"--lang=" + p.UILocale,
-		"--window-name=" + windowName(p),
+		"--window-name=" + engine.WindowName(p),
 		"--fury-fp-fd=" + strconv.Itoa(fd),
 		"--fury-oscrypt-fd=" + strconv.Itoa(fd+1),
 	}

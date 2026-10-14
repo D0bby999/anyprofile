@@ -94,10 +94,10 @@ func testProfile() store.Profile {
 }
 
 func TestWindowName(t *testing.T) {
-	if got := windowName(store.Profile{Name: "Shop A"}); got != "Shop A" {
+	if got := engine.WindowName(store.Profile{Name: "Shop A"}); got != "Shop A" {
 		t.Fatalf("serial 0 name = %q", got)
 	}
-	if got := windowName(store.Profile{Name: "Shop A", Serial: 12}); got != "#12 Shop A" {
+	if got := engine.WindowName(store.Profile{Name: "Shop A", Serial: 12}); got != "#12 Shop A" {
 		t.Fatalf("serial 12 name = %q", got)
 	}
 }
@@ -112,9 +112,9 @@ func TestDeriveIsDeterministic(t *testing.T) {
 	if !bytes.Equal(a, b) || !bytes.Contains(a, []byte(`"schema_version":1`)) {
 		t.Fatalf("derive not deterministic or missing schema_version (%d bytes)", len(a))
 	}
-	p, platform, err := f.NewIdentity(context.Background(), 1<<63)
-	if err != nil || !strings.HasPrefix(p, "macos-") || platform != "macos" {
-		t.Fatalf("identity = %q %q %v", p, platform, err)
+	id, err := f.NewIdentity(context.Background(), 1<<63)
+	if err != nil || !strings.HasPrefix(id.PersonaID, "macos-") || id.Platform != "macos" {
+		t.Fatalf("identity = %+v %v", id, err)
 	}
 	l, err := f.LocaleFor(context.Background(), "VN")
 	if err != nil || l.UILocale != "vi" || l.Languages[0] != "vi-VN" {

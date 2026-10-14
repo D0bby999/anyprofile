@@ -26,6 +26,7 @@ func nameSeries(base string, n int) []string {
 
 // BulkCreate is the "create several" form.
 type BulkCreate struct {
+	Engine   string   `json:"engine"` // "" means the default engine
 	BaseName string   `json:"baseName"`
 	Count    int      `json:"count"` // 1..100
 	Proxy    string   `json:"proxy"` // "auto" (one free proxy each) or "none"
@@ -37,6 +38,7 @@ type BulkCreate struct {
 
 // DuplicateInput copies a profile's settings, never its identity or account.
 type DuplicateInput struct {
+	Engine   string `json:"engine"` // "" means the default engine, never the source's
 	SourceID string `json:"sourceId"`
 	BaseName string `json:"baseName"` // "" means "<source name> copy"
 	Count    int    `json:"count"`    // 1..50
@@ -79,6 +81,9 @@ func (s *Service) CreateProfiles(ctx context.Context, in BulkCreate) ([]store.Pr
 	if err := s.checkSite(in.Site); err != nil {
 		return nil, err
 	}
+	if _, err := s.engineFor(in.Engine); err != nil {
+		return nil, err
+	}
 	if in.Proxy == "auto" {
 		free, err := s.freeProxyCount()
 		if err != nil {
@@ -94,7 +99,7 @@ func (s *Service) CreateProfiles(ctx context.Context, in BulkCreate) ([]store.Pr
 		if in.Proxy == "auto" {
 			proxyID = AutoProxy
 		}
-		p, err := s.CreateProfile(ctx, NewProfile{Name: name, ProxyID: proxyID, Site: in.Site,
+		p, err := s.CreateProfile(ctx, NewProfile{Engine: in.Engine, Name: name, ProxyID: proxyID, Site: in.Site,
 			StartURL: in.StartURL, Notes: in.Notes, Tags: in.Tags})
 		if err != nil {
 			return out, err
@@ -106,7 +111,8 @@ func (s *Service) CreateProfiles(ctx context.Context, in BulkCreate) ([]store.Pr
 
 // DuplicateProfile copies a profile's platform, start pages, tags and notes
 // into count new profiles with fresh identities. Accounts and cookies are
-// never copied.
+// never copied, nor is the engine: a copy is how an account moves to another
+// engine.
 func (s *Service) DuplicateProfile(ctx context.Context, in DuplicateInput) ([]store.Profile, error) {
 	src, err := s.Store.GetProfile(in.SourceID)
 	if err != nil {
@@ -126,7 +132,7 @@ func (s *Service) DuplicateProfile(ctx context.Context, in DuplicateInput) ([]st
 		base = src.Name + " copy"
 	}
 	tags := append([]string(nil), src.Tags...)
-	return s.CreateProfiles(ctx, BulkCreate{BaseName: base, Count: in.Count, Proxy: in.Proxy,
+	return s.CreateProfiles(ctx, BulkCreate{Engine: in.Engine, BaseName: base, Count: in.Count, Proxy: in.Proxy,
 		Site: src.Site, StartURL: src.StartURL, Notes: src.Notes, Tags: tags})
 }
 

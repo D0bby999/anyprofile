@@ -5,6 +5,7 @@ package main
 import (
 	"time"
 
+	"github.com/D0bby999/anyprofile/internal/apperr"
 	"github.com/D0bby999/anyprofile/internal/engine"
 	"github.com/D0bby999/anyprofile/internal/engine/fury"
 	"github.com/D0bby999/anyprofile/internal/secrets"
@@ -16,20 +17,51 @@ import (
 
 // Engine
 
-func (a *App) EngineStatus() (engine.Status, error) {
-	if err := a.ready(); err != nil {
-		return engine.Status{}, err
-	}
-	return a.fury.Status(a.ctx), nil
+// EngineInfo is one engine's status plus whether new profiles use it.
+type EngineInfo struct {
+	engine.Status
+	Default bool `json:"default"`
 }
 
-// InstallEngine downloads and verifies the core, emitting "engine:progress".
-func (a *App) InstallEngine() error {
+func (a *App) engine(id string) (engine.Engine, error) {
 	if err := a.ready(); err != nil {
+		return nil, err
+	}
+	if eng := a.engines[id]; eng != nil {
+		return eng, nil
+	}
+	return nil, apperr.New("bad_engine", "unknown engine")
+}
+
+// Engines lists every engine, sorted by ID.
+func (a *App) Engines() ([]EngineInfo, error) {
+	if err := a.ready(); err != nil {
+		return nil, err
+	}
+	def := a.svc.DefaultEngine()
+	var out []EngineInfo
+	for _, eng := range engineList(a.engines) {
+		out = append(out, EngineInfo{Status: eng.Status(a.ctx), Default: eng.ID() == def})
+	}
+	return out, nil
+}
+
+func (a *App) EngineStatus(id string) (engine.Status, error) {
+	eng, err := a.engine(id)
+	if err != nil {
+		return engine.Status{}, err
+	}
+	return eng.Status(a.ctx), nil
+}
+
+// InstallEngine downloads and verifies an engine, emitting "engine:progress".
+func (a *App) InstallEngine(id string) error {
+	eng, err := a.engine(id)
+	if err != nil {
 		return err
 	}
-	return a.fury.Install(a.ctx, func(done, total int64) {
-		runtime.EventsEmit(a.ctx, "engine:progress", map[string]int64{"done": done, "total": total})
+	return eng.Install(a.ctx, func(done, total int64) {
+		runtime.EventsEmit(a.ctx, "engine:progress", map[string]any{"engine": id, "done": done, "total": total})
 	})
 }
 

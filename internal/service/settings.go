@@ -2,7 +2,12 @@
 
 package service
 
-import "github.com/D0bby999/anyprofile/internal/apperr"
+import (
+	"sort"
+
+	"github.com/D0bby999/anyprofile/internal/apperr"
+	"github.com/D0bby999/anyprofile/internal/engine"
+)
 
 // Languages the UI ships. English is the default for a new install.
 var languages = map[string]bool{"en": true, "vi": true}
@@ -27,15 +32,47 @@ func (s *Service) SetLanguage(lang string) error {
 	return nil
 }
 
-// Defaults are the new-profile defaults: the platform and the proxy mode.
+// DefaultEngine is the engine for new profiles: the saved choice when it is
+// registered, else Preferred, else any registered engine (sorted by ID).
+func (s *Service) DefaultEngine() string {
+	if v, err := s.Store.GetSetting("default_engine"); err == nil && s.Engines[v] != nil {
+		return v
+	}
+	if s.Engines[s.Preferred] != nil {
+		return s.Preferred
+	}
+	ids := make([]string, 0, len(s.Engines))
+	for id := range s.Engines {
+		ids = append(ids, id)
+	}
+	sort.Strings(ids)
+	if len(ids) == 0 {
+		return ""
+	}
+	return ids[0]
+}
+
+// engineFor resolves an engine ID; "" means the default engine.
+func (s *Service) engineFor(id string) (engine.Engine, error) {
+	if id == "" {
+		id = s.DefaultEngine()
+	}
+	if eng := s.Engines[id]; eng != nil {
+		return eng, nil
+	}
+	return nil, apperr.New("bad_engine", "unknown engine")
+}
+
+// Defaults are the new-profile defaults: the engine, the platform and the proxy mode.
 type Defaults struct {
-	Site  string `json:"site"`  // default "other"
-	Proxy string `json:"proxy"` // "auto" (default) or "none"
+	Engine string `json:"engine"`
+	Site   string `json:"site"`  // default "other"
+	Proxy  string `json:"proxy"` // "auto" (default) or "none"
 }
 
 // Defaults reads the saved new-profile defaults, falling back to other/auto.
 func (s *Service) Defaults() Defaults {
-	d := Defaults{Site: "other", Proxy: "auto"}
+	d := Defaults{Engine: s.DefaultEngine(), Site: "other", Proxy: "auto"}
 	if v, err := s.Store.GetSetting("default_site"); err == nil && v != "" && s.checkSite(v) == nil {
 		d.Site = v
 	}
@@ -52,6 +89,12 @@ func (s *Service) SetDefaults(d Defaults) error {
 	}
 	if d.Proxy != "auto" && d.Proxy != "none" {
 		return apperr.New("bad_proxy_mode", "proxy must be auto or none")
+	}
+	if s.Engines[d.Engine] == nil {
+		return apperr.New("bad_engine", "unknown engine")
+	}
+	if err := s.Store.SetSetting("default_engine", d.Engine); err != nil {
+		return err
 	}
 	if err := s.Store.SetSetting("default_site", d.Site); err != nil {
 		return err

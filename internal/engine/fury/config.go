@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/D0bby999/anyprofile/internal/engine"
 	"github.com/D0bby999/anyprofile/internal/store"
 )
 
@@ -31,19 +32,22 @@ func (f *Fury) configCLI(ctx context.Context, args ...string) ([]byte, error) {
 
 // NewIdentity draws a macOS persona by population weight. Only macOS personas
 // are offered on a Mac host: a Windows persona leaks the host's speech voices.
-func (f *Fury) NewIdentity(ctx context.Context, roll uint64) (string, string, error) {
+func (f *Fury) NewIdentity(ctx context.Context, roll uint64) (engine.Identity, error) {
 	b, err := f.configCLI(ctx, "pick", "--os", "macos", "--roll", strconv.FormatUint(roll, 10))
 	if err != nil {
-		return "", "", err
+		return engine.Identity{}, err
 	}
 	var r struct {
 		PersonaID string `json:"personaId"`
 	}
 	if err := json.Unmarshal(b, &r); err != nil || r.PersonaID == "" {
-		return "", "", fmt.Errorf("fury-config pick: bad output")
+		return engine.Identity{}, fmt.Errorf("fury-config pick: bad output")
 	}
-	return r.PersonaID, "macos", nil
+	return engine.Identity{PersonaID: r.PersonaID, Platform: "macos"}, nil
 }
+
+// UsesCookieKey is true: Fury reads a per-profile cookie key from a pipe.
+func (f *Fury) UsesCookieKey() bool { return true }
 
 // Locale is Chrome's own UI locale and language list for an exit country.
 type Locale struct {

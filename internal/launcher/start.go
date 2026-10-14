@@ -51,11 +51,13 @@ func (l *Launcher) start(ctx context.Context, p *proc) error {
 		}
 	}
 
-	key, err := cookieKey(l.sec, prof.ID, udd)
-	if err != nil {
-		return err
+	var key []byte
+	if eng.UsesCookieKey() {
+		if key, err = cookieKey(l.sec, prof.ID, udd); err != nil {
+			return err
+		}
+		defer secrets.Wipe(key)
 	}
-	defer secrets.Wipe(key)
 	rt := engine.Runtime{UserDataDir: udd, CDP: prof.CDPNextLaunch, CDPPipe: l.Capture, CookieKey: key}
 	if p.relay != nil {
 		rt.RelayPort = p.relay.Port()

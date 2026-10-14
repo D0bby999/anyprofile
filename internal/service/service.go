@@ -27,13 +27,16 @@ import (
 type LocaleFunc func(ctx context.Context, country string) (uiLocale string, languages []string, err error)
 
 type Service struct {
-	Dirs     paths.Dirs
-	Store    *store.Store
-	Secrets  secrets.Store
-	Engine   engine.Engine
-	Locale   LocaleFunc
-	Launcher *launcher.Launcher
-	Log      *slog.Logger
+	Dirs    paths.Dirs
+	Store   *store.Store
+	Secrets secrets.Store
+	// Engines are the installed-or-installable engines, by ID. Preferred is
+	// the engine new profiles get when the user has not chosen one.
+	Engines   map[string]engine.Engine
+	Preferred string
+	Locale    LocaleFunc
+	Launcher  *launcher.Launcher
+	Log       *slog.Logger
 	// Clock is nil in production (time.Now); tests fix it.
 	Clock func() time.Time
 	// OnChange is told the kind of data a write changed: "profiles",

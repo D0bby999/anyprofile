@@ -31,8 +31,10 @@ export default function App() {
   useEffect(() => {
     Api.StartupError().then(setStartupError)
     Api.FileVaultOn().then(setFileVaultOn)
-    Api.EngineStatus().then(setEngineStatus).catch(() => {})
-    Api.Defaults().then(setDefaults).catch(() => {})
+    Api.Defaults().then((d) => {
+      setDefaults(d)
+      return Api.EngineStatus(d.engine).then(setEngineStatus)
+    }).catch(() => {})
   }, [])
   useEffect(() => onDataChanged(['settings'], () => { Api.Defaults().then(setDefaults).catch(() => {}) }), [])
   const refreshProxies = () => { Api.ListProxies().then((p) => setProxyCount((p ?? []).length)).catch(() => {}) }

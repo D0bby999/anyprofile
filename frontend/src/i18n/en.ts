@@ -186,6 +186,7 @@ export const en = {
     totp_invalid: 'That is not a valid authenticator secret.',
     totp_missing: 'No 2FA secret is saved for this profile.',
     bad_count: 'Choose between 1 and 100 profiles.',
+    bad_engine: 'Unknown browser engine.',
     not_enough_proxies: 'Not enough free sticky proxies.',
     bad_proxy_mode: 'Proxy must be auto or none.',
     profile_trashed: 'Move the profile out of the trash first.',

@@ -7,7 +7,7 @@ import { ClipboardSetText } from '../wailsjs/runtime/runtime'
 import { debounce } from './lib/debounce'
 
 export type LaunchInfo = { profileId: string; state: string; pid: number; cdpPort: number; error: string }
-export type EngineProgress = { done: number; total: number }
+export type EngineProgress = { engine: string; done: number; total: number }
 export type DataKind = 'profiles' | 'proxies' | 'sites' | 'settings'
 
 /** Write to the OS clipboard; navigator.clipboard may be blocked in the WebView. */

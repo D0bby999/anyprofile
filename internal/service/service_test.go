@@ -26,9 +26,22 @@ type fakeEngine struct{ engine.Engine }
 
 func (fakeEngine) ID() string             { return "fury" }
 func (fakeEngine) Pinned() engine.Version { return engine.Version{Engine: "fury", Version: "9.9.9"} }
-func (fakeEngine) NewIdentity(context.Context, uint64) (string, string, error) {
-	return "macos-m4-1710x1112", "macos", nil
+func (fakeEngine) NewIdentity(context.Context, uint64) (engine.Identity, error) {
+	return engine.Identity{PersonaID: "macos-m4-1710x1112", Platform: "macos"}, nil
 }
+func (fakeEngine) UsesCookieKey() bool { return true }
+
+// fakeEngine2 stands in for a second engine that pins hardware values.
+type fakeEngine2 struct{ engine.Engine }
+
+func (fakeEngine2) ID() string { return "apostate" }
+func (fakeEngine2) Pinned() engine.Version {
+	return engine.Version{Engine: "apostate", Version: "0.5.1"}
+}
+func (fakeEngine2) NewIdentity(context.Context, uint64) (engine.Identity, error) {
+	return engine.Identity{PersonaID: "macos", Platform: "macos", Meta: store.EngineMeta{HWC: 4, MemGiB: 8}}, nil
+}
+func (fakeEngine2) UsesCookieKey() bool { return false }
 
 func newService(t *testing.T) (*Service, *secrets.Memory) {
 	dirs := paths.Dirs{Root: t.TempDir()}
@@ -42,7 +55,8 @@ func newService(t *testing.T) (*Service, *secrets.Memory) {
 	t.Cleanup(func() { st.Close() })
 	sec := secrets.NewMemory()
 	log := slog.New(slog.NewTextHandler(io.Discard, nil))
-	s := &Service{Dirs: dirs, Store: st, Secrets: sec, Engine: fakeEngine{}, Log: log,
+	s := &Service{Dirs: dirs, Store: st, Secrets: sec, Log: log,
+		Engines: map[string]engine.Engine{"fury": fakeEngine{}}, Preferred: "fury",
 		Launcher: launcher.New(st, sec, dirs, nil, nil, log),
 		Locale: func(_ context.Context, cc string) (string, []string, error) {
 			if cc == "VN" {
@@ -314,14 +328,14 @@ func TestDefaults(t *testing.T) {
 	if d.Site != "other" || d.Proxy != "auto" {
 		t.Fatalf("defaults = %+v", d)
 	}
-	if err := s.SetDefaults(Defaults{Site: "etsy", Proxy: "none"}); err != nil {
+	if err := s.SetDefaults(Defaults{Engine: "fury", Site: "etsy", Proxy: "none"}); err != nil {
 		t.Fatal(err)
 	}
 	d = s.Defaults()
 	if d.Site != "etsy" || d.Proxy != "none" {
 		t.Fatalf("after set = %+v", d)
 	}
-	if err := s.SetDefaults(Defaults{Site: "nope", Proxy: "auto"}); err == nil || !strings.Contains(err.Error(), "unknown_site") {
+	if err := s.SetDefaults(Defaults{Engine: "fury", Site: "nope", Proxy: "auto"}); err == nil || !strings.Contains(err.Error(), "unknown_site") {
 		t.Fatalf("unknown site err = %v", err)
 	}
 }
@@ -369,5 +383,74 @@ func TestProxyMeta(t *testing.T) {
 	}
 	if err := s.UpdateProxy(id, ProxyMeta{Label: "x", Note: strings.Repeat("a", 501)}); err == nil || !strings.Contains(err.Error(), "note_too_long") {
 		t.Fatalf("long note err = %v", err)
+	}
+}
+
+func TestDefaultEngine(t *testing.T) {
+	s, _ := newService(t)
+	if got := s.DefaultEngine(); got != "fury" {
+		t.Fatalf("default with fury only = %q", got)
+	}
+	s.Engines["apostate"] = fakeEngine2{}
+	s.Preferred = "apostate"
+	if got := s.DefaultEngine(); got != "apostate" {
+		t.Fatalf("default with preferred apostate = %q", got)
+	}
+	d := s.Defaults()
+	d.Engine = "fury"
+	if err := s.SetDefaults(d); err != nil {
+		t.Fatal(err)
+	}
+	if got := s.DefaultEngine(); got != "fury" {
+		t.Fatalf("default after saving fury = %q", got)
+	}
+	d.Engine = "x"
+	if err := s.SetDefaults(d); err == nil || !strings.Contains(err.Error(), "bad_engine") {
+		t.Fatalf("unknown engine err = %v", err)
+	}
+}
+
+func TestCreateProfileEngine(t *testing.T) {
+	s, _ := newService(t)
+	s.Engines["apostate"] = fakeEngine2{}
+	s.Preferred = "apostate"
+	ctx := context.Background()
+	p, err := s.CreateProfile(ctx, NewProfile{Name: "A", Site: "other"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if p.Engine != "apostate" || p.EngineVersion != "0.5.1" || p.EngineMeta != (store.EngineMeta{HWC: 4, MemGiB: 8}) {
+		t.Fatalf("default-engine profile = %+v", p)
+	}
+	got, _ := s.Store.GetProfile(p.ID)
+	if got.EngineMeta != (store.EngineMeta{HWC: 4, MemGiB: 8}) {
+		t.Fatalf("stored meta = %+v", got.EngineMeta)
+	}
+	f, err := s.CreateProfile(ctx, NewProfile{Name: "F", Site: "other", Engine: "fury"})
+	if err != nil || f.Engine != "fury" {
+		t.Fatalf("fury profile = %+v %v", f, err)
+	}
+	if _, err := s.CreateProfile(ctx, NewProfile{Name: "X", Site: "other", Engine: "x"}); err == nil ||
+		!strings.Contains(err.Error(), "bad_engine") {
+		t.Fatalf("unknown engine err = %v", err)
+	}
+	if _, err := s.CreateProfiles(ctx, BulkCreate{BaseName: "B", Count: 2, Proxy: "none", Site: "other", Engine: "x"}); err == nil ||
+		!strings.Contains(err.Error(), "bad_engine") {
+		t.Fatalf("bulk unknown engine err = %v", err)
+	}
+}
+
+func TestDuplicateUsesDefaultEngine(t *testing.T) {
+	s, _ := newService(t)
+	ctx := context.Background()
+	src, err := s.CreateProfile(ctx, NewProfile{Name: "Src", Site: "other"})
+	if err != nil || src.Engine != "fury" {
+		t.Fatalf("source = %+v %v", src, err)
+	}
+	s.Engines["apostate"] = fakeEngine2{}
+	s.Preferred = "apostate"
+	out, err := s.DuplicateProfile(ctx, DuplicateInput{SourceID: src.ID, Count: 1, Proxy: "none"})
+	if err != nil || len(out) != 1 || out[0].Engine != "apostate" {
+		t.Fatalf("copy = %+v %v", out, err)
 	}
 }

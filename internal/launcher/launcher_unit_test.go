@@ -4,12 +4,18 @@ package launcher
 
 import (
 	"bytes"
+	"context"
 	"errors"
+	"io"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"testing"
 
+	"github.com/D0bby999/anyprofile/internal/engine"
+	"github.com/D0bby999/anyprofile/internal/paths"
 	"github.com/D0bby999/anyprofile/internal/secrets"
+	"github.com/D0bby999/anyprofile/internal/store"
 )
 
 func TestCookieKeyLifecycle(t *testing.T) {
@@ -68,5 +74,50 @@ func TestSingletonPID(t *testing.T) {
 	st, err := pidStartTime(os.Getpid())
 	if err != nil || !sameProcess(os.Getpid(), st) {
 		t.Fatalf("start time: %q %v", st, err)
+	}
+}
+
+// stubEngine stops every launch at BuildLaunch, after the cookie-key step.
+type stubEngine struct {
+	engine.Engine
+	cookieKey bool
+}
+
+func (stubEngine) ID() string { return "stub" }
+func (stubEngine) Status(context.Context) engine.Status {
+	return engine.Status{Installed: true}
+}
+func (stubEngine) PrepareProfile(store.Profile, engine.Runtime) error { return nil }
+func (e stubEngine) UsesCookieKey() bool                              { return e.cookieKey }
+func (stubEngine) BuildLaunch(context.Context, store.Profile, engine.Runtime) (engine.LaunchSpec, error) {
+	return engine.LaunchSpec{}, errors.New("stop here")
+}
+
+func TestCookieKeyOnlyWhenEngineUsesIt(t *testing.T) {
+	for _, uses := range []bool{false, true} {
+		dirs := paths.Dirs{Root: t.TempDir()}
+		if err := dirs.Ensure(); err != nil {
+			t.Fatal(err)
+		}
+		st, err := store.Open(dirs.DB(), dirs.Backups())
+		if err != nil {
+			t.Fatal(err)
+		}
+		p := &store.Profile{ID: "p1", Name: "P", Engine: "stub", EngineVersion: "1", PersonaID: "x",
+			SeedHex: "00112233aabbccdd", Platform: "macos", Timezone: "UTC", Languages: "en-US", UILocale: "en-US"}
+		if err := st.CreateProfile(p); err != nil {
+			t.Fatal(err)
+		}
+		sec := secrets.NewMemory()
+		l := New(st, sec, dirs, []engine.Engine{stubEngine{cookieKey: uses}}, nil,
+			slog.New(slog.NewTextHandler(io.Discard, nil)))
+		if err := l.Start(context.Background(), "p1"); err == nil || err.Error() != "stop here" {
+			t.Fatalf("start err = %v", err)
+		}
+		_, err = sec.Get(secrets.ServiceCookieKey, "p1")
+		if has := err == nil; has != uses {
+			t.Fatalf("uses=%v: key stored = %v", uses, has)
+		}
+		st.Close()
 	}
 }

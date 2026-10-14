@@ -188,6 +188,7 @@ export const vi: Messages = {
     totp_invalid: 'Secret xác thực không hợp lệ.',
     totp_missing: 'Profile này chưa lưu secret 2FA.',
     bad_count: 'Chọn từ 1 đến 100 profile.',
+    bad_engine: 'Engine trình duyệt không hợp lệ.',
     not_enough_proxies: 'Không đủ proxy trống cố định.',
     bad_proxy_mode: 'Proxy phải là auto hoặc none.',
     profile_trashed: 'Hãy bỏ profile ra khỏi thùng rác trước.',

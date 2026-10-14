@@ -10,6 +10,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"sort"
 
 	"github.com/D0bby999/anyprofile/internal/engine"
 	"github.com/D0bby999/anyprofile/internal/engine/fury"
@@ -25,8 +26,11 @@ import (
 // App owns the services and is the only struct bound to the frontend.
 // Its methods are thin: logic lives in package service.
 type App struct {
-	ctx      context.Context
-	svc      *service.Service
+	ctx     context.Context
+	svc     *service.Service
+	engines map[string]engine.Engine
+	// fury stays reachable on its own for LocaleFor and Personas: both use the
+	// bundled fury-config helper and work before any engine is installed.
 	fury     *fury.Fury
 	startErr error
 }
@@ -61,12 +65,14 @@ func (a *App) init() error {
 	if err := a.fury.CleanStale(); err != nil {
 		log.Warn("clean stale engine files", "err", err)
 	}
+	a.engines = map[string]engine.Engine{"fury": a.fury}
 	sec := secrets.Keychain{}
-	l := launcher.New(st, sec, dirs, []engine.Engine{a.fury},
+	l := launcher.New(st, sec, dirs, engineList(a.engines),
 		func(in launcher.Info) { runtime.EventsEmit(a.ctx, "launch:changed", in) }, log)
 	l.Capture = true
 	l.OnData = func(kind string) { runtime.EventsEmit(a.ctx, "data:changed", kind) }
-	a.svc = &service.Service{Dirs: dirs, Store: st, Secrets: sec, Engine: a.fury, Launcher: l, Log: log,
+	a.svc = &service.Service{Dirs: dirs, Store: st, Secrets: sec, Launcher: l, Log: log,
+		Engines: a.engines, Preferred: "fury",
 		OnChange:   func(kind string) { runtime.EventsEmit(a.ctx, "data:changed", kind) },
 		CheckProxy: netproxy.Check,
 		Locale: func(ctx context.Context, cc string) (string, []string, error) {
@@ -75,6 +81,20 @@ func (a *App) init() error {
 		}}
 	l.Adopt()
 	return nil
+}
+
+// engineList returns the engines sorted by ID.
+func engineList(m map[string]engine.Engine) []engine.Engine {
+	ids := make([]string, 0, len(m))
+	for id := range m {
+		ids = append(ids, id)
+	}
+	sort.Strings(ids)
+	out := make([]engine.Engine, 0, len(ids))
+	for _, id := range ids {
+		out = append(out, m[id])
+	}
+	return out
 }
 
 // quitText is the native quit dialog; the web UI has its own catalogs.

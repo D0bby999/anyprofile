@@ -66,8 +66,12 @@ export function DuplicateProfile(arg1) {
   return window['go']['main']['App']['DuplicateProfile'](arg1);
 }
 
-export function EngineStatus() {
-  return window['go']['main']['App']['EngineStatus']();
+export function EngineStatus(arg1) {
+  return window['go']['main']['App']['EngineStatus'](arg1);
+}
+
+export function Engines() {
+  return window['go']['main']['App']['Engines']();
 }
 
 export function FileVaultOn() {
@@ -82,8 +86,8 @@ export function ImportProxies(arg1, arg2) {
   return window['go']['main']['App']['ImportProxies'](arg1, arg2);
 }
 
-export function InstallEngine() {
-  return window['go']['main']['App']['InstallEngine']();
+export function InstallEngine(arg1) {
+  return window['go']['main']['App']['InstallEngine'](arg1);
 }
 
 export function Language() {

@@ -7,6 +7,7 @@ package engine
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/D0bby999/anyprofile/internal/store"
 )
@@ -48,6 +49,21 @@ type LaunchSpec struct {
 	CDPPipe bool
 }
 
+// Identity is what an engine fixes for a new profile.
+type Identity struct {
+	PersonaID string
+	Platform  string
+	Meta      store.EngineMeta // engine-specific values pinned at creation
+}
+
+// WindowName prefixes the table number so windows of many profiles are told apart.
+func WindowName(p store.Profile) string {
+	if p.Serial > 0 {
+		return fmt.Sprintf("#%d %s", p.Serial, p.Name)
+	}
+	return p.Name
+}
+
 // Engine is one browser engine implementation.
 type Engine interface {
 	ID() string
@@ -56,7 +72,11 @@ type Engine interface {
 	Install(ctx context.Context, progress Progress) error
 	BinaryPath() string
 	// NewIdentity picks a persona for a new profile. roll is uniform random.
-	NewIdentity(ctx context.Context, roll uint64) (personaID, platform string, err error)
+	NewIdentity(ctx context.Context, roll uint64) (Identity, error)
+	// UsesCookieKey reports whether BuildLaunch needs Runtime.CookieKey. Engines
+	// that keep their own key (in the Keychain) return false, and the launcher
+	// then never creates a per-profile key for them.
+	UsesCookieKey() bool
 	// PrepareProfile stages per-profile files (for example the Widevine CDM).
 	PrepareProfile(p store.Profile, rt Runtime) error
 	BuildLaunch(ctx context.Context, p store.Profile, rt Runtime) (LaunchSpec, error)

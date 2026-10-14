@@ -4,6 +4,7 @@ import {store} from '../models';
 import {service} from '../models';
 import {site} from '../models';
 import {engine} from '../models';
+import {main} from '../models';
 import {fury} from '../models';
 
 export function AddTagMany(arg1:Array<string>,arg2:string):Promise<void>;
@@ -38,7 +39,9 @@ export function DeleteSite(arg1:string):Promise<void>;
 
 export function DuplicateProfile(arg1:service.DuplicateInput):Promise<Array<store.Profile>>;
 
-export function EngineStatus():Promise<engine.Status>;
+export function EngineStatus(arg1:string):Promise<engine.Status>;
+
+export function Engines():Promise<Array<main.EngineInfo>>;
 
 export function FileVaultOn():Promise<boolean>;
 
@@ -46,7 +49,7 @@ export function FocusProfile(arg1:string):Promise<boolean>;
 
 export function ImportProxies(arg1:string,arg2:string):Promise<service.ImportResult>;
 
-export function InstallEngine():Promise<void>;
+export function InstallEngine(arg1:string):Promise<void>;
 
 export function Language():Promise<string>;
 
