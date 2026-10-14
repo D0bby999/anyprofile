@@ -22,7 +22,7 @@ export function useCookieActions(row: service.ProfileRow, sites: Site[]) {
       const domains = res.domains ?? []
       toast.success(t.cookies.imported(res.imported, domains.slice(0, 2).join(', '), Math.max(0, domains.length - 2), res.skipped))
       if (res.siteMismatch) {
-        const site = sites.find((s) => s.id === row.site)?.name ?? row.site
+        const site = row.sites.map((id) => sites.find((s) => s.id === id)?.name ?? id).join(', ')
         toast.info(t.cookies.mismatch(res.siteMismatch, site))
       }
     } catch (e) {

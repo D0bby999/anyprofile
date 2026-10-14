@@ -14,7 +14,7 @@ const { RowMenu } = await import('./row-menu')
 const { ToastProvider } = await import('./toast')
 
 const sites = [site.Site.createFrom({ id: 'tiktok', name: 'TikTok', group: 'video', domains: ['tiktok.com'], startUrl: '', icon: '', color: '#000', custom: false })]
-const row = (state: string) => service.ProfileRow.createFrom({ id: 'a', name: 'A', site: 'tiktok', state, login: '', hasPassword: false, hasTotp: false, pinned: false })
+const row = (state: string) => service.ProfileRow.createFrom({ id: 'a', name: 'A', sites: ['tiktok'], state, login: '', hasPassword: false, hasTotp: false, pinned: false })
 const menu = (state = 'stopped') => {
   render(<ToastProvider><RowMenu row={row(state)} sites={sites} onEdit={vi.fn()} onDuplicate={vi.fn()} onTrash={vi.fn()} onMessage={vi.fn()} onError={vi.fn()} /></ToastProvider>)
   fireEvent.click(screen.getByRole('button', { name: t.menu.more }))

@@ -8,6 +8,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 
@@ -64,17 +65,19 @@ func siteMismatch(top string, siteDomains []string) string {
 	return top
 }
 
-func (s *Service) siteDomains(siteID string) []string {
+// siteDomains joins the domains of every platform the profile is on.
+func (s *Service) siteDomains(siteIDs []string) []string {
 	all, err := s.Sites()
 	if err != nil {
 		return nil
 	}
+	var out []string
 	for _, x := range all {
-		if x.ID == siteID {
-			return x.Domains
+		if slices.Contains(siteIDs, x.ID) {
+			out = append(out, x.Domains...)
 		}
 	}
-	return nil
+	return out
 }
 
 // ImportCookies puts a cookie file into a profile. A closed profile is saved
@@ -115,7 +118,7 @@ func (s *Service) ImportCookies(ctx context.Context, profileID, path string) (Co
 	top := cookies.TopDomains(cs, 5)
 	res := CookieImport{Imported: len(cs), Skipped: skipped, Domains: top}
 	if len(top) > 0 {
-		res.SiteMismatch = siteMismatch(top[0], s.siteDomains(p.Site))
+		res.SiteMismatch = siteMismatch(top[0], s.siteDomains(p.Sites))
 	}
 	s.Log.Info("cookies imported", "profile", profileID, "count", len(cs), "skipped", skipped, "domains", strings.Join(top, ","))
 	return res, nil

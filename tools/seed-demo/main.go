@@ -171,7 +171,7 @@ func (s *seeder) seed() error {
 		return err
 	}
 	type spec struct {
-		name, site, country, engine, login, notes string
+		name, site, country, engine, login, notes string // site: platform ids joined by "+"
 		tags                                      []string
 		pinned, direct, trash                     bool
 		sessions                                  int
@@ -191,7 +191,7 @@ func (s *seeder) seed() error {
 			tags: tags, pinned: i <= 3, sessions: 2 + i%5, notes: map[bool]string{true: "Kênh đang lên, đăng 2 video mỗi ngày.", false: ""}[i == 1]}
 	})
 	add(6, func(i int) spec {
-		return spec{name: fmt.Sprintf("TikTok VN %02d", i), site: "tiktok", country: "VN", login: fmt.Sprintf("@demo_vn%02d", i),
+		return spec{name: fmt.Sprintf("TikTok VN %02d", i), site: map[bool]string{true: "tiktok+youtube+gmail", false: "tiktok"}[i <= 2], country: "VN", login: fmt.Sprintf("@demo_vn%02d", i),
 			tags: []string{"Nuôi"}, sessions: i % 4, notes: map[bool]string{true: "Tài khoản nuôi đợt 2, chưa bật kiếm tiền.", false: ""}[i == 2]}
 	})
 	add(5, func(i int) spec {
@@ -226,7 +226,7 @@ func (s *seeder) seed() error {
 		return spec{name: fmt.Sprintf("Partner %d", i), site: partner.ID, country: "SG", tags: []string{"Khách A"}}
 	})
 	add(4, func(i int) spec {
-		return spec{name: fmt.Sprintf("Thử trực tiếp %d", i), site: []string{"other", "google", "tiktok", "youtube"}[i-1], direct: true,
+		return spec{name: fmt.Sprintf("Thử trực tiếp %d", i), site: []string{"other", "google", "tiktok", "youtube+gmail"}[i-1], direct: true,
 			tags: []string{"Test"}, notes: map[bool]string{true: "Không có proxy, mở được ngay để thử.", false: ""}[i == 1]}
 	})
 	add(3, func(i int) spec {
@@ -243,13 +243,26 @@ func (s *seeder) seed() error {
 			proxyID = px.ID
 		}
 		p, err := s.svc.CreateProfile(s.ctx, service.NewProfile{Name: sp.name, Engine: sp.engine, ProxyID: proxyID,
-			Site: sp.site, Notes: sp.notes, Tags: sp.tags})
+			Sites: strings.Split(sp.site, "+"), Notes: sp.notes, Tags: sp.tags})
 		if err != nil {
 			return fmt.Errorf("%s: %w", sp.name, err)
 		}
-		if sp.login != "" || sp.pinned {
-			p.Login, p.Pinned = sp.login, sp.pinned
+		if sp.pinned {
+			p.Pinned = true
 			if err := s.st.UpdateProfile(p); err != nil {
+				return err
+			}
+		}
+		// The login belongs to the main platform; the others get one each.
+		for i, site := range p.Sites {
+			login := sp.login
+			if i > 0 {
+				login = strings.ToLower(strings.ReplaceAll(sp.name, " ", ".")) + "." + site + "@example.com"
+			}
+			if login == "" || site == "other" {
+				continue
+			}
+			if err := s.svc.SetAccountLogin(p.ID, site, login); err != nil {
 				return err
 			}
 		}
@@ -461,7 +474,7 @@ func (s *seeder) statusDemos() error {
 			}
 			id = px.ID
 		}
-		p, err := s.svc.CreateProfile(s.ctx, service.NewProfile{Name: name, ProxyID: id, Site: "tiktok", Tags: tags})
+		p, err := s.svc.CreateProfile(s.ctx, service.NewProfile{Name: name, ProxyID: id, Sites: []string{"tiktok"}, Tags: tags})
 		if err == nil {
 			s.created(p, days(20))
 			s.profiles++

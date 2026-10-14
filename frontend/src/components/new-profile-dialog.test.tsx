@@ -45,19 +45,29 @@ describe('NewProfileDialog', () => {
     fireEvent.submit(name.closest('form')!)
     await waitFor(() => expect(onCreated).toHaveBeenCalled())
     expect(createProfile.mock.calls[0][0]).toMatchObject({
-      name: 'Kênh mới', proxyId: 'auto', site: 'tiktok', startUrl: 'https://www.tiktok.com/tiktokstudio',
+      name: 'Kênh mới', proxyId: 'auto', sites: ['tiktok'], startUrl: 'https://www.tiktok.com/tiktokstudio',
     })
   })
 
-  it('switches the start page with the platform until the user edits it', () => {
-    dialog()
+  it('adds and removes the start page of each platform, keeping typed pages, and sends every platform', async () => {
+    const onCreated = vi.fn()
+    dialog({ onCreated })
+    const tiktok = 'https://www.tiktok.com/tiktokstudio', etsy = 'https://www.etsy.com/your/shops/me/dashboard'
+    const urls = () => (screen.getByPlaceholderText(t.create.startUrlHint) as HTMLTextAreaElement).value
+    expect(urls()).toBe(tiktok)
+    fireEvent.change(screen.getByPlaceholderText(t.create.startUrlHint), { target: { value: `${tiktok}\nhttps://mine.example/` } })
     fireEvent.click(screen.getByRole('button', { name: 'Platform' }))
     fireEvent.click(screen.getByRole('option', { name: /Etsy/ }))
-    expect(screen.getByDisplayValue('https://www.etsy.com/your/shops/me/dashboard')).toBeTruthy()
-    fireEvent.change(screen.getByDisplayValue('https://www.etsy.com/your/shops/me/dashboard'), { target: { value: 'https://example.com' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Platform' }))
+    expect(urls()).toBe(`${tiktok}\nhttps://mine.example/\n${etsy}`)
+    // The panel stays open for more picks; picking TikTok again removes it.
     fireEvent.click(screen.getByRole('option', { name: /TikTok/ }))
-    expect(screen.getByDisplayValue('https://example.com')).toBeTruthy()
+    expect(urls()).toBe(`https://mine.example/\n${etsy}`)
+    expect(screen.queryByRole('option', { name: /Other/ })).toBeNull()
+    const name = screen.getByPlaceholderText(t.create.namePlaceholder)
+    fireEvent.change(name, { target: { value: 'Shop' } })
+    fireEvent.submit(name.closest('form')!)
+    await waitFor(() => expect(onCreated).toHaveBeenCalled())
+    expect(createProfile.mock.calls[0][0]).toMatchObject({ sites: ['etsy'], startUrl: `https://mine.example/\n${etsy}` })
   })
 
   it('does not submit without a name and closes on Escape', () => {

@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -189,13 +190,37 @@ func TestLanguage(t *testing.T) {
 	}
 }
 
+func TestProfileSites(t *testing.T) {
+	s, _ := newService(t)
+	ctx := context.Background()
+	p, err := s.CreateProfile(ctx, NewProfile{Name: "Kênh", Sites: []string{"tiktok", "other", "youtube", "tiktok"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !slices.Equal(p.Sites, []string{"tiktok", "youtube"}) {
+		t.Fatalf("sites = %v, want each platform once and no other", p.Sites)
+	}
+	if q, err := s.CreateProfile(ctx, NewProfile{Name: "None"}); err != nil || !slices.Equal(q.Sites, []string{"other"}) {
+		t.Fatalf("no platform = %v, %v", q.Sites, err)
+	}
+	many := []string{"tiktok", "youtube", "twitch", "kick", "facebook", "instagram", "x", "threads", "pinterest", "reddit", "etsy"}
+	if _, err := s.CreateProfile(ctx, NewProfile{Name: "Many", Sites: many}); err == nil || !strings.Contains(err.Error(), "too_many_sites") {
+		t.Fatalf("11 platforms err = %v", err)
+	}
+	// A cookie file from any of the profile's platforms is not a mismatch.
+	doms := s.siteDomains(p.Sites)
+	if siteMismatch("youtube.com", doms) != "" || siteMismatch("tiktok.com", doms) != "" || siteMismatch("etsy.com", doms) != "etsy.com" {
+		t.Fatalf("domains of tiktok+youtube = %v", doms)
+	}
+}
+
 func TestSites(t *testing.T) {
 	s, _ := newService(t)
 	ctx := context.Background()
-	if _, err := s.CreateProfile(ctx, NewProfile{Name: "Etsy shop", Site: "etsy"}); err != nil {
+	if _, err := s.CreateProfile(ctx, NewProfile{Name: "Etsy shop", Sites: []string{"etsy"}}); err != nil {
 		t.Fatalf("create with etsy: %v", err)
 	}
-	if _, err := s.CreateProfile(ctx, NewProfile{Name: "Bad", Site: "nope"}); err == nil ||
+	if _, err := s.CreateProfile(ctx, NewProfile{Name: "Bad", Sites: []string{"nope"}}); err == nil ||
 		!strings.Contains(err.Error(), "unknown_site") {
 		t.Fatalf("create with nope err = %v", err)
 	}
@@ -421,7 +446,7 @@ func TestCreateProfileEngine(t *testing.T) {
 	s.Engines["apostate"] = fakeEngine2{}
 	s.Preferred = "apostate"
 	ctx := context.Background()
-	p, err := s.CreateProfile(ctx, NewProfile{Name: "A", Site: "other"})
+	p, err := s.CreateProfile(ctx, NewProfile{Name: "A", Sites: []string{"other"}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -432,15 +457,15 @@ func TestCreateProfileEngine(t *testing.T) {
 	if got.EngineMeta != (store.EngineMeta{HWC: 4, MemGiB: 8}) {
 		t.Fatalf("stored meta = %+v", got.EngineMeta)
 	}
-	f, err := s.CreateProfile(ctx, NewProfile{Name: "F", Site: "other", Engine: "fury"})
+	f, err := s.CreateProfile(ctx, NewProfile{Name: "F", Sites: []string{"other"}, Engine: "fury"})
 	if err != nil || f.Engine != "fury" {
 		t.Fatalf("fury profile = %+v %v", f, err)
 	}
-	if _, err := s.CreateProfile(ctx, NewProfile{Name: "X", Site: "other", Engine: "x"}); err == nil ||
+	if _, err := s.CreateProfile(ctx, NewProfile{Name: "X", Sites: []string{"other"}, Engine: "x"}); err == nil ||
 		!strings.Contains(err.Error(), "bad_engine") {
 		t.Fatalf("unknown engine err = %v", err)
 	}
-	if _, err := s.CreateProfiles(ctx, BulkCreate{BaseName: "B", Count: 2, Proxy: "none", Site: "other", Engine: "x"}); err == nil ||
+	if _, err := s.CreateProfiles(ctx, BulkCreate{BaseName: "B", Count: 2, Proxy: "none", Sites: []string{"other"}, Engine: "x"}); err == nil ||
 		!strings.Contains(err.Error(), "bad_engine") {
 		t.Fatalf("bulk unknown engine err = %v", err)
 	}
@@ -449,7 +474,7 @@ func TestCreateProfileEngine(t *testing.T) {
 func TestDuplicateUsesDefaultEngine(t *testing.T) {
 	s, _ := newService(t)
 	ctx := context.Background()
-	src, err := s.CreateProfile(ctx, NewProfile{Name: "Src", Site: "other"})
+	src, err := s.CreateProfile(ctx, NewProfile{Name: "Src", Sites: []string{"other"}})
 	if err != nil || src.Engine != "fury" {
 		t.Fatalf("source = %+v %v", src, err)
 	}
@@ -496,7 +521,7 @@ func TestOnboarding(t *testing.T) {
 	if s.Onboarded() {
 		t.Fatal("empty database reported onboarded")
 	}
-	if _, err := s.CreateProfile(context.Background(), NewProfile{Name: "Old", Site: "other"}); err != nil {
+	if _, err := s.CreateProfile(context.Background(), NewProfile{Name: "Old", Sites: []string{"other"}}); err != nil {
 		t.Fatal(err)
 	}
 	if !s.Onboarded() {

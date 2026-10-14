@@ -45,3 +45,17 @@ export function siteById(sites: Site[], id: string): Site {
     id, name: id, group: 'other', domains: [], startUrl: '', icon: '', color: '#6B7280', custom: false,
   })
 }
+
+/** Keeps the start pages in step with a change of platforms: a platform
+ *  added brings its start page, one removed takes its own start page away.
+ *  Lines the user typed stay as they are. */
+export function syncStartUrls(text: string, before: string[], after: string[], sites: Site[]): string {
+  const page = (id: string) => sites.find((s) => s.id === id)?.startUrl ?? ''
+  const gone = new Set(before.filter((id) => !after.includes(id)).map(page).filter(Boolean))
+  const lines = text.split('\n').map((l) => l.trim()).filter((l) => l && !gone.has(l))
+  for (const id of after) {
+    const u = page(id)
+    if (u && !before.includes(id) && !lines.includes(u)) lines.push(u)
+  }
+  return lines.join('\n')
+}

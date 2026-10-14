@@ -48,7 +48,7 @@ export function CommandPalette({ profiles, actions, places, onOpenProfile, onLau
   const groups = useMemo(() => {
     const serial = /^#(\d+)$/.exec(q)?.[1]
     const ps = serial ? profiles.filter((p) => String(p.serial) === serial).slice(0, MAX)
-      : best(profiles, q, (p) => [p.name, p.login, ...p.tags])
+      : best(profiles, q, (p) => [p.name, ...(p.accounts ?? []).map((a) => a.login), ...p.tags])
     return [
       { title: t.palette.profiles, items: ps.map<Item>((row) => ({ kind: 'profile', key: `p:${row.id}`, label: row.name, sub: `#${row.serial} · ${machineLabel(row)}`, row })) },
       { title: t.palette.actions, items: best(actions, q, (a) => [a.label]).map<Item>((a) => ({ kind: 'command', key: `a:${a.id}`, label: a.label, icon: a.icon, run: a.run })) },

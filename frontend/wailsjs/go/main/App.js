@@ -18,20 +18,20 @@ export function CheckProxy(arg1) {
   return window['go']['main']['App']['CheckProxy'](arg1);
 }
 
-export function ClearAccountPassword(arg1) {
-  return window['go']['main']['App']['ClearAccountPassword'](arg1);
+export function ClearAccountPassword(arg1, arg2) {
+  return window['go']['main']['App']['ClearAccountPassword'](arg1, arg2);
 }
 
 export function ClearCache() {
   return window['go']['main']['App']['ClearCache']();
 }
 
-export function ClearTOTP(arg1) {
-  return window['go']['main']['App']['ClearTOTP'](arg1);
+export function ClearTOTP(arg1, arg2) {
+  return window['go']['main']['App']['ClearTOTP'](arg1, arg2);
 }
 
-export function CopyAccountPassword(arg1) {
-  return window['go']['main']['App']['CopyAccountPassword'](arg1);
+export function CopyAccountPassword(arg1, arg2) {
+  return window['go']['main']['App']['CopyAccountPassword'](arg1, arg2);
 }
 
 export function CreateProfile(arg1) {
@@ -98,6 +98,10 @@ export function FocusProfile(arg1) {
   return window['go']['main']['App']['FocusProfile'](arg1);
 }
 
+export function ForgetAccount(arg1, arg2) {
+  return window['go']['main']['App']['ForgetAccount'](arg1, arg2);
+}
+
 export function ImportCookies(arg1) {
   return window['go']['main']['App']['ImportCookies'](arg1);
 }
@@ -158,8 +162,12 @@ export function Sessions(arg1) {
   return window['go']['main']['App']['Sessions'](arg1);
 }
 
-export function SetAccountPassword(arg1, arg2) {
-  return window['go']['main']['App']['SetAccountPassword'](arg1, arg2);
+export function SetAccountLogin(arg1, arg2, arg3) {
+  return window['go']['main']['App']['SetAccountLogin'](arg1, arg2, arg3);
+}
+
+export function SetAccountPassword(arg1, arg2, arg3) {
+  return window['go']['main']['App']['SetAccountPassword'](arg1, arg2, arg3);
 }
 
 export function SetDefaults(arg1) {
@@ -174,16 +182,16 @@ export function SetPinnedMany(arg1, arg2) {
   return window['go']['main']['App']['SetPinnedMany'](arg1, arg2);
 }
 
-export function SetSiteMany(arg1, arg2) {
-  return window['go']['main']['App']['SetSiteMany'](arg1, arg2);
+export function SetSitesMany(arg1, arg2) {
+  return window['go']['main']['App']['SetSitesMany'](arg1, arg2);
 }
 
 export function SetSnapshotSettings(arg1) {
   return window['go']['main']['App']['SetSnapshotSettings'](arg1);
 }
 
-export function SetTOTP(arg1, arg2) {
-  return window['go']['main']['App']['SetTOTP'](arg1, arg2);
+export function SetTOTP(arg1, arg2, arg3) {
+  return window['go']['main']['App']['SetTOTP'](arg1, arg2, arg3);
 }
 
 export function Sites() {
@@ -222,8 +230,8 @@ export function Storage() {
   return window['go']['main']['App']['Storage']();
 }
 
-export function TOTPCode(arg1) {
-  return window['go']['main']['App']['TOTPCode'](arg1);
+export function TOTPCode(arg1, arg2) {
+  return window['go']['main']['App']['TOTPCode'](arg1, arg2);
 }
 
 export function TakeSnapshot(arg1) {

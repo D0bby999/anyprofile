@@ -69,7 +69,7 @@ func TestMatchExit(t *testing.T) {
 	if _, err := s.ImportProxies(ctx, "gw.example:10001:u:pw", ""); err != nil {
 		t.Fatal(err)
 	}
-	p, err := s.CreateProfile(ctx, NewProfile{Name: "A", Site: "other", ProxyID: AutoProxy})
+	p, err := s.CreateProfile(ctx, NewProfile{Name: "A", Sites: []string{"other"}, ProxyID: AutoProxy})
 	if err != nil || p.Timezone != "America/New_York" {
 		t.Fatalf("created = %+v %v", p, err)
 	}

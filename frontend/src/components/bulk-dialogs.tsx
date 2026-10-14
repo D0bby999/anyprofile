@@ -6,19 +6,19 @@ import { errorText } from '../lib/format'
 import type { Site } from '../lib/sites'
 import { Dialog } from './dialog'
 import { RealIpWarning } from './proxy-select'
-import { SitePicker } from './site-picker'
+import { SitesPicker } from './site-picker'
 
 type BulkProps = { ids: string[]; sites: Site[]; recent: string[]; onClose: () => void; onDone: () => void }
 
 export function BulkSiteDialog({ ids, sites, recent, onClose, onDone }: BulkProps) {
-  const [site, setSite] = useState('other')
+  const [chosen, setChosen] = useState<string[]>([])
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const apply = async () => {
     setBusy(true)
     setError('')
     try {
-      await Api.SetSiteMany(ids, site)
+      await Api.SetSitesMany(ids, chosen)
       onDone()
     } catch (e) {
       setError(errorText(e))
@@ -31,7 +31,7 @@ export function BulkSiteDialog({ ids, sites, recent, onClose, onDone }: BulkProp
         <button type="button" className="btn ghost" onClick={onClose}>{t.common.cancel}</button>
         <button type="submit" className="btn primary" disabled={busy}>{t.bulk.apply}</button>
       </>}>
-      <SitePicker value={site} onChange={setSite} sites={sites} recent={recent} />
+      <SitesPicker value={chosen} onChange={setChosen} sites={sites} recent={recent} />
       {error && <div className="banner danger" role="alert">{error}</div>}
     </Dialog>
   )

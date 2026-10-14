@@ -4,6 +4,7 @@ package service
 
 import (
 	"context"
+	"slices"
 	"strings"
 	"testing"
 
@@ -46,11 +47,11 @@ func TestBulkCreateAndDuplicate(t *testing.T) {
 	}
 
 	// Duplicate copies settings, never identity or account.
-	src, err := s.CreateProfile(ctx, NewProfile{Name: "Origin", Site: "etsy", Tags: []string{"a"}})
+	src, err := s.CreateProfile(ctx, NewProfile{Name: "Origin", Sites: []string{"etsy"}, Tags: []string{"a"}})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := s.SetAccountPassword(src.ID, "pw-secret"); err != nil {
+	if err := s.SetAccountPassword(src.ID, "etsy", "pw-secret"); err != nil {
 		t.Fatal(err)
 	}
 	dups, err := s.DuplicateProfile(ctx, DuplicateInput{SourceID: src.ID, Count: 1, Proxy: "none"})
@@ -58,14 +59,14 @@ func TestBulkCreateAndDuplicate(t *testing.T) {
 		t.Fatal(err)
 	}
 	d := dups[0]
-	if d.Name != "Origin copy" || d.Site != "etsy" || len(d.Tags) != 1 || d.Tags[0] != "a" {
+	if d.Name != "Origin copy" || !slices.Equal(d.Sites, []string{"etsy"}) || len(d.Tags) != 1 || d.Tags[0] != "a" {
 		t.Fatalf("dup = %+v", d)
 	}
 	if d.SeedHex == src.SeedHex {
 		t.Fatal("duplicate must get a fresh identity")
 	}
-	if d.HasPassword {
-		t.Fatal("duplicate must not copy the password")
+	if len(d.Accounts) != 0 {
+		t.Fatal("duplicate must not copy the account")
 	}
 	if d.ProxyID != "" {
 		t.Fatalf("dup proxy = %q, want none", d.ProxyID)
@@ -102,16 +103,16 @@ func TestBulkEdits(t *testing.T) {
 	}
 
 	// Unknown platform is refused.
-	if err := s.SetSiteMany(ids, "nope"); err == nil || !strings.Contains(err.Error(), "unknown_site") {
+	if err := s.SetSitesMany(ids, []string{"nope"}); err == nil || !strings.Contains(err.Error(), "unknown_site") {
 		t.Fatalf("unknown site err = %v", err)
 	}
-	if err := s.SetSiteMany(ids, "etsy"); err != nil {
+	if err := s.SetSitesMany(ids, []string{"etsy", "tiktok", "etsy"}); err != nil {
 		t.Fatal(err)
 	}
 	for _, id := range ids {
 		p, _ := s.Store.GetProfile(id)
-		if p.Site != "etsy" {
-			t.Fatalf("site = %q", p.Site)
+		if !slices.Equal(p.Sites, []string{"etsy", "tiktok"}) {
+			t.Fatalf("sites = %q", p.Sites)
 		}
 	}
 
@@ -142,7 +143,7 @@ func TestPinAndSearch(t *testing.T) {
 	ctx := context.Background()
 	var ids []string
 	for _, n := range []string{"Alpha", "Beta", "Gamma"} {
-		p, err := s.CreateProfile(ctx, NewProfile{Name: n, Site: "other"})
+		p, err := s.CreateProfile(ctx, NewProfile{Name: n, Sites: []string{"other"}})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -157,8 +158,11 @@ func TestPinAndSearch(t *testing.T) {
 	}
 
 	p, _ := s.Store.GetProfile(ids[0])
-	p.Tags, p.Login = []string{"shop-us"}, "alpha@example.com"
+	p.Tags = []string{"shop-us"}
 	if err := s.Store.UpdateProfile(p); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.SetAccountLogin(p.ID, "other", "alpha@example.com"); err != nil {
 		t.Fatal(err)
 	}
 	for q, want := range map[string]string{"shop": "Alpha", "#2": "Beta", "ALPHA@": "Alpha", "gamm": "Gamma"} {
@@ -166,5 +170,16 @@ func TestPinAndSearch(t *testing.T) {
 		if len(got) != 1 || got[0].Name != want {
 			t.Errorf("query %q = %d rows, want %s", q, len(got), want)
 		}
+	}
+}
+
+func TestSyncStartURLs(t *testing.T) {
+	pages := map[string]string{"tiktok": "https://www.tiktok.com/tiktokstudio", "youtube": "https://studio.youtube.com", "other": ""}
+	got := syncStartURLs("https://www.tiktok.com/tiktokstudio\nhttps://mine.example/", []string{"tiktok"}, []string{"youtube"}, pages)
+	if got != "https://mine.example/\nhttps://studio.youtube.com" {
+		t.Fatalf("tiktok -> youtube = %q", got)
+	}
+	if got := syncStartURLs("https://studio.youtube.com", []string{"youtube"}, []string{"youtube", "tiktok"}, pages); got != "https://studio.youtube.com\nhttps://www.tiktok.com/tiktokstudio" {
+		t.Fatalf("add tiktok = %q", got)
 	}
 }

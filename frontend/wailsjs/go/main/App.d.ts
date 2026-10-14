@@ -15,13 +15,13 @@ export function CheckAllProxies():Promise<void>;
 
 export function CheckProxy(arg1:string):Promise<store.Proxy>;
 
-export function ClearAccountPassword(arg1:string):Promise<void>;
+export function ClearAccountPassword(arg1:string,arg2:string):Promise<void>;
 
 export function ClearCache():Promise<number>;
 
-export function ClearTOTP(arg1:string):Promise<void>;
+export function ClearTOTP(arg1:string,arg2:string):Promise<void>;
 
-export function CopyAccountPassword(arg1:string):Promise<void>;
+export function CopyAccountPassword(arg1:string,arg2:string):Promise<void>;
 
 export function CreateProfile(arg1:service.NewProfile):Promise<store.Profile>;
 
@@ -55,6 +55,8 @@ export function FinishOnboarding():Promise<void>;
 
 export function FocusProfile(arg1:string):Promise<boolean>;
 
+export function ForgetAccount(arg1:string,arg2:string):Promise<void>;
+
 export function ImportCookies(arg1:string):Promise<service.CookieImport>;
 
 export function ImportProxies(arg1:string,arg2:string):Promise<service.ImportResult>;
@@ -85,7 +87,9 @@ export function RestoreSnapshot(arg1:number):Promise<number>;
 
 export function Sessions(arg1:string):Promise<Array<store.Session>>;
 
-export function SetAccountPassword(arg1:string,arg2:string):Promise<void>;
+export function SetAccountLogin(arg1:string,arg2:string,arg3:string):Promise<void>;
+
+export function SetAccountPassword(arg1:string,arg2:string,arg3:string):Promise<void>;
 
 export function SetDefaults(arg1:service.Defaults):Promise<void>;
 
@@ -93,11 +97,11 @@ export function SetLanguage(arg1:string):Promise<void>;
 
 export function SetPinnedMany(arg1:Array<string>,arg2:boolean):Promise<void>;
 
-export function SetSiteMany(arg1:Array<string>,arg2:string):Promise<void>;
+export function SetSitesMany(arg1:Array<string>,arg2:Array<string>):Promise<void>;
 
 export function SetSnapshotSettings(arg1:service.SnapshotSettings):Promise<void>;
 
-export function SetTOTP(arg1:string,arg2:string):Promise<void>;
+export function SetTOTP(arg1:string,arg2:string,arg3:string):Promise<void>;
 
 export function Sites():Promise<Array<site.Site>>;
 
@@ -117,7 +121,7 @@ export function StopProfiles(arg1:Array<string>):Promise<Record<string, string>>
 
 export function Storage():Promise<service.StorageInfo>;
 
-export function TOTPCode(arg1:string):Promise<service.TOTPCode>;
+export function TOTPCode(arg1:string,arg2:string):Promise<service.TOTPCode>;
 
 export function TakeSnapshot(arg1:string):Promise<store.Snapshot>;
 

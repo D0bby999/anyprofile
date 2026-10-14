@@ -30,7 +30,7 @@ const sites = [
   site.Site.createFrom({ id: 'other', name: 'Other', group: 'other', domains: [], startUrl: '', icon: '', color: '#6B7280', custom: false }),
 ]
 const row = (id: string, name: string, serial: number) => service.ProfileRow.createFrom({
-  id, name, site: 'tiktok', serial, engine: 'apostate', engineVersion: '0.5.1', personaId: 'apostate-macos', machine: 'Apple M3 Pro · 2560×1440',
+  id, name, sites: ['tiktok'], serial, engine: 'apostate', engineVersion: '0.5.1', personaId: 'apostate-macos', machine: 'Apple M3 Pro · 2560×1440',
   proxyId: 'px', proxyLabel: 'gw.example:10001', proxyCountry: 'US', proxyExitIp: '1.1.1.1', timezone: 'America/New_York', languages: 'en-US,en',
   state: 'stopped', stateError: '', cdpPort: 0, tags: ['shop'], notes: '', startUrl: '', login: '', seedHex: '00000000000a11ce',
   lastOpenAt: '', createdAt: '2026-10-12T00:00:00Z', fpVerdict: '', fpDiff: [],

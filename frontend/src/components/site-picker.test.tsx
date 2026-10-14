@@ -3,7 +3,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { site } from '../api'
-import { SitePicker } from './site-picker'
+import { SitePicker, SitesPicker } from './site-picker'
 
 const mk = (id: string, name: string, group = 'other', domains: string[] = []) =>
   site.Site.createFrom({ id, name, group, domains, startUrl: '', icon: '', color: '#6B7280', custom: false })
@@ -48,5 +48,22 @@ describe('SitePicker', () => {
     expect(screen.getByText('Recent')).toBeTruthy()
     const options = screen.getAllByRole('option').map((o) => o.textContent)
     expect(options[0]).toContain('Etsy')
+  })
+
+  it('picks several platforms, each once, and shows Other when none', () => {
+    const onChange = vi.fn()
+    const { rerender } = render(<SitesPicker value={[]} onChange={onChange} sites={sites} recent={[]} />)
+    expect(screen.getByRole('button', { name: 'Platform' }).textContent).toContain('Other')
+    fireEvent.click(screen.getByRole('button', { name: 'Platform' }))
+    expect(screen.queryByRole('option', { name: /Other/ })).toBeNull()
+    fireEvent.click(screen.getByRole('option', { name: /Etsy/ }))
+    expect(onChange).toHaveBeenLastCalledWith(['etsy'])
+    rerender(<SitesPicker value={['etsy']} onChange={onChange} sites={sites} recent={[]} />)
+    fireEvent.click(screen.getByRole('option', { name: /TikTok/ }))
+    expect(onChange).toHaveBeenLastCalledWith(['etsy', 'tiktok'])
+    rerender(<SitesPicker value={['etsy', 'tiktok']} onChange={onChange} sites={sites} recent={[]} />)
+    expect(screen.getByRole('button', { name: 'Platform' }).textContent).toContain('Etsy, TikTok')
+    fireEvent.click(screen.getByRole('option', { name: /Etsy/ }))
+    expect(onChange).toHaveBeenLastCalledWith(['tiktok'])
   })
 })

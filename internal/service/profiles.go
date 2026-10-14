@@ -43,7 +43,7 @@ type NewProfile struct {
 	Engine   string   `json:"engine"` // "" means the default engine
 	Name     string   `json:"name"`
 	ProxyID  string   `json:"proxyId"`
-	Site     string   `json:"site"`
+	Sites    []string `json:"sites"`
 	StartURL string   `json:"startUrl"`
 	Notes    string   `json:"notes"`
 	Tags     []string `json:"tags"`
@@ -128,7 +128,7 @@ func (s *Service) CreateProfile(ctx context.Context, in NewProfile) (store.Profi
 	if in.Name == "" {
 		return store.Profile{}, apperr.New("name_required", "profile name is required")
 	}
-	if err := s.checkSite(in.Site); err != nil {
+	if err := s.checkSites(in.Sites); err != nil {
 		return store.Profile{}, err
 	}
 	eng, err := s.engineFor(in.Engine)
@@ -153,7 +153,7 @@ func (s *Service) CreateProfile(ctx context.Context, in NewProfile) (store.Profi
 	p := store.Profile{
 		ID: randomHex(8), Name: in.Name, Engine: eng.ID(), EngineVersion: eng.Pinned().Version,
 		EngineMeta: id.Meta, PersonaID: id.PersonaID, SeedHex: randomHex(8), Platform: id.Platform, ProxyID: in.ProxyID,
-		Site: in.Site, StartURL: startURL, Notes: in.Notes, Tags: in.Tags,
+		Sites: in.Sites, StartURL: startURL, Notes: in.Notes, Tags: in.Tags,
 	}
 	if err := s.applyNetwork(ctx, &p); err != nil {
 		return store.Profile{}, err
@@ -168,7 +168,7 @@ func (s *Service) CreateProfile(ctx context.Context, in NewProfile) (store.Profi
 // UpdateProfile saves editable fields; a new proxy re-derives timezone,
 // position and languages so the profile keeps matching its exit.
 func (s *Service) UpdateProfile(ctx context.Context, p store.Profile) error {
-	if err := s.checkSite(p.Site); err != nil {
+	if err := s.checkSites(p.Sites); err != nil {
 		return err
 	}
 	cur, err := s.Store.GetProfile(p.ID)
@@ -243,7 +243,8 @@ func (s *Service) Restore(id string) error {
 	return nil
 }
 
-// Purge deletes a trashed profile for good: its folder, cookie key and row.
+// Purge deletes a trashed profile for good: its folder, cookie key, account
+// secrets and row.
 func (s *Service) Purge(id string) error {
 	p, err := s.Store.GetProfile(id)
 	if err != nil {
@@ -265,11 +266,10 @@ func (s *Service) Purge(id string) error {
 	if err := s.Secrets.Delete(secrets.ServiceCookieKey, id); err != nil {
 		return err
 	}
-	if err := s.Secrets.Delete(secrets.ServiceAccountPassword, id); err != nil {
-		return err
-	}
-	if err := s.Secrets.Delete(secrets.ServiceTOTP, id); err != nil {
-		return err
+	for _, a := range p.Accounts {
+		if err := s.deleteAccountSecrets(a.SecretKey); err != nil {
+			return err
+		}
 	}
 	if err := s.Store.Purge(id); err != nil {
 		return err

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"slices"
 	"testing"
 	"time"
 )
@@ -123,7 +124,7 @@ func TestProfileLifecycle(t *testing.T) {
 		t.Fatal(err)
 	}
 	p, err := s.GetProfile("a")
-	if err != nil || p.Tags[0] != "tiktok" || p.Site != "other" {
+	if err != nil || p.Tags[0] != "tiktok" || !slices.Equal(p.Sites, []string{"other"}) {
 		t.Fatalf("get = %+v, %v", p, err)
 	}
 
@@ -169,10 +170,10 @@ func TestSitesMigration(t *testing.T) {
 		insertV1Profile(t, o, "p1", "tiktok", "2026-10-01T00:00:00Z")
 		insertV1Profile(t, o, "p2", "other", "2026-10-02T00:00:00Z")
 	})
-	if p, err := s.GetProfile("p1"); err != nil || p.Site != "tiktok" {
+	if p, err := s.GetProfile("p1"); err != nil || !slices.Equal(p.Sites, []string{"tiktok"}) {
 		t.Fatalf("p1 = %+v, %v", p, err)
 	}
-	if p, err := s.GetProfile("p2"); err != nil || p.Site != "other" {
+	if p, err := s.GetProfile("p2"); err != nil || !slices.Equal(p.Sites, []string{"other"}) {
 		t.Fatalf("p2 = %+v, %v", p, err)
 	}
 	if cs, err := s.ListCustomSites(); err != nil || len(cs) != 0 {
@@ -187,7 +188,12 @@ func TestCustomSites(t *testing.T) {
 		t.Fatal(err)
 	}
 	p := sample("a")
-	p.Site = "custom-aa"
+	p.Sites = []string{"custom-aa"}
+	q := sample("b")
+	q.Sites = []string{"tiktok", "custom-aa"}
+	if err := s.CreateProfile(q); err != nil {
+		t.Fatal(err)
+	}
 	if err := s.CreateProfile(p); err != nil {
 		t.Fatal(err)
 	}
@@ -205,8 +211,16 @@ func TestCustomSites(t *testing.T) {
 	if err := s.DeleteCustomSite("custom-aa"); err != nil {
 		t.Fatal(err)
 	}
-	if p, _ := s.GetProfile("a"); p.Site != "other" {
-		t.Fatalf("profile not moved to other: %+v", p)
+	if p, _ := s.GetProfile("a"); !slices.Equal(p.Sites, []string{"other"}) {
+		t.Fatalf("profile not moved to other: %+v", p.Sites)
+	}
+	if q, _ := s.GetProfile("b"); !slices.Equal(q.Sites, []string{"tiktok"}) {
+		t.Fatalf("site not dropped from a list: %+v", q.Sites)
+	}
+	var col string
+	s.db.QueryRow(`SELECT site FROM profiles WHERE id = 'b'`).Scan(&col)
+	if col != "tiktok" {
+		t.Fatalf("site column = %q, want the first platform", col)
 	}
 	if err := s.DeleteCustomSite("custom-aa"); !errors.Is(err, ErrNotFound) {
 		t.Fatalf("second delete err = %v", err)
@@ -289,50 +303,71 @@ func TestSerialMigration(t *testing.T) {
 	}
 }
 
-func TestAccountColumns(t *testing.T) {
+func TestAccounts(t *testing.T) {
 	s, _ := openTemp(t)
 	p := sample("p1")
-	p.Login = "me@example.com"
+	p.Sites = []string{"tiktok", "youtube"}
 	if err := s.CreateProfile(p); err != nil {
 		t.Fatal(err)
 	}
-	if got, _ := s.GetProfile("p1"); got.Login != "me@example.com" || got.HasPassword || got.HasTOTP {
-		t.Fatalf("after create = %+v", got)
+	a, err := s.Account("p1", "youtube")
+	if err != nil || a.SecretKey != "p1/youtube" || a.Login != "" {
+		t.Fatalf("new account = %+v, %v", a, err)
 	}
-	// UpdateProfile must not touch the secret flags.
-	p.HasPassword = true
-	p.HasTOTP = true
-	if err := s.UpdateProfile(*p); err != nil {
+	a.Login, a.HasTOTP = "me@example.com", true
+	if err := s.SaveAccount("p1", a); err != nil {
 		t.Fatal(err)
 	}
-	if got, _ := s.GetProfile("p1"); got.HasPassword || got.HasTOTP {
-		t.Fatalf("UpdateProfile changed flags: %+v", got)
+	got, _ := s.GetProfile("p1")
+	if len(got.Accounts) != 1 || got.Accounts[0] != a {
+		t.Fatalf("accounts = %+v", got.Accounts)
 	}
-	if err := s.SetSecretFlag("p1", "has_totp", true); err != nil {
+	// UpdateProfile leaves the accounts alone, and the search matches a login.
+	got.Name = "Renamed"
+	if err := s.UpdateProfile(got); err != nil {
 		t.Fatal(err)
 	}
-	if got, _ := s.GetProfile("p1"); !got.HasTOTP {
-		t.Fatalf("flag not set: %+v", got)
+	if rows, _ := s.ListProfiles(ProfileFilter{Query: "me@example"}); len(rows) != 1 || len(rows[0].Accounts) != 1 {
+		t.Fatalf("login search = %+v", rows)
 	}
-	if err := s.SetSecretFlag("p1", "x", true); err == nil {
-		t.Fatal("unknown flag must fail")
+	// An account left with nothing is removed.
+	a.Login, a.HasTOTP = "", false
+	if err := s.SaveAccount("p1", a); err != nil {
+		t.Fatal(err)
 	}
-	// The search matches the login too.
-	if got, _ := s.ListProfiles(ProfileFilter{Query: "me@example"}); len(got) != 1 {
-		t.Fatalf("login search = %d rows", len(got))
+	if got, _ := s.GetProfile("p1"); len(got.Accounts) != 0 {
+		t.Fatalf("empty account kept: %+v", got.Accounts)
+	}
+	// Purging the profile drops its accounts with it.
+	a.Login = "x"
+	s.SaveAccount("p1", a)
+	s.SoftDelete("p1")
+	if err := s.Purge("p1"); err != nil {
+		t.Fatal(err)
+	}
+	var n int
+	s.db.QueryRow(`SELECT COUNT(*) FROM accounts`).Scan(&n)
+	if n != 0 {
+		t.Fatalf("%d accounts outlived their profile", n)
 	}
 }
 
 func TestAccountsMigration(t *testing.T) {
-	s, _ := upgradeFrom(t, 4, func(o *Store) {
-		insertV1Profile(t, o, "p1", "other", "2026-10-01T00:00:00Z")
+	s, _ := upgradeFrom(t, 12, func(o *Store) {
+		insertV1Profile(t, o, "p1", "tiktok", "2026-10-01T00:00:00Z")
+		o.db.Exec(`UPDATE profiles SET serial = 1, site = 'tiktok', sites = '["tiktok"]', login = '@me', has_password = 1 WHERE id = 'p1'`)
+		insertV1Profile(t, o, "p2", "other", "2026-10-02T00:00:00Z")
 	})
 	p, err := s.GetProfile("p1")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if p.Login != "" || p.HasPassword || p.HasTOTP {
-		t.Fatalf("upgraded profile = %+v", p)
+	want := Account{Site: "tiktok", Login: "@me", HasPassword: true, SecretKey: "p1"}
+	if len(p.Accounts) != 1 || p.Accounts[0] != want {
+		t.Fatalf("migrated accounts = %+v, want the old Keychain key", p.Accounts)
+	}
+	if q, _ := s.GetProfile("p2"); len(q.Accounts) != 0 {
+		t.Fatalf("empty profile got accounts: %+v", q.Accounts)
 	}
 }
 

@@ -97,8 +97,8 @@ func (a *App) DuplicateProfile(in service.DuplicateInput) ([]store.Profile, erro
 	return a.svc.DuplicateProfile(a.ctx, in)
 }
 
-func (a *App) SetSiteMany(ids []string, site string) error {
-	return a.must(func() error { return a.svc.SetSiteMany(ids, site) })
+func (a *App) SetSitesMany(ids []string, sites []string) error {
+	return a.must(func() error { return a.svc.SetSitesMany(ids, sites) })
 }
 
 func (a *App) Sessions(profileID string) ([]store.Session, error) {
@@ -379,21 +379,29 @@ func (a *App) ClearCache() (int64, error) {
 	return a.svc.ClearCache()
 }
 
-// Account
+// Accounts: one per platform of a profile, named by the platform's site id.
 
-func (a *App) SetAccountPassword(id, pw string) error {
-	return a.must(func() error { return a.svc.SetAccountPassword(id, pw) })
+func (a *App) SetAccountLogin(id, site, login string) error {
+	return a.must(func() error { return a.svc.SetAccountLogin(id, site, login) })
 }
 
-func (a *App) ClearAccountPassword(id string) error {
-	return a.must(func() error { return a.svc.ClearAccountPassword(id) })
+func (a *App) SetAccountPassword(id, site, pw string) error {
+	return a.must(func() error { return a.svc.SetAccountPassword(id, site, pw) })
+}
+
+func (a *App) ClearAccountPassword(id, site string) error {
+	return a.must(func() error { return a.svc.ClearAccountPassword(id, site) })
+}
+
+func (a *App) ForgetAccount(id, site string) error {
+	return a.must(func() error { return a.svc.ForgetAccount(id, site) })
 }
 
 // CopyAccountPassword puts the password on the clipboard without it ever
 // reaching the web UI, and clears it after 90 s if it is still there.
-func (a *App) CopyAccountPassword(id string) error {
+func (a *App) CopyAccountPassword(id, site string) error {
 	return a.must(func() error {
-		pw, err := a.svc.AccountPassword(id)
+		pw, err := a.svc.AccountPassword(id, site)
 		if err != nil {
 			return err
 		}
@@ -412,17 +420,19 @@ func (a *App) CopyAccountPassword(id string) error {
 	})
 }
 
-func (a *App) SetTOTP(id, secret string) error {
-	return a.must(func() error { return a.svc.SetTOTP(id, secret) })
+func (a *App) SetTOTP(id, site, secret string) error {
+	return a.must(func() error { return a.svc.SetTOTP(id, site, secret) })
 }
 
-func (a *App) ClearTOTP(id string) error { return a.must(func() error { return a.svc.ClearTOTP(id) }) }
+func (a *App) ClearTOTP(id, site string) error {
+	return a.must(func() error { return a.svc.ClearTOTP(id, site) })
+}
 
-func (a *App) TOTPCode(id string) (service.TOTPCode, error) {
+func (a *App) TOTPCode(id, site string) (service.TOTPCode, error) {
 	if err := a.ready(); err != nil {
 		return service.TOTPCode{}, err
 	}
-	return a.svc.TOTPCode(id)
+	return a.svc.TOTPCode(id, site)
 }
 
 // System

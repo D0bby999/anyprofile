@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-import { useEffect, useRef, useState } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 import { Api, copyText, service } from '../api'
 import { t } from '../i18n'
 import { errorText } from '../lib/format'
 import { Icon } from './icons'
 import { focusFirstItem, menuArrows } from '../lib/menu-keys'
-import type { Site } from '../lib/sites'
+import { siteById, type Site } from '../lib/sites'
 import { useCookieActions } from './use-cookie-actions'
 
 type Props = {
@@ -38,18 +38,23 @@ export function RowMenu({ row, sites, onEdit, onDuplicate, onTrash, onMessage, o
     void fn()
   }
 
-  const copyPassword = async () => {
+  // One set of copy items per platform with an account; named by platform
+  // when the profile has more than one.
+  const accounts = (row.accounts ?? []).filter((a) => row.sites.includes(a.site) && (a.login || a.hasPassword || a.hasTotp))
+  const named = (label: string, site: string) => accounts.length > 1 ? `${label} · ${siteById(sites, site).name}` : label
+
+  const copyPassword = async (site: string) => {
     try {
-      await Api.CopyAccountPassword(row.id)
+      await Api.CopyAccountPassword(row.id, site)
       onMessage(t.account.copiedPassword)
     } catch (e) {
       onError(errorText(e))
     }
   }
 
-  const copyCode = async () => {
+  const copyCode = async (site: string) => {
     try {
-      const c = await Api.TOTPCode(row.id)
+      const c = await Api.TOTPCode(row.id, site)
       await copyText(c.code)
       onMessage(t.menu.copiedCode(c.secondsLeft))
     } catch (e) {
@@ -57,9 +62,9 @@ export function RowMenu({ row, sites, onEdit, onDuplicate, onTrash, onMessage, o
     }
   }
 
-  const copyLogin = async () => {
+  const copyLogin = async (login: string) => {
     try {
-      await copyText(row.login)
+      await copyText(login)
       onMessage(t.menu.copiedLogin)
     } catch (e) {
       onError(errorText(e))
@@ -79,9 +84,13 @@ export function RowMenu({ row, sites, onEdit, onDuplicate, onTrash, onMessage, o
           <button role="menuitem" onClick={() => act(() => Api.SetPinnedMany([row.id], !row.pinned).catch((e) => onError(errorText(e))))}>
             {row.pinned ? t.menu.unpin : t.menu.pin}
           </button>
-          {row.login && <button role="menuitem" onClick={() => act(copyLogin)}>{t.menu.copyLogin}</button>}
-          {row.hasPassword && <button role="menuitem" onClick={() => act(copyPassword)}>{t.menu.copyPassword}</button>}
-          {row.hasTotp && <button role="menuitem" onClick={() => act(copyCode)}>{t.menu.copyCode}</button>}
+          {accounts.map((a) => (
+            <Fragment key={a.site}>
+              {a.login && <button role="menuitem" onClick={() => act(() => copyLogin(a.login))}>{named(t.menu.copyLogin, a.site)}</button>}
+              {a.hasPassword && <button role="menuitem" onClick={() => act(() => copyPassword(a.site))}>{named(t.menu.copyPassword, a.site)}</button>}
+              {a.hasTotp && <button role="menuitem" onClick={() => act(() => copyCode(a.site))}>{named(t.menu.copyCode, a.site)}</button>}
+            </Fragment>
+          ))}
           <hr />
           <button role="menuitem" disabled={cookies.importing} onClick={() => act(cookies.importCookies)}>{t.cookies.import}</button>
           <button role="menuitem" disabled={!cookies.canExport} title={cookies.canExport ? undefined : t.cookies.openFirst}

@@ -4,10 +4,10 @@ import { Api, service } from '../api'
 import { t } from '../i18n'
 import { errorText, nameSeries, parseTags } from '../lib/format'
 import { readLastProxy, usableLastProxy, writeLastProxy } from '../lib/last-proxy'
-import { guessSite, siteById, type Site } from '../lib/sites'
+import { guessSite, syncStartUrls, type Site } from '../lib/sites'
 import { Dialog } from './dialog'
 import { CHOOSE_PROXY, freeProxies, ProxySelect, RealIpWarning, SharedProxyWarning } from './proxy-select'
-import { SitePicker } from './site-picker'
+import { SitesPicker } from './site-picker'
 import { EngineAdvanced } from './engine-advanced'
 
 type Props = {
@@ -24,13 +24,12 @@ type Props = {
 export function NewProfileDialog({ defaultSite, defaults, sites, recent, onClose, onCreated, initialCount = 1 }: Props) {
   const [name, setName] = useState('')
   const [count, setCount] = useState(initialCount)
-  const [site, setSite] = useState(defaultSite)
+  const [platforms, setPlatforms] = useState<string[]>(defaultSite && defaultSite !== 'other' ? [defaultSite] : [])
   // null until the user picks in this dialog: the last profile's choice is offered first.
   const [proxyId, setProxyId] = useState<string | null>(null)
   const [lastProxy] = useState(() => readLastProxy())
   const [bulkProxy, setBulkProxy] = useState<'auto' | 'none'>(defaults.proxy === 'auto' ? 'auto' : 'none')
-  const [startUrl, setStartUrl] = useState(siteById(sites, defaultSite).startUrl)
-  const [urlTouched, setUrlTouched] = useState(false)
+  const [startUrl, setStartUrl] = useState(() => syncStartUrls('', [], platforms, sites))
   const [tags, setTags] = useState('')
   const [engine, setEngine] = useState('')
   const [proxies, setProxies] = useState<service.ProxyRow[] | null>(null)
@@ -43,15 +42,16 @@ export function NewProfileDialog({ defaultSite, defaults, sites, recent, onClose
   const pick = chosen === 'auto' && proxies !== null && freeProxies(proxies) === 0 ? CHOOSE_PROXY : chosen
   const sharedWith = proxies?.find((p) => p.id === pick)?.usedBy ?? []
 
-  const pickSite = (id: string) => {
-    setSite(id)
-    if (!urlTouched) setStartUrl(siteById(sites, id).startUrl)
+  const pickSites = (ids: string[]) => {
+    setStartUrl(syncStartUrls(startUrl, platforms, ids, sites))
+    setPlatforms(ids)
   }
 
+  // A pasted start page names the platform when none is picked yet.
   const guessFromUrl = () => {
-    if (site !== 'other') return
+    if (platforms.length) return
     const id = guessSite(startUrl.split('\n')[0], sites)
-    if (id) setSite(id)
+    if (id) setPlatforms([id])
   }
 
   const bulk = count > 1
@@ -65,11 +65,11 @@ export function NewProfileDialog({ defaultSite, defaults, sites, recent, onClose
     try {
       if (bulk) {
         await Api.CreateProfiles(service.BulkCreate.createFrom({
-          engine, baseName: name.trim(), count, proxy: bulkProxy, site, startUrl: startUrl.trim(), notes: '', tags: parseTags(tags),
+          engine, baseName: name.trim(), count, proxy: bulkProxy, sites: platforms, startUrl: startUrl.trim(), notes: '', tags: parseTags(tags),
         }))
       } else {
         await Api.CreateProfile(service.NewProfile.createFrom({
-          engine, name: name.trim(), proxyId: pick, site, startUrl: startUrl.trim(), notes: '', tags: parseTags(tags),
+          engine, name: name.trim(), proxyId: pick, sites: platforms, startUrl: startUrl.trim(), notes: '', tags: parseTags(tags),
         }))
         writeLastProxy(pick)
       }
@@ -100,7 +100,7 @@ export function NewProfileDialog({ defaultSite, defaults, sites, recent, onClose
       </div>
       <div className="field">
         <span className="label">{t.create.site}</span>
-        <SitePicker value={site} onChange={pickSite} sites={sites} recent={recent} />
+        <SitesPicker value={platforms} onChange={pickSites} sites={sites} recent={recent} />
       </div>
       {bulk ? (
         <div className="field">
@@ -119,17 +119,15 @@ export function NewProfileDialog({ defaultSite, defaults, sites, recent, onClose
       )}
       {direct && <RealIpWarning />}
       {!bulk && sharedWith.length > 0 && <SharedProxyWarning usedBy={sharedWith} />}
-      <div className="grid2">
-        <label className="field">
-          <span className="label">{t.create.startUrl}</span>
-          <textarea className="textarea" rows={2} value={startUrl} placeholder={t.create.startUrlHint}
-            onChange={(e) => { setStartUrl(e.target.value); setUrlTouched(true) }} onBlur={guessFromUrl} />
-        </label>
-        <label className="field">
-          <span className="label">{t.create.tags}</span>
-          <input className="input" value={tags} placeholder={t.create.tagsPlaceholder} onChange={(e) => setTags(e.target.value)} />
-        </label>
-      </div>
+      <label className="field">
+        <span className="label">{t.create.startUrl}</span>
+        <textarea className="textarea" rows={Math.min(5, Math.max(2, startUrl.split('\n').length))} value={startUrl} placeholder={t.create.startUrlHint}
+          onChange={(e) => setStartUrl(e.target.value)} onBlur={guessFromUrl} />
+      </label>
+      <label className="field">
+        <span className="label">{t.create.tags}</span>
+        <input className="input" value={tags} placeholder={t.create.tagsPlaceholder} onChange={(e) => setTags(e.target.value)} />
+      </label>
       <EngineAdvanced value={engine} onChange={setEngine} />
       {bulk && <div className="hint">{t.create.preview} {preview.slice(0, 3).join(', ')}{preview.length > 3 ? ' …' : ''}</div>}
       <span className="hint muted" style={{ fontSize: 'var(--t-xs)' }}>{t.create.identityNote}</span>

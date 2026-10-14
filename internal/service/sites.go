@@ -59,6 +59,24 @@ func (s *Service) checkSite(id string) error {
 	return apperr.Newf("unknown_site", "unknown platform %q", id)
 }
 
+// maxSites caps a profile's platforms; each one usually adds a start page,
+// and a profile opens at most 10.
+const maxSites = 10
+
+// checkSites validates a profile's platforms; the store drops repeats and
+// "other" beside a real platform.
+func (s *Service) checkSites(ids []string) error {
+	if len(ids) > maxSites {
+		return apperr.Newf("too_many_sites", "at most %d platforms", maxSites)
+	}
+	for _, id := range ids {
+		if err := s.checkSite(id); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // normalizeSite cleans and validates the custom-platform form.
 func normalizeSite(in SiteInput) (SiteInput, error) {
 	out := SiteInput{}

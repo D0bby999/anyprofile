@@ -34,7 +34,8 @@ export const en = {
   } as Record<string, string>,
   sites: {
     search: 'Search platforms', none: 'No platform matches',
-    customTitle: 'Your platforms', customDesc: 'Add any platform with its domains, start page and color. Profiles on a deleted platform move to Other.',
+    multiHint: 'Pick each platform this profile has an account on. Two accounts of the same platform need two profiles.',
+    customTitle: 'Your platforms', customDesc: 'Add any platform with its domains, start page and color. A deleted platform is removed from its profiles.',
     add: 'Add platform', name: 'Name', domains: 'Domains', domainsHint: 'separated by commas',
     startUrl: 'Start page', color: 'Color', empty: 'No custom platforms yet.',
   },
@@ -48,6 +49,7 @@ export const en = {
     exportCookies: { title: 'Export the cookies?', body: 'This file lets anyone sign in to these accounts. Keep it private and delete it after use.', confirm: 'Export' },
     trash: (name: string) => ({ title: `Move "${name}" to the trash?`, body: 'It stops showing in your lists. You can restore it from Trash until you delete it for good.', confirm: 'Move to trash' }),
     purge: (name: string) => ({ title: `Delete "${name}" for good?`, body: 'Its cookies, logins and data are gone. This cannot be undone.', confirm: 'Delete for good' }),
+    forgetAccount: (site: string) => ({ title: `Forget the ${site} account?`, body: 'Its login, password and 2FA secret are deleted from this Mac. The account itself is not touched.', confirm: 'Forget account' }),
     resetFingerprint: { title: 'Measure the fingerprint again?', body: 'The next launch becomes the new reference. Do this only after you changed the engine on purpose.', confirm: 'Reset reference' },
     orphans: (n: number) => ({ title: `Delete ${n} leftover folders?`, body: 'Their cookies and logins are gone for good. This cannot be undone.', confirm: 'Delete folders' }),
   },
@@ -244,7 +246,7 @@ export const en = {
   },
   bulk: {
     site: 'Platform…', tag: 'Add tag…', proxy: 'Proxies…',
-    siteTitle: 'Set platform', tagTitle: 'Add tag', proxyTitle: 'Assign proxies',
+    siteTitle: 'Set platforms', tagTitle: 'Add tag', proxyTitle: 'Assign proxies',
     proxyAuto: 'Next free proxy', proxyNone: 'No proxy', apply: 'Apply',
   },
   menu: {
@@ -278,6 +280,8 @@ export const en = {
     copyCode: 'Copy code',
     secondsLeft: (n: number) => `${n}s`,
     note: 'The password and the 2FA secret stay in the macOS Keychain and are never shown.',
+    removedNote: 'Accounts of platforms no longer on this profile. Add the platform back to use them, or forget them.',
+    forget: 'Forget',
   },
   onOpen: {
     title: 'Opening a profile', restore: 'Reopen last tabs', start: 'Open start pages',
@@ -324,6 +328,7 @@ export const en = {
     engine_missing: 'The browser engine is not installed. Install it in Settings.',
     folder_in_use: 'Another process already uses this profile\u2019s folder. Close it first.',
     bad_language: 'That language is not supported.',
+    too_many_sites: 'A profile can have at most 10 platforms.',
     unknown_site: 'That platform does not exist.',
     site_name: 'The platform needs a name of 1-40 characters.',
     site_domain: 'One of the domains is not valid.',

@@ -13,7 +13,7 @@ import (
 
 func snapshotProfile(t *testing.T) (*Service, string) {
 	s, _ := newService(t)
-	p, err := s.CreateProfile(context.Background(), NewProfile{Name: "Snap", Site: "other"})
+	p, err := s.CreateProfile(context.Background(), NewProfile{Name: "Snap", Sites: []string{"other"}})
 	if err != nil {
 		t.Fatal(err)
 	}

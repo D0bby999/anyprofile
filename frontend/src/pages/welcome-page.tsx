@@ -105,7 +105,7 @@ export function WelcomePage({ sites, fileVaultOn, lang, onLanguage, onDone }: Pr
     try {
       const made = await Api.CreateProfiles(service.BulkCreate.createFrom({
         engine: '', baseName: name.trim(), count: 1, proxy: noProxy || usable === 0 ? 'none' : 'auto',
-        site, startUrl: siteById(sites, site).startUrl, notes: '', tags: [],
+        sites: [site], startUrl: siteById(sites, site).startUrl, notes: '', tags: [],
       }))
       await Api.FinishOnboarding()
       toast.success(t.welcome.created)

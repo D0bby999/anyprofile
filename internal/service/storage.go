@@ -115,6 +115,12 @@ func (s *Service) DeleteOrphans(ids []string) error {
 		orphan[id] = true
 	}
 	run := s.running()
+	var siteIDs []string
+	if all, err := s.Sites(); err == nil {
+		for _, x := range all {
+			siteIDs = append(siteIDs, x.ID)
+		}
+	}
 	deleted := 0
 	var bytes int64
 	for _, id := range ids {
@@ -126,8 +132,12 @@ func (s *Service) DeleteOrphans(ids []string) error {
 		if err := os.RemoveAll(p); err != nil {
 			return err
 		}
-		for _, svc := range []string{secrets.ServiceCookieKey, secrets.ServiceAccountPassword, secrets.ServiceTOTP} {
-			s.Secrets.Delete(svc, id)
+		// The rows are gone, so every platform's key is tried; deleting a
+		// missing item is not an error.
+		s.Secrets.Delete(secrets.ServiceCookieKey, id)
+		s.deleteAccountSecrets(id)
+		for _, site := range siteIDs {
+			s.deleteAccountSecrets(id + "/" + site)
 		}
 		deleted++
 	}

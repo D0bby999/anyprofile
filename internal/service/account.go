@@ -4,9 +4,12 @@ package service
 
 import (
 	"errors"
+	"slices"
+	"strings"
 
 	"github.com/D0bby999/anyprofile/internal/apperr"
 	"github.com/D0bby999/anyprofile/internal/secrets"
+	"github.com/D0bby999/anyprofile/internal/store"
 	"github.com/D0bby999/anyprofile/internal/totp"
 )
 
@@ -16,84 +19,123 @@ type TOTPCode struct {
 	SecondsLeft int    `json:"secondsLeft"`
 }
 
-// SetAccountPassword stores the password in the Keychain; only the flag goes
-// into SQLite. The password never reaches the frontend.
-func (s *Service) SetAccountPassword(id, pw string) error {
-	if pw == "" {
-		return apperr.New("password_empty", "type a password")
+// account loads the profile's account on site. A new account may only be
+// made for one of the profile's platforms; an existing one (its platform
+// since removed) can still be read, changed and forgotten.
+func (s *Service) account(id, site string) (store.Account, error) {
+	p, err := s.Store.GetProfile(id)
+	if err != nil {
+		return store.Account{}, err
 	}
-	if _, err := s.Store.GetProfile(id); err != nil {
+	a, err := s.Store.Account(id, site)
+	if err != nil {
+		return a, err
+	}
+	known := slices.ContainsFunc(p.Accounts, func(x store.Account) bool { return x.Site == site })
+	if !known && !slices.Contains(p.Sites, site) {
+		return a, apperr.New("account_site", "the profile is not on that platform")
+	}
+	return a, nil
+}
+
+// SetAccountLogin saves the login (email or username) of one platform.
+func (s *Service) SetAccountLogin(id, site, login string) error {
+	a, err := s.account(id, site)
+	if err != nil {
 		return err
 	}
-	if err := s.Secrets.Set(secrets.ServiceAccountPassword, id, []byte(pw)); err != nil {
-		return err
-	}
-	if err := s.Store.SetSecretFlag(id, "has_password", true); err != nil {
+	a.Login = strings.TrimSpace(login)
+	if err := s.Store.SaveAccount(id, a); err != nil {
 		return err
 	}
 	s.notify("profiles")
 	return nil
 }
 
+// SetAccountPassword stores the password in the Keychain; only the flag goes
+// into SQLite. The password never reaches the frontend.
+func (s *Service) SetAccountPassword(id, site, pw string) error {
+	if pw == "" {
+		return apperr.New("password_empty", "type a password")
+	}
+	a, err := s.account(id, site)
+	if err != nil {
+		return err
+	}
+	if err := s.Secrets.Set(secrets.ServiceAccountPassword, a.SecretKey, []byte(pw)); err != nil {
+		return err
+	}
+	a.HasPassword = true
+	return s.saveAccount(id, a)
+}
+
 // ClearAccountPassword removes the stored password.
-func (s *Service) ClearAccountPassword(id string) error {
-	if err := s.Secrets.Delete(secrets.ServiceAccountPassword, id); err != nil {
+func (s *Service) ClearAccountPassword(id, site string) error {
+	a, err := s.account(id, site)
+	if err != nil {
 		return err
 	}
-	if err := s.Store.SetSecretFlag(id, "has_password", false); err != nil {
+	if err := s.Secrets.Delete(secrets.ServiceAccountPassword, a.SecretKey); err != nil {
 		return err
 	}
-	s.notify("profiles")
-	return nil
+	a.HasPassword = false
+	return s.saveAccount(id, a)
 }
 
 // AccountPassword reads the password for the clipboard binding only. It is
 // never bound to the frontend.
-func (s *Service) AccountPassword(id string) ([]byte, error) {
-	pw, err := s.Secrets.Get(secrets.ServiceAccountPassword, id)
-	if errors.Is(err, secrets.ErrNotFound) {
-		return nil, apperr.New("password_missing", "no password is saved for this profile")
+func (s *Service) AccountPassword(id, site string) ([]byte, error) {
+	a, err := s.Store.Account(id, site)
+	if err != nil {
+		return nil, err
+	}
+	pw, err := s.Secrets.Get(secrets.ServiceAccountPassword, a.SecretKey)
+	if !a.HasPassword || errors.Is(err, secrets.ErrNotFound) {
+		return nil, apperr.New("password_missing", "no password is saved for this account")
 	}
 	return pw, err
 }
 
 // SetTOTP parses an authenticator secret and stores the raw key in the Keychain.
-func (s *Service) SetTOTP(id, secret string) error {
+func (s *Service) SetTOTP(id, site, secret string) error {
 	key, err := totp.ParseSecret(secret)
 	if err != nil {
 		return apperr.New("totp_invalid", err.Error())
 	}
-	if _, err := s.Store.GetProfile(id); err != nil {
+	defer secrets.Wipe(key)
+	a, err := s.account(id, site)
+	if err != nil {
 		return err
 	}
-	if err := s.Secrets.Set(secrets.ServiceTOTP, id, key); err != nil {
+	if err := s.Secrets.Set(secrets.ServiceTOTP, a.SecretKey, key); err != nil {
 		return err
 	}
-	secrets.Wipe(key)
-	if err := s.Store.SetSecretFlag(id, "has_totp", true); err != nil {
-		return err
-	}
-	s.notify("profiles")
-	return nil
+	a.HasTOTP = true
+	return s.saveAccount(id, a)
 }
 
 // ClearTOTP removes the stored 2FA secret.
-func (s *Service) ClearTOTP(id string) error {
-	if err := s.Secrets.Delete(secrets.ServiceTOTP, id); err != nil {
+func (s *Service) ClearTOTP(id, site string) error {
+	a, err := s.account(id, site)
+	if err != nil {
 		return err
 	}
-	if err := s.Store.SetSecretFlag(id, "has_totp", false); err != nil {
+	if err := s.Secrets.Delete(secrets.ServiceTOTP, a.SecretKey); err != nil {
 		return err
 	}
-	s.notify("profiles")
-	return nil
+	a.HasTOTP = false
+	return s.saveAccount(id, a)
 }
 
 // TOTPCode returns the code valid right now. The secret never leaves Go.
-func (s *Service) TOTPCode(id string) (TOTPCode, error) {
-	key, err := s.Secrets.Get(secrets.ServiceTOTP, id)
-	if errors.Is(err, secrets.ErrNotFound) {
-		return TOTPCode{}, apperr.New("totp_missing", "no 2FA secret is saved for this profile")
+func (s *Service) TOTPCode(id, site string) (TOTPCode, error) {
+	a, err := s.Store.Account(id, site)
+	if err != nil {
+		return TOTPCode{}, err
+	}
+	key, err := s.Secrets.Get(secrets.ServiceTOTP, a.SecretKey)
+	if !a.HasTOTP || errors.Is(err, secrets.ErrNotFound) {
+		return TOTPCode{}, apperr.New("totp_missing", "no 2FA secret is saved for this account")
 	}
 	if err != nil {
 		return TOTPCode{}, err
@@ -101,4 +143,35 @@ func (s *Service) TOTPCode(id string) (TOTPCode, error) {
 	code, left := totp.Code(key, s.now())
 	secrets.Wipe(key)
 	return TOTPCode{Code: code, SecondsLeft: left}, nil
+}
+
+// ForgetAccount removes an account and its Keychain items.
+func (s *Service) ForgetAccount(id, site string) error {
+	a, err := s.Store.Account(id, site)
+	if err != nil {
+		return err
+	}
+	if err := s.deleteAccountSecrets(a.SecretKey); err != nil {
+		return err
+	}
+	if err := s.Store.DeleteAccount(id, site); err != nil {
+		return err
+	}
+	s.notify("profiles")
+	return nil
+}
+
+func (s *Service) saveAccount(id string, a store.Account) error {
+	if err := s.Store.SaveAccount(id, a); err != nil {
+		return err
+	}
+	s.notify("profiles")
+	return nil
+}
+
+func (s *Service) deleteAccountSecrets(key string) error {
+	if err := s.Secrets.Delete(secrets.ServiceAccountPassword, key); err != nil {
+		return err
+	}
+	return s.Secrets.Delete(secrets.ServiceTOTP, key)
 }

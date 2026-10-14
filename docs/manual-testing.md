@@ -32,11 +32,11 @@ từ bộ thật (bản sao APFS, gần như không tốn thêm ổ đĩa), nên
 
 | Nhóm | Số lượng | Để thử |
 |---|---|---|
-| TikTok US 01–10, TikTok VN 01–06 | 16 | Tag "Kênh chính" và "Nuôi"; 3 kênh US được ghim |
+| TikTok US 01–10, TikTok VN 01–06 | 16 | Tag "Kênh chính" và "Nuôi"; 3 kênh US được ghim; TikTok VN 01–02 có ba nền tảng (TikTok, YouTube, Gmail) |
 | YouTube Studio, Facebook Ads, Seller, Instagram, X, Amazon… | 27 | Nhiều nền tảng, tag "Khách A", "Khách B", "Shop" |
 | Partner 1–3 | 3 | Nền tảng tự tạo "Partner portal" |
 | Fury cũ 1–5 | 5 | Engine Fury; dùng để thử nhân bản sang Apostate |
-| Thử trực tiếp 1–4 | 4 | **Không có proxy, mở được thật**; dùng cho ảnh chụp, cookie, mật khẩu, 2FA |
+| Thử trực tiếp 1–4 | 4 | **Không có proxy, mở được thật**; dùng cho ảnh chụp, cookie, mật khẩu, 2FA; số 4 có hai nền tảng (YouTube, Gmail) |
 | Mẫu: … | 10 | Mỗi profile minh hoạ một trạng thái sức khỏe (xem bảng dưới) |
 | Đã bỏ 1–3 | 3 | Nằm trong thùng rác |
 
@@ -79,7 +79,11 @@ Mỗi mục ghi điều phải thấy. Thử ở cả giao diện sáng và tố
 11. **Proxy.** Trang Proxies có huy hiệu sắp hết hạn và đã hết hạn, và cổng xoay bị đánh dấu không gán được.
 12. **Thùng rác.** Khôi phục "Đã bỏ 1". Xoá vĩnh viễn "Đã bỏ 2" (có hộp xác nhận).
 13. **Mở thật một profile.** Mở "Thử trực tiếp 1", chờ cửa sổ trình duyệt hiện, rồi đóng. Tab Sessions có thêm một hàng; nhóm Checks báo kết quả đo thật.
-14. **Mật khẩu và 2FA.** Ở "Thử trực tiếp 2", tab Account, lưu một mật khẩu bất kỳ và khoá 2FA thử `JBSWY3DPEHPK3PXP`. Mã 6 số phải khớp với ứng dụng xác thực của bạn khi thêm cùng khoá đó. Nếu macOS hỏi quyền Keychain, chọn **Always Allow**.
+14. **Mật khẩu và 2FA.** Ở "Thử trực tiếp 4" (YouTube và Gmail), tab Account có một khung cho mỗi nền tảng.
+    Lưu một mật khẩu bất kỳ cho YouTube và khoá 2FA thử `JBSWY3DPEHPK3PXP` cho Gmail. Mã 6 số phải khớp với
+    ứng dụng xác thực của bạn khi thêm cùng khoá đó. Menu ⋯ của hàng có "Copy password · YouTube" và
+    "Copy 2FA code · Gmail". Bỏ Gmail khỏi nền tảng: tài khoản Gmail chuyển xuống mục nền tảng đã bỏ, bấm
+    "Forget" thì hỏi xác nhận rồi mới xoá. Nếu macOS hỏi quyền Keychain, chọn **Always Allow**.
 15. **Ảnh chụp phiên.** Mở "Thử trực tiếp 1", vào `example.com`, để chạy **hơn 2 phút**, rồi đóng. Tab Snapshots có một ảnh chụp lý do "close". Bấm "Take snapshot", rồi khôi phục ảnh cũ; toast có nút Undo. Settings → Storage hiện tổng dung lượng ảnh chụp.
 16. **Cookie.** Ở "Thử trực tiếp 3", chọn Import cookies và chọn file `internal/cookies/testdata/cookies.txt` trong repo (cookie giả của `example.com`). Toast báo đã nhập 2 cookie và có cảnh báo cookie không thuộc TikTok. Khi profile đang mở, Export cookies hiện cảnh báo rồi lưu file JSON. Xoá file đó sau khi xem.
 17. **Ngôn ngữ.** Settings đổi sang Tiếng Việt: mọi chữ đổi theo, không còn chữ tiếng Anh sót.
@@ -87,7 +91,11 @@ Mỗi mục ghi điều phải thấy. Thử ở cả giao diện sáng và tố
     **đóng cửa sổ trình duyệt bằng nút đỏ**, rồi bấm Stop trong app. Mở lại: hai tab đó hiện lại, không
     còn tab trống. Settings → "Khi mở profile" chọn "Luôn mở trang mở đầu", đóng rồi mở lại: chỉ còn
     trang mở đầu của profile. Chọn lại "Mở lại các tab lần trước" sau khi thử.
-19. **Màn hình chào.** Thoát app rồi mở với một thư mục trống:
+19. **Nhiều nền tảng.** Cột nền tảng của "TikTok VN 01" có ba biểu tượng và chữ "TikTok +2"; bấm "YouTube"
+    ở cột trái thì profile này vẫn hiện. New profile: chọn TikTok, YouTube, Gmail; ô Trang mở đầu có đủ ba
+    dòng; bỏ YouTube thì dòng YouTube Studio biến mất, dòng tự gõ thì giữ nguyên. Không chọn được "Other"
+    cùng nền tảng khác, và mỗi nền tảng chỉ chọn được một lần.
+20. **Màn hình chào.** Thoát app rồi mở với một thư mục trống:
     `open -n build/bin/AnyProfile.app --env ANYPROFILE_DATA_DIR=/tmp/ap-fresh`. Phải thấy hướng dẫn 3 bước. Xoá `/tmp/ap-fresh` sau khi xong.
 
 ## Phần B: test với tài khoản thật

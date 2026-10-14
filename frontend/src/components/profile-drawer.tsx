@@ -5,7 +5,7 @@ import { t } from '../i18n'
 import { errorText } from '../lib/format'
 import { machineLabel } from '../lib/persona'
 import { siteById, type Site } from '../lib/sites'
-import { AccountPanel } from './account-panel'
+import { AccountsPanel } from './account-panel'
 import { useConfirm } from './confirm'
 import { HealthPill } from './health-pill'
 import { Icon } from './icons'
@@ -41,11 +41,9 @@ export function ProfileDrawer({ row, sites, recent, knownTags, onClose, onStart,
   const confirm = useConfirm()
   const [tab, setTab] = useState<Tab>('overview')
   const [proxies, setProxies] = useState<service.ProxyRow[]>([])
-  const [login, setLogin] = useState(row.login)
   const [advanced, setAdvanced] = useState(false)
   const tabRefs = useRef<Record<Tab, HTMLButtonElement | null>>({ overview: null, account: null, sessions: null, snapshots: null })
   useEffect(() => { Api.ListProxies().then((p) => setProxies(p ?? [])).catch(() => {}) }, [row.proxyId])
-  useEffect(() => setLogin(row.login), [row.login])
 
   const update = async (patch: Partial<store.Profile>) => {
     try {
@@ -59,7 +57,6 @@ export function ProfileDrawer({ row, sites, recent, knownTags, onClose, onStart,
 
   const running = row.state !== 'stopped'
   const busy = row.state === 'starting' || row.state === 'stopping'
-  const site = siteById(sites, row.site)
   const engine = `${t.engines.names[row.engine] ?? row.engine} ${row.engineVersion}`
 
   const onTabKey = (e: KeyboardEvent) => {
@@ -93,7 +90,7 @@ export function ProfileDrawer({ row, sites, recent, knownTags, onClose, onStart,
     <aside className="drawer card" aria-label={t.drawer.label(row.name)}>
       <header className="drawer-head">
         <div className="drawer-title">
-          <SiteGlyph site={site} />
+          <span className="glyphs">{row.sites.map((id) => <SiteGlyph key={id} site={siteById(sites, id)} />)}</span>
           <InlineName value={row.name} onSave={(name) => update({ name })} />
           <span className="serial">#{row.serial}</span>
           <span className="spacer" />
@@ -136,8 +133,8 @@ export function ProfileDrawer({ row, sites, recent, knownTags, onClose, onStart,
         {tab === 'overview' ? (
           <>
             <NetworkGroup row={row} proxies={proxies} running={running} onApply={(proxyId) => update({ proxyId })} onMatchIp={matchIp} />
-            <PlatformGroup site={row.site} startUrl={row.startUrl} sites={sites} recent={recent} running={running}
-              onSite={(id) => update({ site: id })} onStartUrl={(startUrl) => update({ startUrl })} />
+            <PlatformGroup value={row.sites} startUrl={row.startUrl} sites={sites} recent={recent} running={running}
+              onSites={(ids, startUrl) => update({ sites: ids, startUrl })} onStartUrl={(startUrl) => update({ startUrl })} />
             <TagsGroup tags={row.tags} known={knownTags} onChange={(tags) => update({ tags })} />
             <NotesGroup value={row.notes} onSave={(notes) => update({ notes })} />
             <ChecksPanel checks={row.checks ?? []} />
@@ -166,8 +163,7 @@ export function ProfileDrawer({ row, sites, recent, knownTags, onClose, onStart,
           <SnapshotsTab profileId={row.id} running={running} />
         ) : (
           <>
-            <AccountPanel row={row} login={login} onLogin={setLogin} onError={toast.error}
-              onLoginCommit={() => { if (login.trim() !== row.login) update({ login: login.trim() }) }} />
+            <AccountsPanel row={row} sites={sites} onError={toast.error} />
             <CookieGroup row={row} sites={sites} />
           </>
         )}

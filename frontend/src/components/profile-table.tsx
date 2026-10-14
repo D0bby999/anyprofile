@@ -4,9 +4,9 @@ import { service } from '../api'
 import { t } from '../i18n'
 import { relativeTime, sinceSpan } from '../lib/format'
 import { machineLabel } from '../lib/persona'
-import { siteById, type Site } from '../lib/sites'
+import type { Site } from '../lib/sites'
 import { Icon } from './icons'
-import { SiteGlyph } from './site-glyph'
+import { SiteBadges } from './site-glyph'
 import { RowMenu } from './row-menu'
 import { HealthPill } from './health-pill'
 import type { TablePrefs } from '../lib/table-prefs'
@@ -100,7 +100,6 @@ export function ProfileTable(p: Props) {
         {p.rows.map((r, i) => {
           const running = r.state === 'running'
           const busy = r.state === 'starting' || r.state === 'stopping'
-          const s = siteById(p.sites, r.site)
           const cls = [p.selected.has(r.id) ? 'selected' : '', running ? 'running' : '', p.activeId === r.id ? 'active' : '', p.cursorId === r.id ? 'cursor' : ''].join(' ').trim()
           return (
             <tr key={r.id} className={cls || undefined} aria-current={p.activeId === r.id ? 'true' : undefined}
@@ -120,7 +119,7 @@ export function ProfileTable(p: Props) {
                   {r.tags.map((x) => <span key={x} className="tag">{x}</span>)}
                 </span>
               </td>
-              {shown('site') && <td className="col-site"><span className="platform" title={s.name}><SiteGlyph site={s} /><span className="plabel">{s.name}</span></span></td>}
+              {shown('site') && <td className="col-site"><SiteBadges ids={r.sites} sites={p.sites} /></td>}
               {shown('proxy') && <td className="col-proxy"><ProxyCell row={r} /></td>}
               {shown('health') && <td className="col-health"><HealthPill row={r} now={now} /></td>}
               {shown('lastOpen') && <td className="nowrap col-lastopen"><LastOpened row={r} now={now} /></td>}

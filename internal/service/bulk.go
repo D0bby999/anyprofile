@@ -4,6 +4,7 @@ package service
 
 import (
 	"context"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -30,7 +31,7 @@ type BulkCreate struct {
 	BaseName string   `json:"baseName"`
 	Count    int      `json:"count"` // 1..100
 	Proxy    string   `json:"proxy"` // "auto" (one free proxy each) or "none"
-	Site     string   `json:"site"`
+	Sites    []string `json:"sites"`
 	StartURL string   `json:"startUrl"`
 	Notes    string   `json:"notes"`
 	Tags     []string `json:"tags"`
@@ -78,7 +79,7 @@ func (s *Service) CreateProfiles(ctx context.Context, in BulkCreate) ([]store.Pr
 	if err := checkProxyMode(in.Proxy); err != nil {
 		return nil, err
 	}
-	if err := s.checkSite(in.Site); err != nil {
+	if err := s.checkSites(in.Sites); err != nil {
 		return nil, err
 	}
 	if _, err := s.engineFor(in.Engine); err != nil {
@@ -99,7 +100,7 @@ func (s *Service) CreateProfiles(ctx context.Context, in BulkCreate) ([]store.Pr
 		if in.Proxy == "auto" {
 			proxyID = AutoProxy
 		}
-		p, err := s.CreateProfile(ctx, NewProfile{Engine: in.Engine, Name: name, ProxyID: proxyID, Site: in.Site,
+		p, err := s.CreateProfile(ctx, NewProfile{Engine: in.Engine, Name: name, ProxyID: proxyID, Sites: in.Sites,
 			StartURL: in.StartURL, Notes: in.Notes, Tags: in.Tags})
 		if err != nil {
 			return out, err
@@ -133,13 +134,23 @@ func (s *Service) DuplicateProfile(ctx context.Context, in DuplicateInput) ([]st
 	}
 	tags := append([]string(nil), src.Tags...)
 	return s.CreateProfiles(ctx, BulkCreate{Engine: in.Engine, BaseName: base, Count: in.Count, Proxy: in.Proxy,
-		Site: src.Site, StartURL: src.StartURL, Notes: src.Notes, Tags: tags})
+		Sites: src.Sites, StartURL: src.StartURL, Notes: src.Notes, Tags: tags})
 }
 
-// SetSiteMany assigns one platform to several profiles.
-func (s *Service) SetSiteMany(ids []string, siteID string) error {
-	if err := s.checkSite(siteID); err != nil {
+// SetSitesMany gives several profiles the same platforms. Each profile's
+// start pages follow, as in the profile form: a platform added brings its
+// start page, one removed takes its own away, typed lines stay.
+func (s *Service) SetSitesMany(ids []string, siteIDs []string) error {
+	if err := s.checkSites(siteIDs); err != nil {
 		return err
+	}
+	all, err := s.Sites()
+	if err != nil {
+		return err
+	}
+	pages := map[string]string{}
+	for _, x := range all {
+		pages[x.ID] = x.StartURL
 	}
 	defer s.notify("profiles") // also after a partial failure: earlier rows did change
 	for _, id := range ids {
@@ -147,7 +158,10 @@ func (s *Service) SetSiteMany(ids []string, siteID string) error {
 		if err != nil {
 			return err
 		}
-		p.Site = siteID
+		if p.StartURL, err = normalizeStartURLs(syncStartURLs(p.StartURL, p.Sites, siteIDs, pages)); err != nil {
+			return err
+		}
+		p.Sites = siteIDs
 		if err := s.Store.UpdateProfile(p); err != nil {
 			return err
 		}
@@ -249,4 +263,26 @@ func (s *Service) AssignProxiesMany(ctx context.Context, ids []string, mode stri
 	}
 	s.notify("profiles")
 	return out
+}
+
+// syncStartURLs is the profile form's syncStartUrls (frontend/src/lib/sites.ts).
+func syncStartURLs(text string, before, after []string, pages map[string]string) string {
+	gone := map[string]bool{}
+	for _, id := range before {
+		if !slices.Contains(after, id) && pages[id] != "" {
+			gone[pages[id]] = true
+		}
+	}
+	var lines []string
+	for _, l := range strings.Split(text, "\n") {
+		if l = strings.TrimSpace(l); l != "" && !gone[l] {
+			lines = append(lines, l)
+		}
+	}
+	for _, id := range after {
+		if u := pages[id]; u != "" && !slices.Contains(before, id) && !slices.Contains(lines, u) {
+			lines = append(lines, u)
+		}
+	}
+	return strings.Join(lines, "\n")
 }

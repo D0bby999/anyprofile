@@ -3,8 +3,10 @@
 package store
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
+	"slices"
 )
 
 // CustomSite is a platform the user added. ID is "custom-<hex>".
@@ -52,13 +54,14 @@ func (s *Store) UpdateCustomSite(c CustomSite) error {
 	return affected(res, err)
 }
 
-// DeleteCustomSite removes the site and moves its profiles to "other".
+// DeleteCustomSite removes the site from every profile (one left with none
+// becomes "other"), then the site itself.
 func (s *Store) DeleteCustomSite(id string) error {
 	tx, err := s.db.Begin()
 	if err != nil {
 		return err
 	}
-	if _, err := tx.Exec(`UPDATE profiles SET site = 'other', updated_at = ? WHERE site = ?`, now(), id); err != nil {
+	if err := dropSiteFromProfiles(tx, id); err != nil {
 		tx.Rollback()
 		return err
 	}
@@ -72,4 +75,37 @@ func (s *Store) DeleteCustomSite(id string) error {
 		return err
 	}
 	return tx.Commit()
+}
+
+func dropSiteFromProfiles(tx *sql.Tx, id string) error {
+	rows, err := tx.Query(`SELECT id, sites FROM profiles WHERE EXISTS (SELECT 1 FROM json_each(sites) WHERE value = ?)`, id)
+	if err != nil {
+		return err
+	}
+	type change struct{ id, sites, first string }
+	var changes []change
+	for rows.Next() {
+		var pid, raw string
+		var ids []string
+		if err := rows.Scan(&pid, &raw); err != nil {
+			rows.Close()
+			return err
+		}
+		if err := json.Unmarshal([]byte(raw), &ids); err != nil {
+			rows.Close()
+			return fmt.Errorf("profile %s sites: %w", pid, err)
+		}
+		left := normalSites(slices.DeleteFunc(ids, func(x string) bool { return x == id }))
+		changes = append(changes, change{pid, tagsJSON(left), left[0]})
+	}
+	rows.Close()
+	if err := rows.Err(); err != nil {
+		return err
+	}
+	for _, c := range changes {
+		if _, err := tx.Exec(`UPDATE profiles SET site = ?, sites = ?, updated_at = ? WHERE id = ?`, c.first, c.sites, now(), c.id); err != nil {
+			return err
+		}
+	}
+	return nil
 }

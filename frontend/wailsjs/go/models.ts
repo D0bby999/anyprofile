@@ -146,7 +146,7 @@ export namespace service {
 	    baseName: string;
 	    count: number;
 	    proxy: string;
-	    site: string;
+	    sites: string[];
 	    startUrl: string;
 	    notes: string;
 	    tags: string[];
@@ -161,7 +161,7 @@ export namespace service {
 	        this.baseName = source["baseName"];
 	        this.count = source["count"];
 	        this.proxy = source["proxy"];
-	        this.site = source["site"];
+	        this.sites = source["sites"];
 	        this.startUrl = source["startUrl"];
 	        this.notes = source["notes"];
 	        this.tags = source["tags"];
@@ -293,7 +293,7 @@ export namespace service {
 	    engine: string;
 	    name: string;
 	    proxyId: string;
-	    site: string;
+	    sites: string[];
 	    startUrl: string;
 	    notes: string;
 	    tags: string[];
@@ -307,7 +307,7 @@ export namespace service {
 	        this.engine = source["engine"];
 	        this.name = source["name"];
 	        this.proxyId = source["proxyId"];
-	        this.site = source["site"];
+	        this.sites = source["sites"];
 	        this.startUrl = source["startUrl"];
 	        this.notes = source["notes"];
 	        this.tags = source["tags"];
@@ -342,11 +342,9 @@ export namespace service {
 	    uiLocale: string;
 	    lat?: number;
 	    lon?: number;
-	    site: string;
+	    sites: string[];
 	    serial: number;
-	    login: string;
-	    hasPassword: boolean;
-	    hasTotp: boolean;
+	    accounts: store.Account[];
 	    fpVerdict: string;
 	    fpDiff: string[];
 	    fpCheckedAt: string;
@@ -391,11 +389,9 @@ export namespace service {
 	        this.uiLocale = source["uiLocale"];
 	        this.lat = source["lat"];
 	        this.lon = source["lon"];
-	        this.site = source["site"];
+	        this.sites = source["sites"];
 	        this.serial = source["serial"];
-	        this.login = source["login"];
-	        this.hasPassword = source["hasPassword"];
-	        this.hasTotp = source["hasTotp"];
+	        this.accounts = this.convertValues(source["accounts"], store.Account);
 	        this.fpVerdict = source["fpVerdict"];
 	        this.fpDiff = source["fpDiff"];
 	        this.fpCheckedAt = source["fpCheckedAt"];
@@ -617,6 +613,24 @@ export namespace site {
 
 export namespace store {
 	
+	export class Account {
+	    site: string;
+	    login: string;
+	    hasPassword: boolean;
+	    hasTotp: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new Account(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.site = source["site"];
+	        this.login = source["login"];
+	        this.hasPassword = source["hasPassword"];
+	        this.hasTotp = source["hasTotp"];
+	    }
+	}
 	export class EngineMeta {
 	    hwc?: number;
 	    memGiB?: number;
@@ -646,11 +660,9 @@ export namespace store {
 	    uiLocale: string;
 	    lat?: number;
 	    lon?: number;
-	    site: string;
+	    sites: string[];
 	    serial: number;
-	    login: string;
-	    hasPassword: boolean;
-	    hasTotp: boolean;
+	    accounts: Account[];
 	    fpVerdict: string;
 	    fpDiff: string[];
 	    fpCheckedAt: string;
@@ -685,11 +697,9 @@ export namespace store {
 	        this.uiLocale = source["uiLocale"];
 	        this.lat = source["lat"];
 	        this.lon = source["lon"];
-	        this.site = source["site"];
+	        this.sites = source["sites"];
 	        this.serial = source["serial"];
-	        this.login = source["login"];
-	        this.hasPassword = source["hasPassword"];
-	        this.hasTotp = source["hasTotp"];
+	        this.accounts = this.convertValues(source["accounts"], Account);
 	        this.fpVerdict = source["fpVerdict"];
 	        this.fpDiff = source["fpDiff"];
 	        this.fpCheckedAt = source["fpCheckedAt"];

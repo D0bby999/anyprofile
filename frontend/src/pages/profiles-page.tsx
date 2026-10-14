@@ -46,7 +46,7 @@ function inView(r: service.ProfileRow, v: View): boolean {
   if (v === 'running') return r.state !== 'stopped'
   if (v === 'attention') return needsAttention(r)
   if (v.startsWith('tag:')) return r.tags.includes(v.slice(4))
-  return r.site === v.slice(5)
+  return r.sites.includes(v.slice(5))
 }
 
 export function ProfilesPage({ rows, sites, recent, view, engineReady, fileVaultOn, error, setError, reload, onNew, onNeedEngine, onClearView, activeId, setActiveId }: Props) {
@@ -76,7 +76,7 @@ export function ProfilesPage({ rows, sites, recent, view, engineReady, fileVault
     const q = fold(query.trim())
     const serial = /^#(\d+)$/.exec(q)?.[1]
     const matches = (r: service.ProfileRow) => serial ? String(r.serial) === serial
-      : [r.name, r.login, r.notes, r.proxyExitIp, siteById(sites, r.site).name, ...r.tags].some((x) => fold(x ?? '').includes(q))
+      : [r.name, ...(r.accounts ?? []).map((a) => a.login), r.notes, r.proxyExitIp, ...r.sites.map((id) => siteById(sites, id).name), ...r.tags].some((x) => fold(x ?? '').includes(q))
     const out = rows.filter((r) => inView(r, view) && (!q || matches(r)))
     const key = (r: service.ProfileRow) =>
       sort.key === 'name' ? r.name.toLowerCase() : sort.key === 'lastOpen' ? r.lastOpenAt || '' : String(r.serial).padStart(6, '0')

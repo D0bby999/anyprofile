@@ -227,7 +227,9 @@ kbd { display: inline-flex; align-items: center; min-width: 22px; height: 20px; 
 .glyph { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; flex: 0 0 auto; border-radius: var(--r-xs); box-shadow: inset 0 0 0 1px rgba(27, 26, 24, .08); }
 .glyph svg { width: 13px; height: 13px; display: block; }
 .glyphletter { font-size: 11px; line-height: 1; }
-.sitebtn { display: flex; align-items: center; gap: 8px; text-align: left; }
+.sitebtn { display: flex; align-items: center; gap: 8px; text-align: left; min-width: 0; }
+.glyphs { display: inline-flex; gap: 3px; flex: 0 0 auto; }
+.sitenames { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sitepanel { border: 1px solid var(--line); border-radius: var(--r-md); padding: 8px; display: grid; gap: 6px; }
 .sitelist { max-height: 300px; overflow-y: auto; display: grid; gap: 2px; }
 .sitelist .navsection { margin: 10px 2px 6px; }
@@ -317,6 +319,9 @@ kbd { display: inline-flex; align-items: center; min-width: 22px; height: 20px; 
 .table.sessions td, .table.sessions th { height: auto; padding: 8px 6px; font-size: var(--t-sm); }
 .table.sessions small { color: var(--muted); }
 .account { display: flex; flex-direction: column; gap: 16px; }
+.accounts { display: flex; flex-direction: column; gap: 12px; }
+.accounts > .dgroup { padding: 12px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface-sunken); }
+.accounts > p.hint { margin: 4px 0 0; color: var(--muted); font-size: var(--t-sm); }
 .dgroup { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .dgroup h3 { display: flex; align-items: center; gap: 8px; font-size: var(--t-sm); font-weight: 650; color: var(--ink-soft); }
 .dgroup .facts { grid-template-columns: 110px 1fr; }

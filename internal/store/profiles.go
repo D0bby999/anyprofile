@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 )
@@ -28,14 +29,16 @@ type Profile struct {
 	UILocale      string     `json:"uiLocale"`
 	Lat           *float64   `json:"lat"`
 	Lon           *float64   `json:"lon"`
-	Site          string     `json:"site"`
-	Serial        int        `json:"serial"`
-	Login         string     `json:"login"`
-	HasPassword   bool       `json:"hasPassword"`
-	HasTOTP       bool       `json:"hasTotp"`
-	FPVerdict     string     `json:"fpVerdict"`
-	FPDiff        []string   `json:"fpDiff"`
-	FPCheckedAt   string     `json:"fpCheckedAt"`
+	// Sites are the platforms the profile holds an account on, each once;
+	// ["other"] when none. The first is the main one.
+	Sites  []string `json:"sites"`
+	Serial int      `json:"serial"`
+	// Accounts are the saved logins, at most one per platform. One whose
+	// platform was removed from Sites stays until the user forgets it.
+	Accounts    []Account `json:"accounts"`
+	FPVerdict   string    `json:"fpVerdict"`
+	FPDiff      []string  `json:"fpDiff"`
+	FPCheckedAt string    `json:"fpCheckedAt"`
 	// Machine is the emulated machine from the fingerprint baseline, for
 	// example "Apple M4 Pro · 1512×982"; empty before the first measurement.
 	Machine       string   `json:"machine"`
@@ -64,20 +67,20 @@ type ProfileFilter struct {
 }
 
 const profileCols = `id, name, engine, engine_version, persona_id, seed_hex, platform,
-	COALESCE(proxy_id, ''), timezone, languages, ui_locale, lat, lon, site, start_url,
+	COALESCE(proxy_id, ''), timezone, languages, ui_locale, lat, lon, sites, start_url,
 	notes, tags, cdp_next_launch, pinned, created_at, updated_at, COALESCE(last_open_at, ''),
-	COALESCE(deleted_at, ''), serial, login, has_password, has_totp,
+	COALESCE(deleted_at, ''), serial,
 	fp_verdict, fp_diff, fp_checked_at, engine_meta, fp_baseline`
 
 func scanProfile(row interface{ Scan(...any) error }) (Profile, error) {
 	var p Profile
-	var tags string
+	var tags, sites string
 	var fpDiff, meta, baseline string
 	err := row.Scan(&p.ID, &p.Name, &p.Engine, &p.EngineVersion, &p.PersonaID, &p.SeedHex,
 		&p.Platform, &p.ProxyID, &p.Timezone, &p.Languages, &p.UILocale, &p.Lat, &p.Lon,
-		&p.Site, &p.StartURL, &p.Notes, &tags, &p.CDPNextLaunch, &p.Pinned,
-		&p.CreatedAt, &p.UpdatedAt, &p.LastOpenAt, &p.DeletedAt, &p.Serial, &p.Login,
-		&p.HasPassword, &p.HasTOTP, &p.FPVerdict, &fpDiff, &p.FPCheckedAt, &meta, &baseline)
+		&sites, &p.StartURL, &p.Notes, &tags, &p.CDPNextLaunch, &p.Pinned,
+		&p.CreatedAt, &p.UpdatedAt, &p.LastOpenAt, &p.DeletedAt, &p.Serial,
+		&p.FPVerdict, &fpDiff, &p.FPCheckedAt, &meta, &baseline)
 	if errors.Is(err, sql.ErrNoRows) {
 		return p, ErrNotFound
 	}
@@ -87,6 +90,10 @@ func scanProfile(row interface{ Scan(...any) error }) (Profile, error) {
 	if err := json.Unmarshal([]byte(tags), &p.Tags); err != nil {
 		return p, fmt.Errorf("profile %s tags: %w", p.ID, err)
 	}
+	if err := json.Unmarshal([]byte(sites), &p.Sites); err != nil {
+		return p, fmt.Errorf("profile %s sites: %w", p.ID, err)
+	}
+	p.Sites = normalSites(p.Sites)
 	if err := json.Unmarshal([]byte(fpDiff), &p.FPDiff); err != nil {
 		return p, fmt.Errorf("profile %s fp_diff: %w", p.ID, err)
 	}
@@ -152,17 +159,15 @@ func (s *Store) CreateProfile(p *Profile) error {
 	if p.ID == "" || p.Name == "" || p.Engine == "" || p.PersonaID == "" || p.SeedHex == "" {
 		return errors.New("profile needs id, name, engine, persona and seed")
 	}
-	if p.Site == "" {
-		p.Site = "other"
-	}
+	p.Sites = normalSites(p.Sites)
 	p.CreatedAt, p.UpdatedAt = now(), now()
 	_, err := s.db.Exec(`INSERT INTO profiles (id, name, engine, engine_version, persona_id, seed_hex,
-		platform, proxy_id, timezone, languages, ui_locale, lat, lon, site, start_url, notes,
-		tags, cdp_next_launch, pinned, created_at, updated_at, login, engine_meta, serial)
+		platform, proxy_id, timezone, languages, ui_locale, lat, lon, site, sites, start_url, notes,
+		tags, cdp_next_launch, pinned, created_at, updated_at, engine_meta, serial)
 		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,(SELECT COALESCE(MAX(serial), 0) + 1 FROM profiles))`,
 		p.ID, p.Name, p.Engine, p.EngineVersion, p.PersonaID, p.SeedHex, p.Platform, nullStr(p.ProxyID),
-		p.Timezone, p.Languages, p.UILocale, p.Lat, p.Lon, p.Site, p.StartURL, p.Notes,
-		tagsJSON(p.Tags), p.CDPNextLaunch, p.Pinned, p.CreatedAt, p.UpdatedAt, p.Login, metaJSON(p.EngineMeta))
+		p.Timezone, p.Languages, p.UILocale, p.Lat, p.Lon, p.Sites[0], tagsJSON(p.Sites), p.StartURL, p.Notes,
+		tagsJSON(p.Tags), p.CDPNextLaunch, p.Pinned, p.CreatedAt, p.UpdatedAt, metaJSON(p.EngineMeta))
 	if err != nil {
 		return err
 	}
@@ -177,7 +182,13 @@ func (s *Store) ProfileCount() (int, error) {
 }
 
 func (s *Store) GetProfile(id string) (Profile, error) {
-	return scanProfile(s.db.QueryRow(`SELECT `+profileCols+` FROM profiles WHERE id = ?`, id))
+	p, err := scanProfile(s.db.QueryRow(`SELECT `+profileCols+` FROM profiles WHERE id = ?`, id))
+	if err != nil {
+		return p, err
+	}
+	accs, err := s.accountsByProfile(id)
+	p.Accounts = accs[id]
+	return p, err
 }
 
 // UpdateProfile saves the editable fields. It refuses to change the identity
@@ -190,21 +201,13 @@ func (s *Store) UpdateProfile(p Profile) error {
 	if p.Engine != cur.Engine || p.PersonaID != cur.PersonaID || p.SeedHex != cur.SeedHex || p.Platform != cur.Platform {
 		return errors.New("engine, persona, seed and platform cannot change after creation")
 	}
+	sites := normalSites(p.Sites)
 	_, err = s.db.Exec(`UPDATE profiles SET name=?, proxy_id=?, timezone=?, languages=?, ui_locale=?,
-		lat=?, lon=?, site=?, start_url=?, notes=?, tags=?, cdp_next_launch=?, pinned=?, login=?,
+		lat=?, lon=?, site=?, sites=?, start_url=?, notes=?, tags=?, cdp_next_launch=?, pinned=?,
 		updated_at=? WHERE id=?`,
-		p.Name, nullStr(p.ProxyID), p.Timezone, p.Languages, p.UILocale, p.Lat, p.Lon, p.Site,
-		p.StartURL, p.Notes, tagsJSON(p.Tags), p.CDPNextLaunch, p.Pinned, p.Login, now(), p.ID)
+		p.Name, nullStr(p.ProxyID), p.Timezone, p.Languages, p.UILocale, p.Lat, p.Lon, sites[0], tagsJSON(sites),
+		p.StartURL, p.Notes, tagsJSON(p.Tags), p.CDPNextLaunch, p.Pinned, now(), p.ID)
 	return err
-}
-
-// SetSecretFlag records whether a Keychain secret exists; flag is "has_password" or "has_totp".
-func (s *Store) SetSecretFlag(id, flag string, on bool) error {
-	if flag != "has_password" && flag != "has_totp" {
-		return fmt.Errorf("unknown flag %q", flag)
-	}
-	res, err := s.db.Exec(`UPDATE profiles SET `+flag+` = ?, updated_at = ? WHERE id = ?`, on, now(), id)
-	return affected(res, err)
 }
 
 // FingerprintBaseline returns the stored baseline sample (JSON), or "".
@@ -253,7 +256,7 @@ func (s *Store) ListProfiles(f ProfileFilter) ([]Profile, error) {
 			args = append(args, n)
 		} else {
 			like := "%" + likeEscape(q) + "%"
-			where = append(where, `(name LIKE ? ESCAPE '\' OR login LIKE ? ESCAPE '\' OR notes LIKE ? ESCAPE '\' OR tags LIKE ? ESCAPE '\')`)
+			where = append(where, `(name LIKE ? ESCAPE '\' OR EXISTS (SELECT 1 FROM accounts a WHERE a.profile_id = profiles.id AND a.login LIKE ? ESCAPE '\') OR notes LIKE ? ESCAPE '\' OR tags LIKE ? ESCAPE '\')`)
 			args = append(args, like, like, like, like)
 		}
 	}
@@ -275,7 +278,17 @@ func (s *Store) ListProfiles(f ProfileFilter) ([]Profile, error) {
 		}
 		out = append(out, p)
 	}
-	return out, rows.Err()
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	accs, err := s.accountsByProfile("")
+	if err != nil {
+		return nil, err
+	}
+	for i := range out {
+		out[i].Accounts = accs[out[i].ID]
+	}
+	return out, nil
 }
 
 func likeEscape(s string) string {
@@ -309,4 +322,19 @@ func affected(res sql.Result, err error) error {
 		return ErrNotFound
 	}
 	return nil
+}
+
+// normalSites drops blanks and repeats, and "other" beside a real platform;
+// nothing left reads as ["other"].
+func normalSites(ids []string) []string {
+	var out []string
+	for _, id := range ids {
+		if id != "" && id != "other" && !slices.Contains(out, id) {
+			out = append(out, id)
+		}
+	}
+	if len(out) == 0 {
+		return []string{"other"}
+	}
+	return out
 }

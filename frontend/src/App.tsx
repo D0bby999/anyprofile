@@ -80,7 +80,8 @@ export default function App() {
 
   const siteCounts = useMemo(() => {
     const m = new Map<string, number>()
-    for (const r of profiles.rows) m.set(r.site, (m.get(r.site) ?? 0) + 1)
+    // A profile on several platforms counts under each of them.
+    for (const r of profiles.rows) for (const id of r.sites) m.set(id, (m.get(id) ?? 0) + 1)
     return m
   }, [profiles.rows])
 

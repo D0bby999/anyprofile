@@ -5,7 +5,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { t } from './i18n'
 
 const profile = {
-  id: 'tw', name: 'Thử proxy TW', site: 'other', serial: 1, engine: 'fury', engineVersion: '0.3.5', personaId: 'macos-m1pro-1512x982',
+  id: 'tw', name: 'Thử proxy TW', sites: ['other'], serial: 1, engine: 'fury', engineVersion: '0.3.5', personaId: 'macos-m1pro-1512x982',
   machine: '', proxyId: '', state: 'stopped', cdpPort: 0, tags: [], notes: '', login: '', lastOpenAt: '', fpVerdict: '', fpDiff: [],
   startUrl: '', seedHex: '00112233aabbccdd', createdAt: '2026-10-12T00:00:00Z', timezone: 'Asia/Taipei', languages: 'zh-TW',
 }
