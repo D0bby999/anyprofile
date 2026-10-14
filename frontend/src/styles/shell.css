@@ -129,6 +129,10 @@ kbd { display: inline-flex; align-items: center; min-width: 22px; height: 20px; 
 .pagehead h1 { font-size: var(--t-lg); font-weight: 700; letter-spacing: -0.035em; }
 .pagehead .sub { color: var(--faint); font-size: var(--t-sm); }
 .pagebody { flex: 1; min-height: 0; padding: 10px 24px 24px; display: flex; flex-direction: column; gap: 14px; overflow: auto; }
+/* A reading-width column centred in the page. The padding grows instead of the
+   box shrinking, so the scrollbar stays at the window's edge and the title
+   lines up with the column below it. */
+.pagehead.narrow, .pagebody.narrow { padding-left: max(16px, calc((100% - 720px) / 2)); padding-right: max(16px, calc((100% - 720px) / 2)); }
 
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); box-shadow: var(--sh-card); }
 .card.pad { padding: 18px 20px; display: flex; flex-direction: column; gap: 14px; }
@@ -171,6 +175,8 @@ kbd { display: inline-flex; align-items: center; min-width: 22px; height: 20px; 
 .filterchip button:hover { background: var(--surface-active); }
 .table tbody tr { cursor: default; }
 .table .col-check { width: 44px; padding-right: 0; }
+/* Inline, a checkbox sits on the text baseline, 3px above the row's middle. */
+.table .col-check input { display: block; }
 .table .col-no { width: 52px; color: var(--muted); }
 .table .col-actions { width: 1%; text-align: right; white-space: nowrap; }
 .table .col-actions .row { justify-content: flex-end; gap: 6px; }
@@ -191,6 +197,8 @@ kbd { display: inline-flex; align-items: center; min-width: 22px; height: 20px; 
 .statusbar .live { width: 7px; height: 7px; border-radius: 50%; background: var(--faint); display: inline-block; margin-right: 6px; }
 .statusbar .live.on { background: var(--success); }
 
+/* In a table's frame the empty state fills it, so its message sits in the middle. */
+.tablewrap > .emptystate { box-sizing: border-box; min-height: 100%; }
 .emptystate { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 56px 24px; text-align: center; color: var(--muted); }
 .emptystate .glyph { display: inline-flex; align-items: center; justify-content: center; width: 46px; height: 46px; margin-bottom: 6px; border-radius: var(--r-lg); color: var(--accent); background: var(--accent-soft); border: 1px solid var(--accent-line); }
 .emptystate b { color: var(--ink); font-size: 14px; font-weight: 600; }

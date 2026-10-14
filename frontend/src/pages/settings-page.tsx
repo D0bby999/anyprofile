@@ -29,8 +29,8 @@ export function SettingsPage({ engines, engineCounts, defaults, onEnginesChanged
 
   return (
     <>
-      <PageHead title={t.settings.title} />
-      <div className="pagebody" style={{ maxWidth: 760 }}>
+      <PageHead title={t.settings.title} narrow />
+      <div className="pagebody narrow">
         <section className="card pad">
           <h2>{t.engines.title}</h2>
           <EngineSettings engines={engines} counts={engineCounts} defaults={defaults} onChanged={onEnginesChanged} />

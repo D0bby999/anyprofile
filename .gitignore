@@ -10,3 +10,6 @@ tools/fury-config/target
 *.log
 .env*
 frontend/package.json.md5
+
+# macOS screenshots shared while testing; never committed
+Screenshot *.png
