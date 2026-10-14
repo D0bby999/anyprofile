@@ -31,11 +31,15 @@ export function CreateSite(arg1:service.SiteInput):Promise<site.Site>;
 
 export function Defaults():Promise<service.Defaults>;
 
+export function DeleteAllSnapshots():Promise<void>;
+
 export function DeleteOrphans(arg1:Array<string>):Promise<void>;
 
 export function DeleteProxy(arg1:string):Promise<void>;
 
 export function DeleteSite(arg1:string):Promise<void>;
+
+export function DeleteSnapshot(arg1:number):Promise<void>;
 
 export function DuplicateProfile(arg1:service.DuplicateInput):Promise<Array<store.Profile>>;
 
@@ -73,6 +77,8 @@ export function ResetFingerprint(arg1:string):Promise<void>;
 
 export function RestoreProfile(arg1:string):Promise<void>;
 
+export function RestoreSnapshot(arg1:number):Promise<number>;
+
 export function Sessions(arg1:string):Promise<Array<store.Session>>;
 
 export function SetAccountPassword(arg1:string,arg2:string):Promise<void>;
@@ -85,9 +91,15 @@ export function SetPinnedMany(arg1:Array<string>,arg2:boolean):Promise<void>;
 
 export function SetSiteMany(arg1:Array<string>,arg2:string):Promise<void>;
 
+export function SetSnapshotSettings(arg1:service.SnapshotSettings):Promise<void>;
+
 export function SetTOTP(arg1:string,arg2:string):Promise<void>;
 
 export function Sites():Promise<Array<site.Site>>;
+
+export function SnapshotSettings():Promise<service.SnapshotSettings>;
+
+export function Snapshots(arg1:string):Promise<Array<store.Snapshot>>;
 
 export function StartProfile(arg1:string):Promise<void>;
 
@@ -102,6 +114,8 @@ export function StopProfiles(arg1:Array<string>):Promise<Record<string, string>>
 export function Storage():Promise<service.StorageInfo>;
 
 export function TOTPCode(arg1:string):Promise<service.TOTPCode>;
+
+export function TakeSnapshot(arg1:string):Promise<store.Snapshot>;
 
 export function TrashProfile(arg1:string):Promise<void>;
 

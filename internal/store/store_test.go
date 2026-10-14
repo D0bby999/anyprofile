@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 )
 
 // insertV1Profile writes a profile with only the columns of migration 0001,
@@ -541,5 +542,73 @@ func TestSessions(t *testing.T) {
 	}
 	if left, _ := s.Sessions("p1", 100); len(left) != 0 {
 		t.Fatalf("sessions survived the purge: %d", len(left))
+	}
+}
+
+func TestSnapshotsMigrationAndPrune(t *testing.T) {
+	s, _ := upgradeFrom(t, 10, func(o *Store) {
+		insertV1Profile(t, o, "p1", "other", "2026-10-01T00:00:00Z")
+	})
+	for i := 0; i < 7; i++ {
+		if err := s.AddSnapshot(&Snapshot{ProfileID: "p1", Reason: "close", Bytes: 10, File: "f"}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := s.AddSnapshot(&Snapshot{ProfileID: "p1", Reason: "manual", Bytes: 5, File: "m"}); err != nil {
+		t.Fatal(err)
+	}
+	old, err := s.SnapshotsToPrune("p1", "close", 5)
+	if err != nil || len(old) != 2 || old[0].ID != 2 || old[1].ID != 1 {
+		t.Fatalf("to prune = %+v %v", old, err)
+	}
+	if n, _ := s.SnapshotBytes(); n != 75 {
+		t.Fatalf("bytes = %d", n)
+	}
+	if err := s.AddSnapshot(&Snapshot{ProfileID: "p1", Reason: "nope", File: "x"}); err == nil {
+		t.Fatal("unknown reason accepted")
+	}
+	if err := s.Purge("p1"); err != nil {
+		t.Fatal(err)
+	}
+	if left, _ := s.Snapshots("p1"); len(left) != 0 {
+		t.Fatalf("snapshots survived the purge: %d", len(left))
+	}
+}
+
+func TestBackupDaily(t *testing.T) {
+	s, _ := openTemp(t)
+	if err := s.CreateProfile(sample("b1")); err != nil {
+		t.Fatal(err)
+	}
+	dir := t.TempDir()
+	os.WriteFile(filepath.Join(dir, "anyprofile-v6.db"), []byte("migration backup"), 0o600)
+	day := time.Date(2026, 10, 1, 9, 0, 0, 0, time.Local)
+	for i := 0; i < 2; i++ {
+		if err := s.BackupDaily(dir, day); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if got, _ := filepath.Glob(filepath.Join(dir, "daily-*.db")); len(got) != 1 {
+		t.Fatalf("two calls on one day made %d files", len(got))
+	}
+	for i := 1; i < 9; i++ {
+		if err := s.BackupDaily(dir, day.AddDate(0, 0, i)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	got, _ := filepath.Glob(filepath.Join(dir, "daily-*.db"))
+	if len(got) != 7 || filepath.Base(got[0]) != "daily-20261003.db" {
+		t.Fatalf("kept %v", got)
+	}
+	if _, err := os.Stat(filepath.Join(dir, "anyprofile-v6.db")); err != nil {
+		t.Fatal("other backups must stay")
+	}
+	b, err := Open(got[len(got)-1], t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer b.Close()
+	if _, err := b.GetProfile("b1"); err != nil {
+		t.Fatalf("backup misses the profile: %v", err)
 	}
 }

@@ -259,6 +259,9 @@ func (s *Service) Purge(id string) error {
 		return err
 	}
 	os.Remove(filepath.Join(s.Dirs.Logs(), "browser-"+id+".log"))
+	if err := os.RemoveAll(s.Dirs.ProfileSnapshots(id)); err != nil {
+		return err
+	}
 	if err := s.Secrets.Delete(secrets.ServiceCookieKey, id); err != nil {
 		return err
 	}

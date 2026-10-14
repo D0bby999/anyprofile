@@ -499,8 +499,23 @@ export namespace service {
 	        this.color = source["color"];
 	    }
 	}
+	export class SnapshotSettings {
+	    auto: boolean;
+	    keep: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new SnapshotSettings(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.auto = source["auto"];
+	        this.keep = source["keep"];
+	    }
+	}
 	export class StorageInfo {
 	    profilesBytes: number;
+	    snapshotsBytes: number;
 	    orphans: Orphan[];
 	
 	    static createFrom(source: any = {}) {
@@ -510,6 +525,7 @@ export namespace service {
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.profilesBytes = source["profilesBytes"];
+	        this.snapshotsBytes = source["snapshotsBytes"];
 	        this.orphans = this.convertValues(source["orphans"], Orphan);
 	    }
 	
@@ -777,6 +793,28 @@ export namespace store {
 	        this.exitTz = source["exitTz"];
 	        this.exitError = source["exitError"];
 	        this.checks = source["checks"];
+	    }
+	}
+	export class Snapshot {
+	    id: number;
+	    profileId: string;
+	    createdAt: string;
+	    reason: string;
+	    bytes: number;
+	    file: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Snapshot(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.profileId = source["profileId"];
+	        this.createdAt = source["createdAt"];
+	        this.reason = source["reason"];
+	        this.bytes = source["bytes"];
+	        this.file = source["file"];
 	    }
 	}
 

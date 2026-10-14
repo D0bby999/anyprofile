@@ -279,6 +279,16 @@ kbd { display: inline-flex; align-items: center; min-width: 22px; height: 20px; 
 .checklist p { margin: 2px 0 0; color: var(--ink-soft); }
 .checklist small { display: block; margin-top: 2px; color: var(--muted); overflow-wrap: anywhere; }
 .table.sessions td .chip + .chip { margin-left: 4px; }
+.snapsettings { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; padding-top: 4px; }
+.keepinput { width: 64px; }
+.snaptab { display: flex; flex-direction: column; gap: 12px; }
+.snaptab > .btn { align-self: flex-start; }
+.snaplist { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; }
+.snaplist li { display: flex; align-items: center; gap: 8px; padding: 8px 0; font-size: var(--t-sm); }
+.snaplist li + li { border-top: 1px solid var(--line-soft); }
+.snaplist .grow { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.snaplist small { color: var(--muted); font-size: var(--t-xs); font-variant-numeric: tabular-nums; }
+.tabs { flex-wrap: wrap; }
 .sessions-empty { margin: 0; color: var(--muted); font-size: var(--t-sm); }
 .table.sessions td, .table.sessions th { height: auto; padding: 8px 6px; font-size: var(--t-sm); }
 .table.sessions small { color: var(--muted); }

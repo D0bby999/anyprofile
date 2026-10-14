@@ -113,6 +113,49 @@ func (a *App) MatchExit(profileID string) error {
 	return a.must(func() error { return a.svc.MatchExit(a.ctx, profileID) })
 }
 
+// Snapshots
+
+func (a *App) Snapshots(profileID string) ([]store.Snapshot, error) {
+	if err := a.ready(); err != nil {
+		return nil, err
+	}
+	return a.svc.Snapshots(profileID)
+}
+
+func (a *App) TakeSnapshot(profileID string) (store.Snapshot, error) {
+	if err := a.ready(); err != nil {
+		return store.Snapshot{}, err
+	}
+	return a.svc.TakeSnapshot(profileID, "manual")
+}
+
+// RestoreSnapshot returns the id of the snapshot saved just before, for undo.
+func (a *App) RestoreSnapshot(id int64) (int64, error) {
+	if err := a.ready(); err != nil {
+		return 0, err
+	}
+	return a.svc.RestoreSnapshot(id)
+}
+
+func (a *App) DeleteSnapshot(id int64) error {
+	return a.must(func() error { return a.svc.DeleteSnapshot(id) })
+}
+
+func (a *App) DeleteAllSnapshots() error {
+	return a.must(func() error { return a.svc.DeleteAllSnapshots() })
+}
+
+func (a *App) SnapshotSettings() service.SnapshotSettings {
+	if a.svc == nil {
+		return service.SnapshotSettings{}
+	}
+	return a.svc.SnapshotSettings()
+}
+
+func (a *App) SetSnapshotSettings(st service.SnapshotSettings) error {
+	return a.must(func() error { return a.svc.SetSnapshotSettings(st) })
+}
+
 // Onboarded is false only on a fresh install that has not finished setup.
 func (a *App) Onboarded() bool {
 	if a.svc == nil {

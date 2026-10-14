@@ -45,6 +45,8 @@ export const vi: Messages = {
     deleteSite: (name: string) => ({ title: `Xoá ${name}?`, body: 'Profile trên nền tảng này sẽ chuyển sang Khác.', confirm: 'Xoá nền tảng' }),
     deleteProxy: { title: 'Xoá proxy này?', body: 'Profile đang dùng nó sẽ mất proxy và hiện IP thật của bạn cho tới khi bạn chọn proxy khác.', confirm: 'Xoá proxy' },
     matchIp: { title: 'Đổi múi giờ và ngôn ngữ của profile cho khớp với IP?', body: 'Các trang đã biết tài khoản này có thể nhận ra sự thay đổi.', confirm: 'Khớp theo IP' },
+    restore: (when: string) => ({ title: `Khôi phục phiên lúc ${when}?`, body: 'Phiên hiện tại được lưu trước, nên bạn hoàn tác được.', confirm: 'Khôi phục' }),
+    deleteSnapshots: { title: 'Xoá mọi ảnh chụp?', body: 'Bạn sẽ không khôi phục được profile nào về phiên trước đó nữa.', confirm: 'Xoá tất cả' },
     trash: (name: string) => ({ title: `Bỏ "${name}" vào thùng rác?`, body: 'Profile sẽ không hiện trong danh sách nữa. Bạn khôi phục được từ Thùng rác cho tới khi xoá hẳn.', confirm: 'Bỏ vào thùng rác' }),
     purge: (name: string) => ({ title: `Xoá hẳn "${name}"?`, body: 'Cookie, đăng nhập và dữ liệu của profile sẽ mất. Không khôi phục được.', confirm: 'Xoá hẳn' }),
     resetFingerprint: { title: 'Đo lại fingerprint?', body: 'Lần mở tới sẽ thành mốc mới. Chỉ làm khi bạn chủ động đổi engine.', confirm: 'Đặt lại mốc' },
@@ -167,6 +169,14 @@ export const vi: Messages = {
       hwc_pin: 'Số nhân CPU',
     } as Record<string, string>,
   },
+  snapshots: {
+    tab: 'Ảnh chụp', take: 'Chụp ngay', closeFirst: 'Hãy đóng profile trước', restore: 'Khôi phục…', delete: 'Xoá',
+    empty: 'Chưa có ảnh chụp nào. App tự lưu một bản khi profile đóng sau ít nhất hai phút.',
+    reasons: { close: 'Sau khi đóng', manual: 'Chụp tay', 'before-restore': 'Trước khi khôi phục', 'before-import': 'Trước khi nhập cookie' } as Record<string, string>,
+    restored: 'Đã khôi phục phiên.', undo: 'Hoàn tác', saved: 'Đã lưu ảnh chụp.', more: (when: string) => `Thao tác với ảnh chụp lúc ${when}`,
+    auto: 'Lưu ảnh chụp khi profile đóng', keep: 'Giữ mỗi profile', total: (size: string) => `Ảnh chụp đang chiếm ${size}.`,
+    deleteAll: 'Xoá mọi ảnh chụp',
+  },
   sessions: {
     tab: 'Phiên', opened: 'Mở lúc', length: 'Thời lượng', exitIp: 'IP ra', country: 'Quốc gia', notes: 'Ghi chú',
     empty: 'Chưa có phiên nào. Mở profile để bắt đầu.', running: 'Đang chạy', matchIp: 'Khớp theo IP',
@@ -174,7 +184,7 @@ export const vi: Messages = {
   },
   drawer: {
     label: (name: string) => `Chi tiết của ${name}`, close: 'Đóng chi tiết',
-    tabs: { overview: 'Tổng quan', account: 'Tài khoản', sessions: 'Phiên' },
+    tabs: { overview: 'Tổng quan', account: 'Tài khoản', sessions: 'Phiên', snapshots: 'Ảnh chụp' },
     rename: 'Đổi tên', network: 'Mạng', platform: 'Nền tảng và trang mở đầu', tags: 'Tag', notes: 'Ghi chú',
     identity: 'Danh tính', advanced: 'Nâng cao', apply: 'Áp dụng', saved: 'Đã lưu',
     addTag: 'Thêm tag', removeTag: (tag: string) => `Bỏ tag ${tag}`,
@@ -280,6 +290,10 @@ export const vi: Messages = {
     minutes: (n: number) => `${n} phút trước`, hours: (n: number) => `${n} giờ trước`, days: (n: number) => `${n} ngày trước`,
   },
   errors: {
+    snapshot_busy: 'Đang lưu ảnh chụp của profile này. Thử lại sau giây lát.',
+    bad_keep: 'Giữ từ 1 đến 10 ảnh chụp.',
+    nothing_to_snapshot: 'Profile này chưa mở lần nào nên chưa có gì để lưu.',
+    snapshot_damaged: 'Không đọc được ảnh chụp này. Nó bị hỏng hoặc được tạo bằng khoá khác.',
     name_required: 'Profile cần có tên.',
     proxy_rotating: 'Proxy này đổi IP giữa các kết nối. Hãy dùng cổng cố định (sticky).',
     proxy_no_timezone: 'Không xác định được múi giờ của proxy này. Hãy kiểm tra lại.',

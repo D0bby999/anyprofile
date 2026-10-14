@@ -45,6 +45,8 @@ type proc struct {
 	done  chan struct{} // closed when the browser has exited and been cleaned up
 	// sessionID is the sessions row of this launch; 0 when it could not be recorded.
 	sessionID int64
+	// started is when the browser came up (for an adopted one: its session start).
+	started time.Time
 }
 
 type Launcher struct {
@@ -67,6 +69,12 @@ type Launcher struct {
 	// CheckExit measures a proxy's exit right after a launch (netproxy.Check
 	// in the app). Nil: sessions are recorded without an exit.
 	CheckExit func(ctx context.Context, up netproxy.Upstream) (netproxy.Exit, error)
+	// BeforeStart runs first in every launch and may refuse it (a snapshot
+	// of the profile is being written or restored). Nil: nothing to wait for.
+	BeforeStart func(profileID string) error
+	// AfterExit runs once the browser has exited and the profile is Stopped.
+	// ranFor is zero when the start time is unknown.
+	AfterExit func(profileID string, ranFor time.Duration)
 }
 
 func New(st *store.Store, sec secrets.Store, dirs paths.Dirs, engines []engine.Engine, onChange func(Info), log *slog.Logger) *Launcher {

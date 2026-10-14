@@ -19,9 +19,10 @@ import { PlatformGroup } from './drawer/platform-group'
 import { TagsGroup } from './drawer/tags-group'
 import { SessionsTab } from './drawer/sessions-tab'
 import { ChecksPanel } from './drawer/checks-panel'
+import { SnapshotsTab } from './drawer/snapshots-tab'
 
-type Tab = 'overview' | 'account' | 'sessions'
-const TABS: Tab[] = ['overview', 'account', 'sessions']
+type Tab = 'overview' | 'account' | 'sessions' | 'snapshots'
+const TABS: Tab[] = ['overview', 'account', 'sessions', 'snapshots']
 
 type Props = {
   row: service.ProfileRow
@@ -41,7 +42,7 @@ export function ProfileDrawer({ row, sites, recent, knownTags, onClose, onStart,
   const [proxies, setProxies] = useState<service.ProxyRow[]>([])
   const [login, setLogin] = useState(row.login)
   const [advanced, setAdvanced] = useState(false)
-  const tabRefs = useRef<Record<Tab, HTMLButtonElement | null>>({ overview: null, account: null, sessions: null })
+  const tabRefs = useRef<Record<Tab, HTMLButtonElement | null>>({ overview: null, account: null, sessions: null, snapshots: null })
   useEffect(() => { Api.ListProxies().then((p) => setProxies(p ?? [])).catch(() => {}) }, [row.proxyId])
   useEffect(() => setLogin(row.login), [row.login])
 
@@ -160,6 +161,8 @@ export function ProfileDrawer({ row, sites, recent, knownTags, onClose, onStart,
           </>
         ) : tab === 'sessions' ? (
           <SessionsTab profileId={row.id} />
+        ) : tab === 'snapshots' ? (
+          <SnapshotsTab profileId={row.id} running={running} />
         ) : (
           <AccountPanel row={row} login={login} onLogin={setLogin} onError={toast.error}
             onLoginCommit={() => { if (login.trim() !== row.login) update({ login: login.trim() }) }} />

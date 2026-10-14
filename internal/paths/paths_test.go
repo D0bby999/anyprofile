@@ -19,3 +19,10 @@ func TestDefaultHonoursAbsoluteOverride(t *testing.T) {
 		t.Fatalf("relative override must be ignored, got %q %v", d.Root, err)
 	}
 }
+
+func TestProfileSnapshotsIsUnderSnapshots(t *testing.T) {
+	d := Dirs{Root: "/r"}
+	if d.ProfileSnapshots("abc") != "/r/snapshots/abc" || !strings.HasPrefix(d.ProfileSnapshots("abc"), d.Snapshots()+"/") {
+		t.Fatalf("snapshots = %s", d.ProfileSnapshots("abc"))
+	}
+}

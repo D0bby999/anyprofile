@@ -6,6 +6,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/D0bby999/anyprofile/internal/secrets"
 	"github.com/D0bby999/anyprofile/internal/store"
@@ -18,8 +19,9 @@ type Orphan struct {
 }
 
 type StorageInfo struct {
-	ProfilesBytes int64    `json:"profilesBytes"`
-	Orphans       []Orphan `json:"orphans"`
+	ProfilesBytes  int64    `json:"profilesBytes"`
+	SnapshotsBytes int64    `json:"snapshotsBytes"`
+	Orphans        []Orphan `json:"orphans"`
 }
 
 // cacheDirs are Chromium caches, safe to delete while the browser is closed.
@@ -69,7 +71,8 @@ func (s *Service) orphanIDs() ([]string, error) {
 	}
 	var ids []string
 	for _, e := range entries {
-		if e.IsDir() && !known[e.Name()] {
+		// ".restore-x" and ".old-x" are a restore in progress, not orphans.
+		if e.IsDir() && !known[e.Name()] && !strings.HasPrefix(e.Name(), ".") {
 			ids = append(ids, e.Name())
 		}
 	}
@@ -91,6 +94,7 @@ func (s *Service) Storage() (StorageInfo, error) {
 		return StorageInfo{}, err
 	}
 	info := StorageInfo{Orphans: []Orphan{}, ProfilesBytes: dirSize(s.Dirs.Profiles())}
+	info.SnapshotsBytes, _ = s.Store.SnapshotBytes()
 	for _, id := range ids {
 		info.Orphans = append(info.Orphans, Orphan{ID: id, Bytes: dirSize(s.Dirs.Profile(id))})
 	}

@@ -19,6 +19,11 @@ import (
 )
 
 func (l *Launcher) start(ctx context.Context, p *proc) error {
+	if l.BeforeStart != nil {
+		if err := l.BeforeStart(p.info.ProfileID); err != nil {
+			return err
+		}
+	}
 	prof, err := l.st.GetProfile(p.info.ProfileID)
 	if err != nil {
 		return err
@@ -112,7 +117,7 @@ func (l *Launcher) start(ctx context.Context, p *proc) error {
 		_ = l.st.UpdateProfile(prof)
 	}
 	l.mu.Lock()
-	p.info.PID, p.info.CDPPort = pid, cdp
+	p.info.PID, p.info.CDPPort, p.started = pid, cdp, time.Now()
 	l.mu.Unlock()
 	l.set(p, Running, "")
 	if p.cdp != nil {

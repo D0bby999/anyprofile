@@ -8,8 +8,8 @@ export type ToastAction = { label: string; run: () => void }
 type Toast = { id: number; kind: ToastKind; message: string; action?: ToastAction }
 
 type ToastApi = {
-  success: (message: string) => void
-  info: (message: string) => void
+  success: (message: string, action?: ToastAction) => void
+  info: (message: string, action?: ToastAction) => void
   error: (message: string, action?: ToastAction) => void
 }
 
@@ -34,8 +34,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     setToasts((cur) => [...cur, { id, kind, message, action }].slice(-MAX))
   }, [])
   const api = useMemo<ToastApi>(() => ({
-    success: (m) => push('success', m),
-    info: (m) => push('info', m),
+    success: (m, a) => push('success', m, a),
+    info: (m, a) => push('info', m, a),
     error: (m, a) => push('error', m, a),
   }), [push])
 

@@ -43,6 +43,8 @@ export const en = {
     deleteSite: (name: string) => ({ title: `Delete ${name}?`, body: 'Profiles on this platform move to Other.', confirm: 'Delete platform' }),
     deleteProxy: { title: 'Delete this proxy?', body: 'Profiles using it lose their proxy and show your real IP until you pick another.', confirm: 'Delete proxy' },
     matchIp: { title: 'Change the profile\u2019s timezone and languages to match the IP?', body: 'Sites that know this account may notice the change.', confirm: 'Match the IP' },
+    restore: (when: string) => ({ title: `Restore the session from ${when}?`, body: 'The current session is saved first, so you can undo this.', confirm: 'Restore' }),
+    deleteSnapshots: { title: 'Delete every snapshot?', body: 'You will not be able to restore any profile to an earlier session.', confirm: 'Delete all' },
     trash: (name: string) => ({ title: `Move "${name}" to the trash?`, body: 'It stops showing in your lists. You can restore it from Trash until you delete it for good.', confirm: 'Move to trash' }),
     purge: (name: string) => ({ title: `Delete "${name}" for good?`, body: 'Its cookies, logins and data are gone. This cannot be undone.', confirm: 'Delete for good' }),
     resetFingerprint: { title: 'Measure the fingerprint again?', body: 'The next launch becomes the new reference. Do this only after you changed the engine on purpose.', confirm: 'Reset reference' },
@@ -165,6 +167,14 @@ export const en = {
       hwc_pin: 'CPU cores',
     } as Record<string, string>,
   },
+  snapshots: {
+    tab: 'Snapshots', take: 'Take snapshot', closeFirst: 'Close the profile first', restore: 'Restore…', delete: 'Delete',
+    empty: 'No snapshots yet. One is saved when the profile closes after at least two minutes.',
+    reasons: { close: 'After closing', manual: 'Manual', 'before-restore': 'Before restore', 'before-import': 'Before cookie import' } as Record<string, string>,
+    restored: 'Session restored.', undo: 'Undo', saved: 'Snapshot saved.', more: (when: string) => `Actions for the snapshot from ${when}`,
+    auto: 'Save a snapshot when a profile closes', keep: 'Keep per profile', total: (size: string) => `Snapshots use ${size}.`,
+    deleteAll: 'Delete all snapshots',
+  },
   sessions: {
     tab: 'Sessions', opened: 'Opened', length: 'Length', exitIp: 'Exit IP', country: 'Country', notes: 'Notes',
     empty: 'No sessions yet. Open the profile to start one.', running: 'Running', matchIp: 'Match the IP',
@@ -172,7 +182,7 @@ export const en = {
   },
   drawer: {
     label: (name: string) => `Details of ${name}`, close: 'Close details',
-    tabs: { overview: 'Overview', account: 'Account', sessions: 'Sessions' },
+    tabs: { overview: 'Overview', account: 'Account', sessions: 'Sessions', snapshots: 'Snapshots' },
     rename: 'Rename', network: 'Network', platform: 'Platform and start pages', tags: 'Tags', notes: 'Notes',
     identity: 'Identity', advanced: 'Advanced', apply: 'Apply', saved: 'Saved',
     addTag: 'Add a tag', removeTag: (tag: string) => `Remove tag ${tag}`,
@@ -278,6 +288,10 @@ export const en = {
     minutes: (n: number) => `${n} min ago`, hours: (n: number) => `${n} h ago`, days: (n: number) => `${n} d ago`,
   },
   errors: {
+    snapshot_busy: 'A snapshot of this profile is being saved. Try again in a moment.',
+    bad_keep: 'Keep between 1 and 10 snapshots.',
+    nothing_to_snapshot: 'This profile has not been opened yet, so there is nothing to save.',
+    snapshot_damaged: 'This snapshot cannot be read. It is damaged or was made with another key.',
     name_required: 'The profile needs a name.',
     proxy_rotating: 'This proxy changes its IP between connections. Use a sticky port.',
     proxy_no_timezone: 'The timezone of this proxy could not be determined. Check it again.',

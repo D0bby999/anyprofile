@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"time"
 
 	"github.com/D0bby999/anyprofile/internal/engine"
 	"github.com/D0bby999/anyprofile/internal/engine/apostate"
@@ -66,6 +67,9 @@ func (a *App) init() error {
 	if err != nil {
 		return fmt.Errorf("open database: %w", err)
 	}
+	if err := st.BackupDaily(dirs.Backups(), time.Now()); err != nil {
+		log.Warn("daily database backup", "err", err)
+	}
 	a.fury = fury.New(dirs, cfgBin)
 	if err := a.fury.CleanStale(); err != nil {
 		log.Warn("clean stale engine files", "err", err)
@@ -89,6 +93,7 @@ func (a *App) init() error {
 			loc, err := a.fury.LocaleFor(ctx, cc)
 			return loc.UILocale, loc.Languages, err
 		}}
+	l.BeforeStart, l.AfterExit = a.svc.BeforeLaunch, a.svc.AfterExit
 	l.Adopt()
 	return nil
 }

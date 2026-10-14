@@ -13,6 +13,7 @@ import (
 	"log/slog"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/D0bby999/anyprofile/internal/engine"
@@ -44,6 +45,9 @@ type Service struct {
 	OnChange func(kind string)
 	// CheckProxy measures a proxy's exit; netproxy.Check outside tests.
 	CheckProxy func(ctx context.Context, up netproxy.Upstream) (netproxy.Exit, error)
+
+	snapMu    sync.Mutex
+	snapLocks map[string]profileLock // one per profile: snapshots and launches take turns
 }
 
 func (s *Service) notify(kind string) {

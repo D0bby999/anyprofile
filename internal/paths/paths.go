@@ -39,10 +39,14 @@ func (d Dirs) Profiles() string             { return filepath.Join(d.Root, "prof
 func (d Dirs) Profile(id string) string     { return filepath.Join(d.Profiles(), id) }
 func (d Dirs) Logs() string                 { return filepath.Join(d.Root, "logs") }
 func (d Dirs) Backups() string              { return filepath.Join(d.Root, "backups") }
+func (d Dirs) Snapshots() string            { return filepath.Join(d.Root, "snapshots") }
+func (d Dirs) ProfileSnapshots(id string) string {
+	return filepath.Join(d.Snapshots(), id)
+}
 
 // Ensure creates every directory with owner-only permissions, tightening any that exist.
 func (d Dirs) Ensure() error {
-	for _, p := range []string{d.Root, d.Engines(), d.Profiles(), d.Logs(), d.Backups()} {
+	for _, p := range []string{d.Root, d.Engines(), d.Profiles(), d.Logs(), d.Backups(), d.Snapshots()} {
 		if err := os.MkdirAll(p, 0o700); err != nil {
 			return fmt.Errorf("create %s: %w", p, err)
 		}

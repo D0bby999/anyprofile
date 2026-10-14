@@ -35,6 +35,13 @@ func (l *Launcher) watch(p *proc, pid int, wait <-chan error) {
 	l.mu.Unlock()
 	l.set(p, Stopped, "")
 	close(p.done)
+	if l.AfterExit != nil {
+		var ranFor time.Duration
+		if !p.started.IsZero() {
+			ranFor = time.Since(p.started)
+		}
+		l.AfterExit(p.info.ProfileID, ranFor)
+	}
 }
 
 // Stop asks the browser to quit and save its session, then kills its process

@@ -15,6 +15,8 @@ const (
 	ServiceCookieKey       = "dev.anyprofile.cookie-key"
 	ServiceAccountPassword = "dev.anyprofile.account-password"
 	ServiceTOTP            = "dev.anyprofile.totp"
+	// ServiceSnapshotKey holds the one key that encrypts every snapshot; account "app".
+	ServiceSnapshotKey = "dev.anyprofile.snapshot-key"
 )
 
 var ErrNotFound = errors.New("secret not found")

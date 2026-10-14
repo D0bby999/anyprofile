@@ -50,6 +50,10 @@ export function Defaults() {
   return window['go']['main']['App']['Defaults']();
 }
 
+export function DeleteAllSnapshots() {
+  return window['go']['main']['App']['DeleteAllSnapshots']();
+}
+
 export function DeleteOrphans(arg1) {
   return window['go']['main']['App']['DeleteOrphans'](arg1);
 }
@@ -60,6 +64,10 @@ export function DeleteProxy(arg1) {
 
 export function DeleteSite(arg1) {
   return window['go']['main']['App']['DeleteSite'](arg1);
+}
+
+export function DeleteSnapshot(arg1) {
+  return window['go']['main']['App']['DeleteSnapshot'](arg1);
 }
 
 export function DuplicateProfile(arg1) {
@@ -134,6 +142,10 @@ export function RestoreProfile(arg1) {
   return window['go']['main']['App']['RestoreProfile'](arg1);
 }
 
+export function RestoreSnapshot(arg1) {
+  return window['go']['main']['App']['RestoreSnapshot'](arg1);
+}
+
 export function Sessions(arg1) {
   return window['go']['main']['App']['Sessions'](arg1);
 }
@@ -158,12 +170,24 @@ export function SetSiteMany(arg1, arg2) {
   return window['go']['main']['App']['SetSiteMany'](arg1, arg2);
 }
 
+export function SetSnapshotSettings(arg1) {
+  return window['go']['main']['App']['SetSnapshotSettings'](arg1);
+}
+
 export function SetTOTP(arg1, arg2) {
   return window['go']['main']['App']['SetTOTP'](arg1, arg2);
 }
 
 export function Sites() {
   return window['go']['main']['App']['Sites']();
+}
+
+export function SnapshotSettings() {
+  return window['go']['main']['App']['SnapshotSettings']();
+}
+
+export function Snapshots(arg1) {
+  return window['go']['main']['App']['Snapshots'](arg1);
 }
 
 export function StartProfile(arg1) {
@@ -192,6 +216,10 @@ export function Storage() {
 
 export function TOTPCode(arg1) {
   return window['go']['main']['App']['TOTPCode'](arg1);
+}
+
+export function TakeSnapshot(arg1) {
+  return window['go']['main']['App']['TakeSnapshot'](arg1);
 }
 
 export function TrashProfile(arg1) {

@@ -3,6 +3,8 @@
 package launcher
 
 import (
+	"time"
+
 	"github.com/D0bby999/anyprofile/internal/netproxy"
 )
 
@@ -34,6 +36,7 @@ func (l *Launcher) Adopt() {
 		running[ln.ProfileID] = true
 		if sess, ok, err := l.st.OpenSession(ln.ProfileID); err == nil && ok {
 			p.sessionID = sess.ID
+			p.started, _ = time.Parse(time.RFC3339, sess.StartedAt)
 		}
 		if ln.RelayPort > 0 {
 			if err := l.adoptRelay(p, ln.ProfileID, ln.RelayPort); err != nil {

@@ -12,7 +12,33 @@ export function StorageSettings() {
   const [error, setError] = useState('')
   const [freed, setFreed] = useState('')
   const [busy, setBusy] = useState('')
+  const [snap, setSnap] = useState<service.SnapshotSettings | null>(null)
   const confirm = useConfirm()
+  useEffect(() => { Api.SnapshotSettings().then(setSnap).catch(() => {}) }, [])
+
+  const saveSnap = async (next: service.SnapshotSettings) => {
+    setSnap(next)
+    setError('')
+    try {
+      await Api.SetSnapshotSettings(next)
+    } catch (e) {
+      setError(errorText(e))
+    }
+  }
+
+  const deleteSnapshots = async () => {
+    if (!(await confirm({ ...t.confirm.deleteSnapshots, danger: true }))) return
+    setBusy('snapshots')
+    setError('')
+    try {
+      await Api.DeleteAllSnapshots()
+      load()
+    } catch (e) {
+      setError(errorText(e))
+    } finally {
+      setBusy('')
+    }
+  }
 
   const load = useCallback(() => {
     Api.Storage().then(setInfo).catch((e) => setError(errorText(e)))
@@ -67,6 +93,23 @@ export function StorageSettings() {
           <Icon name="alert" />
           <span className="grow">{t.storage.orphans(info.orphans.length, formatBytes(orphanBytes))}</span>
           <button className="btn sm danger" disabled={busy !== ''} onClick={deleteOrphans}>{t.storage.deleteOrphans}</button>
+        </div>
+      )}
+      {snap && (
+        <div className="snapsettings">
+          <label className="row checkrow">
+            <input type="checkbox" checked={snap.auto} onChange={(e) => saveSnap(service.SnapshotSettings.createFrom({ ...snap, auto: e.target.checked }))} />
+            {t.snapshots.auto}
+          </label>
+          <label className="row checkrow">
+            {t.snapshots.keep}
+            <input className="input keepinput" type="number" min={1} max={10} value={snap.keep}
+              onChange={(e) => saveSnap(service.SnapshotSettings.createFrom({ ...snap, keep: Math.max(1, Math.min(10, Number(e.target.value) || 1)) }))} />
+          </label>
+          <span className="hint">{info ? t.snapshots.total(formatBytes(Number(info.snapshotsBytes))) : ''}</span>
+          {!!info && Number(info.snapshotsBytes) > 0 && (
+            <button className="btn sm danger" disabled={busy !== ''} onClick={deleteSnapshots}>{t.snapshots.deleteAll}</button>
+          )}
         </div>
       )}
       {freed && <div className="banner ok"><Icon name="check" /><span className="grow">{freed}</span></div>}
