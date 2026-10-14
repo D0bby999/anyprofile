@@ -73,13 +73,15 @@ export function SitePicker({ value, onChange, sites, recent }: Props) {
             {sections.map((sec, i) => (
               <div key={sec.title || i}>
                 {sec.title && <div className="navsection">{sec.title}</div>}
-                {sec.items.map((s) => (
-                  <button key={`${i}-${s.id}`} type="button" role="option" aria-selected={s.id === value}
-                    className={`siteopt${s.id === value ? ' sel' : ''}`} onClick={() => choose(s.id)}>
-                    <SiteGlyph site={s} />
-                    <span>{s.name}</span>
-                  </button>
-                ))}
+                <div className="siterow">
+                  {sec.items.map((s) => (
+                    <button key={`${i}-${s.id}`} type="button" role="option" aria-selected={s.id === value}
+                      className={`siteopt${s.id === value ? ' sel' : ''}`} onClick={() => choose(s.id)}>
+                      <SiteGlyph site={s} />
+                      <span>{s.name}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
             ))}
           </div>

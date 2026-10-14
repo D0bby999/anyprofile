@@ -229,10 +229,13 @@ kbd { display: inline-flex; align-items: center; min-width: 22px; height: 20px; 
 .glyphletter { font-size: 11px; line-height: 1; }
 .sitebtn { display: flex; align-items: center; gap: 8px; text-align: left; }
 .sitepanel { border: 1px solid var(--line); border-radius: var(--r-md); padding: 8px; display: grid; gap: 6px; }
-.sitelist { max-height: 260px; overflow-y: auto; display: grid; gap: 2px; }
-.siteopt { display: flex; align-items: center; gap: 8px; padding: 5px 8px; border-radius: var(--r-sm); text-align: left; background: none; border: 0; cursor: pointer; color: var(--ink); font: inherit; }
-.siteopt:hover { background: var(--surface-active); }
-.siteopt.sel { background: var(--accent-soft); }
+.sitelist { max-height: 300px; overflow-y: auto; display: grid; gap: 2px; }
+.sitelist .navsection { margin: 10px 2px 6px; }
+.sitelist > div:first-child .navsection { margin-top: 2px; }
+.siterow { display: flex; flex-wrap: wrap; gap: 6px; }
+.siteopt { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px 4px 5px; border-radius: var(--r-sm); border: 1px solid var(--line); background: var(--surface); cursor: pointer; color: var(--ink); font: inherit; white-space: nowrap; }
+.siteopt:hover { background: var(--surface-hover); }
+.siteopt.sel { background: var(--accent-soft); border-color: var(--accent-line); }
 .rowmenu-wrap { position: relative; display: inline-flex; }
 .rowmenu { position: absolute; right: 0; top: calc(100% + 4px); z-index: 20; min-width: 200px;
   padding: 4px; border: 1px solid var(--line); border-radius: var(--r-md);
