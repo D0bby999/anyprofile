@@ -104,7 +104,7 @@ Làm trên bộ **thật**. Thoát app mẫu trước, rồi mở `build/bin/Any
 1. **Thêm proxy.** Trang Proxies → Import, dán một dòng `host:port:user:pass` (port sticky). Mật khẩu đi thẳng vào Keychain. Sau khi kiểm, proxy hiện quốc gia và IP ra.
 2. **Tạo profile.** New profile: engine Apostate (mặc định), chọn proxy vừa thêm, nền tảng TikTok (hoặc nền tảng của tài khoản).
 3. **Mở lần đầu.** macOS có thể hỏi quyền với mục "Chromium Safe Storage": chọn **Always Allow**. Nếu chỉ chọn Allow, lần mở sau sẽ mất đăng nhập.
-4. **Kiểm khi đang mở.** Ngăn chi tiết: nhóm Checks báo tất cả đạt; tab Sessions có một hàng với IP ra đúng quốc gia proxy. Nếu muốn, vào `browserscan.net` để so.
+4. **Kiểm khi đang mở.** Ngăn chi tiết: nhóm Checks báo tất cả đạt; tab Sessions có một hàng với IP ra đúng quốc gia proxy. Nếu muốn, vào `browserscan.net` để so; danh sách trang kiểm đầy đủ ở `docs/browser-fingerprint-testing.md`.
 5. **Đăng nhập** tài khoản phụ như bình thường. Lưu email, mật khẩu và khoá 2FA (nếu có) ở tab Account, để lần sau dùng menu Copy.
 6. **Đóng và mở lại** sau vài phút. Phải vẫn đăng nhập, không phải nhập lại mật khẩu.
 7. **Ảnh chụp.** Nếu lần mở trước kéo dài hơn 2 phút, tab Snapshots có ảnh chụp "close". Chụp thêm một ảnh bằng tay trước mọi thay đổi lớn.
