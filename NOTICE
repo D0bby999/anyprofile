@@ -57,6 +57,13 @@ Simple Icons
   16.35.0 (https://github.com/simple-icons/simple-icons), CC0-1.0. Brand marks
   belong to their owners and only identify a platform.
 
+Bootstrap Icons and theSVG
+  The LinkedIn and Amazon paths come from Bootstrap Icons
+  (https://github.com/twbs/icons), Copyright (c) 2019-2024 The Bootstrap
+  Authors, MIT. The Walmart path comes from theSVG
+  (https://github.com/glincker/thesvg), Copyright (c) 2025 thesvg.org, MIT.
+  Full texts: frontend/src/sites/LICENSE-extra-icons.txt.
+
 Inter typeface
   Bundled through @fontsource-variable/inter. Copyright The Inter Project
   Authors. License: SIL Open Font License 1.1.
