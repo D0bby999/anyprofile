@@ -448,3 +448,18 @@ func TestEngineMetaIsPinnedAtCreation(t *testing.T) {
 		t.Fatalf("meta after update = %+v", got.EngineMeta)
 	}
 }
+
+func TestMachineLabel(t *testing.T) {
+	cases := map[string]string{
+		"":  "",
+		"{": "",
+		`{"webglRenderer":"ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, Unspecified Version)","screen":"1512x982"}`: "Apple M4 Pro · 1512×982",
+		`{"webglRenderer":"Apple M2","screen":"1440x900"}`:                                                               "Apple M2 · 1440×900",
+		`{"webglRenderer":"Apple M2"}`:                                                                                   "",
+	}
+	for in, want := range cases {
+		if got := machineLabel(in); got != want {
+			t.Errorf("machineLabel(%q) = %q, want %q", in, got, want)
+		}
+	}
+}

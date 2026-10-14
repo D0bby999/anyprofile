@@ -4,6 +4,7 @@ package engine
 
 import (
 	"archive/tar"
+	"archive/zip"
 	"bytes"
 	"errors"
 	"fmt"
@@ -87,6 +88,83 @@ func ExtractTarXZ(src, dst string) error {
 		default:
 			return fmt.Errorf("unsupported archive entry %s (type %c)", h.Name, h.Typeflag)
 		}
+	}
+}
+
+// ExtractZip unpacks a .zip into dst with the same rules as ExtractTarXZ:
+// modes and relative symlinks kept, AppleDouble metadata skipped, nothing
+// written outside dst.
+func ExtractZip(src, dst string) error {
+	zr, err := zip.OpenReader(src)
+	if err != nil {
+		return err
+	}
+	defer zr.Close()
+	root, err := filepath.Abs(dst)
+	if err != nil {
+		return err
+	}
+	for _, f := range zr.File {
+		if strings.HasPrefix(f.Name, "__MACOSX/") || strings.HasPrefix(filepath.Base(f.Name), "._") {
+			continue
+		}
+		target := filepath.Join(root, f.Name)
+		if !within(root, target) {
+			return fmt.Errorf("zip entry %q escapes the destination", f.Name)
+		}
+		if err := extractZipEntry(f, root, target); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func extractZipEntry(f *zip.File, root, target string) error {
+	mode := f.Mode()
+	switch {
+	case mode.IsDir():
+		return os.MkdirAll(target, 0o755)
+	case mode&os.ModeSymlink != 0:
+		rc, err := f.Open()
+		if err != nil {
+			return err
+		}
+		b, err := io.ReadAll(io.LimitReader(rc, 4096))
+		rc.Close()
+		if err != nil {
+			return err
+		}
+		link := string(b)
+		if filepath.IsAbs(link) || !within(root, filepath.Join(filepath.Dir(target), link)) {
+			return fmt.Errorf("zip symlink %q escapes the destination", f.Name)
+		}
+		if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
+			return err
+		}
+		return os.Symlink(link, target)
+	case mode.IsRegular():
+		if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
+			return err
+		}
+		rc, err := f.Open()
+		if err != nil {
+			return err
+		}
+		defer rc.Close()
+		out, err := os.OpenFile(target, os.O_CREATE|os.O_EXCL|os.O_WRONLY, mode.Perm()&0o755)
+		if err != nil {
+			return err
+		}
+		n, err := io.Copy(out, io.LimitReader(rc, int64(f.UncompressedSize64)+1))
+		if cerr := out.Close(); err == nil {
+			err = cerr
+		}
+		if err == nil && uint64(n) > f.UncompressedSize64 {
+			err = fmt.Errorf("zip entry %q is larger than declared", f.Name)
+		}
+		return err
+	default:
+		return fmt.Errorf("unsupported zip entry %s (mode %v)", f.Name, mode)
 	}
 }
 

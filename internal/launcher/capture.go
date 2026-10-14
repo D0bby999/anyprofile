@@ -9,13 +9,16 @@ import (
 	"time"
 
 	"github.com/D0bby999/anyprofile/internal/cdppipe"
+	"github.com/D0bby999/anyprofile/internal/engine"
 	"github.com/D0bby999/anyprofile/internal/fingerprint"
 	"github.com/D0bby999/anyprofile/internal/store"
 )
 
 // capture measures the browser once and records the verdict. It never fails
 // the launch: any error is logged and recorded as "unchecked".
-func (l *Launcher) capture(prof store.Profile, c *cdppipe.Conn) {
+func (l *Launcher) capture(prof store.Profile, eng engine.Engine, c *cdppipe.Conn) {
+	pl, ok := eng.(engine.PrimaryLanguageProbe)
+	primaryOnly := ok && pl.ProbeSeesPrimaryLanguageOnly()
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 	verdict, diff, baseline, last := "unchecked", []string(nil), "", ""
@@ -29,7 +32,7 @@ func (l *Launcher) capture(prof store.Profile, c *cdppipe.Conn) {
 		if prev == "" || json.Unmarshal([]byte(prev), &base) != nil {
 			verdict, baseline = "baseline", last
 		} else {
-			verdict, diff = fingerprint.Compare(base, s, prof.Timezone, prof.Languages)
+			verdict, diff = fingerprint.Compare(base, s, prof.Timezone, prof.Languages, primaryOnly)
 		}
 	}
 	if err := l.st.SaveFingerprint(prof.ID, baseline, last, verdict, diff); err != nil {

@@ -271,6 +271,7 @@ export namespace service {
 	    fpVerdict: string;
 	    fpDiff: string[];
 	    fpCheckedAt: string;
+	    machine: string;
 	    startUrl: string;
 	    notes: string;
 	    tags: string[];
@@ -316,6 +317,7 @@ export namespace service {
 	        this.fpVerdict = source["fpVerdict"];
 	        this.fpDiff = source["fpDiff"];
 	        this.fpCheckedAt = source["fpCheckedAt"];
+	        this.machine = source["machine"];
 	        this.startUrl = source["startUrl"];
 	        this.notes = source["notes"];
 	        this.tags = source["tags"];
@@ -551,6 +553,7 @@ export namespace store {
 	    fpVerdict: string;
 	    fpDiff: string[];
 	    fpCheckedAt: string;
+	    machine: string;
 	    startUrl: string;
 	    notes: string;
 	    tags: string[];
@@ -589,6 +592,7 @@ export namespace store {
 	        this.fpVerdict = source["fpVerdict"];
 	        this.fpDiff = source["fpDiff"];
 	        this.fpCheckedAt = source["fpCheckedAt"];
+	        this.machine = source["machine"];
 	        this.startUrl = source["startUrl"];
 	        this.notes = source["notes"];
 	        this.tags = source["tags"];

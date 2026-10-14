@@ -150,11 +150,27 @@ func Capture(ctx context.Context, c *cdppipe.Conn) (Sample, error) {
 	return s, nil
 }
 
+// LangsMatch compares a measured language list with the profile's. With
+// primaryOnly, only the primary subtag of the first entry counts ("vi" for
+// "vi-VN,vi,en"), for engines whose hidden tab sees nothing more.
+func LangsMatch(got, want string, primaryOnly bool) bool {
+	if !primaryOnly {
+		return got == want
+	}
+	return primaryLang(got) == primaryLang(want)
+}
+
+func primaryLang(langs string) string {
+	first, _, _ := strings.Cut(langs, ",")
+	tag, _, _ := strings.Cut(strings.TrimSpace(first), "-")
+	return strings.ToLower(tag)
+}
+
 // Compare returns "match" or "drift" and the names of differing fields. The
 // eight baseline fields are compared with the previous sample; tz and langs
 // are compared with the profile's current expected values instead (a proxy
-// change legitimately changes them).
-func Compare(baseline, got Sample, wantTZ, wantLangs string) (string, []string) {
+// change legitimately changes them). primaryLangOnly is passed to LangsMatch.
+func Compare(baseline, got Sample, wantTZ, wantLangs string, primaryLangOnly bool) (string, []string) {
 	var diff []string
 	if baseline.Canvas != got.Canvas {
 		diff = append(diff, "canvas")
@@ -183,7 +199,7 @@ func Compare(baseline, got Sample, wantTZ, wantLangs string) (string, []string) 
 	if netproxy.CanonicalZone(got.TZ) != netproxy.CanonicalZone(wantTZ) {
 		diff = append(diff, "tz")
 	}
-	if got.Langs != wantLangs {
+	if !LangsMatch(got.Langs, wantLangs, primaryLangOnly) {
 		diff = append(diff, "langs")
 	}
 	if len(diff) == 0 {

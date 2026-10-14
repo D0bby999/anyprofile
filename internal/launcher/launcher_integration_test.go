@@ -4,13 +4,15 @@
 
 package launcher
 
-// Runs the real Fury core. Needs:
-//   ANYPROFILE_TEST_FURY_APP  path to an extracted, verified Fury.app (0.3.5)
-//   tools/fury-config built   (make fury-config)
+// Runs the real Fury core and Apostate. Needs:
+//   ANYPROFILE_TEST_FURY_APP      path to an extracted, verified Fury.app (0.3.5)
+//   tools/fury-config built       (make fury-config)
+//   ANYPROFILE_TEST_APOSTATE_APP  path to Apostate's Chromium.app (0.5.1)
 
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"io"
 	"log/slog"
 	"os"
@@ -26,7 +28,9 @@ import (
 	_ "modernc.org/sqlite"
 
 	"github.com/D0bby999/anyprofile/internal/engine"
+	"github.com/D0bby999/anyprofile/internal/engine/apostate"
 	"github.com/D0bby999/anyprofile/internal/engine/fury"
+	"github.com/D0bby999/anyprofile/internal/fingerprint"
 	"github.com/D0bby999/anyprofile/internal/paths"
 	"github.com/D0bby999/anyprofile/internal/secrets"
 	"github.com/D0bby999/anyprofile/internal/store"
@@ -299,5 +303,128 @@ func TestCookieKeyAndDiagnostics(t *testing.T) {
 	r.sec.Delete(secrets.ServiceCookieKey, id)
 	if err := l.Start(context.Background(), id); err != ErrCookieKeyLost {
 		t.Fatalf("lost key err = %v", err)
+	}
+}
+
+func newApostateRig(t *testing.T) *rig {
+	app := os.Getenv("ANYPROFILE_TEST_APOSTATE_APP")
+	if app == "" {
+		t.Skip("ANYPROFILE_TEST_APOSTATE_APP not set")
+	}
+	root, err := os.MkdirTemp("/tmp", "apit")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { os.RemoveAll(root) })
+	dirs := paths.Dirs{Root: root}
+	if err := dirs.Ensure(); err != nil {
+		t.Fatal(err)
+	}
+	dir := filepath.Join(dirs.Engine("apostate", apostate.Version), "apostate-155.0.8059.31-macos-arm64")
+	os.MkdirAll(dir, 0o700)
+	if err := os.Symlink(app, filepath.Join(dir, "Chromium.app")); err != nil {
+		t.Fatal(err)
+	}
+	st, err := store.Open(dirs.DB(), dirs.Backups())
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { st.Close() })
+	eng := apostate.New(dirs)
+	eng.MockKeychain = true // a test must never raise a Keychain dialog
+	return &rig{dirs: dirs, st: st, sec: secrets.NewMemory(), eng: eng}
+}
+
+func TestApostateLifecycle(t *testing.T) {
+	r := newApostateRig(t)
+	l := r.launcher(t)
+	l.Capture = true
+	const id = "ap1"
+	if err := r.st.CreateProfile(&store.Profile{ID: id, Name: "Apostate", Engine: "apostate",
+		EngineVersion: apostate.Version, PersonaID: "apostate-macos", Platform: "macos",
+		SeedHex: "00000000000a11ce", Timezone: "Asia/Taipei", Languages: "zh-TW,zh,en", UILocale: "zh-TW",
+		EngineMeta: store.EngineMeta{HWC: 4, MemGiB: 8}}); err != nil {
+		t.Fatal(err)
+	}
+	ctx := context.Background()
+	waitVerdict := func(want string) {
+		t.Helper()
+		deadline := time.Now().Add(20 * time.Second)
+		for time.Now().Before(deadline) {
+			if p, err := r.st.GetProfile(id); err == nil && p.FPVerdict == want {
+				return
+			}
+			time.Sleep(200 * time.Millisecond)
+		}
+		p, _ := r.st.GetProfile(id)
+		t.Fatalf("verdict never became %q: %+v", want, p)
+	}
+	conn := func() (*proc, int) {
+		l.mu.Lock()
+		defer l.mu.Unlock()
+		return l.procs[id], l.procs[id].info.PID
+	}
+
+	// Launch 1: baseline with the pinned values, no TCP listener.
+	if err := l.Start(ctx, id); err != nil {
+		t.Fatal(err)
+	}
+	waitVerdict("baseline")
+	db, err := sql.Open("sqlite", "file:"+r.dirs.DB())
+	if err != nil {
+		t.Fatal(err)
+	}
+	var last string
+	if err := db.QueryRow(`SELECT fp_last FROM profiles WHERE id = ?`, id).Scan(&last); err != nil {
+		t.Fatal(err)
+	}
+	db.Close()
+	var s fingerprint.Sample
+	if err := json.Unmarshal([]byte(last), &s); err != nil {
+		t.Fatal(err)
+	}
+	if s.HWC != 4 || s.TZ != "Asia/Taipei" || !fingerprint.LangsMatch(s.Langs, "zh-TW,zh,en", true) || s.Platform != "MacIntel" || !strings.Contains(s.UA, "Chrome/155.") {
+		t.Fatalf("sample = %+v", s)
+	}
+	p1, pid := conn()
+	if ports := listeningPorts(t, pid); ports != "" {
+		t.Fatalf("launch listens: %s", ports)
+	}
+	expires := time.Now().Add(24 * time.Hour).Unix()
+	if _, err := p1.cdp.Call(ctx, "", "Storage.setCookies", map[string]any{"cookies": []map[string]any{{
+		"name": "ap_it", "value": "1", "domain": "example.com", "path": "/", "expires": expires, "secure": true}}}); err != nil {
+		t.Fatal(err)
+	}
+	if err := l.Stop(id); err != nil {
+		t.Fatal(err)
+	}
+
+	// Launch 2: same fingerprint, cookie kept.
+	if err := l.Start(ctx, id); err != nil {
+		t.Fatal(err)
+	}
+	waitVerdict("match")
+	p2, pid := conn()
+	raw, err := p2.cdp.Call(ctx, "", "Storage.getCookies", map[string]any{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(raw), `"name":"ap_it"`) {
+		t.Fatalf("cookie lost after restart: %.300s", raw)
+	}
+
+	// The browser survives the app closing its pipe ends (keep-alive copies
+	// sit on fds 5 and 6: Apostate has no data pipes).
+	p2.cdp.Close()
+	time.Sleep(3 * time.Second)
+	if err := syscall.Kill(pid, 0); err != nil {
+		t.Fatalf("browser died after the app closed its pipe: %v", err)
+	}
+	if err := l.Stop(id); err != nil {
+		t.Fatal(err)
+	}
+	udd := r.dirs.Profile(id)
+	if out, _ := exec.Command("pgrep", "-f", udd).Output(); len(strings.TrimSpace(string(out))) > 0 {
+		t.Fatalf("processes left for %s: %s", udd, out)
 	}
 }

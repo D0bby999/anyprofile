@@ -13,6 +13,7 @@ import (
 	"sort"
 
 	"github.com/D0bby999/anyprofile/internal/engine"
+	"github.com/D0bby999/anyprofile/internal/engine/apostate"
 	"github.com/D0bby999/anyprofile/internal/engine/fury"
 	"github.com/D0bby999/anyprofile/internal/launcher"
 	"github.com/D0bby999/anyprofile/internal/netproxy"
@@ -65,14 +66,18 @@ func (a *App) init() error {
 	if err := a.fury.CleanStale(); err != nil {
 		log.Warn("clean stale engine files", "err", err)
 	}
-	a.engines = map[string]engine.Engine{"fury": a.fury}
+	ap := apostate.New(dirs)
+	if err := ap.CleanStale(); err != nil {
+		log.Warn("clean stale engine files", "engine", "apostate", "err", err)
+	}
+	a.engines = map[string]engine.Engine{"fury": a.fury, "apostate": ap}
 	sec := secrets.Keychain{}
 	l := launcher.New(st, sec, dirs, engineList(a.engines),
 		func(in launcher.Info) { runtime.EventsEmit(a.ctx, "launch:changed", in) }, log)
 	l.Capture = true
 	l.OnData = func(kind string) { runtime.EventsEmit(a.ctx, "data:changed", kind) }
 	a.svc = &service.Service{Dirs: dirs, Store: st, Secrets: sec, Launcher: l, Log: log,
-		Engines: a.engines, Preferred: "fury",
+		Engines: a.engines, Preferred: "apostate",
 		OnChange:   func(kind string) { runtime.EventsEmit(a.ctx, "data:changed", kind) },
 		CheckProxy: netproxy.Check,
 		Locale: func(ctx context.Context, cc string) (string, []string, error) {

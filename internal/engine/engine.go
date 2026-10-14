@@ -64,6 +64,14 @@ func WindowName(p store.Profile) string {
 	return p.Name
 }
 
+// PrimaryLanguageProbe is implemented by engines whose hidden measuring tab
+// reports only the primary language: Apostate applies --fingerprint-locale to
+// the tabs a user sees, while a hidden tab gets the browser's UI locale. The
+// fingerprint check then compares the primary language subtag only.
+type PrimaryLanguageProbe interface {
+	ProbeSeesPrimaryLanguageOnly() bool
+}
+
 // Engine is one browser engine implementation.
 type Engine interface {
 	ID() string

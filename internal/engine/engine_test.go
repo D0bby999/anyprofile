@@ -4,6 +4,7 @@ package engine
 
 import (
 	"archive/tar"
+	"archive/zip"
 	"bytes"
 	"context"
 	"net/http"
@@ -98,5 +99,84 @@ func TestDownloadResumesAndVerifies(t *testing.T) {
 	sum, _ := SHA256File(dst)
 	if VerifySHA256(dst, sum) != nil || VerifySHA256(dst, strings.Repeat("0", 64)) == nil {
 		t.Fatal("hash verification wrong")
+	}
+}
+
+type zipEntry struct {
+	name, body string
+	mode       os.FileMode
+}
+
+func writeZip(t *testing.T, entries []zipEntry) string {
+	t.Helper()
+	path := filepath.Join(t.TempDir(), "x.zip")
+	f, err := os.Create(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	zw := zip.NewWriter(f)
+	for _, e := range entries {
+		h := &zip.FileHeader{Name: e.name, Method: zip.Deflate}
+		h.SetMode(e.mode)
+		w, err := zw.CreateHeader(h)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := w.Write([]byte(e.body)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := zw.Close(); err != nil {
+		t.Fatal(err)
+	}
+	f.Close()
+	return path
+}
+
+func TestExtractZip(t *testing.T) {
+	src := writeZip(t, []zipEntry{
+		{name: "B.framework/", mode: os.ModeDir | 0o755},
+		{name: "B.framework/Versions/A/bin", body: "#!/bin/sh\n", mode: 0o755},
+		{name: "B.framework/Versions/Current", body: "A", mode: os.ModeSymlink | 0o777},
+		{name: "__MACOSX/x", body: "junk", mode: 0o644},
+		{name: "B.framework/._y", body: "junk", mode: 0o644},
+	})
+	dst := t.TempDir()
+	if err := ExtractZip(src, dst); err != nil {
+		t.Fatal(err)
+	}
+	st, err := os.Stat(filepath.Join(dst, "B.framework/Versions/A/bin"))
+	if err != nil || st.Mode().Perm() != 0o755 {
+		t.Fatalf("bin = %v %v", st, err)
+	}
+	if l, err := os.Readlink(filepath.Join(dst, "B.framework/Versions/Current")); err != nil || l != "A" {
+		t.Fatalf("link = %q %v", l, err)
+	}
+	for _, junk := range []string{"__MACOSX/x", "B.framework/._y"} {
+		if _, err := os.Lstat(filepath.Join(dst, junk)); !os.IsNotExist(err) {
+			t.Fatalf("%s extracted", junk)
+		}
+	}
+}
+
+func TestExtractZipRejects(t *testing.T) {
+	cases := map[string]zipEntry{
+		"dotdot":      {name: "../evil", body: "x", mode: 0o644},
+		"abs symlink": {name: "a/link", body: "/etc", mode: os.ModeSymlink | 0o777},
+		"up symlink":  {name: "a/link", body: "../../evil", mode: os.ModeSymlink | 0o777},
+	}
+	for name, e := range cases {
+		parent := t.TempDir()
+		dst := filepath.Join(parent, "dst")
+		if err := os.Mkdir(dst, 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := ExtractZip(writeZip(t, []zipEntry{e}), dst); err == nil {
+			t.Fatalf("%s: accepted", name)
+		}
+		entries, _ := os.ReadDir(parent)
+		if len(entries) != 1 {
+			t.Fatalf("%s: wrote outside dst: %v", name, entries)
+		}
 	}
 }

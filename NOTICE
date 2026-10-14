@@ -18,6 +18,13 @@ Fury core (downloaded at runtime, never redistributed by AnyProfile)
   notarized release, verifies its SHA-256 and Apple signature, and executes it
   unmodified.
 
+Apostate (downloaded at runtime, never redistributed by AnyProfile)
+  https://github.com/heretic-tech/apostate/releases
+  A patched Chromium. License: GPL-3.0. Chromium: BSD-3-Clause and the
+  licenses of its third-party components. AnyProfile downloads the notarized
+  release, verifies its SHA-256 and Apple signature (team PX3P7V373K), and
+  executes it unmodified as a separate program.
+
 Widevine CDM
   Not shipped. When Google Chrome is installed, AnyProfile copies the user's own
   licensed CDM from the Chrome bundle into each profile on that same machine,

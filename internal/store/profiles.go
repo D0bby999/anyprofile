@@ -35,15 +35,18 @@ type Profile struct {
 	FPVerdict     string     `json:"fpVerdict"`
 	FPDiff        []string   `json:"fpDiff"`
 	FPCheckedAt   string     `json:"fpCheckedAt"`
-	StartURL      string     `json:"startUrl"`
-	Notes         string     `json:"notes"`
-	Tags          []string   `json:"tags"`
-	CDPNextLaunch bool       `json:"cdpNextLaunch"`
-	Pinned        bool       `json:"pinned"`
-	CreatedAt     string     `json:"createdAt"`
-	UpdatedAt     string     `json:"updatedAt"`
-	LastOpenAt    string     `json:"lastOpenAt"`
-	DeletedAt     string     `json:"deletedAt"`
+	// Machine is the emulated machine from the fingerprint baseline, for
+	// example "Apple M4 Pro · 1512×982"; empty before the first measurement.
+	Machine       string   `json:"machine"`
+	StartURL      string   `json:"startUrl"`
+	Notes         string   `json:"notes"`
+	Tags          []string `json:"tags"`
+	CDPNextLaunch bool     `json:"cdpNextLaunch"`
+	Pinned        bool     `json:"pinned"`
+	CreatedAt     string   `json:"createdAt"`
+	UpdatedAt     string   `json:"updatedAt"`
+	LastOpenAt    string   `json:"lastOpenAt"`
+	DeletedAt     string   `json:"deletedAt"`
 }
 
 // EngineMeta holds what an engine pins at creation. Zero values mean "not pinned".
@@ -63,17 +66,17 @@ const profileCols = `id, name, engine, engine_version, persona_id, seed_hex, pla
 	COALESCE(proxy_id, ''), timezone, languages, ui_locale, lat, lon, site, start_url,
 	notes, tags, cdp_next_launch, pinned, created_at, updated_at, COALESCE(last_open_at, ''),
 	COALESCE(deleted_at, ''), serial, login, has_password, has_totp,
-	fp_verdict, fp_diff, fp_checked_at, engine_meta`
+	fp_verdict, fp_diff, fp_checked_at, engine_meta, fp_baseline`
 
 func scanProfile(row interface{ Scan(...any) error }) (Profile, error) {
 	var p Profile
 	var tags string
-	var fpDiff, meta string
+	var fpDiff, meta, baseline string
 	err := row.Scan(&p.ID, &p.Name, &p.Engine, &p.EngineVersion, &p.PersonaID, &p.SeedHex,
 		&p.Platform, &p.ProxyID, &p.Timezone, &p.Languages, &p.UILocale, &p.Lat, &p.Lon,
 		&p.Site, &p.StartURL, &p.Notes, &tags, &p.CDPNextLaunch, &p.Pinned,
 		&p.CreatedAt, &p.UpdatedAt, &p.LastOpenAt, &p.DeletedAt, &p.Serial, &p.Login,
-		&p.HasPassword, &p.HasTOTP, &p.FPVerdict, &fpDiff, &p.FPCheckedAt, &meta)
+		&p.HasPassword, &p.HasTOTP, &p.FPVerdict, &fpDiff, &p.FPCheckedAt, &meta, &baseline)
 	if errors.Is(err, sql.ErrNoRows) {
 		return p, ErrNotFound
 	}
@@ -88,6 +91,7 @@ func scanProfile(row interface{ Scan(...any) error }) (Profile, error) {
 	}
 	// An empty or broken value reads as "nothing pinned".
 	_ = json.Unmarshal([]byte(meta), &p.EngineMeta)
+	p.Machine = machineLabel(baseline)
 	return p, nil
 }
 
@@ -97,6 +101,27 @@ func tagsJSON(tags []string) string {
 	}
 	b, _ := json.Marshal(tags)
 	return string(b)
+}
+
+// machineLabel turns a fingerprint baseline into "GPU · width×height". An
+// ANGLE renderer string is cut to the GPU name after "Renderer: ".
+func machineLabel(baselineJSON string) string {
+	var b struct {
+		WebGLRenderer string `json:"webglRenderer"`
+		Screen        string `json:"screen"`
+	}
+	if json.Unmarshal([]byte(baselineJSON), &b) != nil {
+		return ""
+	}
+	gpu := strings.TrimSpace(b.WebGLRenderer)
+	if _, after, ok := strings.Cut(gpu, "Renderer: "); ok {
+		gpu, _, _ = strings.Cut(after, ",")
+		gpu = strings.TrimSuffix(strings.TrimSpace(gpu), ")")
+	}
+	if gpu == "" || b.Screen == "" {
+		return ""
+	}
+	return gpu + " · " + strings.Replace(b.Screen, "x", "×", 1)
 }
 
 func metaJSON(m EngineMeta) string {

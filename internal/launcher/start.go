@@ -108,7 +108,7 @@ func (l *Launcher) start(ctx context.Context, p *proc) error {
 	l.mu.Unlock()
 	l.set(p, Running, "")
 	if p.cdp != nil {
-		go l.capture(prof, p.cdp)
+		go l.capture(prof, eng, p.cdp)
 	}
 	go l.watch(p, pid, wait)
 	return nil
