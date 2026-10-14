@@ -106,6 +106,10 @@ export function ListProxies() {
   return window['go']['main']['App']['ListProxies']();
 }
 
+export function MatchExit(arg1) {
+  return window['go']['main']['App']['MatchExit'](arg1);
+}
+
 export function Onboarded() {
   return window['go']['main']['App']['Onboarded']();
 }
@@ -128,6 +132,10 @@ export function ResetFingerprint(arg1) {
 
 export function RestoreProfile(arg1) {
   return window['go']['main']['App']['RestoreProfile'](arg1);
+}
+
+export function Sessions(arg1) {
+  return window['go']['main']['App']['Sessions'](arg1);
 }
 
 export function SetAccountPassword(arg1, arg2) {

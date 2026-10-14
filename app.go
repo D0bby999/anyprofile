@@ -79,6 +79,7 @@ func (a *App) init() error {
 	l := launcher.New(st, sec, dirs, engineList(a.engines),
 		func(in launcher.Info) { runtime.EventsEmit(a.ctx, "launch:changed", in) }, log)
 	l.Capture = true
+	l.CheckExit = netproxy.Check
 	l.OnData = func(kind string) { runtime.EventsEmit(a.ctx, "data:changed", kind) }
 	a.svc = &service.Service{Dirs: dirs, Store: st, Secrets: sec, Launcher: l, Log: log,
 		Engines: a.engines, Preferred: "apostate",

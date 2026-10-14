@@ -101,6 +101,18 @@ func (a *App) SetSiteMany(ids []string, site string) error {
 	return a.must(func() error { return a.svc.SetSiteMany(ids, site) })
 }
 
+func (a *App) Sessions(profileID string) ([]store.Session, error) {
+	if err := a.ready(); err != nil {
+		return nil, err
+	}
+	return a.svc.Sessions(profileID)
+}
+
+// MatchExit moves the profile's timezone and languages to its proxy's current exit.
+func (a *App) MatchExit(profileID string) error {
+	return a.must(func() error { return a.svc.MatchExit(a.ctx, profileID) })
+}
+
 // Onboarded is false only on a fresh install that has not finished setup.
 func (a *App) Onboarded() bool {
 	if a.svc == nil {

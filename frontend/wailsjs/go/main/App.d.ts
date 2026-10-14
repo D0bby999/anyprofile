@@ -59,6 +59,8 @@ export function ListProfiles(arg1:store.ProfileFilter):Promise<Array<service.Pro
 
 export function ListProxies():Promise<Array<service.ProxyRow>>;
 
+export function MatchExit(arg1:string):Promise<void>;
+
 export function Onboarded():Promise<boolean>;
 
 export function Personas():Promise<Array<fury.Persona>>;
@@ -70,6 +72,8 @@ export function QuickCreate(arg1:string):Promise<store.Profile>;
 export function ResetFingerprint(arg1:string):Promise<void>;
 
 export function RestoreProfile(arg1:string):Promise<void>;
+
+export function Sessions(arg1:string):Promise<Array<store.Session>>;
 
 export function SetAccountPassword(arg1:string,arg2:string):Promise<void>;
 

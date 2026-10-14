@@ -43,6 +43,8 @@ type proc struct {
 	relay *netproxy.Relay
 	cdp   *cdppipe.Conn
 	done  chan struct{} // closed when the browser has exited and been cleaned up
+	// sessionID is the sessions row of this launch; 0 when it could not be recorded.
+	sessionID int64
 }
 
 type Launcher struct {
@@ -62,6 +64,9 @@ type Launcher struct {
 	Capture bool
 	// OnData is told "profiles" after a measurement is saved; may be nil.
 	OnData func(kind string)
+	// CheckExit measures a proxy's exit right after a launch (netproxy.Check
+	// in the app). Nil: sessions are recorded without an exit.
+	CheckExit func(ctx context.Context, up netproxy.Upstream) (netproxy.Exit, error)
 }
 
 func New(st *store.Store, sec secrets.Store, dirs paths.Dirs, engines []engine.Engine, onChange func(Info), log *slog.Logger) *Launcher {

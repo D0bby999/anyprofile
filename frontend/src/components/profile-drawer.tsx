@@ -17,9 +17,10 @@ import { NetworkGroup } from './drawer/network-group'
 import { NotesGroup } from './drawer/notes-group'
 import { PlatformGroup } from './drawer/platform-group'
 import { TagsGroup } from './drawer/tags-group'
+import { SessionsTab } from './drawer/sessions-tab'
 
-type Tab = 'overview' | 'account'
-const TABS: Tab[] = ['overview', 'account']
+type Tab = 'overview' | 'account' | 'sessions'
+const TABS: Tab[] = ['overview', 'account', 'sessions']
 
 type Props = {
   row: service.ProfileRow
@@ -39,7 +40,7 @@ export function ProfileDrawer({ row, sites, recent, knownTags, onClose, onStart,
   const [proxies, setProxies] = useState<service.ProxyRow[]>([])
   const [login, setLogin] = useState(row.login)
   const [advanced, setAdvanced] = useState(false)
-  const tabRefs = useRef<Record<Tab, HTMLButtonElement | null>>({ overview: null, account: null })
+  const tabRefs = useRef<Record<Tab, HTMLButtonElement | null>>({ overview: null, account: null, sessions: null })
   useEffect(() => { Api.ListProxies().then((p) => setProxies(p ?? [])).catch(() => {}) }, [row.proxyId])
   useEffect(() => setLogin(row.login), [row.login])
 
@@ -63,6 +64,16 @@ export function ProfileDrawer({ row, sites, recent, knownTags, onClose, onStart,
     const next = TABS[(TABS.indexOf(tab) + (e.key === 'ArrowRight' ? 1 : TABS.length - 1)) % TABS.length]
     setTab(next)
     tabRefs.current[next]?.focus()
+  }
+
+  const matchIp = async () => {
+    if (!(await confirm(t.confirm.matchIp))) return
+    try {
+      await Api.MatchExit(row.id)
+      toast.success(t.sessions.matched)
+    } catch (e) {
+      toast.error(errorText(e))
+    }
   }
 
   const trash = async () => {
@@ -121,7 +132,7 @@ export function ProfileDrawer({ row, sites, recent, knownTags, onClose, onStart,
       <div className="drawer-body" role="tabpanel" id={`dpanel-${tab}`} aria-labelledby={`dtab-${tab}`}>
         {tab === 'overview' ? (
           <>
-            <NetworkGroup row={row} proxies={proxies} running={running} onApply={(proxyId) => update({ proxyId })} />
+            <NetworkGroup row={row} proxies={proxies} running={running} onApply={(proxyId) => update({ proxyId })} onMatchIp={matchIp} />
             <PlatformGroup site={row.site} startUrl={row.startUrl} sites={sites} recent={recent} running={running}
               onSite={(id) => update({ site: id })} onStartUrl={(startUrl) => update({ startUrl })} />
             <TagsGroup tags={row.tags} known={knownTags} onChange={(tags) => update({ tags })} />
@@ -145,6 +156,8 @@ export function ProfileDrawer({ row, sites, recent, knownTags, onClose, onStart,
               )}
             </section>
           </>
+        ) : tab === 'sessions' ? (
+          <SessionsTab profileId={row.id} />
         ) : (
           <AccountPanel row={row} login={login} onLogin={setLogin} onError={toast.error}
             onLoginCommit={() => { if (login.trim() !== row.login) update({ login: login.trim() }) }} />

@@ -182,6 +182,7 @@ kbd { display: inline-flex; align-items: center; min-width: 22px; height: 20px; 
 .tag { display: inline-flex; align-items: center; height: 17px; padding: 0 6px; border-radius: var(--r-xs); background: var(--surface-active); color: var(--muted); font-size: 10.5px; font-weight: 600; }
 .nowrap { white-space: nowrap; }
 .cellproxy { display: flex; align-items: center; gap: 8px; }
+.cellproxy .cc.danger { background: var(--danger-soft); color: var(--danger-ink); }
 .cellproxy .mono { color: var(--ink-soft); }
 .cellproxy small { display: block; color: var(--faint); font-size: var(--t-xs); max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
@@ -264,6 +265,9 @@ kbd { display: inline-flex; align-items: center; min-width: 22px; height: 20px; 
 .tabs [role="tab"]:hover { color: var(--ink); background: var(--surface-hover); }
 .tabs [role="tab"][aria-selected="true"] { color: var(--accent-ink); background: var(--accent-soft); }
 .drawer-body { flex: 1; min-height: 0; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 20px; }
+.sessions-empty { margin: 0; color: var(--muted); font-size: var(--t-sm); }
+.table.sessions td, .table.sessions th { height: auto; padding: 8px 6px; font-size: var(--t-sm); }
+.table.sessions small { color: var(--muted); }
 .account { display: flex; flex-direction: column; gap: 16px; }
 .dgroup { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .dgroup h3 { display: flex; align-items: center; gap: 8px; font-size: var(--t-sm); font-weight: 650; color: var(--ink-soft); }

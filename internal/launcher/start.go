@@ -41,9 +41,9 @@ func (l *Launcher) start(ctx context.Context, p *proc) error {
 		return apperr.Newf("folder_in_use", "another process (pid %d) already uses this profile's folder; close it first", pid)
 	}
 
+	var up netproxy.Upstream // kept in memory only, to measure the exit after launch
 	if prof.ProxyID != "" {
-		up, err := l.upstream(prof.ProxyID)
-		if err != nil {
+		if up, err = l.upstream(prof.ProxyID); err != nil {
 			return err
 		}
 		if p.relay, err = netproxy.StartRelay(up, 0); err != nil {
@@ -99,6 +99,14 @@ func (l *Launcher) start(ctx context.Context, p *proc) error {
 		return err
 	}
 	_ = l.st.MarkOpened(prof.ID)
+	sess := store.Session{ProfileID: prof.ID, Engine: prof.Engine, EngineVersion: prof.EngineVersion, ProxyID: prof.ProxyID}
+	if err := l.st.StartSession(&sess); err != nil {
+		l.log.Warn("start session", "profile", prof.ID, "err", err)
+	}
+	p.sessionID = sess.ID
+	if prof.ProxyID != "" && l.CheckExit != nil && sess.ID > 0 {
+		go l.measureExit(prof.ID, sess.ID, up)
+	}
 	if prof.CDPNextLaunch { // diagnostics are one launch only
 		prof.CDPNextLaunch = false
 		_ = l.st.UpdateProfile(prof)
@@ -144,4 +152,23 @@ func (l *Launcher) waitReady(udd string, pid int, wait <-chan error) error {
 		}
 	}
 	return errors.New("browser did not become ready in time")
+}
+
+// measureExit records the exit the proxy gives right after a launch. It never
+// fails the launch; an error is stored on the session for the user to see.
+func (l *Launcher) measureExit(profileID string, sessionID int64, up netproxy.Upstream) {
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
+	e, err := l.CheckExit(ctx, up)
+	msg := ""
+	if err != nil {
+		msg = err.Error()
+		l.log.Warn("exit check", "profile", profileID, "err", msg)
+	}
+	if err := l.st.SetSessionExit(sessionID, e.IP, e.Country, e.Timezone, msg); err != nil {
+		l.log.Warn("save exit", "profile", profileID, "err", err)
+	}
+	if l.OnData != nil {
+		l.OnData("profiles")
+	}
 }

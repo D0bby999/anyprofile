@@ -178,6 +178,38 @@ export namespace service {
 	        this.proxy = source["proxy"];
 	    }
 	}
+	export class ExitSummary {
+	    ip: string;
+	    country: string;
+	    at: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new ExitSummary(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.ip = source["ip"];
+	        this.country = source["country"];
+	        this.at = source["at"];
+	    }
+	}
+	export class Flag {
+	    id: string;
+	    level: string;
+	    params: Record<string, string>;
+	
+	    static createFrom(source: any = {}) {
+	        return new Flag(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.level = source["level"];
+	        this.params = source["params"];
+	    }
+	}
 	export class ImportResult {
 	    added: number;
 	    failed: netproxy.ParsedLine[];
@@ -290,6 +322,8 @@ export namespace service {
 	    proxyCountry: string;
 	    proxyExitIp: string;
 	    proxyExpiry: string;
+	    lastExit?: ExitSummary;
+	    flags: Flag[];
 	
 	    static createFrom(source: any = {}) {
 	        return new ProfileRow(source);
@@ -336,6 +370,8 @@ export namespace service {
 	        this.proxyCountry = source["proxyCountry"];
 	        this.proxyExitIp = source["proxyExitIp"];
 	        this.proxyExpiry = source["proxyExpiry"];
+	        this.lastExit = this.convertValues(source["lastExit"], ExitSummary);
+	        this.flags = this.convertValues(source["flags"], Flag);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -680,6 +716,40 @@ export namespace store {
 	        this.createdAt = source["createdAt"];
 	        this.note = source["note"];
 	        this.expiresOn = source["expiresOn"];
+	    }
+	}
+	export class Session {
+	    id: number;
+	    profileId: string;
+	    engine: string;
+	    engineVersion: string;
+	    proxyId: string;
+	    startedAt: string;
+	    stoppedAt: string;
+	    exitIp: string;
+	    exitCountry: string;
+	    exitTz: string;
+	    exitError: string;
+	    checks: number[];
+	
+	    static createFrom(source: any = {}) {
+	        return new Session(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.profileId = source["profileId"];
+	        this.engine = source["engine"];
+	        this.engineVersion = source["engineVersion"];
+	        this.proxyId = source["proxyId"];
+	        this.startedAt = source["startedAt"];
+	        this.stoppedAt = source["stoppedAt"];
+	        this.exitIp = source["exitIp"];
+	        this.exitCountry = source["exitCountry"];
+	        this.exitTz = source["exitTz"];
+	        this.exitError = source["exitError"];
+	        this.checks = source["checks"];
 	    }
 	}
 

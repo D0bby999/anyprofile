@@ -386,6 +386,9 @@ func TestApostateLifecycle(t *testing.T) {
 	if s.HWC != 4 || s.TZ != "Asia/Taipei" || !fingerprint.LangsMatch(s.Langs, "zh-TW,zh,en", true) || s.Platform != "MacIntel" || !strings.Contains(s.UA, "Chrome/155.") {
 		t.Fatalf("sample = %+v", s)
 	}
+	if ss, _ := r.st.Sessions(id, 10); len(ss) != 1 || ss[0].StoppedAt != "" || ss[0].Engine != "apostate" {
+		t.Fatalf("sessions after launch 1 = %+v", ss)
+	}
 	p1, pid := conn()
 	if ports := listeningPorts(t, pid); ports != "" {
 		t.Fatalf("launch listens: %s", ports)
@@ -397,6 +400,9 @@ func TestApostateLifecycle(t *testing.T) {
 	}
 	if err := l.Stop(id); err != nil {
 		t.Fatal(err)
+	}
+	if ss, _ := r.st.Sessions(id, 10); len(ss) != 1 || ss[0].StoppedAt == "" {
+		t.Fatalf("session not closed after stop: %+v", ss)
 	}
 
 	// Launch 2: same fingerprint, cookie kept.

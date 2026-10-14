@@ -26,6 +26,8 @@ type ProfileRow struct {
 	ProxyCountry string         `json:"proxyCountry"`
 	ProxyExitIP  string         `json:"proxyExitIp"`
 	ProxyExpiry  string         `json:"proxyExpiry"` // "", "soon" or "expired"
+	LastExit     *ExitSummary   `json:"lastExit"`    // nil until a launch measured one
+	Flags        []Flag         `json:"flags"`
 }
 
 // AutoProxy as NewProfile.ProxyID picks the next free sticky proxy (none if
@@ -60,9 +62,22 @@ func (s *Service) ListProfiles(f store.ProfileFilter) ([]ProfileRow, error) {
 	for _, in := range s.Launcher.List() {
 		running[in.ProfileID] = in
 	}
+	ids := make([]string, len(ps))
+	for i, p := range ps {
+		ids[i] = p.ID
+	}
+	exits, err := s.Store.LatestExits(ids)
+	if err != nil {
+		return nil, err
+	}
 	out := make([]ProfileRow, 0, len(ps))
 	for _, p := range ps {
 		row := ProfileRow{Profile: p, State: launcher.Stopped}
+		pair := exits[p.ID]
+		row.Flags = exitFlags(p, &pair[0], &pair[1])
+		if pair[0].ExitIP != "" {
+			row.LastExit = &ExitSummary{IP: pair[0].ExitIP, Country: pair[0].ExitCountry, At: pair[0].StartedAt}
+		}
 		if in, ok := running[p.ID]; ok {
 			row.State, row.StateError, row.CDPPort = in.State, in.Error, in.CDPPort
 		}

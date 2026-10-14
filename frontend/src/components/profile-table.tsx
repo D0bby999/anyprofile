@@ -52,11 +52,15 @@ function LastOpened({ row, now }: { row: service.ProfileRow; now: Date }) {
 
 function ProxyCell({ row }: { row: service.ProfileRow }) {
   if (!row.proxyId) return <span className="cellproxy muted"><Icon name="direct" className="icon sm" />{t.common.direct}</span>
+  // The exit measured at the last launch wins over the proxy's last check.
+  const ip = row.lastExit?.ip || row.proxyExitIp
+  const cc = row.lastExit?.country || row.proxyCountry
+  const moved = (row.flags ?? []).some((f) => f.id === 'country_changed')
   return (
     <span className="cellproxy">
-      <span className="cc">{row.proxyCountry || '?'}</span>
+      <span className={`cc${moved ? ' danger' : ''}`}>{cc || '?'}</span>
       <span>
-        {row.proxyExitIp ? <span className="mono selectable">{row.proxyExitIp}</span> : <span className="faint">{t.proxies.unchecked}</span>}
+        {ip ? <span className="mono selectable">{ip}</span> : <span className="faint">{t.proxies.unchecked}</span>}
         <small>{row.proxyLabel}</small>
       </span>
     </span>

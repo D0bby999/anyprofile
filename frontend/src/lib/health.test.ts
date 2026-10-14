@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { describe, expect, it } from 'vitest'
 import { t } from '../i18n'
-import { health } from './health'
+import { health, needsAttention } from './health'
 
 const base = { fpVerdict: '', fpDiff: [] as string[], proxyExpiry: '', lastOpenAt: '2026-10-13T10:00:00Z', cdpPort: 0 }
 
@@ -37,5 +37,17 @@ describe('health', () => {
     const h = health({ ...base, fpVerdict: 'drift', fpDiff: ['tz'], proxyExpiry: 'expired' })
     expect(h.level).toBe('danger')
     expect(h.reasons).toHaveLength(2)
+  })
+
+  it('turns exit flags into reasons, worst first', () => {
+    const h = health({ ...base, fpVerdict: 'match', flags: [{ id: 'country_changed', level: 'danger', params: { from: 'US', to: 'DE' } }] })
+    expect(h.level).toBe('danger')
+    expect(h.label).toBe(t.flags.country_changed)
+    expect(h.reasons[0]).toContain('Germany')
+  })
+
+  it('does not count a profile without proxy as needing attention', () => {
+    expect(needsAttention({ ...base, fpVerdict: 'match', flags: [{ id: 'direct', level: 'info', params: {} }] })).toBe(false)
+    expect(needsAttention({ ...base, fpVerdict: 'match', flags: [{ id: 'tz_mismatch', level: 'warn', params: { profile: 'Asia/Taipei', ip: 'Asia/Tokyo' } }] })).toBe(true)
   })
 })

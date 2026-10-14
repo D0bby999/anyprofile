@@ -27,6 +27,9 @@ func (l *Launcher) watch(p *proc, pid int, wait <-chan error) {
 		p.cdp.Close()
 	}
 	_ = l.st.DeleteLaunch(p.info.ProfileID)
+	if p.sessionID > 0 {
+		_ = l.st.EndSession(p.sessionID)
+	}
 	l.mu.Lock()
 	delete(l.procs, p.info.ProfileID)
 	l.mu.Unlock()

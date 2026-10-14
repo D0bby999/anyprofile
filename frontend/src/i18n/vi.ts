@@ -44,6 +44,7 @@ export const vi: Messages = {
   confirm: {
     deleteSite: (name: string) => ({ title: `Xoá ${name}?`, body: 'Profile trên nền tảng này sẽ chuyển sang Khác.', confirm: 'Xoá nền tảng' }),
     deleteProxy: { title: 'Xoá proxy này?', body: 'Profile đang dùng nó sẽ mất proxy và hiện IP thật của bạn cho tới khi bạn chọn proxy khác.', confirm: 'Xoá proxy' },
+    matchIp: { title: 'Đổi múi giờ và ngôn ngữ của profile cho khớp với IP?', body: 'Các trang đã biết tài khoản này có thể nhận ra sự thay đổi.', confirm: 'Khớp theo IP' },
     trash: (name: string) => ({ title: `Bỏ "${name}" vào thùng rác?`, body: 'Profile sẽ không hiện trong danh sách nữa. Bạn khôi phục được từ Thùng rác cho tới khi xoá hẳn.', confirm: 'Bỏ vào thùng rác' }),
     purge: (name: string) => ({ title: `Xoá hẳn "${name}"?`, body: 'Cookie, đăng nhập và dữ liệu của profile sẽ mất. Không khôi phục được.', confirm: 'Xoá hẳn' }),
     resetFingerprint: { title: 'Đo lại fingerprint?', body: 'Lần mở tới sẽ thành mốc mới. Chỉ làm khi bạn chủ động đổi engine.', confirm: 'Đặt lại mốc' },
@@ -139,9 +140,21 @@ export const vi: Messages = {
     keychain: 'macOS có thể hỏi một lần xem AnyProfile có được dùng Keychain không. Chọn Always Allow.',
     create: 'Tạo profile', creating: 'Đang tạo…', created: 'Đã tạo profile. Nhấn ⌘Enter để mở.',
   },
+  flags: {
+    country_changed: 'Đổi quốc gia', country_changedText: (to: string, from: string) => `Proxy giờ đi ra ở ${to}. Lần trước là ${from}.`,
+    ip_changed: 'IP mới', ip_changedText: 'Địa chỉ IP mới so với lần trước, cùng quốc gia.',
+    tz_mismatch: 'Lệch múi giờ', tz_mismatchText: (profile: string, ip: string) => `Múi giờ của profile (${profile}) không khớp vị trí của IP (${ip}).`,
+    exit_failed: 'Chưa kiểm IP', exit_failedText: (err: string) => `Không kiểm được IP lúc mở: ${err}.`,
+    direct: 'IP thật', directText: 'Mở bằng IP thật của bạn.',
+  } as Record<string, string | ((...a: string[]) => string)>,
+  sessions: {
+    tab: 'Phiên', opened: 'Mở lúc', length: 'Thời lượng', exitIp: 'IP ra', country: 'Quốc gia', notes: 'Ghi chú',
+    empty: 'Chưa có phiên nào. Mở profile để bắt đầu.', running: 'Đang chạy', matchIp: 'Khớp theo IP',
+    matched: 'Múi giờ và ngôn ngữ giờ theo IP.',
+  },
   drawer: {
     label: (name: string) => `Chi tiết của ${name}`, close: 'Đóng chi tiết',
-    tabs: { overview: 'Tổng quan', account: 'Tài khoản' },
+    tabs: { overview: 'Tổng quan', account: 'Tài khoản', sessions: 'Phiên' },
     rename: 'Đổi tên', network: 'Mạng', platform: 'Nền tảng và trang mở đầu', tags: 'Tag', notes: 'Ghi chú',
     identity: 'Danh tính', advanced: 'Nâng cao', apply: 'Áp dụng', saved: 'Đã lưu',
     addTag: 'Thêm tag', removeTag: (tag: string) => `Bỏ tag ${tag}`,

@@ -16,6 +16,13 @@ func (l *Launcher) Adopt() {
 		l.log.Error("list launches", "err", err)
 		return
 	}
+	running := map[string]bool{}
+	defer func() {
+		// Sessions of browsers that did not survive the app end now.
+		if err := l.st.CloseStaleSessions(running); err != nil {
+			l.log.Warn("close stale sessions", "err", err)
+		}
+	}()
 	for _, ln := range launches {
 		udd := l.dirs.Profile(ln.ProfileID)
 		if !sameProcess(ln.PID, ln.PIDStartTime) || singletonPID(udd) != ln.PID {
@@ -24,6 +31,10 @@ func (l *Launcher) Adopt() {
 		}
 		p := &proc{info: Info{ProfileID: ln.ProfileID, State: Running, PID: ln.PID, CDPPort: ln.CDPPort},
 			done: make(chan struct{})}
+		running[ln.ProfileID] = true
+		if sess, ok, err := l.st.OpenSession(ln.ProfileID); err == nil && ok {
+			p.sessionID = sess.ID
+		}
 		if ln.RelayPort > 0 {
 			if err := l.adoptRelay(p, ln.ProfileID, ln.RelayPort); err != nil {
 				// The browser fails closed (its proxy port is dead), it does not leak.

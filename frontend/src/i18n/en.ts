@@ -42,6 +42,7 @@ export const en = {
   confirm: {
     deleteSite: (name: string) => ({ title: `Delete ${name}?`, body: 'Profiles on this platform move to Other.', confirm: 'Delete platform' }),
     deleteProxy: { title: 'Delete this proxy?', body: 'Profiles using it lose their proxy and show your real IP until you pick another.', confirm: 'Delete proxy' },
+    matchIp: { title: 'Change the profile\u2019s timezone and languages to match the IP?', body: 'Sites that know this account may notice the change.', confirm: 'Match the IP' },
     trash: (name: string) => ({ title: `Move "${name}" to the trash?`, body: 'It stops showing in your lists. You can restore it from Trash until you delete it for good.', confirm: 'Move to trash' }),
     purge: (name: string) => ({ title: `Delete "${name}" for good?`, body: 'Its cookies, logins and data are gone. This cannot be undone.', confirm: 'Delete for good' }),
     resetFingerprint: { title: 'Measure the fingerprint again?', body: 'The next launch becomes the new reference. Do this only after you changed the engine on purpose.', confirm: 'Reset reference' },
@@ -137,9 +138,21 @@ export const en = {
     keychain: 'macOS may ask once whether AnyProfile can use the Keychain. Choose Always Allow.',
     create: 'Create profile', creating: 'Creating…', created: 'Profile created. Press ⌘Enter to open it.',
   },
+  flags: {
+    country_changed: 'Country changed', country_changedText: (to: string, from: string) => `The proxy now exits in ${to}. Last time it was ${from}.`,
+    ip_changed: 'New IP', ip_changedText: 'New IP address since last time, same country.',
+    tz_mismatch: 'Timezone mismatch', tz_mismatchText: (profile: string, ip: string) => `The profile\u2019s timezone (${profile}) does not match the IP\u2019s location (${ip}).`,
+    exit_failed: 'IP not checked', exit_failedText: (err: string) => `Could not check the IP at launch: ${err}.`,
+    direct: 'Real IP', directText: 'Opens with your real IP.',
+  } as Record<string, string | ((...a: string[]) => string)>,
+  sessions: {
+    tab: 'Sessions', opened: 'Opened', length: 'Length', exitIp: 'Exit IP', country: 'Country', notes: 'Notes',
+    empty: 'No sessions yet. Open the profile to start one.', running: 'Running', matchIp: 'Match the IP',
+    matched: 'Timezone and languages now follow the IP.',
+  },
   drawer: {
     label: (name: string) => `Details of ${name}`, close: 'Close details',
-    tabs: { overview: 'Overview', account: 'Account' },
+    tabs: { overview: 'Overview', account: 'Account', sessions: 'Sessions' },
     rename: 'Rename', network: 'Network', platform: 'Platform and start pages', tags: 'Tags', notes: 'Notes',
     identity: 'Identity', advanced: 'Advanced', apply: 'Apply', saved: 'Saved',
     addTag: 'Add a tag', removeTag: (tag: string) => `Remove tag ${tag}`,

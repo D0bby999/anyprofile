@@ -479,3 +479,67 @@ func TestProxyLabelMigration(t *testing.T) {
 		}
 	}
 }
+
+func TestSessions(t *testing.T) {
+	s, _ := upgradeFrom(t, 9, func(o *Store) {
+		insertV1Profile(t, o, "p1", "other", "2026-10-01T00:00:00Z")
+	})
+	if err := s.CreateProfile(sample("p2")); err != nil {
+		t.Fatal(err)
+	}
+	for i := 0; i < 52; i++ {
+		if err := s.StartSession(&Session{ProfileID: "p1", Engine: "apostate", EngineVersion: "0.5.1"}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	all, _ := s.Sessions("p1", 100)
+	if len(all) != MaxSessions {
+		t.Fatalf("kept %d sessions", len(all))
+	}
+	newest := all[0]
+	if err := s.EndSession(newest.ID); err != nil {
+		t.Fatal(err)
+	}
+	first, _ := s.Sessions("p1", 1)
+	stopped := first[0].StoppedAt
+	if stopped == "" {
+		t.Fatal("not stopped")
+	}
+	if err := s.EndSession(newest.ID); err != nil {
+		t.Fatal(err)
+	}
+	again, _ := s.Sessions("p1", 1)
+	if again[0].StoppedAt != stopped {
+		t.Fatal("second EndSession moved the stop time")
+	}
+
+	s.SetSessionExit(all[2].ID, "1.1.1.1", "US", "America/New_York", "")
+	s.SetSessionExit(all[1].ID, "2.2.2.2", "DE", "Europe/Berlin", "")
+	ex, err := s.LatestExits([]string{"p1", "p2"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if ex["p1"][0].ExitIP != "2.2.2.2" || ex["p1"][1].ExitIP != "1.1.1.1" || ex["p2"][0].ID != 0 {
+		t.Fatalf("latest exits = %+v", ex)
+	}
+
+	if err := s.StartSession(&Session{ProfileID: "p2", Engine: "fury", EngineVersion: "0.3.5"}); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.CloseStaleSessions(map[string]bool{"p1": true}); err != nil {
+		t.Fatal(err)
+	}
+	if _, open, _ := s.OpenSession("p2"); open {
+		t.Fatal("stale session of a stopped profile left open")
+	}
+	if _, open, _ := s.OpenSession("p1"); !open {
+		t.Fatal("running profile lost its open session")
+	}
+
+	if err := s.Purge("p1"); err != nil {
+		t.Fatal(err)
+	}
+	if left, _ := s.Sessions("p1", 100); len(left) != 0 {
+		t.Fatalf("sessions survived the purge: %d", len(left))
+	}
+}
