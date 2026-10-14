@@ -184,7 +184,7 @@ kbd { display: inline-flex; align-items: center; min-width: 22px; height: 20px; 
 .cellproxy { display: flex; align-items: center; gap: 8px; }
 .cellproxy .cc.danger { background: var(--danger-soft); color: var(--danger-ink); }
 .cellproxy .mono { color: var(--ink-soft); }
-.cellproxy small { display: block; color: var(--faint); font-size: var(--t-xs); max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cellproxy small { display: block; color: var(--faint); font-size: var(--t-xs); max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .statusbar { display: flex; align-items: center; gap: 16px; height: 46px; padding: 0 16px; border-top: 1px solid var(--line); color: var(--muted); font-size: var(--t-sm); }
 .statusbar b { color: var(--ink-soft); font-weight: 650; }
@@ -240,10 +240,19 @@ kbd { display: inline-flex; align-items: center; min-width: 22px; height: 20px; 
    half the room), never scrolling sideways. Platform goes first: the sidebar
    already groups profiles by platform. */
 .tablewrap { container-type: inline-size; }
-@container (max-width: 960px) { .table .col-site { display: none; } }
-@container (max-width: 800px) { .table .col-lastopen, .cellproxy small { display: none; } }
-@container (max-width: 560px) { .table .col-proxy, .table .col-no { display: none; } }
-@container (max-width: 440px) { .table .col-health { display: none; } }
+/* Columns leave in order of least use; the platform stays as its icon, which
+   tells rows apart at a glance. Each width is what the columns before it need,
+   measured, plus room for a scrollbar and longer Vietnamese labels. */
+@container (max-width: 1100px) { .table .col-lastopen { display: none; } }
+@container (max-width: 880px) {
+  .cellproxy small { display: none; }
+  .table .col-site { width: 1%; }
+  .table .col-site .plabel, .table .col-site .sitehead {
+    position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+  }
+}
+@container (max-width: 740px) { .table .col-proxy, .table .col-no { display: none; } }
+@container (max-width: 520px) { .table .col-health { display: none; } .table .cellname { min-width: 120px; } }
 
 /* Profiles page with the detail drawer beside the table. */
 .profiles-split { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }

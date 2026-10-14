@@ -61,7 +61,7 @@ function ProxyCell({ row }: { row: service.ProfileRow }) {
       <span className={`cc${moved ? ' danger' : ''}`}>{cc || '?'}</span>
       <span>
         {ip ? <span className="mono selectable">{ip}</span> : <span className="faint">{t.proxies.unchecked}</span>}
-        <small>{row.proxyLabel}</small>
+        <small title={row.proxyLabel}>{row.proxyLabel}</small>
       </span>
     </span>
   )
@@ -89,7 +89,7 @@ export function ProfileTable(p: Props) {
           <th className="col-check"><input type="checkbox" checked={allSelected} onChange={p.onToggleAll} aria-label={t.profiles.selected(p.rows.length)} /></th>
           {head('no', t.profiles.colNo, 'col-no')}
           {head('name', t.profiles.colName)}
-          {shown('site') && <th className="col-site">{t.profiles.colSite}</th>}
+          {shown('site') && <th className="col-site"><span className="sitehead">{t.profiles.colSite}</span></th>}
           {shown('proxy') && <th className="col-proxy">{t.profiles.colProxy}</th>}
           {shown('health') && <th className="col-health">{t.profiles.colHealth}</th>}
           {shown('lastOpen') && head('lastOpen', t.profiles.colLastOpen, 'col-lastopen')}
