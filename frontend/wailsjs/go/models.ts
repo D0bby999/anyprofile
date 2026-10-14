@@ -167,6 +167,24 @@ export namespace service {
 	        this.tags = source["tags"];
 	    }
 	}
+	export class CookieImport {
+	    imported: number;
+	    skipped: number;
+	    domains: string[];
+	    siteMismatch: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new CookieImport(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.imported = source["imported"];
+	        this.skipped = source["skipped"];
+	        this.domains = source["domains"];
+	        this.siteMismatch = source["siteMismatch"];
+	    }
+	}
 	export class Defaults {
 	    engine: string;
 	    site: string;

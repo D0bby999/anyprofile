@@ -1,0 +1,4 @@
+{"cookies": [
+  {"domain": ".tiktok.com", "name": "sessionid", "value": "s1", "path": "/", "secure": true, "httpOnly": true, "sameSite": "strict", "expirationDate": 4102444800},
+  {"domain": ".tiktok.com", "name": "", "value": "no name", "path": "/"}
+]}

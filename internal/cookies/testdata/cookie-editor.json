@@ -1,0 +1,5 @@
+[
+  {"domain": ".example.com", "name": "sid", "value": "abc", "path": "/", "secure": true, "httpOnly": true, "sameSite": "no_restriction", "expirationDate": 4102444800, "hostOnly": false, "session": false},
+  {"domain": "shop.example.com", "name": "pref", "value": "dark", "path": "/", "secure": false, "httpOnly": false, "sameSite": "lax", "hostOnly": true, "session": true},
+  {"domain": ".example.com", "name": "old", "value": "x", "path": "/", "expirationDate": 946684800}
+]

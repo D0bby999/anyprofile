@@ -1,0 +1,5 @@
+# Netscape HTTP Cookie File
+
+#HttpOnly_.example.com	TRUE	/	TRUE	4102444800	auth	t0k
+.example.com	TRUE	/	FALSE	0	lang	en
+broken line

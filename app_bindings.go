@@ -113,6 +113,46 @@ func (a *App) MatchExit(profileID string) error {
 	return a.must(func() error { return a.svc.MatchExit(a.ctx, profileID) })
 }
 
+// Cookies. The file is chosen here, in Go: neither the path nor a cookie
+// value passes through the web UI.
+
+var cookieDialogTitle = map[string][2]string{
+	"en": {"Import cookies", "Export cookies"},
+	"vi": {"Nhập cookie", "Xuất cookie"},
+}
+
+func (a *App) ImportCookies(profileID string) (service.CookieImport, error) {
+	if err := a.ready(); err != nil {
+		return service.CookieImport{}, err
+	}
+	path, err := runtime.OpenFileDialog(a.ctx, runtime.OpenDialogOptions{
+		Title:   cookieDialogTitle[a.svc.Language()][0],
+		Filters: []runtime.FileFilter{{DisplayName: "Cookies (*.json, *.txt)", Pattern: "*.json;*.txt"}},
+	})
+	if err != nil || path == "" {
+		return service.CookieImport{}, err // cancelled: nothing to report
+	}
+	return a.svc.ImportCookies(a.ctx, profileID, path)
+}
+
+func (a *App) ExportCookies(profileID string) (int, error) {
+	if err := a.ready(); err != nil {
+		return 0, err
+	}
+	p, err := a.svc.Store.GetProfile(profileID)
+	if err != nil {
+		return 0, err
+	}
+	path, err := runtime.SaveFileDialog(a.ctx, runtime.SaveDialogOptions{
+		Title:           cookieDialogTitle[a.svc.Language()][1],
+		DefaultFilename: p.Name + "-cookies.json",
+	})
+	if err != nil || path == "" {
+		return 0, err
+	}
+	return a.svc.ExportCookies(a.ctx, profileID, path)
+}
+
 // Snapshots
 
 func (a *App) Snapshots(profileID string) ([]store.Snapshot, error) {

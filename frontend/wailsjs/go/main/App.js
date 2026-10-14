@@ -82,6 +82,10 @@ export function Engines() {
   return window['go']['main']['App']['Engines']();
 }
 
+export function ExportCookies(arg1) {
+  return window['go']['main']['App']['ExportCookies'](arg1);
+}
+
 export function FileVaultOn() {
   return window['go']['main']['App']['FileVaultOn']();
 }
@@ -92,6 +96,10 @@ export function FinishOnboarding() {
 
 export function FocusProfile(arg1) {
   return window['go']['main']['App']['FocusProfile'](arg1);
+}
+
+export function ImportCookies(arg1) {
+  return window['go']['main']['App']['ImportCookies'](arg1);
 }
 
 export function ImportProxies(arg1, arg2) {

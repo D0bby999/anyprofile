@@ -138,3 +138,29 @@ func (l *Launcher) Start(ctx context.Context, profileID string) error {
 	}
 	return nil
 }
+
+// Conn is the DevTools pipe of a running profile. An adopted browser (one that
+// outlived the app) has none.
+func (l *Launcher) Conn(profileID string) (*cdppipe.Conn, bool) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	p, ok := l.procs[profileID]
+	if !ok || p.info.State != Running || p.cdp == nil {
+		return nil, false
+	}
+	return p.cdp, true
+}
+
+// WaitConn waits until the profile runs with a pipe, or ctx ends.
+func (l *Launcher) WaitConn(ctx context.Context, profileID string) (*cdppipe.Conn, error) {
+	for {
+		if c, ok := l.Conn(profileID); ok {
+			return c, nil
+		}
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-time.After(200 * time.Millisecond):
+		}
+	}
+}

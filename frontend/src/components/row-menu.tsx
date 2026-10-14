@@ -5,9 +5,12 @@ import { t } from '../i18n'
 import { errorText } from '../lib/format'
 import { Icon } from './icons'
 import { focusFirstItem, menuArrows } from '../lib/menu-keys'
+import type { Site } from '../lib/sites'
+import { useCookieActions } from './use-cookie-actions'
 
 type Props = {
   row: service.ProfileRow
+  sites: Site[]
   onEdit: () => void
   onDuplicate: () => void
   onTrash: () => void
@@ -16,8 +19,9 @@ type Props = {
 }
 
 /** The "⋯" menu on each row: edit, duplicate, account copies and trash. */
-export function RowMenu({ row, onEdit, onDuplicate, onTrash, onMessage, onError }: Props) {
+export function RowMenu({ row, sites, onEdit, onDuplicate, onTrash, onMessage, onError }: Props) {
   const [open, setOpen] = useState(false)
+  const cookies = useCookieActions(row, sites)
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -78,6 +82,10 @@ export function RowMenu({ row, onEdit, onDuplicate, onTrash, onMessage, onError 
           {row.login && <button role="menuitem" onClick={() => act(copyLogin)}>{t.menu.copyLogin}</button>}
           {row.hasPassword && <button role="menuitem" onClick={() => act(copyPassword)}>{t.menu.copyPassword}</button>}
           {row.hasTotp && <button role="menuitem" onClick={() => act(copyCode)}>{t.menu.copyCode}</button>}
+          <hr />
+          <button role="menuitem" disabled={cookies.importing} onClick={() => act(cookies.importCookies)}>{t.cookies.import}</button>
+          <button role="menuitem" disabled={!cookies.canExport} title={cookies.canExport ? undefined : t.cookies.openFirst}
+            onClick={() => act(cookies.exportCookies)}>{t.cookies.export}</button>
           <hr />
           <button role="menuitem" disabled={row.state !== 'stopped'} onClick={() => act(onTrash)}>{t.menu.trash}</button>
         </div>

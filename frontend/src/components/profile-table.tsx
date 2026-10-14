@@ -130,7 +130,7 @@ export function ProfileTable(p: Props) {
                       <Icon name="focus" />
                     </button>
                   )}
-                  <RowMenu row={r} onEdit={() => p.onEdit(r)} onDuplicate={() => p.onDuplicate(r)}
+                  <RowMenu row={r} sites={p.sites} onEdit={() => p.onEdit(r)} onDuplicate={() => p.onDuplicate(r)}
                     onTrash={() => p.onTrash(r)} onMessage={p.onMessage} onError={p.onError} />
                   {running || r.state === 'stopping' ? (
                     <button className="btn sm stop actbtn" disabled={busy} onClick={() => p.onStop(r.id)}>

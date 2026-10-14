@@ -11,6 +11,7 @@ import { HealthPill } from './health-pill'
 import { Icon } from './icons'
 import { SiteGlyph } from './site-glyph'
 import { useToast } from './toast'
+import { useCookieActions } from './use-cookie-actions'
 import { IdentityGroup } from './drawer/identity-group'
 import { InlineName } from './drawer/inline-name'
 import { NetworkGroup } from './drawer/network-group'
@@ -164,10 +165,32 @@ export function ProfileDrawer({ row, sites, recent, knownTags, onClose, onStart,
         ) : tab === 'snapshots' ? (
           <SnapshotsTab profileId={row.id} running={running} />
         ) : (
-          <AccountPanel row={row} login={login} onLogin={setLogin} onError={toast.error}
-            onLoginCommit={() => { if (login.trim() !== row.login) update({ login: login.trim() }) }} />
+          <>
+            <AccountPanel row={row} login={login} onLogin={setLogin} onError={toast.error}
+              onLoginCommit={() => { if (login.trim() !== row.login) update({ login: login.trim() }) }} />
+            <CookieGroup row={row} sites={sites} />
+          </>
         )}
       </div>
     </aside>
+  )
+}
+
+/** Cookies in and out of the profile, for taking over an account without signing in again. */
+function CookieGroup({ row, sites }: { row: service.ProfileRow; sites: Site[] }) {
+  const c = useCookieActions(row, sites)
+  return (
+    <section className="dgroup" aria-label={t.cookies.title}>
+      <h3>{t.cookies.title}</h3>
+      <div className="row">
+        <button type="button" className={`btn sm${c.importing ? ' busy' : ''}`} aria-busy={c.importing} disabled={c.importing} onClick={c.importCookies}>
+          <Icon name={c.importing ? 'refresh' : 'download'} className="icon sm" />{c.importing ? t.cookies.importing : t.cookies.import}
+        </button>
+        <button type="button" className="btn sm" disabled={!c.canExport} title={c.canExport ? undefined : t.cookies.openFirst} onClick={c.exportCookies}>
+          {t.cookies.export}
+        </button>
+      </div>
+      <span className="hint">{t.cookies.hint}</span>
+    </section>
   )
 }

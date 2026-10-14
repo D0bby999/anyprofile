@@ -47,11 +47,15 @@ export function EngineStatus(arg1:string):Promise<engine.Status>;
 
 export function Engines():Promise<Array<main.EngineInfo>>;
 
+export function ExportCookies(arg1:string):Promise<number>;
+
 export function FileVaultOn():Promise<boolean>;
 
 export function FinishOnboarding():Promise<void>;
 
 export function FocusProfile(arg1:string):Promise<boolean>;
+
+export function ImportCookies(arg1:string):Promise<service.CookieImport>;
 
 export function ImportProxies(arg1:string,arg2:string):Promise<service.ImportResult>;
 

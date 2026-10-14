@@ -27,6 +27,7 @@ import (
 
 	_ "modernc.org/sqlite"
 
+	"github.com/D0bby999/anyprofile/internal/cookies"
 	"github.com/D0bby999/anyprofile/internal/engine"
 	"github.com/D0bby999/anyprofile/internal/engine/apostate"
 	"github.com/D0bby999/anyprofile/internal/engine/fury"
@@ -455,4 +456,75 @@ func requireChecksPass(t *testing.T, st *store.Store, id string) {
 		}
 	}
 	t.Logf("%d checks passed", len(checks))
+}
+
+func TestApostateCookiesInAndOut(t *testing.T) {
+	r := newApostateRig(t)
+	l := r.launcher(t)
+	l.Capture = true
+	const id = "ap2"
+	if err := r.st.CreateProfile(&store.Profile{ID: id, Name: "Cookies", Engine: "apostate",
+		EngineVersion: apostate.Version, PersonaID: "apostate-macos", Platform: "macos",
+		SeedHex: "00000000000b0b0b", Timezone: "UTC", Languages: "en-US,en", UILocale: "en-US"}); err != nil {
+		t.Fatal(err)
+	}
+	ctx := context.Background()
+	if err := l.Start(ctx, id); err != nil {
+		t.Fatal(err)
+	}
+	defer l.Stop(id)
+	wctx, cancel := context.WithTimeout(ctx, 20*time.Second)
+	conn, err := l.WaitConn(wctx, id)
+	cancel()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	file := filepath.Join(t.TempDir(), "cookies.txt")
+	os.WriteFile(file, []byte("#HttpOnly_.example.com\tTRUE\t/\tTRUE\t4102444800\tit_auth\tt0k\n"+
+		".example.com\tTRUE\t/\tFALSE\t4102444800\tit_lang\ten\n"), 0o600)
+	b, _ := os.ReadFile(file)
+	cs, _, err := cookies.Parse(b)
+	if err != nil || len(cs) != 2 {
+		t.Fatalf("parse = %d %v", len(cs), err)
+	}
+	if _, err := conn.Call(ctx, "", "Storage.setCookies", map[string]any{"cookies": cs}); err != nil {
+		t.Fatal(err)
+	}
+	raw, err := conn.Call(ctx, "", "Storage.getCookies", map[string]any{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var got struct{ Cookies []cookies.Cookie }
+	json.Unmarshal(raw, &got)
+	var mine []cookies.Cookie
+	for _, c := range got.Cookies {
+		if strings.HasPrefix(c.Name, "it_") {
+			mine = append(mine, c)
+		}
+	}
+	if len(mine) != 2 {
+		t.Fatalf("cookies in the browser = %+v", mine)
+	}
+	for _, c := range mine {
+		if c.Name == "it_auth" && !c.HTTPOnly {
+			t.Fatal("HttpOnly lost")
+		}
+	}
+
+	out, err := cookies.Export(mine)
+	if err != nil {
+		t.Fatal(err)
+	}
+	exported := filepath.Join(t.TempDir(), "out.json")
+	if err := os.WriteFile(exported, out, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if st, _ := os.Stat(exported); st.Mode().Perm() != 0o600 {
+		t.Fatalf("export mode = %v", st.Mode().Perm())
+	}
+	back, _, err := cookies.Parse(out)
+	if err != nil || len(back) != 2 {
+		t.Fatalf("re-parse = %d %v", len(back), err)
+	}
 }

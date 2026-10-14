@@ -33,7 +33,10 @@ type wireMsg struct {
 // Conn owns the app's ends of the command and reply pipes. The browser keeps
 // its own copies (fds 7 and 8), so closing Conn never kills the browser.
 type Conn struct {
-	w      *os.File
+	w *os.File
+	// wmu keeps each command whole on the pipe. os.File already holds its
+	// own lock for a whole Write; this states the need instead of relying on it.
+	wmu    sync.Mutex
 	mu     sync.Mutex
 	next   int
 	wait   map[int]chan wireMsg
@@ -92,7 +95,10 @@ func (c *Conn) Call(ctx context.Context, session, method string, params any) (js
 	c.mu.Unlock()
 	p, _ := json.Marshal(params)
 	b, _ := json.Marshal(wireMsg{ID: id, Method: method, Params: p, SessionID: session})
-	if _, err := c.w.Write(append(b, 0)); err != nil {
+	c.wmu.Lock()
+	_, err := c.w.Write(append(b, 0))
+	c.wmu.Unlock()
+	if err != nil {
 		return nil, err
 	}
 	select {

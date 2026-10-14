@@ -45,6 +45,7 @@ export const en = {
     matchIp: { title: 'Change the profile\u2019s timezone and languages to match the IP?', body: 'Sites that know this account may notice the change.', confirm: 'Match the IP' },
     restore: (when: string) => ({ title: `Restore the session from ${when}?`, body: 'The current session is saved first, so you can undo this.', confirm: 'Restore' }),
     deleteSnapshots: { title: 'Delete every snapshot?', body: 'You will not be able to restore any profile to an earlier session.', confirm: 'Delete all' },
+    exportCookies: { title: 'Export the cookies?', body: 'This file lets anyone sign in to these accounts. Keep it private and delete it after use.', confirm: 'Export' },
     trash: (name: string) => ({ title: `Move "${name}" to the trash?`, body: 'It stops showing in your lists. You can restore it from Trash until you delete it for good.', confirm: 'Move to trash' }),
     purge: (name: string) => ({ title: `Delete "${name}" for good?`, body: 'Its cookies, logins and data are gone. This cannot be undone.', confirm: 'Delete for good' }),
     resetFingerprint: { title: 'Measure the fingerprint again?', body: 'The next launch becomes the new reference. Do this only after you changed the engine on purpose.', confirm: 'Reset reference' },
@@ -175,6 +176,15 @@ export const en = {
     auto: 'Save a snapshot when a profile closes', keep: 'Keep per profile', total: (size: string) => `Snapshots use ${size}.`,
     deleteAll: 'Delete all snapshots',
   },
+  cookies: {
+    title: 'Session', import: 'Import cookies…', export: 'Export cookies…', importing: 'Importing…',
+    openFirst: 'Open the profile first',
+    imported: (n: number, domains: string, more: number, skipped: number) =>
+      `Imported ${n} cookies for ${domains}${more > 0 ? ` and ${more} more` : ''}.${skipped > 0 ? ` Skipped ${skipped}.` : ''}`,
+    exported: (n: number) => `Exported ${n} cookies.`,
+    mismatch: (domain: string, site: string) => `Most cookies are for ${domain}, but this profile is set to ${site}.`,
+    hint: 'Cookie-Editor or EditThisCookie JSON, or a cookies.txt file. A snapshot is saved first.',
+  },
   sessions: {
     tab: 'Sessions', opened: 'Opened', length: 'Length', exitIp: 'Exit IP', country: 'Country', notes: 'Notes',
     empty: 'No sessions yet. Open the profile to start one.', running: 'Running', matchIp: 'Match the IP',
@@ -288,6 +298,11 @@ export const en = {
     minutes: (n: number) => `${n} min ago`, hours: (n: number) => `${n} h ago`, days: (n: number) => `${n} d ago`,
   },
   errors: {
+    cookies_need_restart: 'Close and reopen the profile, then import again.',
+    cookies_file_too_big: 'The file is larger than 5 MB.',
+    cookies_too_many: 'The file holds more than 5000 cookies.',
+    cookies_bad_format: 'This is not a cookie file this app can read (JSON or cookies.txt).',
+    cookies_need_running: 'Open the profile first.',
     snapshot_busy: 'A snapshot of this profile is being saved. Try again in a moment.',
     bad_keep: 'Keep between 1 and 10 snapshots.',
     nothing_to_snapshot: 'This profile has not been opened yet, so there is nothing to save.',

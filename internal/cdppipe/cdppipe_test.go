@@ -7,6 +7,8 @@ import (
 	"context"
 	"encoding/json"
 	"os"
+	"strings"
+	"sync"
 	"testing"
 	"time"
 )
@@ -82,5 +84,57 @@ func TestCallFailsAfterClose(t *testing.T) {
 			t.Fatal("Call did not fail within 1 s after the pipe closed")
 		}
 		time.Sleep(10 * time.Millisecond)
+	}
+}
+
+// echoBrowser answers each command with its own params, so a caller can tell
+// whether it got its own reply and whether its command arrived whole.
+func echoBrowser(w, r *os.File) {
+	go func() {
+		br := bufio.NewReaderSize(r, 1<<20)
+		for {
+			b, err := br.ReadBytes(0)
+			if err != nil {
+				return
+			}
+			var m wireMsg
+			if json.Unmarshal(b[:len(b)-1], &m) != nil {
+				reply, _ := json.Marshal(wireMsg{ID: -1})
+				w.Write(append(reply, 0))
+				continue
+			}
+			reply, _ := json.Marshal(wireMsg{ID: m.ID, Result: m.Params})
+			w.Write(append(reply, 0))
+		}
+	}()
+}
+
+func TestConcurrentCallsStayWhole(t *testing.T) {
+	appR, browserW, _ := os.Pipe()
+	browserR, appW, _ := os.Pipe()
+	echoBrowser(browserW, browserR)
+	c := New(appW, appR)
+	defer c.Close()
+	var wg sync.WaitGroup
+	errs := make(chan string, 50)
+	for i := 0; i < 50; i++ {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			// Larger than a pipe buffer, so an unlocked write could split.
+			want := strings.Repeat(string(rune('a'+i%26)), 70000)
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+			res, err := c.Call(ctx, "", "Echo", map[string]string{"v": want})
+			var got struct{ V string }
+			if err != nil || json.Unmarshal(res, &got) != nil || got.V != want {
+				errs <- "call " + string(rune('0'+i%10)) + " got the wrong reply"
+			}
+		}(i)
+	}
+	wg.Wait()
+	close(errs)
+	for e := range errs {
+		t.Error(e)
 	}
 }

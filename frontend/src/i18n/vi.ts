@@ -47,6 +47,7 @@ export const vi: Messages = {
     matchIp: { title: 'Đổi múi giờ và ngôn ngữ của profile cho khớp với IP?', body: 'Các trang đã biết tài khoản này có thể nhận ra sự thay đổi.', confirm: 'Khớp theo IP' },
     restore: (when: string) => ({ title: `Khôi phục phiên lúc ${when}?`, body: 'Phiên hiện tại được lưu trước, nên bạn hoàn tác được.', confirm: 'Khôi phục' }),
     deleteSnapshots: { title: 'Xoá mọi ảnh chụp?', body: 'Bạn sẽ không khôi phục được profile nào về phiên trước đó nữa.', confirm: 'Xoá tất cả' },
+    exportCookies: { title: 'Xuất cookie?', body: 'File này cho phép bất kỳ ai đăng nhập vào các tài khoản này. Hãy giữ kín và xoá sau khi dùng.', confirm: 'Xuất' },
     trash: (name: string) => ({ title: `Bỏ "${name}" vào thùng rác?`, body: 'Profile sẽ không hiện trong danh sách nữa. Bạn khôi phục được từ Thùng rác cho tới khi xoá hẳn.', confirm: 'Bỏ vào thùng rác' }),
     purge: (name: string) => ({ title: `Xoá hẳn "${name}"?`, body: 'Cookie, đăng nhập và dữ liệu của profile sẽ mất. Không khôi phục được.', confirm: 'Xoá hẳn' }),
     resetFingerprint: { title: 'Đo lại fingerprint?', body: 'Lần mở tới sẽ thành mốc mới. Chỉ làm khi bạn chủ động đổi engine.', confirm: 'Đặt lại mốc' },
@@ -177,6 +178,15 @@ export const vi: Messages = {
     auto: 'Lưu ảnh chụp khi profile đóng', keep: 'Giữ mỗi profile', total: (size: string) => `Ảnh chụp đang chiếm ${size}.`,
     deleteAll: 'Xoá mọi ảnh chụp',
   },
+  cookies: {
+    title: 'Phiên đăng nhập', import: 'Nhập cookie…', export: 'Xuất cookie…', importing: 'Đang nhập…',
+    openFirst: 'Hãy mở profile trước',
+    imported: (n: number, domains: string, more: number, skipped: number) =>
+      `Đã nhập ${n} cookie cho ${domains}${more > 0 ? ` và ${more} trang khác` : ''}.${skipped > 0 ? ` Bỏ qua ${skipped}.` : ''}`,
+    exported: (n: number) => `Đã xuất ${n} cookie.`,
+    mismatch: (domain: string, site: string) => `Phần lớn cookie là của ${domain}, nhưng profile này đặt nền tảng ${site}.`,
+    hint: 'File JSON của Cookie-Editor hoặc EditThisCookie, hoặc file cookies.txt. App lưu một ảnh chụp trước khi nhập.',
+  },
   sessions: {
     tab: 'Phiên', opened: 'Mở lúc', length: 'Thời lượng', exitIp: 'IP ra', country: 'Quốc gia', notes: 'Ghi chú',
     empty: 'Chưa có phiên nào. Mở profile để bắt đầu.', running: 'Đang chạy', matchIp: 'Khớp theo IP',
@@ -290,6 +300,11 @@ export const vi: Messages = {
     minutes: (n: number) => `${n} phút trước`, hours: (n: number) => `${n} giờ trước`, days: (n: number) => `${n} ngày trước`,
   },
   errors: {
+    cookies_need_restart: 'Hãy đóng rồi mở lại profile, sau đó nhập lại.',
+    cookies_file_too_big: 'File lớn hơn 5 MB.',
+    cookies_too_many: 'File chứa hơn 5000 cookie.',
+    cookies_bad_format: 'Đây không phải file cookie mà app đọc được (JSON hoặc cookies.txt).',
+    cookies_need_running: 'Hãy mở profile trước.',
     snapshot_busy: 'Đang lưu ảnh chụp của profile này. Thử lại sau giây lát.',
     bad_keep: 'Giữ từ 1 đến 10 ảnh chụp.',
     nothing_to_snapshot: 'Profile này chưa mở lần nào nên chưa có gì để lưu.',

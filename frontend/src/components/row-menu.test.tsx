@@ -26,7 +26,7 @@ afterEach(() => { cleanup(); vi.clearAllMocks() })
 
 describe('RowMenu', () => {
   it('hides the three copy items when nothing is stored', () => {
-    render(<RowMenu {...props()} />)
+    render(<RowMenu sites={[]} {...props()} />)
     fireEvent.click(screen.getByRole('button', { name: 'More' }))
     expect(screen.queryByText('Copy login')).toBeNull()
     expect(screen.queryByText('Copy password')).toBeNull()
@@ -34,14 +34,14 @@ describe('RowMenu', () => {
   })
 
   it('copies the 2FA code when set', () => {
-    render(<RowMenu {...props({ hasTotp: true })} />)
+    render(<RowMenu sites={[]} {...props({ hasTotp: true })} />)
     fireEvent.click(screen.getByRole('button', { name: 'More' }))
     fireEvent.click(screen.getByText('Copy 2FA code'))
     expect(totpCode).toHaveBeenCalledWith('a')
   })
 
   it('closes on Escape', () => {
-    render(<RowMenu {...props({ login: 'me@x.com' })} />)
+    render(<RowMenu sites={[]} {...props({ login: 'me@x.com' })} />)
     fireEvent.click(screen.getByRole('button', { name: 'More' }))
     expect(screen.getByText('Copy login')).toBeTruthy()
     fireEvent.keyDown(screen.getByText('Copy login'), { key: 'Escape' })
