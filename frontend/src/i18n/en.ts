@@ -7,6 +7,7 @@ export const en = {
   nav: {
     newProfile: 'New profile', all: 'All profiles', running: 'Running', proxies: 'Proxies',
     trash: 'Trash', settings: 'Settings', sites: 'Platforms',
+    attention: 'Needs attention', tags: 'Tags', showAll: (n: number) => `Show all (${n})`, showFewer: 'Show fewer',
   },
   common: {
     save: 'Save', cancel: 'Cancel', close: 'Close', delete: 'Delete', loading: 'Loading…', refresh: 'Refresh',
@@ -63,12 +64,12 @@ export const en = {
   },
   profiles: {
     title: 'Profiles', total: (n: number) => `${n} profiles`,
-    search: 'Search by name or tag',
-    allTags: 'All tags',
+    search: 'Search name, tag, note, login, IP or #12',
     open: 'Open', opening: 'Opening', stop: 'Close', stopping: 'Closing',
     edit: 'Edit profile', focus: 'Bring window to front', trash: 'Move to trash',
     selected: (n: number) => `${n} selected`,
     openSelected: 'Open', stopSelected: 'Close', trashSelected: 'Move to trash', clearSelection: 'Clear selection',
+    pinSelected: 'Pin', unpinSelected: 'Unpin',
     colNo: '#', colName: 'Name', colSite: 'Platform', colProxy: 'Proxy', colHealth: 'Health', colLastOpen: 'Last opened',
     runningFor: (d: string) => `Running · ${d}`,
     emptyTitle: 'No profiles yet',
@@ -95,6 +96,30 @@ export const en = {
     count: 'How many', namePrefix: 'Name prefix', preview: 'Will create:',
     submit: 'Create profile', creating: 'Creating…',
     identityNote: 'Each profile gets its own simulated machine at random. It never changes.',
+  },
+  view: {
+    button: 'View', density: 'Density', comfortable: 'Comfortable', compact: 'Compact', columns: 'Columns',
+    cols: { site: 'Platform', proxy: 'Proxy', health: 'Health', lastOpen: 'Last opened' } as Record<string, string>,
+  },
+  filters: {
+    running: 'Running', attention: 'Needs attention', tag: (x: string) => `Tag: ${x}`, site: (x: string) => `Platform: ${x}`,
+    remove: (x: string) => `Remove filter ${x}`,
+  },
+  palette: {
+    title: 'Command palette', placeholder: 'Search profiles, actions and pages', none: (q: string) => `No matches for "${q}".`,
+    profiles: 'Profiles', actions: 'Actions', goTo: 'Go to',
+    newProfile: 'New profile', createSeveral: 'Create several profiles', addProxies: 'Add proxies', checkProxies: 'Check all proxies',
+    openSettings: 'Open settings', switchTheme: 'Switch theme', switchLanguage: 'Switch language', shortcuts: 'Keyboard shortcuts',
+    checking: 'Checking every proxy…',
+  },
+  keys: {
+    title: 'Keyboard shortcuts',
+    rows: [
+      ['⌘K', 'Open the command palette'], ['⌘N', 'New profile'], ['⌘F  /', 'Search profiles'],
+      ['↑  ↓', 'Move between rows'], ['Enter', 'Open the details of the row'], ['⌘Enter', 'Open the browser, or bring it to the front'],
+      ['Space', 'Select or unselect the row'], ['⌘A', 'Select every row shown'], ['Esc', 'Close the top layer, then clear the selection'],
+      ['?', 'Show this list'],
+    ] as [string, string][],
   },
   drawer: {
     label: (name: string) => `Details of ${name}`, close: 'Close details',
@@ -156,6 +181,7 @@ export const en = {
     more: 'More', edit: 'Edit', duplicate: 'Duplicate…', copyLogin: 'Copy login',
     copyPassword: 'Copy password', copyCode: 'Copy 2FA code', copiedLogin: 'Login copied',
     copiedCode: (n: number) => `2FA code copied, valid for ${n}s`, trash: 'Move to trash',
+    pin: 'Pin to top', unpin: 'Unpin', pinned: 'Pinned',
   },
   duplicate: {
     title: 'Duplicate profile', name: 'Name', count: 'How many',

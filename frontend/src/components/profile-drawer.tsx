@@ -83,6 +83,11 @@ export function ProfileDrawer({ row, sites, recent, knownTags, onClose, onStart,
           <InlineName value={row.name} onSave={(name) => update({ name })} />
           <span className="serial">#{row.serial}</span>
           <span className="spacer" />
+          <button type="button" className={`iconbtn sm${row.pinned ? ' on' : ''}`} aria-pressed={row.pinned}
+            onClick={() => Api.SetPinnedMany([row.id], !row.pinned).catch((e) => toast.error(errorText(e)))}
+            aria-label={row.pinned ? t.menu.unpin : t.menu.pin} title={row.pinned ? t.menu.unpin : t.menu.pin}>
+            <Icon name="pin" />
+          </button>
           <button type="button" className="iconbtn sm" onClick={onClose} aria-label={t.drawer.close} title={t.drawer.close}>
             <Icon name="x" />
           </button>

@@ -95,6 +95,16 @@
   --t-base: 13.5px;
   --t-md: 15px;
   --t-lg: 21px;
+
+  /* Tag dots: eight hues picked by a hash of the tag name (lib/tags.ts). */
+  --tag-1: oklch(0.58 0.15 255);
+  --tag-2: oklch(0.6 0.11 195);
+  --tag-3: oklch(0.6 0.14 150);
+  --tag-4: oklch(0.62 0.12 110);
+  --tag-5: oklch(0.7 0.14 75);
+  --tag-6: oklch(0.64 0.16 45);
+  --tag-7: oklch(0.6 0.17 10);
+  --tag-8: oklch(0.56 0.15 300);
 }
 
 /* Dark is composed, not inverted: neutral charcoal, elevation by lighter
@@ -147,4 +157,13 @@
   --scroll-thumb: #3a3a44;
   --ring: 0 0 0 3px rgba(94, 136, 240, .32);
   --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2390909d' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+
+  --tag-1: oklch(0.72 0.12 255);
+  --tag-2: oklch(0.74 0.09 195);
+  --tag-3: oklch(0.74 0.12 150);
+  --tag-4: oklch(0.76 0.1 110);
+  --tag-5: oklch(0.8 0.12 75);
+  --tag-6: oklch(0.76 0.13 45);
+  --tag-7: oklch(0.72 0.14 10);
+  --tag-8: oklch(0.72 0.12 300);
 }

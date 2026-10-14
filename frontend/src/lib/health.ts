@@ -30,3 +30,20 @@ export function health(row: Row, now: Date = new Date()): Health {
   const top = r.reduce((a, b) => (rank[b.level] > rank[a.level] ? b : a))
   return { level: top.level, label: top.label, reasons: r.map((x) => x.text) }
 }
+
+/** Counted under Needs attention: a warning or a danger in the profile's health. */
+export function needsAttention(row: Row): boolean {
+  const level = health(row).level
+  return level === 'warn' || level === 'danger'
+}
+
+/** Sidebar counts for the live profiles. */
+export function countProfiles(rows: (Row & { state: string })[]) {
+  const c = { all: 0, running: 0, attention: 0 }
+  for (const r of rows) {
+    c.all++
+    if (r.state !== 'stopped') c.running++
+    if (needsAttention(r)) c.attention++
+  }
+  return c
+}

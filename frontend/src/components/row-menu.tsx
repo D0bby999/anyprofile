@@ -4,6 +4,7 @@ import { Api, copyText, service } from '../api'
 import { t } from '../i18n'
 import { errorText } from '../lib/format'
 import { Icon } from './icons'
+import { focusFirstItem, menuArrows } from '../lib/menu-keys'
 
 type Props = {
   row: service.ProfileRow
@@ -68,9 +69,12 @@ export function RowMenu({ row, onEdit, onDuplicate, onTrash, onMessage, onError 
         <Icon name="more" />
       </button>
       {open && (
-        <div role="menu" className="rowmenu" onKeyDown={(e) => { if (e.key === 'Escape') { e.stopPropagation(); setOpen(false) } }}>
+        <div role="menu" className="rowmenu" ref={focusFirstItem} onKeyDown={(e) => { menuArrows(e); if (e.key === 'Escape') { e.stopPropagation(); setOpen(false) } }}>
           <button role="menuitem" onClick={() => act(onEdit)}>{t.menu.edit}</button>
           <button role="menuitem" onClick={() => act(onDuplicate)}>{t.menu.duplicate}</button>
+          <button role="menuitem" onClick={() => act(() => Api.SetPinnedMany([row.id], !row.pinned).catch((e) => onError(errorText(e))))}>
+            {row.pinned ? t.menu.unpin : t.menu.pin}
+          </button>
           {row.login && <button role="menuitem" onClick={() => act(copyLogin)}>{t.menu.copyLogin}</button>}
           {row.hasPassword && <button role="menuitem" onClick={() => act(copyPassword)}>{t.menu.copyPassword}</button>}
           {row.hasTotp && <button role="menuitem" onClick={() => act(copyCode)}>{t.menu.copyCode}</button>}

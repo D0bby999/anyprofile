@@ -156,6 +156,25 @@ func (s *Service) SetSiteMany(ids []string, siteID string) error {
 }
 
 // AddTagMany adds one tag to several profiles, without duplicating it.
+// SetPinnedMany pins profiles to the top of the list, or unpins them.
+func (s *Service) SetPinnedMany(ids []string, pinned bool) error {
+	defer s.notify("profiles") // also after a partial failure: earlier rows did change
+	for _, id := range ids {
+		p, err := s.Store.GetProfile(id)
+		if err != nil {
+			return err
+		}
+		if p.Pinned == pinned {
+			continue
+		}
+		p.Pinned = pinned
+		if err := s.Store.UpdateProfile(p); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (s *Service) AddTagMany(ids []string, tag string) error {
 	tag = strings.TrimSpace(tag)
 	if tag == "" {

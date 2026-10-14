@@ -31,6 +31,15 @@
 .navitem .cnt { margin-left: auto; min-width: 22px; height: 20px; padding: 0 7px; display: inline-flex; align-items: center; justify-content: center; border-radius: var(--r-pill); background: var(--surface-hover); color: var(--muted); font-size: var(--t-xs); font-weight: 600; }
 .navitem[aria-current="page"] .cnt { background: var(--raised); color: var(--accent-ink); }
 .navitem .cnt.live { background: var(--success-soft); color: var(--success-ink); }
+.navitem .cnt.warn { background: var(--warn-soft); color: var(--warn-ink); }
+.navitem .navlabel { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tagdot { width: 8px; height: 8px; margin: 0 4px; border-radius: 50%; flex: 0 0 auto; }
+.navtoggle { display: flex; align-items: center; gap: 4px; width: calc(100% - 20px); border: 0; background: none; padding: 0; text-align: left; font: inherit; font-size: var(--t-xs); font-weight: 600; color: var(--muted); cursor: pointer; }
+.navtoggle:hover { color: var(--ink-soft); }
+.navtoggle .icon { transition: transform .15s var(--ease); }
+.navtoggle[aria-expanded="true"] .icon { transform: rotate(90deg); }
+.navmore { margin: 2px 10px; padding: 4px 6px; border: 0; border-radius: var(--r-sm); background: none; color: var(--muted); font: inherit; font-size: var(--t-xs); text-align: left; cursor: pointer; }
+.navmore:hover { color: var(--ink); background: var(--surface-hover); }
 .navsection { margin: 16px 10px 6px; color: var(--muted); font-size: var(--t-xs); font-weight: 600; }
 .sidefoot { margin-top: auto; padding-top: 12px; display: flex; flex-direction: column; gap: 2px; }
 .enginechip { display: flex; align-items: center; gap: 8px; margin: 8px 6px 0; color: var(--muted); font-size: var(--t-xs); }
@@ -51,6 +60,23 @@ button.enginechip:hover { color: var(--ink-soft); background: var(--surface-hove
 
 .realip { display: flex; align-items: flex-start; gap: 8px; color: var(--warn-ink); font-size: var(--t-sm); }
 .realip .icon { margin-top: 2px; flex: 0 0 auto; color: var(--warn); }
+
+.palette-backdrop { align-items: flex-start; padding-top: 12vh; }
+.palette { width: 560px; max-width: 100%; max-height: 70vh; display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-xl); box-shadow: var(--sh-modal); overflow: hidden; animation: rise .16s cubic-bezier(.16, 1, .3, 1); }
+.palette-input { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--line); color: var(--muted); }
+.palette-input input { flex: 1; min-width: 0; border: 0; background: none; color: var(--ink); font: inherit; font-size: var(--t-md); outline: none; }
+.palette-list { overflow-y: auto; padding: 6px; }
+.palette-group { padding: 8px 10px 4px; color: var(--muted); font-size: var(--t-xs); font-weight: 600; }
+.palette-item { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: var(--r-sm); color: var(--ink-soft); font-size: var(--t-sm); cursor: pointer; }
+.palette-item[aria-selected="true"] { background: var(--accent-soft); color: var(--ink); }
+.palette-item small { display: block; color: var(--muted); font-size: var(--t-xs); font-variant-numeric: tabular-nums; }
+.palette-item .grow { flex: 1; min-width: 0; }
+.palette-empty { margin: 0; padding: 14px 10px; color: var(--muted); font-size: var(--t-sm); }
+kbd { display: inline-flex; align-items: center; min-width: 22px; height: 20px; padding: 0 6px; border: 1px solid var(--line); border-radius: 5px; background: var(--surface-sunken); color: var(--ink-soft); font: inherit; font-size: var(--t-xs); font-weight: 600; white-space: pre; }
+.keys { display: flex; flex-direction: column; gap: 8px; margin: 0; }
+.keyrow { display: grid; grid-template-columns: 90px 1fr; align-items: center; gap: 12px; font-size: var(--t-sm); }
+.keyrow dd { margin: 0; color: var(--ink-soft); }
+@media (prefers-reduced-motion: reduce) { .palette { animation: none; } }
 
 .advanced { display: flex; flex-direction: column; gap: 10px; }
 .disclosure { align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; padding: 4px 6px; margin-left: -6px; border: 0; border-radius: var(--r-sm); background: none; color: var(--ink-soft); font-size: var(--t-sm); font-weight: 600; cursor: pointer; }
@@ -107,6 +133,19 @@ button.enginechip:hover { color: var(--ink-soft); background: var(--surface-hove
 .table tbody tr.running td { background: var(--running-row); }
 .table tbody tr.selected td { background: var(--accent-soft); }
 .table tbody tr.active td { background: var(--accent-soft); }
+.table tbody tr.cursor:not(.active) td { background: var(--surface-hover); }
+.table.compact td { height: 40px; padding-top: 4px; padding-bottom: 4px; }
+.table.compact .cellname .sub { display: none; }
+.serialcell { display: inline-flex; align-items: center; gap: 3px; }
+.pinmark { display: inline-flex; color: var(--accent); }
+.iconbtn.on { color: var(--accent); background: var(--accent-soft); }
+.invisible { visibility: hidden; }
+.menulabel { padding: 6px 10px 2px; color: var(--muted); font-size: var(--t-xs); font-weight: 600; }
+.viewmenu button { display: flex; align-items: center; gap: 8px; }
+.filterchips { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.filterchip { padding-right: 3px; }
+.filterchip button { display: inline-flex; padding: 2px; border: 0; border-radius: 50%; background: none; color: inherit; cursor: pointer; }
+.filterchip button:hover { background: var(--surface-active); }
 .table tbody tr { cursor: default; }
 .table .col-check { width: 44px; padding-right: 0; }
 .table .col-no { width: 52px; color: var(--muted); }
@@ -166,7 +205,8 @@ button.enginechip:hover { color: var(--ink-soft); background: var(--surface-hove
 .rowmenu { position: absolute; right: 0; top: calc(100% + 4px); z-index: 20; min-width: 200px;
   padding: 4px; border: 1px solid var(--line); border-radius: var(--r-md);
   background: var(--surface); box-shadow: var(--sh-pop); display: grid; }
-.rowmenu button { text-align: left; padding: 6px 10px; border-radius: var(--r-sm); }
+.rowmenu button { text-align: left; padding: 6px 10px; border: 0; border-radius: var(--r-sm); background: none; color: var(--ink-soft); font-size: var(--t-sm); }
+.rowmenu button:disabled { opacity: .5; cursor: not-allowed; }
 .rowmenu button:hover:not(:disabled) { background: var(--surface-hover); }
 .rowmenu hr { border: 0; height: 1px; background: var(--line-soft); margin: 4px 0; }
 .sorthead { display: inline-flex; align-items: center; gap: 3px; }

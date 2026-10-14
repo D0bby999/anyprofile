@@ -134,6 +134,10 @@ export function SetLanguage(arg1) {
   return window['go']['main']['App']['SetLanguage'](arg1);
 }
 
+export function SetPinnedMany(arg1, arg2) {
+  return window['go']['main']['App']['SetPinnedMany'](arg1, arg2);
+}
+
 export function SetSiteMany(arg1, arg2) {
   return window['go']['main']['App']['SetSiteMany'](arg1, arg2);
 }

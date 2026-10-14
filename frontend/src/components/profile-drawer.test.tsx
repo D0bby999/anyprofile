@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // @vitest-environment jsdom
+import { useState } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { t } from '../i18n'
@@ -36,12 +37,14 @@ const row = (id: string, name: string, serial: number) => service.ProfileRow.cre
 })
 const rows = [row('a', 'Kênh A', 1), row('b', 'Kênh B', 2), row('c', 'Kênh C', 3)]
 
-const page = () => render(
-  <ConfirmProvider>
+function Harness() {
+  const [activeId, setActiveId] = useState<string | null>(null)
+  return (
     <ProfilesPage rows={rows} sites={sites} recent={[]} view="all" engineReady fileVaultOn error="" setError={vi.fn()}
-      reload={vi.fn()} onNew={vi.fn()} onNeedEngine={vi.fn()} onClearView={vi.fn()} />
-  </ConfirmProvider>,
-)
+      reload={vi.fn()} onNew={vi.fn()} onNeedEngine={vi.fn()} onClearView={vi.fn()} activeId={activeId} setActiveId={setActiveId} />
+  )
+}
+const page = () => render(<ConfirmProvider><Harness /></ConfirmProvider>)
 const drawer = () => screen.queryByRole('complementary', { name: /^Details of/ })
 const openRow = (name: string) => fireEvent.click(screen.getByText(name), { detail: 1 })
 

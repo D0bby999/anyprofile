@@ -16,11 +16,13 @@ type Props = {
   recent: string[]
   onClose: () => void
   onCreated: () => void
+  /** 1 for one profile; more opens the dialog in bulk mode. */
+  initialCount?: number
 }
 
-export function NewProfileDialog({ defaultSite, defaults, sites, recent, onClose, onCreated }: Props) {
+export function NewProfileDialog({ defaultSite, defaults, sites, recent, onClose, onCreated, initialCount = 1 }: Props) {
   const [name, setName] = useState('')
-  const [count, setCount] = useState(1)
+  const [count, setCount] = useState(initialCount)
   const [site, setSite] = useState(defaultSite)
   const [proxyId, setProxyId] = useState(defaults.proxy === 'auto' ? 'auto' : '')
   const [bulkProxy, setBulkProxy] = useState<'auto' | 'none'>(defaults.proxy === 'auto' ? 'auto' : 'none')

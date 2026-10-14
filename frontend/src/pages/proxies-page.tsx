@@ -66,7 +66,7 @@ export function ProxiesPage({ onChanged }: { onChanged: () => void }) {
         <section className="card pad">
           <h2>{t.proxies.addTitle}</h2>
           <p className="desc">{t.proxies.addDesc}</p>
-          <textarea ref={paste} className="textarea code" rows={4} value={text} placeholder={t.proxies.pastePlaceholder}
+          <textarea id="proxy-paste" ref={paste} className="textarea code" rows={4} value={text} placeholder={t.proxies.pastePlaceholder}
             spellCheck={false} autoComplete="off" onChange={(e) => setText(e.target.value)} aria-label={t.proxies.addTitle} />          <div className="row">
             <button className={`btn primary${busy === 'import' ? ' busy' : ''}`} aria-busy={busy === 'import'} disabled={!!busy || !text.trim()} onClick={importList}>
               <Icon name={busy === 'import' ? 'refresh' : 'plus'} />{busy === 'import' ? t.proxies.importing : t.proxies.import}

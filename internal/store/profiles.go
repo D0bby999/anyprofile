@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -239,8 +240,15 @@ func (s *Store) ListProfiles(f ProfileFilter) ([]Profile, error) {
 	}
 	var args []any
 	if q := strings.TrimSpace(f.Query); q != "" {
-		where = append(where, `(name LIKE ? ESCAPE '\' OR login LIKE ? ESCAPE '\')`)
-		args = append(args, "%"+likeEscape(q)+"%", "%"+likeEscape(q)+"%")
+		// "#12" is the table number; anything else matches name, login, notes or a tag.
+		if n, err := strconv.Atoi(strings.TrimPrefix(q, "#")); err == nil && strings.HasPrefix(q, "#") {
+			where = append(where, "serial = ?")
+			args = append(args, n)
+		} else {
+			like := "%" + likeEscape(q) + "%"
+			where = append(where, `(name LIKE ? ESCAPE '\' OR login LIKE ? ESCAPE '\' OR notes LIKE ? ESCAPE '\' OR tags LIKE ? ESCAPE '\')`)
+			args = append(args, like, like, like, like)
+		}
 	}
 	if f.Tag != "" {
 		where = append(where, "EXISTS (SELECT 1 FROM json_each(profiles.tags) WHERE value = ?)")

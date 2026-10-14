@@ -136,3 +136,35 @@ func TestBulkEdits(t *testing.T) {
 		t.Fatalf("expected 2 distinct proxies, got %v", got)
 	}
 }
+
+func TestPinAndSearch(t *testing.T) {
+	s, _ := newService(t)
+	ctx := context.Background()
+	var ids []string
+	for _, n := range []string{"Alpha", "Beta", "Gamma"} {
+		p, err := s.CreateProfile(ctx, NewProfile{Name: n, Site: "other"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		ids = append(ids, p.ID)
+	}
+	if err := s.SetPinnedMany([]string{ids[1], ids[2]}, true); err != nil {
+		t.Fatal(err)
+	}
+	rows, _ := s.ListProfiles(store.ProfileFilter{})
+	if len(rows) != 3 || !rows[0].Pinned || !rows[1].Pinned || rows[2].Pinned || rows[2].ID != ids[0] {
+		t.Fatalf("pinned order = %v", []string{rows[0].Name, rows[1].Name, rows[2].Name})
+	}
+
+	p, _ := s.Store.GetProfile(ids[0])
+	p.Tags, p.Login = []string{"shop-us"}, "alpha@example.com"
+	if err := s.Store.UpdateProfile(p); err != nil {
+		t.Fatal(err)
+	}
+	for q, want := range map[string]string{"shop": "Alpha", "#2": "Beta", "ALPHA@": "Alpha", "gamm": "Gamma"} {
+		got, _ := s.ListProfiles(store.ProfileFilter{Query: q})
+		if len(got) != 1 || got[0].Name != want {
+			t.Errorf("query %q = %d rows, want %s", q, len(got), want)
+		}
+	}
+}

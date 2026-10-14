@@ -9,6 +9,7 @@ import { Icon } from './icons'
 import { SiteGlyph } from './site-glyph'
 import { RowMenu } from './row-menu'
 import { HealthPill } from './health-pill'
+import type { TablePrefs } from '../lib/table-prefs'
 
 export type SortKey = 'no' | 'name' | 'lastOpen'
 export type Sort = { key: SortKey; desc: boolean }
@@ -31,7 +32,10 @@ type Props = {
   onError: (msg: string) => void
   /** The profile whose details are open, and a click on a row (not on its controls). */
   activeId?: string | null
+  /** The row the arrow keys point at. */
+  cursorId?: string | null
   onSelectRow?: (id: string) => void
+  prefs?: TablePrefs
 }
 
 const CONTROLS = 'input, button, a, select, textarea, label, [role="menu"]'
@@ -73,17 +77,18 @@ export function ProfileTable(p: Props) {
       <span className="sorthead">{label}{p.sort.key === key && <Icon name={p.sort.desc ? 'sortDown' : 'sortUp'} className="icon sm" />}</span>
     </th>
   )
+  const shown = (c: 'site' | 'proxy' | 'health' | 'lastOpen') => !p.prefs?.hidden.includes(c)
   return (
-    <table className="table">
+    <table className={`table${p.prefs?.density === 'compact' ? ' compact' : ''}`}>
       <thead>
         <tr>
           <th className="col-check"><input type="checkbox" checked={allSelected} onChange={p.onToggleAll} aria-label={t.profiles.selected(p.rows.length)} /></th>
           {head('no', t.profiles.colNo, 'col-no')}
           {head('name', t.profiles.colName)}
-          <th className="col-site">{t.profiles.colSite}</th>
-          <th className="col-proxy">{t.profiles.colProxy}</th>
-          <th className="col-health">{t.profiles.colHealth}</th>
-          {head('lastOpen', t.profiles.colLastOpen, 'col-lastopen')}
+          {shown('site') && <th className="col-site">{t.profiles.colSite}</th>}
+          {shown('proxy') && <th className="col-proxy">{t.profiles.colProxy}</th>}
+          {shown('health') && <th className="col-health">{t.profiles.colHealth}</th>}
+          {shown('lastOpen') && head('lastOpen', t.profiles.colLastOpen, 'col-lastopen')}
           <th className="col-actions" />
         </tr>
       </thead>
@@ -92,14 +97,16 @@ export function ProfileTable(p: Props) {
           const running = r.state === 'running'
           const busy = r.state === 'starting' || r.state === 'stopping'
           const s = siteById(p.sites, r.site)
-          const cls = [p.selected.has(r.id) ? 'selected' : '', running ? 'running' : '', p.activeId === r.id ? 'active' : ''].join(' ').trim()
+          const cls = [p.selected.has(r.id) ? 'selected' : '', running ? 'running' : '', p.activeId === r.id ? 'active' : '', p.cursorId === r.id ? 'cursor' : ''].join(' ').trim()
           return (
             <tr key={r.id} className={cls || undefined} aria-current={p.activeId === r.id ? 'true' : undefined}
               onClick={(e) => { if (e.detail <= 1 && !(e.target as HTMLElement).closest(CONTROLS)) p.onSelectRow?.(r.id) }}
               onDoubleClick={(e) => { if (!(e.target as HTMLElement).closest(CONTROLS)) (running ? p.onFocus(r.id) : !busy && p.onStart(r.id)) }}>
               <td className="col-check"><input type="checkbox" checked={p.selected.has(r.id)}
                 onClick={(e) => p.onToggle(r.id, e.shiftKey)} onChange={() => {}} aria-label={r.name} /></td>
-              <td className="col-no">{r.serial}</td>
+              <td className="col-no">
+                <span className="serialcell">{r.serial}{r.pinned && <span className="pinmark" title={t.menu.pinned} aria-label={t.menu.pinned}><Icon name="pin" className="icon xs" /></span>}</span>
+              </td>
               <td className="cellname">
                 <b className="selectable">{r.name}</b>
                 <span className="sub">
@@ -108,10 +115,10 @@ export function ProfileTable(p: Props) {
                   {r.tags.map((x) => <span key={x} className="tag">{x}</span>)}
                 </span>
               </td>
-              <td className="col-site"><span className="platform" title={s.name}><SiteGlyph site={s} /><span className="plabel">{s.name}</span></span></td>
-              <td className="col-proxy"><ProxyCell row={r} /></td>
-              <td className="col-health"><HealthPill row={r} now={now} /></td>
-              <td className="nowrap col-lastopen"><LastOpened row={r} now={now} /></td>
+              {shown('site') && <td className="col-site"><span className="platform" title={s.name}><SiteGlyph site={s} /><span className="plabel">{s.name}</span></span></td>}
+              {shown('proxy') && <td className="col-proxy"><ProxyCell row={r} /></td>}
+              {shown('health') && <td className="col-health"><HealthPill row={r} now={now} /></td>}
+              {shown('lastOpen') && <td className="nowrap col-lastopen"><LastOpened row={r} now={now} /></td>}
               <td className="col-actions">
                 <span className="row">
                   {running && (

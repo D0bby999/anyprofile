@@ -101,6 +101,10 @@ func (a *App) SetSiteMany(ids []string, site string) error {
 	return a.must(func() error { return a.svc.SetSiteMany(ids, site) })
 }
 
+func (a *App) SetPinnedMany(ids []string, pinned bool) error {
+	return a.must(func() error { return a.svc.SetPinnedMany(ids, pinned) })
+}
+
 func (a *App) AddTagMany(ids []string, tag string) error {
 	return a.must(func() error { return a.svc.AddTagMany(ids, tag) })
 }

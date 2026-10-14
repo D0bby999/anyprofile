@@ -31,6 +31,11 @@ export function allTags(rows: { tags: string[] }[]): string[] {
   return [...new Set(rows.flatMap((r) => r.tags))].sort((a, b) => a.localeCompare(b))
 }
 
+/** Lower case without diacritics, for search: "Thử" and "thu" match. */
+export function fold(s: string): string {
+  return s.normalize('NFD').replace(/\p{M}/gu, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase()
+}
+
 /** The apperr code of an error ("engine_missing"), or "". */
 export function errorCode(e: unknown): string {
   const raw = typeof e === 'string' ? e : e instanceof Error ? e.message : String(e)

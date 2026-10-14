@@ -73,6 +73,8 @@ export function SetDefaults(arg1:service.Defaults):Promise<void>;
 
 export function SetLanguage(arg1:string):Promise<void>;
 
+export function SetPinnedMany(arg1:Array<string>,arg2:boolean):Promise<void>;
+
 export function SetSiteMany(arg1:Array<string>,arg2:string):Promise<void>;
 
 export function SetTOTP(arg1:string,arg2:string):Promise<void>;

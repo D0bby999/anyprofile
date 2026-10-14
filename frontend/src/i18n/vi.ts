@@ -9,6 +9,7 @@ export const vi: Messages = {
   nav: {
     newProfile: 'Profile mới', all: 'Tất cả profile', running: 'Đang chạy', proxies: 'Proxy',
     trash: 'Thùng rác', settings: 'Cài đặt', sites: 'Nền tảng',
+    attention: 'Cần chú ý', tags: 'Tag', showAll: (n: number) => `Xem tất cả (${n})`, showFewer: 'Thu gọn',
   },
   common: {
     save: 'Lưu', cancel: 'Huỷ', close: 'Đóng', delete: 'Xoá', loading: 'Đang tải…', refresh: 'Làm mới',
@@ -65,12 +66,12 @@ export const vi: Messages = {
   },
   profiles: {
     title: 'Profile', total: (n: number) => `${n} profile`,
-    search: 'Tìm theo tên hoặc tag',
-    allTags: 'Mọi tag',
+    search: 'Tìm tên, tag, ghi chú, login, IP hoặc #12',
     open: 'Mở', opening: 'Đang mở', stop: 'Đóng', stopping: 'Đang đóng',
     edit: 'Sửa profile', focus: 'Đưa cửa sổ lên trước', trash: 'Bỏ vào thùng rác',
     selected: (n: number) => `Đã chọn ${n}`,
     openSelected: 'Mở', stopSelected: 'Đóng', trashSelected: 'Bỏ vào thùng rác', clearSelection: 'Bỏ chọn',
+    pinSelected: 'Ghim', unpinSelected: 'Bỏ ghim',
     colNo: 'STT', colName: 'Tên', colSite: 'Nền tảng', colProxy: 'Proxy', colHealth: 'Sức khoẻ', colLastOpen: 'Mở lần cuối',
     runningFor: (d: string) => `Đang chạy · ${d}`,
     emptyTitle: 'Chưa có profile nào',
@@ -97,6 +98,30 @@ export const vi: Messages = {
     count: 'Số lượng', namePrefix: 'Tiền tố tên', preview: 'Sẽ tạo:',
     submit: 'Tạo profile', creating: 'Đang tạo…',
     identityNote: 'Mỗi profile có một máy giả lập riêng, chọn ngẫu nhiên. Nó không bao giờ đổi.',
+  },
+  view: {
+    button: 'Hiển thị', density: 'Mật độ', comfortable: 'Thoáng', compact: 'Gọn', columns: 'Cột',
+    cols: { site: 'Nền tảng', proxy: 'Proxy', health: 'Sức khoẻ', lastOpen: 'Mở lần cuối' } as Record<string, string>,
+  },
+  filters: {
+    running: 'Đang chạy', attention: 'Cần chú ý', tag: (x: string) => `Tag: ${x}`, site: (x: string) => `Nền tảng: ${x}`,
+    remove: (x: string) => `Bỏ bộ lọc ${x}`,
+  },
+  palette: {
+    title: 'Bảng lệnh', placeholder: 'Tìm profile, thao tác và trang', none: (q: string) => `Không có kết quả cho "${q}".`,
+    profiles: 'Profile', actions: 'Thao tác', goTo: 'Đi tới',
+    newProfile: 'Profile mới', createSeveral: 'Tạo nhiều profile', addProxies: 'Thêm proxy', checkProxies: 'Kiểm mọi proxy',
+    openSettings: 'Mở cài đặt', switchTheme: 'Đổi giao diện sáng tối', switchLanguage: 'Đổi ngôn ngữ', shortcuts: 'Phím tắt',
+    checking: 'Đang kiểm mọi proxy…',
+  },
+  keys: {
+    title: 'Phím tắt',
+    rows: [
+      ['⌘K', 'Mở bảng lệnh'], ['⌘N', 'Profile mới'], ['⌘F  /', 'Tìm profile'],
+      ['↑  ↓', 'Chuyển giữa các hàng'], ['Enter', 'Mở chi tiết của hàng'], ['⌘Enter', 'Mở trình duyệt, hoặc đưa nó lên trước'],
+      ['Space', 'Chọn hoặc bỏ chọn hàng'], ['⌘A', 'Chọn mọi hàng đang hiện'], ['Esc', 'Đóng lớp trên cùng, rồi bỏ chọn'],
+      ['?', 'Hiện danh sách này'],
+    ] as [string, string][],
   },
   drawer: {
     label: (name: string) => `Chi tiết của ${name}`, close: 'Đóng chi tiết',
@@ -158,6 +183,7 @@ export const vi: Messages = {
     more: 'Thêm', edit: 'Sửa', duplicate: 'Nhân bản…', copyLogin: 'Chép tên đăng nhập',
     copyPassword: 'Chép mật khẩu', copyCode: 'Chép mã 2FA', copiedLogin: 'Đã chép tên đăng nhập',
     copiedCode: (n: number) => `Đã chép mã 2FA, còn ${n} giây`, trash: 'Bỏ vào thùng rác',
+    pin: 'Ghim lên đầu', unpin: 'Bỏ ghim', pinned: 'Đã ghim',
   },
   duplicate: {
     title: 'Nhân bản profile', name: 'Tên', count: 'Số lượng',

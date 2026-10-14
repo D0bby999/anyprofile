@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Api, main, onDataChanged, service } from './api'
 import { language, setLanguage, t, type Language } from './i18n'
 import { applyTheme, readTheme, type ThemeChoice } from './lib/theme'
 import { useProfiles } from './hooks/use-profiles'
+import { countProfiles } from './lib/health'
+import { tagCounts } from './lib/tags'
 import { useSites } from './hooks/use-sites'
 import { Sidebar, type Page, type View } from './components/sidebar'
 import { NewProfileDialog } from './components/new-profile-dialog'
@@ -12,11 +14,20 @@ import { ProfilesPage } from './pages/profiles-page'
 import { ProxiesPage } from './pages/proxies-page'
 import { TrashPage } from './pages/trash-page'
 import { SettingsPage } from './pages/settings-page'
+import { CommandPalette, type Command } from './components/command-palette'
+import { ShortcutSheet } from './components/shortcut-sheet'
+import { useToast } from './components/toast'
+import { registerShortcuts } from './lib/shortcuts'
+import { errorText } from './lib/format'
 
 export default function App() {
   const [page, setPage] = useState<Page>('profiles')
   const [view, setView] = useState<View>('all')
-  const [creating, setCreating] = useState(false)
+  const [creating, setCreating] = useState<number | false>(false) // false, or the count to start with
+  const [activeId, setActiveId] = useState<string | null>(null)
+  const [palette, setPalette] = useState(false)
+  const [sheet, setSheet] = useState(false)
+  const toast = useToast()
   const [startupError, setStartupError] = useState('')
   const [fileVaultOn, setFileVaultOn] = useState(true)
   const [engines, setEngines] = useState<main.EngineInfo[] | null>(null)
@@ -42,14 +53,21 @@ export default function App() {
   useEffect(refreshProxies, [])
   useEffect(() => onDataChanged(['proxies'], refreshProxies), [])
 
-  const counts = useMemo(() => {
-    const c = { all: 0, running: 0 }
-    for (const r of profiles.rows) {
-      c.all++
-      if (r.state !== 'stopped') c.running++
-    }
-    return c
-  }, [profiles.rows])
+  const counts = useMemo(() => countProfiles(profiles.rows), [profiles.rows])
+
+  const focusSearch = () => {
+    setPage('profiles')
+    setTimeout(() => document.getElementById('profile-search')?.focus(), 0)
+  }
+  // App-wide shortcuts; the profiles page adds its own for the table.
+  useEffect(() => registerShortcuts([
+    { combo: 'mod+k', global: true, run: () => setPalette(true) },
+    { combo: 'mod+n', run: () => setCreating(1) },
+    { combo: 'mod+f', run: focusSearch },
+    { combo: '/', run: focusSearch },
+    { combo: '?', run: () => setSheet(true) },
+  ]), [])
+  const tags = useMemo(() => tagCounts(profiles.rows), [profiles.rows])
 
   const engineCounts = useMemo(() => {
     const c: Record<string, number> = {}
@@ -84,7 +102,31 @@ export default function App() {
   const engineReady = !!defaultEngine?.installed
   const engineName = defaultEngine ? (t.engines.names[defaultEngine.engine] ?? defaultEngine.engine) : ''
   const navigate = (p: Page, v?: View) => { setPage(p); if (v) setView(v) }
-  const newProfile = () => setCreating(true)
+  const newProfile = () => setCreating(1)
+  const cycleTheme = () => setTheme(theme === 'system' ? 'light' : theme === 'light' ? 'dark' : 'system')
+  const actions: Command[] = [
+    { id: 'new', label: t.palette.newProfile, icon: 'plus', run: newProfile },
+    { id: 'several', label: t.palette.createSeveral, icon: 'plus', run: () => setCreating(5) },
+    { id: 'proxies', label: t.palette.addProxies, icon: 'proxy', run: () => { setPage('proxies'); setTimeout(() => document.getElementById('proxy-paste')?.focus(), 0) } },
+    { id: 'check', label: t.palette.checkProxies, icon: 'refresh', run: () => { toast.info(t.palette.checking); Api.CheckAllProxies().catch((e) => toast.error(errorText(e))) } },
+    { id: 'settings', label: t.palette.openSettings, icon: 'settings', run: () => setPage('settings') },
+    { id: 'theme', label: t.palette.switchTheme, icon: 'moon', run: cycleTheme },
+    { id: 'language', label: t.palette.switchLanguage, icon: 'settings', run: () => changeLanguage(lang === 'en' ? 'vi' : 'en') },
+    { id: 'keys', label: t.palette.shortcuts, icon: 'settings', run: () => setSheet(true) },
+  ]
+  const places: Command[] = [
+    { id: 'all', label: t.nav.all, icon: 'profiles', run: () => navigate('profiles', 'all') },
+    { id: 'running', label: t.nav.running, icon: 'running', run: () => navigate('profiles', 'running') },
+    { id: 'attention', label: t.nav.attention, icon: 'alert', run: () => navigate('profiles', 'attention') },
+    { id: 'proxies', label: t.nav.proxies, icon: 'proxy', run: () => setPage('proxies') },
+    { id: 'trash', label: t.nav.trash, icon: 'trash', run: () => setPage('trash') },
+    { id: 'settings', label: t.nav.settings, icon: 'settings', run: () => setPage('settings') },
+  ]
+  const openProfile = (id: string) => { setPage('profiles'); setActiveId(id) }
+  const launchProfile = (row: service.ProfileRow) => {
+    const go = row.state === 'running' ? Api.FocusProfile(row.id) : Api.StartProfile(row.id)
+    Promise.resolve(go).catch((e: unknown) => toast.error(errorText(e)))
+  }
   const changeLanguage = async (l: Language) => {
     try {
       await Api.SetLanguage(l)
@@ -97,7 +139,7 @@ export default function App() {
 
   return (
     <div className="app" key={lang}>
-      <Sidebar page={page} view={view} counts={counts} sites={sites} siteCounts={siteCounts} proxyCount={proxyCount}
+      <Sidebar page={page} view={view} counts={counts} tags={tags} sites={sites} siteCounts={siteCounts} proxyCount={proxyCount}
         engineReady={engineReady}
         engineLabel={defaultEngine ? (engineReady ? t.engines.ready(engineName, defaultEngine.version) : t.engines.missing(engineName)) : ''}
         onNavigate={navigate} onNewProfile={newProfile} />
@@ -105,7 +147,8 @@ export default function App() {
         {page === 'profiles' && (
           <ProfilesPage rows={profiles.rows} sites={sites} recent={recent} view={view} engineReady={engines === null || engineReady}
             fileVaultOn={fileVaultOn} error={profiles.error} setError={profiles.setError} reload={profiles.reload}
-            onNew={newProfile} onNeedEngine={() => setPage('settings')} onClearView={() => setView('all')} />
+            onNew={newProfile} onNeedEngine={() => setPage('settings')} onClearView={() => setView('all')}
+            activeId={activeId} setActiveId={setActiveId} />
         )}
         {page === 'proxies' && <ProxiesPage onChanged={() => { refreshProxies(); profiles.reload() }} />}
         {page === 'trash' && <TrashPage onChanged={profiles.reload} />}
@@ -114,8 +157,13 @@ export default function App() {
             lang={lang} onLanguage={changeLanguage} />
         )}
       </main>
-      {creating && (
-        <NewProfileDialog defaultSite={view.startsWith('site:') ? view.slice(5) : defaults.site} defaults={defaults} sites={sites} recent={recent}
+      {palette && (
+        <CommandPalette profiles={profiles.rows} actions={actions} places={places} onOpenProfile={openProfile}
+          onLaunchProfile={launchProfile} onClose={() => setPalette(false)} />
+      )}
+      {sheet && <ShortcutSheet onClose={() => setSheet(false)} />}
+      {creating !== false && (
+        <NewProfileDialog initialCount={creating} defaultSite={view.startsWith('site:') ? view.slice(5) : defaults.site} defaults={defaults} sites={sites} recent={recent}
           onClose={() => setCreating(false)}
           onCreated={() => { setCreating(false); setPage('profiles'); profiles.reload(); refreshProxies() }} />
       )}
