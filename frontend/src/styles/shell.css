@@ -174,14 +174,14 @@ kbd { display: inline-flex; align-items: center; min-width: 22px; height: 20px; 
 .filterchip button { display: inline-flex; padding: 2px; border: 0; border-radius: 50%; background: none; color: inherit; cursor: pointer; }
 .filterchip button:hover { background: var(--surface-active); }
 .table tbody tr { cursor: default; }
-.table .col-check { width: 44px; padding-right: 0; }
+.table .col-check { width: 44px; min-width: 44px; padding-right: 0; }
 /* Inline, a checkbox sits on the text baseline, 3px above the row's middle. */
 .table .col-check input { display: block; }
 .table .col-no { width: 52px; color: var(--muted); }
 .table .col-actions { width: 1%; text-align: right; white-space: nowrap; }
 .table .col-actions .row { justify-content: flex-end; gap: 6px; }
 .cellname b { display: block; font-weight: 600; color: var(--ink); }
-.cellname { max-width: 0; width: 34%; min-width: 150px; }
+.cellname { max-width: 0; width: 22%; min-width: 160px; }
 .cellname b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cellname .sub { display: flex; align-items: center; gap: 6px; margin-top: 2px; color: var(--faint); font-size: var(--t-xs); white-space: nowrap; overflow: hidden; }
 .cellname .mono { display: block; margin-top: 2px; color: var(--faint); }
@@ -254,7 +254,7 @@ kbd { display: inline-flex; align-items: center; min-width: 22px; height: 20px; 
 /* Columns leave in order of least use; the platform stays as its icon, which
    tells rows apart at a glance. Each width is what the columns before it need,
    measured, plus room for a scrollbar and longer Vietnamese labels. */
-@container (max-width: 1100px) { .table .col-lastopen { display: none; } }
+@container (max-width: 900px) { .table .col-lastopen { display: none; } }
 @container (max-width: 880px) {
   .cellproxy small { display: none; }
   /* The hidden name is anchored in its cell; anchored anywhere else it would sit

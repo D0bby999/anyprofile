@@ -27,6 +27,11 @@ const props = (rows: service.ProfileRow[]) => ({
 })
 
 describe('ProfileTable', () => {
+  it('numbers the rows by their place in the list, not by the fixed serial', () => {
+    const { container } = render(<ProfileTable {...props([row({ id: 'a', serial: 12 }), row({ id: 'b', name: 'Kênh B', serial: 40 })])} />)
+    expect([...container.querySelectorAll('td.col-no')].map((td) => td.textContent)).toEqual(['1', '2'])
+  })
+
   it('shows the identity, channel and proxy exit of a stopped profile, and opens it', () => {
     const p = props([row({})])
     render(<ProfileTable {...p} />)

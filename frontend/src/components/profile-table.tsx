@@ -97,7 +97,7 @@ export function ProfileTable(p: Props) {
         </tr>
       </thead>
       <tbody>
-        {p.rows.map((r) => {
+        {p.rows.map((r, i) => {
           const running = r.state === 'running'
           const busy = r.state === 'starting' || r.state === 'stopping'
           const s = siteById(p.sites, r.site)
@@ -109,7 +109,8 @@ export function ProfileTable(p: Props) {
               <td className="col-check"><input type="checkbox" checked={p.selected.has(r.id)}
                 onClick={(e) => p.onToggle(r.id, e.shiftKey)} onChange={() => {}} aria-label={r.name} /></td>
               <td className="col-no">
-                <span className="serialcell">{r.serial}{r.pinned && <span className="pinmark" title={t.menu.pinned} aria-label={t.menu.pinned}><Icon name="pin" className="icon xs" /></span>}</span>
+                {/* The row's place in the list; the fixed #serial is in the drawer and the window title. */}
+                <span className="serialcell">{i + 1}{r.pinned && <span className="pinmark" title={t.menu.pinned} aria-label={t.menu.pinned}><Icon name="pin" className="icon xs" /></span>}</span>
               </td>
               <td className="cellname">
                 <b className="selectable">{r.name}</b>
