@@ -7,14 +7,16 @@ import { machineLabel } from '../lib/persona'
 import type { Site } from '../lib/sites'
 import { Dialog } from './dialog'
 import { Icon } from './icons'
-import { ProxySelect } from './proxy-select'
+import { ProxySelect, RealIpWarning } from './proxy-select'
+import { useConfirm } from './confirm'
 import { SitePicker } from './site-picker'
 import { AccountPanel } from './account-panel'
-import { FpChip } from './fp-chip'
+import { HealthPill } from './health-pill'
 
 type Props = { row: service.ProfileRow; sites: Site[]; recent: string[]; onClose: () => void; onSaved: () => void; onTrash: () => void }
 
 export function ProfileEditor({ row, sites, recent, onClose, onSaved, onTrash }: Props) {
+  const confirm = useConfirm()
   const [name, setName] = useState(row.name)
   const [site, setSite] = useState(row.site)
   const [login, setLogin] = useState(row.login)
@@ -68,6 +70,7 @@ export function ProfileEditor({ row, sites, recent, onClose, onSaved, onTrash }:
         <ProxySelect value={proxyId} onChange={setProxyId} proxies={proxies} currentProfile={row.name} />
         {proxyId !== row.proxyId && <span className="hint">{t.editor.proxyChangeHint}</span>}
       </label>
+      {proxyId === '' && <RealIpWarning />}
       <div className="grid2">
         <label className="field">
           <span className="label">{t.create.startUrl}</span>
@@ -96,12 +99,12 @@ export function ProfileEditor({ row, sites, recent, onClose, onSaved, onTrash }:
           <dt>{t.editor.created}</dt><dd>{relativeTime(row.createdAt)}</dd>
           <dt>{t.fp.title}</dt>
           <dd className="row">
-            <FpChip row={row} />
+            <HealthPill row={row} />
             {row.fpCheckedAt && <span className="muted">{relativeTime(row.fpCheckedAt)}</span>}
             {row.fpVerdict === 'drift' && <span className="muted">{t.fp.diff(row.fpDiff.join(', '))}</span>}
             {row.fpVerdict && (
               <button type="button" className="btn sm ghost"
-                onClick={() => window.confirm(t.fp.confirmReset) && Api.ResetFingerprint(row.id).then(() => onSaved()).catch((e) => setError(errorText(e)))}>
+                onClick={async () => { if (await confirm(t.confirm.resetFingerprint)) Api.ResetFingerprint(row.id).then(() => onSaved()).catch((e) => setError(errorText(e))) }}>
                 {t.fp.reset}
               </button>
             )}

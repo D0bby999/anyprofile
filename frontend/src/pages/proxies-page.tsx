@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Api, onDataChanged, service } from '../api'
 import { language, t } from '../i18n'
 import { errorText, relativeTime } from '../lib/format'
@@ -7,6 +7,8 @@ import { EmptyState } from '../components/empty-state'
 import { Icon } from '../components/icons'
 import { PageHead } from '../components/page-head'
 import { ProxyEditDialog } from '../components/proxy-edit-dialog'
+import { useToast } from '../components/toast'
+import { useConfirm } from '../components/confirm'
 
 function ProxyState({ p }: { p: service.ProxyRow }) {
   if (!p.checkedAt) return <span className="chip">{t.proxies.unchecked}</span>
@@ -18,23 +20,25 @@ export function ProxiesPage({ onChanged }: { onChanged: () => void }) {
   const [rows, setRows] = useState<service.ProxyRow[]>([])
   const [text, setText] = useState('')
   const [busy, setBusy] = useState<string>('') // '' | 'import' | 'all' | proxy id
-  const [message, setMessage] = useState('')
-  const [errors, setErrors] = useState<string[]>([])
+  // Lines of the last import that could not be added; they stay next to the paste box.
+  const [failedLines, setFailedLines] = useState<string[]>([])
+  const toast = useToast()
+  const confirm = useConfirm()
   const [editing, setEditing] = useState<service.ProxyRow | null>(null)
   const [expiresOn, setExpiresOn] = useState('')
+  const paste = useRef<HTMLTextAreaElement>(null)
 
-  const load = useCallback(() => { Api.ListProxies().then((r) => setRows(r ?? [])).catch((e) => setErrors([errorText(e)])) }, [])
+  const load = useCallback(() => { Api.ListProxies().then((r) => setRows(r ?? [])).catch((e) => toast.error(errorText(e))) }, [toast])
   useEffect(load, [load])
   useEffect(() => onDataChanged(['proxies', 'profiles'], load), [load])
 
   const run = async (what: string, fn: () => Promise<unknown>) => {
     setBusy(what)
-    setErrors([])
-    setMessage('')
+    setFailedLines([])
     try {
       await fn()
     } catch (e) {
-      setErrors([errorText(e)])
+      toast.error(errorText(e))
     } finally {
       setBusy('')
       load()
@@ -44,8 +48,8 @@ export function ProxiesPage({ onChanged }: { onChanged: () => void }) {
 
   const importList = () => run('import', async () => {
     const res = await Api.ImportProxies(text, expiresOn)
-    setMessage(t.proxies.added(res.added))
-    setErrors((res.failed ?? []).map((f) => t.proxies.failedLine(f.line, f.err)))
+    if (res.added > 0) toast.success(t.proxies.added(res.added))
+    setFailedLines((res.failed ?? []).map((f) => t.proxies.failedLine(f.line, f.err)))
     setText('') // pasted passwords should not linger on screen
     setExpiresOn('')
   })
@@ -53,7 +57,7 @@ export function ProxiesPage({ onChanged }: { onChanged: () => void }) {
   return (
     <>
       <PageHead title={t.proxies.title} sub={t.proxies.total(rows.length)}>
-        <button className={`btn nodrag${busy === 'all' ? ' busy' : ''}`} disabled={!!busy || rows.length === 0}
+        <button className={`btn nodrag${busy === 'all' ? ' busy' : ''}`} aria-busy={busy === 'all'} disabled={!!busy || rows.length === 0}
           onClick={() => run('all', () => Api.CheckAllProxies())}>
           <Icon name="refresh" />{t.proxies.checkAll}
         </button>
@@ -62,9 +66,9 @@ export function ProxiesPage({ onChanged }: { onChanged: () => void }) {
         <section className="card pad">
           <h2>{t.proxies.addTitle}</h2>
           <p className="desc">{t.proxies.addDesc}</p>
-          <textarea className="textarea code" rows={4} value={text} placeholder={t.proxies.pastePlaceholder}
+          <textarea ref={paste} className="textarea code" rows={4} value={text} placeholder={t.proxies.pastePlaceholder}
             spellCheck={false} autoComplete="off" onChange={(e) => setText(e.target.value)} aria-label={t.proxies.addTitle} />          <div className="row">
-            <button className={`btn primary${busy === 'import' ? ' busy' : ''}`} disabled={!!busy || !text.trim()} onClick={importList}>
+            <button className={`btn primary${busy === 'import' ? ' busy' : ''}`} aria-busy={busy === 'import'} disabled={!!busy || !text.trim()} onClick={importList}>
               <Icon name={busy === 'import' ? 'refresh' : 'plus'} />{busy === 'import' ? t.proxies.importing : t.proxies.import}
             </button>
             <label className="row" style={{ fontSize: 'var(--t-sm)' }}>
@@ -73,17 +77,20 @@ export function ProxiesPage({ onChanged }: { onChanged: () => void }) {
             </label>
             <span className="row muted" style={{ fontSize: 'var(--t-xs)' }}><Icon name="key" className="icon sm" />{t.proxies.passwordNote}</span>
           </div>
-          {message && <div className="banner ok"><Icon name="check" /><span className="grow">{message}</span></div>}
-          {errors.length > 0 && <div className="banner danger" role="alert"><Icon name="alert" /><span className="grow">{errors.map((e) => <div key={e}>{e}</div>)}</span></div>}
+          {failedLines.length > 0 && <div className="banner danger" role="alert"><Icon name="alert" /><span className="grow">{failedLines.map((e) => <div key={e}>{e}</div>)}</span></div>}
         </section>
 
         <section className="card fill" style={{ minHeight: 220 }}>
           <div className="tablewrap">
-            {rows.length === 0 ? <EmptyState icon="proxy" title={t.proxies.emptyTitle} text={t.proxies.emptyText} /> : (
+            {rows.length === 0 ? (
+              <EmptyState icon="proxy" title={t.proxies.emptyTitle}>
+                <button className="btn" onClick={() => paste.current?.focus()}>{t.proxies.emptyAction}</button>
+              </EmptyState>
+            ) : (
               <table className="table">
                 <thead>
                   <tr><th>{t.proxies.colLabel}</th><th>{t.proxies.colExit}</th><th>{t.proxies.colTimezone}</th>
-                    <th>{t.proxies.colState}</th><th>{t.proxies.expires}</th><th>{t.proxies.colUsedBy}</th><th className="col-actions" /></tr>
+                    <th>{t.proxies.colStatus}</th><th>{t.proxies.expires}</th><th>{t.proxies.colUsedBy}</th><th className="col-actions" /></tr>
                 </thead>
                 <tbody>
                   {rows.map((p) => (
@@ -99,9 +106,9 @@ export function ProxiesPage({ onChanged }: { onChanged: () => void }) {
                       </td>
                       <td>{p.usedBy.length ? p.usedBy.map((n) => <span key={n} className="chip accent" style={{ marginRight: 4 }}>{n}</span>) : <span className="faint">{t.proxies.unused}</span>}</td>
                       <td className="col-actions"><span className="row">
-                        <button className={`iconbtn sm${busy === p.id ? ' busy' : ''}`} disabled={!!busy} onClick={() => run(p.id, () => Api.CheckProxy(p.id))} aria-label={t.proxies.check} title={t.proxies.check}><Icon name="refresh" /></button>
+                        <button className={`iconbtn sm${busy === p.id ? ' busy' : ''}`} aria-busy={busy === p.id} disabled={!!busy} onClick={() => run(p.id, () => Api.CheckProxy(p.id))} aria-label={t.proxies.check} title={t.proxies.check}><Icon name="refresh" /></button>
                         <button className="iconbtn sm" disabled={!!busy} onClick={() => setEditing(p)} aria-label={t.proxies.rename} title={t.proxies.rename}><Icon name="pencil" /></button>
-                        <button className="iconbtn sm" disabled={!!busy} onClick={() => window.confirm(t.proxies.confirmDelete) && run(p.id, () => Api.DeleteProxy(p.id))} aria-label={t.common.delete} title={t.common.delete}><Icon name="trash" /></button>
+                        <button className="iconbtn sm" disabled={!!busy} onClick={async () => { if (await confirm({ ...t.confirm.deleteProxy, danger: true })) run(p.id, () => Api.DeleteProxy(p.id)) }} aria-label={t.common.delete} title={t.common.delete}><Icon name="trash" /></button>
                       </span></td>
                     </tr>
                   ))}

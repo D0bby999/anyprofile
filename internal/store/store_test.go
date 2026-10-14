@@ -463,3 +463,19 @@ func TestMachineLabel(t *testing.T) {
 		}
 	}
 }
+
+func TestProxyLabelMigration(t *testing.T) {
+	s, _ := upgradeFrom(t, 8, func(o *Store) {
+		if _, err := o.db.Exec(`INSERT INTO proxies (id, label, scheme, host, port, username, created_at) VALUES
+			('a', 'http://u@h:1', 'http', 'h', 1, 'u', '2026-10-01T00:00:00Z'),
+			('b', 'Shop US', 'http', 'h', 2, 'u', '2026-10-01T00:00:00Z')`); err != nil {
+			t.Fatal(err)
+		}
+	})
+	for id, want := range map[string]string{"a": "h:1", "b": "Shop US"} {
+		p, err := s.GetProxy(id)
+		if err != nil || p.Label != want {
+			t.Fatalf("proxy %s label = %q %v, want %q", id, p.Label, err, want)
+		}
+	}
+}

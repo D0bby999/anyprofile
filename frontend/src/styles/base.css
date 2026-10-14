@@ -52,7 +52,8 @@ input, textarea { caret-color: var(--accent); }
   background: var(--ctl-hover); border-color: var(--line-strong); color: var(--ink); box-shadow: var(--sh-ctl-hover);
 }
 .btn:active:not(:disabled), .iconbtn:active:not(:disabled) { background: var(--surface-active); box-shadow: none; transform: translateY(.5px); }
-.btn:disabled, .iconbtn:disabled { opacity: .5; box-shadow: none; }
+.btn:disabled, .iconbtn:disabled { opacity: .5; box-shadow: none; cursor: not-allowed; }
+.btn.busy:disabled, .iconbtn.busy:disabled { cursor: progress; }
 .btn .icon { color: var(--muted); }
 .btn:hover:not(:disabled) .icon { color: currentColor; }
 .btn.primary { color: var(--on-fill); background: var(--accent-fill); border-color: var(--accent-fill); box-shadow: var(--glow); }
@@ -129,7 +130,8 @@ input[type="checkbox"] { width: 15px; height: 15px; margin: 0; accent-color: var
 .banner.ok { background: var(--success-soft); border-color: var(--success-line); color: var(--success-ink); }
 .banner .grow { flex: 1; min-width: 0; }
 
+/* Reduced motion: things appear at once; busy buttons keep their label change. */
 @media (prefers-reduced-motion: reduce) {
   * { transition-duration: 0s !important; }
-  .btn.busy .icon, .iconbtn.busy .icon { animation-duration: 2.4s; }
+  .btn.busy .icon, .iconbtn.busy .icon, .backdrop, .dialog, .toast, .rowmenu { animation: none !important; }
 }

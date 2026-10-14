@@ -10,11 +10,15 @@ import { EmptyState } from '../components/empty-state'
 import { Icon } from '../components/icons'
 import { SiteGlyph } from '../components/site-glyph'
 import { PageHead } from '../components/page-head'
+import { useToast } from '../components/toast'
+import { useConfirm } from '../components/confirm'
 
 export function TrashPage({ onChanged }: { onChanged: () => void }) {
   const [rows, setRows] = useState<service.ProfileRow[]>([])
   const [error, setError] = useState('')
   const { sites } = useSites()
+  const toast = useToast()
+  const confirm = useConfirm()
 
   const load = useCallback(() => {
     Api.ListProfiles(store.ProfileFilter.createFrom({ query: '', tag: '', trashed: true }))
@@ -23,11 +27,10 @@ export function TrashPage({ onChanged }: { onChanged: () => void }) {
   useEffect(load, [load])
 
   const run = async (fn: () => Promise<unknown>) => {
-    setError('')
     try {
       await fn()
     } catch (e) {
-      setError(errorText(e))
+      toast.error(errorText(e))
     }
     load()
     onChanged()
@@ -50,7 +53,7 @@ export function TrashPage({ onChanged }: { onChanged: () => void }) {
                       <td className="muted">{t.trash.deletedAgo(relativeTime(r.deletedAt))}</td>
                       <td className="col-actions"><span className="row">
                         <button className="btn sm" onClick={() => run(() => Api.RestoreProfile(r.id))}><Icon name="restore" className="icon sm" />{t.trash.restore}</button>
-                        <button className="btn sm danger" onClick={() => window.confirm(t.trash.confirmPurge(r.name)) && run(() => Api.PurgeProfile(r.id))}>
+                        <button className="btn sm danger" onClick={async () => { if (await confirm({ ...t.confirm.purge(r.name), danger: true })) run(() => Api.PurgeProfile(r.id)) }}>
                           <Icon name="trash" className="icon sm" />{t.trash.purge}
                         </button>
                       </span></td>

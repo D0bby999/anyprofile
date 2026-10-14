@@ -454,3 +454,29 @@ func TestDuplicateUsesDefaultEngine(t *testing.T) {
 		t.Fatalf("copy = %+v %v", out, err)
 	}
 }
+
+func TestProxyLabelHidesUsername(t *testing.T) {
+	s, _ := newService(t)
+	if _, err := s.ImportProxies(context.Background(), "http://u:pw@gw.example:10001", ""); err != nil {
+		t.Fatal(err)
+	}
+	rows, _ := s.ListProxies()
+	if len(rows) != 1 || rows[0].Label != "gw.example:10001" {
+		t.Fatalf("rows = %+v", rows)
+	}
+}
+
+func TestProxyCheckErrorHasCode(t *testing.T) {
+	s, _ := newService(t)
+	ctx := context.Background()
+	if _, err := s.ImportProxies(ctx, "gw.example:10009:u:pw", ""); err != nil {
+		t.Fatal(err)
+	}
+	rows, _ := s.ListProxies()
+	s.CheckProxy = func(context.Context, netproxy.Upstream) (netproxy.Exit, error) {
+		return netproxy.Exit{}, errors.New("proxyconnect tcp: connection refused")
+	}
+	if _, err := s.CheckProxyByID(ctx, rows[0].ID); err == nil || !strings.HasPrefix(err.Error(), "anyprofile:proxy_unreachable:") {
+		t.Fatalf("err = %v", err)
+	}
+}

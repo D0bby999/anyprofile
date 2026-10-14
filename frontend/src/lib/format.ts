@@ -12,6 +12,12 @@ export function relativeTime(iso: string, now: Date = new Date()): string {
   return t.time.days(Math.floor(mins / (60 * 24)))
 }
 
+/** How long ago iso was, as "2 h 5 min"; for a running browser. */
+export function sinceSpan(iso: string, now: Date = new Date()): string {
+  const mins = Math.max(0, Math.floor((now.getTime() - new Date(iso).getTime()) / 60000)) || 0
+  return t.time.span(Math.floor(mins / 60), mins % 60)
+}
+
 export function parseTags(text: string): string[] {
   const seen = new Set<string>()
   for (const raw of text.split(',')) {
@@ -23,6 +29,12 @@ export function parseTags(text: string): string[] {
 
 export function allTags(rows: { tags: string[] }[]): string[] {
   return [...new Set(rows.flatMap((r) => r.tags))].sort((a, b) => a.localeCompare(b))
+}
+
+/** The apperr code of an error ("engine_missing"), or "". */
+export function errorCode(e: unknown): string {
+  const raw = typeof e === 'string' ? e : e instanceof Error ? e.message : String(e)
+  return /^anyprofile:([a-z_]+): /.exec(raw)?.[1] ?? ''
 }
 
 export function errorText(e: unknown): string {

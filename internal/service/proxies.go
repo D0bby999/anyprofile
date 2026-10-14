@@ -5,6 +5,7 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"sync"
 	"time"
@@ -61,7 +62,7 @@ func (s *Service) ImportProxies(ctx context.Context, text, expiresOn string) (Im
 			continue
 		}
 		up := line.Upstream
-		px := store.Proxy{ID: randomHex(8), Label: up.Redacted(), Scheme: up.Scheme, Host: up.Host,
+		px := store.Proxy{ID: randomHex(8), Label: fmt.Sprintf("%s:%d", up.Host, up.Port), Scheme: up.Scheme, Host: up.Host,
 			Port: up.Port, Username: up.Username, ExpiresOn: expiresOn}
 		if up.Password != "" {
 			if err := s.Secrets.Set(secrets.ServiceProxy, px.ID, []byte(up.Password)); err != nil {
@@ -110,7 +111,8 @@ func (s *Service) CheckProxyByID(ctx context.Context, id string) (store.Proxy, e
 	}
 	e, err := s.CheckProxy(ctx, up)
 	if err != nil {
-		return px, err
+		// The network detail goes to the log; the user gets a sentence.
+		return px, apperr.Newf("proxy_unreachable", "%v", err)
 	}
 	px.ExitIP, px.Country, px.Timezone, px.Lat, px.Lon, px.Rotating = e.IP, e.Country, e.Timezone, e.Lat, e.Lon, e.Rotating
 	if err := s.Store.SaveProxyCheck(px); err != nil {

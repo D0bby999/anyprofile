@@ -5,7 +5,7 @@ import { t } from '../i18n'
 import { errorText, nameSeries, parseTags } from '../lib/format'
 import { guessSite, siteById, type Site } from '../lib/sites'
 import { Dialog } from './dialog'
-import { ProxySelect } from './proxy-select'
+import { CHOOSE_PROXY, freeProxies, ProxySelect, RealIpWarning } from './proxy-select'
 import { SitePicker } from './site-picker'
 import { EngineAdvanced } from './engine-advanced'
 
@@ -28,11 +28,13 @@ export function NewProfileDialog({ defaultSite, defaults, sites, recent, onClose
   const [urlTouched, setUrlTouched] = useState(false)
   const [tags, setTags] = useState('')
   const [engine, setEngine] = useState('')
-  const [proxies, setProxies] = useState<service.ProxyRow[]>([])
+  const [proxies, setProxies] = useState<service.ProxyRow[] | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
 
-  useEffect(() => { Api.ListProxies().then((p) => setProxies(p ?? [])) }, [])
+  useEffect(() => { Api.ListProxies().then((p) => setProxies(p ?? [])).catch(() => setProxies([])) }, [])
+  // Auto with nothing free must not quietly become "no proxy": ask instead.
+  const pick = proxyId === 'auto' && proxies !== null && freeProxies(proxies) === 0 ? CHOOSE_PROXY : proxyId
 
   const pickSite = (id: string) => {
     setSite(id)
@@ -46,9 +48,11 @@ export function NewProfileDialog({ defaultSite, defaults, sites, recent, onClose
   }
 
   const bulk = count > 1
+  const blocked = !bulk && pick === CHOOSE_PROXY
+  const direct = bulk ? bulkProxy === 'none' : pick === ''
 
   const submit = async () => {
-    if (!name.trim() || busy) return
+    if (!name.trim() || busy || blocked) return
     setBusy(true)
     setError('')
     try {
@@ -58,7 +62,7 @@ export function NewProfileDialog({ defaultSite, defaults, sites, recent, onClose
         }))
       } else {
         await Api.CreateProfile(service.NewProfile.createFrom({
-          engine, name: name.trim(), proxyId, site, startUrl: startUrl.trim(), notes: '', tags: parseTags(tags),
+          engine, name: name.trim(), proxyId: pick, site, startUrl: startUrl.trim(), notes: '', tags: parseTags(tags),
         }))
       }
       onCreated()
@@ -74,7 +78,7 @@ export function NewProfileDialog({ defaultSite, defaults, sites, recent, onClose
     <Dialog title={t.create.title} icon="plus" onClose={onClose} onSubmit={submit}
       footer={<>
         <button type="button" className="btn ghost" onClick={onClose}>{t.common.cancel}</button>
-        <button type="submit" className="btn primary" disabled={!name.trim() || busy}>{busy ? t.create.creating : t.create.submit}</button>
+        <button type="submit" className="btn primary" disabled={!name.trim() || busy || blocked}>{busy ? t.create.creating : t.create.submit}</button>
       </>}>
       <div className="grid2">
         <label className="field">
@@ -101,10 +105,11 @@ export function NewProfileDialog({ defaultSite, defaults, sites, recent, onClose
       ) : (
         <label className="field">
           <span className="label">{t.create.proxy}</span>
-          <ProxySelect value={proxyId} onChange={setProxyId} proxies={proxies} allowAuto />
-          <span className="hint">{t.create.proxyHint}</span>
+          <ProxySelect value={pick} onChange={setProxyId} proxies={proxies ?? []} allowAuto />
+          {!direct && <span className="hint">{t.create.proxyHint}</span>}
         </label>
       )}
+      {direct && <RealIpWarning />}
       <div className="grid2">
         <label className="field">
           <span className="label">{t.create.startUrl}</span>

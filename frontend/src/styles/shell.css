@@ -40,6 +40,18 @@
 button.enginechip { border: 0; background: none; padding: 4px 6px; margin: 4px 0 0; border-radius: var(--r-sm); text-align: left; cursor: pointer; }
 button.enginechip:hover { color: var(--ink-soft); background: var(--surface-hover); }
 
+.toasts { position: fixed; right: 16px; bottom: 16px; z-index: 60; display: flex; flex-direction: column; gap: 8px; width: 360px; max-width: calc(100vw - 32px); pointer-events: none; }
+.toast { pointer-events: auto; display: flex; align-items: center; gap: 10px; padding: 8px 8px 8px 12px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--raised); box-shadow: var(--sh-pop); color: var(--ink); font-size: var(--t-sm); animation: rise .16s cubic-bezier(.16, 1, .3, 1); }
+.toast .grow { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.toast > .icon { flex: 0 0 auto; }
+.toast.success > .icon { color: var(--success); }
+.toast.info > .icon { color: var(--accent); }
+.toast.error > .icon { color: var(--danger); }
+@media (prefers-reduced-motion: reduce) { .toast { animation: none; } }
+
+.realip { display: flex; align-items: flex-start; gap: 8px; color: var(--warn-ink); font-size: var(--t-sm); }
+.realip .icon { margin-top: 2px; flex: 0 0 auto; color: var(--warn); }
+
 .advanced { display: flex; flex-direction: column; gap: 10px; }
 .disclosure { align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; padding: 4px 6px; margin-left: -6px; border: 0; border-radius: var(--r-sm); background: none; color: var(--ink-soft); font-size: var(--t-sm); font-weight: 600; cursor: pointer; }
 .disclosure:hover { color: var(--ink); background: var(--surface-hover); }
@@ -158,9 +170,19 @@ button.enginechip:hover { color: var(--ink-soft); background: var(--surface-hove
 .sorthead { display: inline-flex; align-items: center; gap: 3px; }
 .card.pad > .seg, .card.pad > .row { align-self: flex-start; }
 
-/* Narrow windows drop secondary columns instead of scrolling sideways. */
-@media (max-width: 1240px) { .table .col-lastopen { display: none; } }
-@media (max-width: 1080px) { .table .plabel, .cellproxy small { display: none; } }
+/* Narrow windows drop secondary columns instead of scrolling sideways. The
+   platform goes first: the sidebar already groups profiles by platform. */
+@media (max-width: 1240px) { .table .col-site { display: none; } }
+@media (max-width: 1080px) { .table .col-lastopen, .cellproxy small { display: none; } }
+
+.health { position: relative; display: inline-flex; outline-offset: 2px; border-radius: var(--r-pill); }
+.health .chip { white-space: nowrap; }
+.healthpop { display: none; position: absolute; z-index: 20; top: calc(100% + 6px); left: 0; width: max-content; max-width: 280px; padding: 8px 10px; flex-direction: column; gap: 4px; background: var(--raised); border: 1px solid var(--line); border-radius: var(--r-md); box-shadow: var(--sh-pop); color: var(--ink-soft); font-size: var(--t-xs); font-weight: 450; white-space: normal; }
+.health:hover .healthpop, .health:focus-visible .healthpop { display: flex; }
+.lastopen { display: inline-flex; align-items: center; gap: 6px; font-variant-numeric: tabular-nums; }
+.lastopen.running { color: var(--success-ink); }
+.lastopen .live { width: 7px; height: 7px; border-radius: 50%; background: var(--success); }
+.table .col-health { width: 1%; white-space: nowrap; }
 .cellname .sub { -webkit-mask-image: linear-gradient(to right, #000 88%, transparent); mask-image: linear-gradient(to right, #000 88%, transparent); }
 .ellipsis { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 260px; }
 .table td.stack > small { display: block; margin-top: 3px; font-size: var(--t-xs); }

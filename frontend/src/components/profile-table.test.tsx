@@ -34,22 +34,23 @@ describe('ProfileTable', () => {
     expect(screen.getByText('Fury')).toBeTruthy()
     expect(screen.getByText('67.84.146.69')).toBeTruthy()
     expect(screen.getByText('US')).toBeTruthy()
-    expect(screen.getByText(t.state.stopped)).toBeTruthy()
+    expect(screen.getByText(t.health.new)).toBeTruthy()
+    expect(screen.queryByText(t.profiles.colHealth)).toBeTruthy()
     fireEvent.click(screen.getByText(t.profiles.open))
     expect(p.onStart).toHaveBeenCalledWith('a')
     fireEvent.doubleClick(screen.getByText('Kênh A'))
     expect(p.onStart).toHaveBeenCalledTimes(2)
   })
 
-  it('offers Close and Focus for a running profile and shows the CDP warning chip', () => {
-    const p = props([row({ state: 'running', cdpPort: 9333 })])
+  it('offers Close and Focus for a running profile, shows how long it runs and the open port', () => {
+    const p = props([row({ state: 'running', cdpPort: 9333, lastOpenAt: new Date(Date.now() - 12 * 60000).toISOString() })])
     render(<ProfileTable {...p} />)
     fireEvent.click(screen.getByText(t.profiles.stop))
     expect(p.onStop).toHaveBeenCalledWith('a')
     fireEvent.click(screen.getByLabelText(t.profiles.focus))
     expect(p.onFocus).toHaveBeenCalledWith('a')
-    expect(screen.getByText('CDP :9333')).toBeTruthy()
-    expect(screen.getByText(t.state.running)).toBeTruthy()
+    expect(screen.getByText(t.health.cdp(9333))).toBeTruthy()
+    expect(screen.getByText(t.profiles.runningFor(t.time.span(0, 12)))).toBeTruthy()
   })
 
   it('disables the action while a profile is starting', () => {

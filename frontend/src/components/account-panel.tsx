@@ -4,6 +4,7 @@ import { Api, copyText, service } from '../api'
 import { t } from '../i18n'
 import { errorText } from '../lib/format'
 import { Icon } from './icons'
+import { useToast } from './toast'
 
 type Props = {
   row: service.ProfileRow
@@ -20,7 +21,7 @@ export function AccountPanel({ row, login, onLogin, onError }: Props) {
   const [showPw, setShowPw] = useState(false)
   const [showSecret, setShowSecret] = useState(false)
   const [totp, setTotp] = useState<{ code: string; secondsLeft: number } | null>(null)
-  const [notice, setNotice] = useState('')
+  const toast = useToast()
 
   const refreshTotp = () => {
     if (row.hasTotp) Api.TOTPCode(row.id).then(setTotp).catch((e) => onError(fail(e)))
@@ -58,8 +59,7 @@ export function AccountPanel({ row, login, onLogin, onError }: Props) {
   const copy = async (text: string, msg: string) => {
     try {
       await copyText(text)
-      setNotice(msg)
-      setTimeout(() => setNotice(''), 2000)
+      toast.success(msg)
     } catch (e) {
       onError(fail(e))
     }
@@ -68,8 +68,7 @@ export function AccountPanel({ row, login, onLogin, onError }: Props) {
   const copyPassword = async () => {
     try {
       await Api.CopyAccountPassword(row.id)
-      setNotice(t.account.copiedPassword)
-      setTimeout(() => setNotice(''), 2000)
+      toast.success(t.account.copiedPassword)
     } catch (e) {
       onError(fail(e))
     }
@@ -129,7 +128,6 @@ export function AccountPanel({ row, login, onLogin, onError }: Props) {
         )}
       </div>
 
-      {notice && <div className="banner ok"><Icon name="check" /><span className="grow">{notice}</span></div>}
       <span className="hint muted" style={{ fontSize: 'var(--t-xs)' }}>{t.account.note}</span>
     </div>
   )

@@ -5,6 +5,7 @@ import { t } from '../i18n'
 import { errorText, nameSeries } from '../lib/format'
 import { Dialog } from './dialog'
 import { EngineAdvanced } from './engine-advanced'
+import { RealIpWarning } from './proxy-select'
 
 type Props = { row: service.ProfileRow; onClose: () => void; onDone: () => void }
 
@@ -52,6 +53,7 @@ export function DuplicateDialog({ row, onClose, onDone }: Props) {
           <button type="button" aria-pressed={proxy === 'none'} onClick={() => setProxy('none')}>{t.duplicate.proxyNone}</button>
         </div>
       </div>
+      {proxy === 'none' && <RealIpWarning />}
       <EngineAdvanced value={engine} onChange={setEngine} />
       <div className="hint">{t.duplicate.preview} {preview.slice(0, 3).join(', ')}{preview.length > 3 ? ' …' : ''}</div>
       <span className="hint muted" style={{ fontSize: 'var(--t-xs)' }}>{t.duplicate.note}</span>

@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
+import { useEffect, useState } from 'react'
 import { service } from '../api'
 import { t } from '../i18n'
-import { relativeTime } from '../lib/format'
+import { relativeTime, sinceSpan } from '../lib/format'
 import { machineLabel } from '../lib/persona'
 import { siteById, type Site } from '../lib/sites'
 import { Icon } from './icons'
 import { SiteGlyph } from './site-glyph'
 import { RowMenu } from './row-menu'
-import { FpChip } from './fp-chip'
+import { HealthPill } from './health-pill'
 
 export type SortKey = 'no' | 'name' | 'lastOpen'
 export type Sort = { key: SortKey; desc: boolean }
@@ -30,16 +31,14 @@ type Props = {
   onError: (msg: string) => void
 }
 
-const pillClass: Record<string, string> = { running: 'ok', starting: 'warn', stopping: 'warn' }
-
-function StatePill({ row }: { row: service.ProfileRow }) {
-  if (row.state === 'stopped') return <span className="muted">{t.state.stopped}</span>
-  return (
-    <span className="row">
-      <span className={`chip ${pillClass[row.state] ?? ''}`}><span className="dot" />{t.state[row.state as keyof typeof t.state] ?? row.state}</span>
-      {row.cdpPort > 0 && <span className="chip warn" title={t.editor.cdpWarning}>{t.profiles.cdp(row.cdpPort)}</span>}
-    </span>
-  )
+/** Last opened, or how long the browser has been running. */
+function LastOpened({ row, now }: { row: service.ProfileRow; now: Date }) {
+  if (row.state === 'running') {
+    return <span className="lastopen running"><span className="live on" />{t.profiles.runningFor(sinceSpan(row.lastOpenAt, now))}</span>
+  }
+  if (row.state === 'starting') return <span className="lastopen">{t.profiles.opening}…</span>
+  if (row.state === 'stopping') return <span className="lastopen">{t.profiles.stopping}…</span>
+  return <span className="lastopen muted">{relativeTime(row.lastOpenAt, now)}</span>
 }
 
 function ProxyCell({ row }: { row: service.ProfileRow }) {
@@ -50,14 +49,18 @@ function ProxyCell({ row }: { row: service.ProfileRow }) {
       <span>
         {row.proxyExitIp ? <span className="mono selectable">{row.proxyExitIp}</span> : <span className="faint">{t.proxies.unchecked}</span>}
         <small>{row.proxyLabel}</small>
-        {row.proxyExpiry === 'soon' && <span className="chip warn"><span className="dot" />{t.proxies.expiringSoon}</span>}
-        {row.proxyExpiry === 'expired' && <span className="chip danger"><span className="dot" />{t.proxies.expired}</span>}
       </span>
     </span>
   )
 }
 
 export function ProfileTable(p: Props) {
+  // One clock for the whole table, so running times tick without a timer per row.
+  const [now, setNow] = useState(() => new Date())
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 60000)
+    return () => clearInterval(id)
+  }, [])
   const allSelected = p.rows.length > 0 && p.rows.every((r) => p.selected.has(r.id))
   const head = (key: SortKey, label: string, className?: string) => (
     <th className={`sortable ${className ?? ''}`} onClick={() => p.onSort(key)}
@@ -72,9 +75,9 @@ export function ProfileTable(p: Props) {
           <th className="col-check"><input type="checkbox" checked={allSelected} onChange={p.onToggleAll} aria-label={t.profiles.selected(p.rows.length)} /></th>
           {head('no', t.profiles.colNo, 'col-no')}
           {head('name', t.profiles.colName)}
-          <th>{t.profiles.colSite}</th>
+          <th className="col-site">{t.profiles.colSite}</th>
           <th>{t.profiles.colProxy}</th>
-          <th>{t.profiles.colState}</th>
+          <th className="col-health">{t.profiles.colHealth}</th>
           {head('lastOpen', t.profiles.colLastOpen, 'col-lastopen')}
           <th className="col-actions" />
         </tr>
@@ -95,14 +98,13 @@ export function ProfileTable(p: Props) {
                 <span className="sub">
                   <span>{machineLabel(r)}</span>
                   {r.engine === 'fury' && <span className="chip engine-tag">{t.engines.names.fury}</span>}
-                  <FpChip row={r} />
                   {r.tags.map((x) => <span key={x} className="tag">{x}</span>)}
                 </span>
               </td>
-              <td><span className="platform" title={s.name}><SiteGlyph site={s} /><span className="plabel">{s.name}</span></span></td>
+              <td className="col-site"><span className="platform" title={s.name}><SiteGlyph site={s} /><span className="plabel">{s.name}</span></span></td>
               <td><ProxyCell row={r} /></td>
-              <td><StatePill row={r} /></td>
-              <td className="muted nowrap col-lastopen">{relativeTime(r.lastOpenAt)}</td>
+              <td className="col-health"><HealthPill row={r} now={now} /></td>
+              <td className="nowrap col-lastopen"><LastOpened row={r} now={now} /></td>
               <td className="col-actions">
                 <span className="row">
                   {running && (
@@ -117,7 +119,7 @@ export function ProfileTable(p: Props) {
                       <Icon name="stop" className="icon sm" />{busy ? t.profiles.stopping : t.profiles.stop}
                     </button>
                   ) : (
-                    <button className={`btn sm primary actbtn${busy ? ' busy' : ''}`} disabled={busy} onClick={() => p.onStart(r.id)}>
+                    <button className={`btn sm primary actbtn${busy ? ' busy' : ''}`} aria-busy={busy} disabled={busy} onClick={() => p.onStart(r.id)}>
                       <Icon name={busy ? 'refresh' : 'play'} className="icon sm" />{busy ? t.profiles.opening : t.profiles.open}
                     </button>
                   )}

@@ -5,6 +5,7 @@ import { t } from '../i18n'
 import { errorText } from '../lib/format'
 import type { Site } from '../lib/sites'
 import { Dialog } from './dialog'
+import { RealIpWarning } from './proxy-select'
 import { SitePicker } from './site-picker'
 
 type BulkProps = { ids: string[]; sites: Site[]; recent: string[]; onClose: () => void; onDone: () => void }
@@ -89,6 +90,7 @@ export function BulkProxyDialog({ ids, onClose, onDone }: { ids: string[]; onClo
         <button type="button" aria-pressed={mode === 'auto'} onClick={() => setMode('auto')}>{t.bulk.proxyAuto}</button>
         <button type="button" aria-pressed={mode === 'none'} onClick={() => setMode('none')}>{t.bulk.proxyNone}</button>
       </div>
+      {mode === 'none' && <RealIpWarning />}
       {errors.map((m) => <div key={m} className="banner danger" role="alert"><span className="grow">{m}</span></div>)}
     </Dialog>
   )

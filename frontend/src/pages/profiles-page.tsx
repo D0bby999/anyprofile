@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Api, service } from '../api'
 import { language, t } from '../i18n'
-import { allTags, errorText } from '../lib/format'
+import { allTags, errorCode, errorText } from '../lib/format'
 import { siteById, type Site } from '../lib/sites'
 import { EmptyState } from '../components/empty-state'
 import { Icon } from '../components/icons'
@@ -13,6 +13,7 @@ import { BulkProxyDialog, BulkSiteDialog, BulkTagDialog } from '../components/bu
 import { rangeSelect } from '../lib/selection'
 import type { View } from '../components/sidebar'
 import { PageHead } from '../components/page-head'
+import { useToast } from '../components/toast'
 
 type Props = {
   rows: service.ProfileRow[]
@@ -41,8 +42,19 @@ export function ProfilesPage({ rows, sites, recent, view, engineReady, fileVault
   const [duplicating, setDuplicating] = useState<service.ProfileRow | null>(null)
   const [bulkDialog, setBulkDialog] = useState<'site' | 'tag' | 'proxy' | null>(null)
   const [lastToggled, setLastToggled] = useState<string | null>(null)
-  const [message, setMessage] = useState('')
   const [busy, setBusy] = useState(false)
+  const toast = useToast()
+
+  const showError = (e: unknown) => {
+    const action = errorCode(e) === 'engine_missing' ? { label: t.profiles.installEngine, run: onNeedEngine } : undefined
+    toast.error(errorText(e), action)
+  }
+  // Load and launch failures arrive through useProfiles; report each once.
+  useEffect(() => {
+    if (!error) return
+    showError(error)
+    setError('')
+  }, [error])
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -59,18 +71,17 @@ export function ProfilesPage({ rows, sites, recent, view, engineReady, fileVault
 
   const run = async (fn: () => Promise<unknown>) => {
     setBusy(true)
-    setError('')
     try {
       await fn()
     } catch (e) {
-      setError(errorText(e))
+      showError(e)
     } finally {
       setBusy(false)
     }
   }
   const bulk = (fn: (ids: string[]) => Promise<Record<string, string>>) => run(async () => {
     const errs = Object.values((await fn([...selected])) ?? {})
-    if (errs.length) setError(errs[0])
+    if (errs.length) showError(errs[0])
   })
   const onSort = (key: SortKey) => setSort((s) => ({ key, desc: s.key === key ? !s.desc : key === 'lastOpen' }))
   const toggle = (id: string, shift = false) => {
@@ -88,7 +99,6 @@ export function ProfilesPage({ rows, sites, recent, view, engineReady, fileVault
   const toggleAll = () => setSelected((cur) => (visible.every((r) => cur.has(r.id)) ? new Set() : new Set(visible.map((r) => r.id))))
   const runningCount = rows.filter((r) => r.state === 'running').length
   const filtered = query || tag || view !== 'all'
-  const flash = (msg: string) => { setMessage(msg); setTimeout(() => setMessage(''), 4000) }
 
   return (
     <>
@@ -101,9 +111,6 @@ export function ProfilesPage({ rows, sites, recent, view, engineReady, fileVault
             <button className="btn sm" onClick={onNeedEngine}>{t.profiles.installEngine}</button></div>
         )}
         {!fileVaultOn && <div className="banner warn"><Icon name="shield" /><span className="grow">{t.settings.fileVaultOff}</span></div>}
-        {message && <div className="banner ok"><Icon name="check" /><span className="grow">{message}</span></div>}
-        {error && <div className="banner danger" role="alert"><Icon name="alert" /><span className="grow selectable">{error}</span>
-          <button className="iconbtn sm" onClick={() => setError('')} aria-label={t.common.close}><Icon name="x" /></button></div>}
         <section className="card fill">
           {selected.size > 0 ? (
             <div className="toolbar selecting">
@@ -137,8 +144,10 @@ export function ProfilesPage({ rows, sites, recent, view, engineReady, fileVault
               <EmptyState icon="profiles" title={t.profiles.emptyTitle} text={t.profiles.emptyText}>
                 <button className="btn primary" onClick={onNew}><Icon name="plus" />{t.nav.newProfile}</button>
               </EmptyState>
+            ) : visible.length === 0 && view === 'running' && !query && !tag ? (
+              <EmptyState icon="running" title={t.profiles.runningEmpty} />
             ) : visible.length === 0 ? (
-              <EmptyState icon="search" title={t.profiles.noMatchTitle} text={t.profiles.noMatchText}>
+              <EmptyState icon="search" title={t.profiles.noMatchTitle}>
                 <button className="btn" onClick={() => { setQuery(''); setTag(''); onClearView() }}>{t.profiles.clearFilters}</button>
               </EmptyState>
             ) : (
@@ -146,7 +155,7 @@ export function ProfilesPage({ rows, sites, recent, view, engineReady, fileVault
                 onToggle={toggle} onToggleAll={toggleAll}
                 onStart={(id) => run(() => Api.StartProfile(id))} onStop={(id) => run(() => Api.StopProfile(id))}
                 onFocus={(id) => { Api.FocusProfile(id) }} onEdit={setEditing}
-                onDuplicate={setDuplicating} onMessage={flash} onError={setError}
+                onDuplicate={setDuplicating} onMessage={toast.success} onError={showError}
                 onTrash={(row) => run(async () => { await Api.TrashProfile(row.id); reload() })} />
             )}
           </div>

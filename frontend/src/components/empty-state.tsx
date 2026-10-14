@@ -2,12 +2,13 @@
 import type { ReactNode } from 'react'
 import { Icon, type IconName } from './icons'
 
-export function EmptyState({ icon, title, text, children }: { icon: IconName; title: string; text: string; children?: ReactNode }) {
+/** One sentence (an optional second line of text) and at most one action. */
+export function EmptyState({ icon, title, text, children }: { icon: IconName; title: string; text?: string; children?: ReactNode }) {
   return (
     <div className="emptystate">
       <span className="glyph"><Icon name={icon} className="icon lg" /></span>
       <b>{title}</b>
-      <p>{text}</p>
+      {text && <p>{text}</p>}
       {children && <div className="row">{children}</div>}
     </div>
   )

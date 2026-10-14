@@ -11,6 +11,8 @@ const sites = [
   site.Site.createFrom({ id: 'other', name: 'Other', group: 'other', domains: [], startUrl: '', icon: '', color: '#6B7280', custom: false }),
 ]
 
+const freeProxy = (id: string) => ({ id, label: `gw.example:${id}`, country: 'US', exitIp: '1.1.1.1', rotating: false, usedBy: [] })
+let proxyList: unknown[] = [freeProxy('10001')]
 const createProfile = vi.fn().mockResolvedValue({})
 const createProfiles = vi.fn().mockResolvedValue([])
 vi.mock('../api', async (orig) => ({
@@ -18,7 +20,7 @@ vi.mock('../api', async (orig) => ({
   Api: {
     CreateProfile: (...a: unknown[]) => createProfile(...a),
     CreateProfiles: (...a: unknown[]) => createProfiles(...a),
-    ListProxies: () => Promise.resolve([]),
+    ListProxies: () => Promise.resolve(proxyList),
     Engines: () => Promise.resolve([
       { engine: 'apostate', version: '0.5.1', chromium: '155', installed: true, problem: '', default: true },
       { engine: 'fury', version: '0.3.5', chromium: '155', installed: true, problem: '', default: false },
@@ -32,7 +34,7 @@ const defaults = service.Defaults.createFrom({ site: 'other', proxy: 'auto' })
 const dialog = (over: Partial<Parameters<typeof NewProfileDialog>[0]> = {}) =>
   render(<NewProfileDialog defaultSite="tiktok" defaults={defaults} sites={sites} recent={[]} onClose={vi.fn()} onCreated={vi.fn()} {...over} />)
 
-afterEach(() => { cleanup(); createProfile.mockClear(); createProfiles.mockClear() })
+afterEach(() => { cleanup(); createProfile.mockClear(); createProfiles.mockClear(); proxyList = [freeProxy('10001')] })
 
 describe('NewProfileDialog', () => {
   it('creates from a name and Enter, with an automatic proxy and the platform start page', async () => {
@@ -103,5 +105,28 @@ describe('NewProfileDialog', () => {
     fireEvent.submit(name.closest('form')!)
     await waitFor(() => expect(onCreated).toHaveBeenCalled())
     expect(createProfile.mock.calls[0][0]).toMatchObject({ engine: '' })
+  })
+
+  it('blocks Create when Auto is the default but no proxy is free', async () => {
+    proxyList = []
+    dialog()
+    fireEvent.change(screen.getByPlaceholderText(t.create.namePlaceholder), { target: { value: 'Shop' } })
+    await waitFor(() => expect(screen.getByRole('option', { name: t.create.proxyChoose })).toBeTruthy())
+    expect((screen.getByRole('button', { name: t.create.submit }) as HTMLButtonElement).disabled).toBe(true)
+  })
+
+  it('warns about the real IP when No proxy is chosen', async () => {
+    dialog()
+    await waitFor(() => expect(screen.getByRole('option', { name: t.create.proxyAutoFree(1) })).toBeTruthy())
+    expect(screen.queryByText(t.create.realIpWarning)).toBeNull()
+    fireEvent.change(screen.getByRole('combobox', { name: t.create.proxy }), { target: { value: '' } })
+    expect(screen.getByText(t.create.realIpWarning)).toBeTruthy()
+  })
+
+  it('counts free proxies in the Auto option', async () => {
+    proxyList = [freeProxy('10001'), freeProxy('10002')]
+    dialog()
+    const auto = await screen.findByRole('option', { name: t.create.proxyAutoFree(2) })
+    expect(auto.textContent).toContain('2')
   })
 })

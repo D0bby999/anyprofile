@@ -6,6 +6,7 @@ import { errorText } from '../lib/format'
 import type { Site } from '../lib/sites'
 import { Icon } from './icons'
 import { SiteGlyph } from './site-glyph'
+import { useConfirm } from './confirm'
 
 type Props = { sites: Site[]; reload: () => void }
 
@@ -19,6 +20,7 @@ export function SiteSettings({ sites, reload }: Props) {
   const [form, setForm] = useState<Form | null>(null)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+  const confirm = useConfirm()
 
   const startAdd = () => { setError(''); setForm(emptyForm) }
   const startEdit = (s: Site) => {
@@ -49,7 +51,7 @@ export function SiteSettings({ sites, reload }: Props) {
   }
 
   const remove = async (s: Site) => {
-    if (!window.confirm(t.sites.confirmDelete(s.name))) return
+    if (!(await confirm({ ...t.confirm.deleteSite(s.name), danger: true }))) return
     setError('')
     try {
       await Api.DeleteSite(s.id)

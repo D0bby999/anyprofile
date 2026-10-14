@@ -4,6 +4,7 @@ import { Api, service } from '../api'
 import { t } from '../i18n'
 import { errorText, formatBytes } from '../lib/format'
 import { Icon } from './icons'
+import { useConfirm } from './confirm'
 
 /** Storage use of the profiles folder, with cache and orphan cleanup. */
 export function StorageSettings() {
@@ -11,6 +12,7 @@ export function StorageSettings() {
   const [error, setError] = useState('')
   const [freed, setFreed] = useState('')
   const [busy, setBusy] = useState('')
+  const confirm = useConfirm()
 
   const load = useCallback(() => {
     Api.Storage().then(setInfo).catch((e) => setError(errorText(e)))
@@ -36,7 +38,7 @@ export function StorageSettings() {
 
   const deleteOrphans = async () => {
     const ids = (info?.orphans ?? []).map((o) => o.id)
-    if (!ids.length || !window.confirm(t.storage.confirmOrphans(ids.length))) return
+    if (!ids.length || !(await confirm({ ...t.confirm.orphans(ids.length), danger: true }))) return
     setBusy('orphans')
     setError('')
     try {

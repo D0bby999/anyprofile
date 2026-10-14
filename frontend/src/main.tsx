@@ -6,12 +6,18 @@ import './styles/tokens.css'
 import './styles/base.css'
 import './styles/shell.css'
 import App from './App'
+import { ToastProvider } from './components/toast'
+import { ConfirmProvider } from './components/confirm'
 import { Api } from './api'
 import { setLanguage } from './i18n'
 
 const root = createRoot(document.getElementById('root')!)
 Api.Language().then(setLanguage).catch(() => setLanguage('en')).finally(() => root.render(
   <React.StrictMode>
-    <App />
+    <ToastProvider>
+      <ConfirmProvider>
+        <App />
+      </ConfirmProvider>
+    </ToastProvider>
   </React.StrictMode>,
 ))
