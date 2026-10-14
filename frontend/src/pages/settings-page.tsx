@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-import { useEffect, useState } from 'react'
-import { Api, engine, onEngineProgress, type EngineProgress } from '../api'
+import { main, service } from '../api'
 import { t, type Language } from '../i18n'
-import { errorText } from '../lib/format'
 import type { ThemeChoice } from '../lib/theme'
 import { useSites } from '../hooks/use-sites'
 import { Icon, type IconName } from '../components/icons'
@@ -10,12 +8,14 @@ import { SiteSettings } from '../components/site-settings'
 import { StorageSettings } from '../components/storage-settings'
 import { DefaultsSettings } from '../components/defaults-settings'
 import { PageHead } from '../components/page-head'
+import { EngineSettings } from '../components/engine-settings'
 
-const mb = (n: number) => `${Math.round(n / 1048576)} MB`
 
 type Props = {
-  status: engine.Status | null
-  onEngineChanged: (s: engine.Status) => void
+  engines: main.EngineInfo[]
+  engineCounts: Record<string, number>
+  defaults: service.Defaults
+  onEnginesChanged: () => void
   theme: ThemeChoice
   onTheme: (c: ThemeChoice) => void
   fileVaultOn: boolean
@@ -23,26 +23,8 @@ type Props = {
   onLanguage: (l: Language) => void
 }
 
-export function SettingsPage({ status, onEngineChanged, theme, onTheme, fileVaultOn, lang, onLanguage }: Props) {
-  const [progress, setProgress] = useState<EngineProgress | null>(null)
-  const [error, setError] = useState('')
+export function SettingsPage({ engines, engineCounts, defaults, onEnginesChanged, theme, onTheme, fileVaultOn, lang, onLanguage }: Props) {
   const { sites, reload: reloadSites } = useSites()
-  useEffect(() => onEngineProgress(setProgress), [])
-
-  const install = async () => {
-    setError('')
-    if (!status) return
-    setProgress({ engine: status.engine, done: 0, total: -1 })
-    try {
-      await Api.InstallEngine(status.engine)
-      onEngineChanged(await Api.EngineStatus(status.engine))
-    } catch (e) {
-      setError(errorText(e))
-    } finally {
-      setProgress(null)
-    }
-  }
-  const pct = progress && progress.total > 0 ? Math.round((progress.done / progress.total) * 100) : 0
   const themes: [ThemeChoice, string, IconName][] = [['system', t.settings.themeSystem, 'monitor'], ['light', t.settings.themeLight, 'sun'], ['dark', t.settings.themeDark, 'moon']]
 
   return (
@@ -50,32 +32,8 @@ export function SettingsPage({ status, onEngineChanged, theme, onTheme, fileVaul
       <PageHead title={t.settings.title} />
       <div className="pagebody" style={{ maxWidth: 760 }}>
         <section className="card pad">
-          <h2>{t.settings.engineTitle}</h2>
-          <p className="desc">{t.settings.engineDesc}</p>
-          {status && (
-            <dl className="facts">
-              <dt>{t.settings.version}</dt><dd>Fury {status.version}</dd>
-              <dt>{t.settings.chromium}</dt><dd>{status.chromium}</dd>
-              <dt>{t.settings.status}</dt>
-              <dd>{status.installed
-                ? <span className="chip ok"><span className="dot" />{t.settings.installed}</span>
-                : <span className="chip">{t.settings.notInstalled}</span>}</dd>
-            </dl>
-          )}
-          {status?.problem && <div className="banner danger"><Icon name="alert" /><span className="grow">{status.problem}</span></div>}
-          {progress ? (
-            <div className="field">
-              <span className="hint">{t.settings.installing} {progress.total > 0 ? `${mb(progress.done)} / ${mb(progress.total)}` : ''}</span>
-              <div className="progress" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}><div style={{ width: `${pct}%` }} /></div>
-            </div>
-          ) : (
-            <div className="row">
-              <button className={`btn${status?.installed ? '' : ' primary'}`} onClick={install}>
-                <Icon name="download" />{status?.installed ? t.settings.reinstall : t.settings.install}
-              </button>
-            </div>
-          )}
-          {error && <div className="banner danger" role="alert"><Icon name="alert" /><span className="grow">{error}</span></div>}
+          <h2>{t.engines.title}</h2>
+          <EngineSettings engines={engines} counts={engineCounts} defaults={defaults} onChanged={onEnginesChanged} />
         </section>
 
         <section className="card pad">

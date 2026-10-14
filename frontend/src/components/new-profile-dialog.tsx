@@ -7,6 +7,7 @@ import { guessSite, siteById, type Site } from '../lib/sites'
 import { Dialog } from './dialog'
 import { ProxySelect } from './proxy-select'
 import { SitePicker } from './site-picker'
+import { EngineAdvanced } from './engine-advanced'
 
 type Props = {
   defaultSite: string
@@ -26,6 +27,7 @@ export function NewProfileDialog({ defaultSite, defaults, sites, recent, onClose
   const [startUrl, setStartUrl] = useState(siteById(sites, defaultSite).startUrl)
   const [urlTouched, setUrlTouched] = useState(false)
   const [tags, setTags] = useState('')
+  const [engine, setEngine] = useState('')
   const [proxies, setProxies] = useState<service.ProxyRow[]>([])
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -52,11 +54,11 @@ export function NewProfileDialog({ defaultSite, defaults, sites, recent, onClose
     try {
       if (bulk) {
         await Api.CreateProfiles(service.BulkCreate.createFrom({
-          baseName: name.trim(), count, proxy: bulkProxy, site, startUrl: startUrl.trim(), notes: '', tags: parseTags(tags),
+          engine, baseName: name.trim(), count, proxy: bulkProxy, site, startUrl: startUrl.trim(), notes: '', tags: parseTags(tags),
         }))
       } else {
         await Api.CreateProfile(service.NewProfile.createFrom({
-          name: name.trim(), proxyId, site, startUrl: startUrl.trim(), notes: '', tags: parseTags(tags),
+          engine, name: name.trim(), proxyId, site, startUrl: startUrl.trim(), notes: '', tags: parseTags(tags),
         }))
       }
       onCreated()
@@ -114,6 +116,7 @@ export function NewProfileDialog({ defaultSite, defaults, sites, recent, onClose
           <input className="input" value={tags} placeholder={t.create.tagsPlaceholder} onChange={(e) => setTags(e.target.value)} />
         </label>
       </div>
+      <EngineAdvanced value={engine} onChange={setEngine} />
       {bulk && <div className="hint">{t.create.preview} {preview.slice(0, 3).join(', ')}{preview.length > 3 ? ' …' : ''}</div>}
       <span className="hint muted" style={{ fontSize: 'var(--t-xs)' }}>{t.create.identityNote}</span>
       {error && <div className="banner danger" role="alert">{error}</div>}

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // The only module that touches the generated Wails bindings.
 export * as Api from '../wailsjs/go/main/App'
-export { engine, service, site, store, netproxy } from '../wailsjs/go/models'
+export { engine, main, service, site, store, netproxy } from '../wailsjs/go/models'
 import { EventsOn } from '../wailsjs/runtime/runtime'
 import { ClipboardSetText } from '../wailsjs/runtime/runtime'
 import { debounce } from './lib/debounce'

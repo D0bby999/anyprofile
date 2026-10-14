@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Api, service, store } from '../api'
 import { t } from '../i18n'
 import { errorText, relativeTime } from '../lib/format'
-import { personaLabel } from '../lib/persona'
+import { machineLabel } from '../lib/persona'
 import { siteById } from '../lib/sites'
 import { useSites } from '../hooks/use-sites'
 import { EmptyState } from '../components/empty-state'
@@ -45,7 +45,7 @@ export function TrashPage({ onChanged }: { onChanged: () => void }) {
                 <tbody>
                   {rows.map((r) => (
                     <tr key={r.id}>
-                      <td className="cellname"><b>{r.name}</b><span className="sub">{personaLabel(r.personaId)}</span></td>
+                      <td className="cellname"><b>{r.name}</b><span className="sub">{machineLabel(r)}</span></td>
                       <td><span className="platform"><SiteGlyph site={siteById(sites, r.site)} />{siteById(sites, r.site).name}</span></td>
                       <td className="muted">{t.trash.deletedAgo(relativeTime(r.deletedAt))}</td>
                       <td className="col-actions"><span className="row">

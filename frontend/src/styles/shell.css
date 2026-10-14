@@ -36,6 +36,32 @@
 .enginechip { display: flex; align-items: center; gap: 8px; margin: 8px 6px 0; color: var(--muted); font-size: var(--t-xs); }
 .enginechip .state { width: 7px; height: 7px; border-radius: 50%; background: var(--faint); }
 .enginechip .state.ok { background: var(--success); }
+.enginechip .state.warn { background: var(--warn); }
+button.enginechip { border: 0; background: none; padding: 4px 6px; margin: 4px 0 0; border-radius: var(--r-sm); text-align: left; cursor: pointer; }
+button.enginechip:hover { color: var(--ink-soft); background: var(--surface-hover); }
+
+.advanced { display: flex; flex-direction: column; gap: 10px; }
+.disclosure { align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; padding: 4px 6px; margin-left: -6px; border: 0; border-radius: var(--r-sm); background: none; color: var(--ink-soft); font-size: var(--t-sm); font-weight: 600; cursor: pointer; }
+.disclosure:hover { color: var(--ink); background: var(--surface-hover); }
+.disclosure .icon { transition: transform .15s var(--ease); }
+.disclosure[aria-expanded="true"] .icon { transform: rotate(90deg); }
+@media (prefers-reduced-motion: reduce) { .disclosure .icon { transition: none; } }
+.chip.engine-tag { height: 17px; padding: 0 6px; font-size: 10.5px; }
+
+.engines { display: flex; flex-direction: column; }
+.engine { display: flex; flex-direction: column; gap: 10px; padding: 14px 0; }
+.engine:first-child { padding-top: 0; }
+.engine:last-child { padding-bottom: 0; }
+.engine + .engine { border-top: 1px solid var(--line); }
+.engine .desc { margin: 0; color: var(--muted); font-size: var(--t-sm); }
+.engine-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.engine-head .grow { flex: 1; }
+.engine-facts { display: flex; flex-wrap: wrap; gap: 4px 16px; color: var(--ink-soft); font-size: var(--t-sm); font-variant-numeric: tabular-nums; }
+.engine-actions { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.radio { display: inline-flex; align-items: center; gap: 8px; font-size: var(--t-sm); color: var(--ink-soft); cursor: pointer; }
+.radio input { width: 15px; height: 15px; margin: 0; accent-color: var(--accent); cursor: pointer; }
+.radio:has(input:disabled) { opacity: .5; cursor: default; }
+.radio:has(input:disabled) input { cursor: default; }
 
 .main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .pagehead { display: flex; align-items: center; gap: 12px; height: 64px; padding: 14px 24px 0; flex: 0 0 auto; }

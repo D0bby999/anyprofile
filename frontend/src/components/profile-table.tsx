@@ -2,7 +2,7 @@
 import { service } from '../api'
 import { t } from '../i18n'
 import { relativeTime } from '../lib/format'
-import { personaLabel } from '../lib/persona'
+import { machineLabel } from '../lib/persona'
 import { siteById, type Site } from '../lib/sites'
 import { Icon } from './icons'
 import { SiteGlyph } from './site-glyph'
@@ -93,7 +93,8 @@ export function ProfileTable(p: Props) {
               <td className="cellname">
                 <b className="selectable">{r.name}</b>
                 <span className="sub">
-                  <span>{personaLabel(r.personaId)}</span>
+                  <span>{machineLabel(r)}</span>
+                  {r.engine === 'fury' && <span className="chip engine-tag">{t.engines.names.fury}</span>}
                   <FpChip row={r} />
                   {r.tags.map((x) => <span key={x} className="tag">{x}</span>)}
                 </span>

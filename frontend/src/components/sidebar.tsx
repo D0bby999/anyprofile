@@ -67,10 +67,13 @@ export function Sidebar({ page, view, counts, sites, siteCounts, proxyCount, eng
       </nav>
       <div className="sidefoot">
         {item(t.nav.settings, 'settings', page === 'settings', () => onNavigate('settings'))}
-        <div className="enginechip">
-          <span className={`state${engineReady ? ' ok' : ''}`} />
-          {engineLabel}
-        </div>
+        {engineLabel && (engineReady ? (
+          <div className="enginechip"><span className="state ok" />{engineLabel}</div>
+        ) : (
+          <button type="button" className="enginechip nodrag" onClick={() => onNavigate('settings')}>
+            <span className="state warn" />{engineLabel}
+          </button>
+        ))}
       </div>
     </aside>
   )

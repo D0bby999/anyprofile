@@ -4,6 +4,7 @@ import { Api, service } from '../api'
 import { t } from '../i18n'
 import { errorText, nameSeries } from '../lib/format'
 import { Dialog } from './dialog'
+import { EngineAdvanced } from './engine-advanced'
 
 type Props = { row: service.ProfileRow; onClose: () => void; onDone: () => void }
 
@@ -11,6 +12,7 @@ export function DuplicateDialog({ row, onClose, onDone }: Props) {
   const [name, setName] = useState(`${row.name} copy`)
   const [count, setCount] = useState(1)
   const [proxy, setProxy] = useState('auto')
+  const [engine, setEngine] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
 
@@ -21,7 +23,7 @@ export function DuplicateDialog({ row, onClose, onDone }: Props) {
     setBusy(true)
     setError('')
     try {
-      await Api.DuplicateProfile(service.DuplicateInput.createFrom({ sourceId: row.id, baseName: name.trim(), count, proxy }))
+      await Api.DuplicateProfile(service.DuplicateInput.createFrom({ engine, sourceId: row.id, baseName: name.trim(), count, proxy }))
       onDone()
     } catch (e) {
       setError(errorText(e))
@@ -50,6 +52,7 @@ export function DuplicateDialog({ row, onClose, onDone }: Props) {
           <button type="button" aria-pressed={proxy === 'none'} onClick={() => setProxy('none')}>{t.duplicate.proxyNone}</button>
         </div>
       </div>
+      <EngineAdvanced value={engine} onChange={setEngine} />
       <div className="hint">{t.duplicate.preview} {preview.slice(0, 3).join(', ')}{preview.length > 3 ? ' …' : ''}</div>
       <span className="hint muted" style={{ fontSize: 'var(--t-xs)' }}>{t.duplicate.note}</span>
       {error && <div className="banner danger" role="alert">{error}</div>}

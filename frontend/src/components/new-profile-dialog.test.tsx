@@ -19,6 +19,10 @@ vi.mock('../api', async (orig) => ({
     CreateProfile: (...a: unknown[]) => createProfile(...a),
     CreateProfiles: (...a: unknown[]) => createProfiles(...a),
     ListProxies: () => Promise.resolve([]),
+    Engines: () => Promise.resolve([
+      { engine: 'apostate', version: '0.5.1', chromium: '155', installed: true, problem: '', default: true },
+      { engine: 'fury', version: '0.3.5', chromium: '155', installed: true, problem: '', default: false },
+    ]),
     Sites: () => Promise.resolve(sites),
   },
 }))
@@ -74,5 +78,30 @@ describe('NewProfileDialog', () => {
     await waitFor(() => expect(onCreated).toHaveBeenCalled())
     expect(createProfiles).toHaveBeenCalledWith(expect.objectContaining({ baseName: 'Shop', count: 3, proxy: 'none' }))
     expect(createProfile).not.toHaveBeenCalled()
+  })
+
+  it('sends the engine chosen under Advanced, and none by default', async () => {
+    const onCreated = vi.fn()
+    dialog({ onCreated })
+    const name = screen.getByPlaceholderText(t.create.namePlaceholder)
+    fireEvent.change(name, { target: { value: 'Shop' } })
+    fireEvent.change(screen.getByRole('spinbutton'), { target: { value: '2' } })
+    fireEvent.click(screen.getByRole('button', { name: t.engines.advanced }))
+    const select = await screen.findByRole('combobox')
+    await waitFor(() => expect(screen.getByRole('option', { name: 'Fury' })).toBeTruthy())
+    fireEvent.change(select, { target: { value: 'fury' } })
+    fireEvent.submit(name.closest('form')!)
+    await waitFor(() => expect(onCreated).toHaveBeenCalled())
+    expect(createProfiles.mock.calls[0][0]).toMatchObject({ engine: 'fury', baseName: 'Shop', count: 2 })
+  })
+
+  it('leaves the engine empty when Advanced stays closed', async () => {
+    const onCreated = vi.fn()
+    dialog({ onCreated })
+    const name = screen.getByPlaceholderText(t.create.namePlaceholder)
+    fireEvent.change(name, { target: { value: 'Shop' } })
+    fireEvent.submit(name.closest('form')!)
+    await waitFor(() => expect(onCreated).toHaveBeenCalled())
+    expect(createProfile.mock.calls[0][0]).toMatchObject({ engine: '' })
   })
 })

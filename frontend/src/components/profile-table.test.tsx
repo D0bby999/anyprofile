@@ -14,7 +14,7 @@ const sites = [
 ]
 
 const row = (over: Partial<service.ProfileRow>) => service.ProfileRow.createFrom({
-  id: 'a', name: 'Kênh A', site: 'tiktok', serial: 1, personaId: 'macos-m4pro-1728x1117',
+  id: 'a', name: 'Kênh A', site: 'tiktok', serial: 1, engine: 'fury', personaId: 'macos-m4pro-1728x1117',
   proxyId: 'px', proxyLabel: 'u@gw:10001', proxyCountry: 'US', proxyExitIp: '67.84.146.69',
   state: 'stopped', stateError: '', cdpPort: 0, tags: ['tiktok'], lastOpenAt: '', createdAt: '2026-10-12T00:00:00Z', ...over,
 })
@@ -31,6 +31,7 @@ describe('ProfileTable', () => {
     const p = props([row({})])
     render(<ProfileTable {...p} />)
     expect(screen.getByText('Mac M4 Pro · 1728×1117')).toBeTruthy()
+    expect(screen.getByText('Fury')).toBeTruthy()
     expect(screen.getByText('67.84.146.69')).toBeTruthy()
     expect(screen.getByText('US')).toBeTruthy()
     expect(screen.getByText(t.state.stopped)).toBeTruthy()

@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { Api, service, store } from '../api'
 import { t } from '../i18n'
 import { errorText, parseTags, relativeTime } from '../lib/format'
-import { personaLabel } from '../lib/persona'
+import { machineLabel } from '../lib/persona'
 import type { Site } from '../lib/sites'
 import { Dialog } from './dialog'
 import { Icon } from './icons'
@@ -88,8 +88,8 @@ export function ProfileEditor({ row, sites, recent, onClose, onSaved, onTrash }:
       <div className="panel">
         <span className="row"><Icon name="key" className="icon sm" /><b style={{ fontSize: 'var(--t-sm)' }}>{t.editor.identity}</b></span>
         <dl className="facts selectable">
-          <dt>{t.editor.persona}</dt><dd>{personaLabel(row.personaId)}</dd>
-          <dt>{t.editor.engine}</dt><dd>Fury {row.engineVersion}</dd>
+          <dt>{t.editor.persona}</dt><dd>{machineLabel(row)}</dd>
+          <dt>{t.editor.engine}</dt><dd>{(t.engines.names[row.engine] ?? row.engine) + ' ' + row.engineVersion}</dd>
           <dt>{t.editor.timezone}</dt><dd>{row.timezone}</dd>
           <dt>{t.editor.languages}</dt><dd>{row.languages}</dd>
           <dt>{t.editor.seed}</dt><dd className="mono">{row.seedHex}</dd>

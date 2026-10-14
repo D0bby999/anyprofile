@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { useEffect, useMemo, useState } from 'react'
-import { Api, engine, onDataChanged, service } from './api'
+import { Api, main, onDataChanged, service } from './api'
 import { language, setLanguage, t, type Language } from './i18n'
 import { applyTheme, readTheme, type ThemeChoice } from './lib/theme'
 import { useProfiles } from './hooks/use-profiles'
@@ -19,7 +19,7 @@ export default function App() {
   const [creating, setCreating] = useState(false)
   const [startupError, setStartupError] = useState('')
   const [fileVaultOn, setFileVaultOn] = useState(true)
-  const [engineStatus, setEngineStatus] = useState<engine.Status | null>(null)
+  const [engines, setEngines] = useState<main.EngineInfo[] | null>(null)
   const [proxyCount, setProxyCount] = useState(0)
   const [theme, setTheme] = useState<ThemeChoice>(readTheme())
   const [lang, setLang] = useState<Language>(language)
@@ -31,12 +31,13 @@ export default function App() {
   useEffect(() => {
     Api.StartupError().then(setStartupError)
     Api.FileVaultOn().then(setFileVaultOn)
-    Api.Defaults().then((d) => {
-      setDefaults(d)
-      return Api.EngineStatus(d.engine).then(setEngineStatus)
-    }).catch(() => {})
   }, [])
-  useEffect(() => onDataChanged(['settings'], () => { Api.Defaults().then(setDefaults).catch(() => {}) }), [])
+  const refreshEngines = () => {
+    Api.Defaults().then(setDefaults).catch(() => {})
+    Api.Engines().then(setEngines).catch(() => {})
+  }
+  useEffect(refreshEngines, [])
+  useEffect(() => onDataChanged(['settings'], refreshEngines), [])
   const refreshProxies = () => { Api.ListProxies().then((p) => setProxyCount((p ?? []).length)).catch(() => {}) }
   useEffect(refreshProxies, [])
   useEffect(() => onDataChanged(['proxies'], refreshProxies), [])
@@ -47,6 +48,12 @@ export default function App() {
       c.all++
       if (r.state !== 'stopped') c.running++
     }
+    return c
+  }, [profiles.rows])
+
+  const engineCounts = useMemo(() => {
+    const c: Record<string, number> = {}
+    for (const r of profiles.rows) c[r.engine] = (c[r.engine] ?? 0) + 1
     return c
   }, [profiles.rows])
 
@@ -73,7 +80,9 @@ export default function App() {
     )
   }
 
-  const engineReady = !!engineStatus?.installed
+  const defaultEngine = engines?.find((e) => e.default)
+  const engineReady = !!defaultEngine?.installed
+  const engineName = defaultEngine ? (t.engines.names[defaultEngine.engine] ?? defaultEngine.engine) : ''
   const navigate = (p: Page, v?: View) => { setPage(p); if (v) setView(v) }
   const newProfile = () => setCreating(true)
   const changeLanguage = async (l: Language) => {
@@ -89,18 +98,19 @@ export default function App() {
   return (
     <div className="app" key={lang}>
       <Sidebar page={page} view={view} counts={counts} sites={sites} siteCounts={siteCounts} proxyCount={proxyCount}
-        engineReady={engineReady} engineLabel={engineReady ? t.engine.ready(engineStatus!.version) : t.engine.missing}
+        engineReady={engineReady}
+        engineLabel={defaultEngine ? (engineReady ? t.engines.ready(engineName, defaultEngine.version) : t.engines.missing(engineName)) : ''}
         onNavigate={navigate} onNewProfile={newProfile} />
       <main className="main">
         {page === 'profiles' && (
-          <ProfilesPage rows={profiles.rows} sites={sites} recent={recent} view={view} engineReady={engineStatus === null || engineReady}
+          <ProfilesPage rows={profiles.rows} sites={sites} recent={recent} view={view} engineReady={engines === null || engineReady}
             fileVaultOn={fileVaultOn} error={profiles.error} setError={profiles.setError} reload={profiles.reload}
             onNew={newProfile} onNeedEngine={() => setPage('settings')} onClearView={() => setView('all')} />
         )}
         {page === 'proxies' && <ProxiesPage onChanged={() => { refreshProxies(); profiles.reload() }} />}
         {page === 'trash' && <TrashPage onChanged={profiles.reload} />}
         {page === 'settings' && (
-          <SettingsPage status={engineStatus} onEngineChanged={setEngineStatus} theme={theme} onTheme={setTheme} fileVaultOn={fileVaultOn}
+          <SettingsPage engines={engines ?? []} engineCounts={engineCounts} defaults={defaults} onEnginesChanged={refreshEngines} theme={theme} onTheme={setTheme} fileVaultOn={fileVaultOn}
             lang={lang} onLanguage={changeLanguage} />
         )}
       </main>
