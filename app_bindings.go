@@ -3,8 +3,6 @@
 package main
 
 import (
-	"time"
-
 	"github.com/D0bby999/anyprofile/internal/apperr"
 	"github.com/D0bby999/anyprofile/internal/engine"
 	"github.com/D0bby999/anyprofile/internal/engine/fury"
@@ -407,16 +405,7 @@ func (a *App) CopyAccountPassword(id, site string) error {
 		}
 		text := string(pw)
 		secrets.Wipe(pw)
-		if err := runtime.ClipboardSetText(a.ctx, text); err != nil {
-			return err
-		}
-		go func() {
-			time.Sleep(90 * time.Second)
-			if cur, err := runtime.ClipboardGetText(a.ctx); err == nil && cur == text {
-				runtime.ClipboardSetText(a.ctx, "")
-			}
-		}()
-		return nil
+		return copySecret(a.ctx, text)
 	})
 }
 

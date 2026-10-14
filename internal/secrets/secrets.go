@@ -17,6 +17,8 @@ const (
 	ServiceTOTP            = "dev.anyprofile.totp"
 	// ServiceSnapshotKey holds the one key that encrypts every snapshot; account "app".
 	ServiceSnapshotKey = "dev.anyprofile.snapshot-key"
+	// ServiceAPIToken holds the local API token; account "app".
+	ServiceAPIToken = "dev.anyprofile.api-token"
 )
 
 var ErrNotFound = errors.New("secret not found")

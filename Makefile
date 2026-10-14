@@ -30,7 +30,7 @@ test: fury-config
 
 # Needs ANYPROFILE_TEST_FURY_APP=<path to a verified Fury.app>.
 test-integration: fury-config
-	go test -tags integration ./internal/launcher/ -count=1 -v
+	go test -tags integration ./internal/launcher/ ./internal/service/ -count=1 -v
 
 lint:
 	./scripts/check-spdx.sh

@@ -285,6 +285,14 @@ export const vi: Messages = {
     removedNote: 'Tài khoản của nền tảng đã bỏ khỏi profile. Thêm lại nền tảng để dùng, hoặc quên chúng.',
     forget: 'Quên',
   },
+  api: {
+    title: 'API trên máy', off: 'Tắt', on: 'Bật', port: 'Cổng',
+    listening: (port: number) => `Đang nghe ở 127.0.0.1:${port}`,
+    copyToken: 'Chép token', newToken: 'Token mới',
+    tokenCopied: 'Đã chép token. Token sẽ tự xoá khỏi bộ nhớ tạm sau 90 giây.',
+    newTokenConfirm: { title: 'Tạo token mới?', body: 'Các script đang dùng token cũ sẽ ngừng chạy cho tới khi bạn đưa token mới cho chúng.', confirm: 'Thay token' },
+    hint: 'Cho script trên máy Mac này mở và đóng profile (Puppeteer, Playwright, Python, n8n). Chỉ máy này gọi được, và phải có token. Script xin DevTools sẽ điều khiển toàn bộ trình duyệt đó, kể cả cookie, cho tới khi nó đóng. Ví dụ: docs/local-api.md.',
+  },
   onOpen: {
     title: 'Khi mở profile', restore: 'Mở lại các tab lần trước', start: 'Luôn mở trang mở đầu',
     restoreHint: 'Mở lại các tab của lần trước, kể cả khi bạn đã đóng cửa sổ trước khi tắt profile. Nếu không có tab nào, mở trang mở đầu.',
@@ -330,6 +338,8 @@ export const vi: Messages = {
     engine_missing: 'Chưa cài engine trình duyệt. Hãy cài trong mục Cài đặt.',
     folder_in_use: 'Một tiến trình khác đang dùng thư mục của profile này. Hãy đóng nó trước.',
     bad_language: 'Ngôn ngữ này không được hỗ trợ.',
+    api_bad_port: 'Cổng phải từ 1024 đến 65535.',
+    api_port_busy: 'Cổng này đang bị chương trình khác dùng. Hãy chọn cổng khác.',
     too_many_sites: 'Một profile có tối đa 10 nền tảng.',
     unknown_site: 'Nền tảng này không tồn tại.',
     site_name: 'Nền tảng cần có tên từ 1 đến 40 ký tự.',

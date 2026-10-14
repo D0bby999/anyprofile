@@ -283,6 +283,14 @@ export const en = {
     removedNote: 'Accounts of platforms no longer on this profile. Add the platform back to use them, or forget them.',
     forget: 'Forget',
   },
+  api: {
+    title: 'Local API', off: 'Off', on: 'On', port: 'Port',
+    listening: (port: number) => `Listening on 127.0.0.1:${port}`,
+    copyToken: 'Copy token', newToken: 'New token',
+    tokenCopied: 'Token copied. It is cleared from the clipboard in 90 s.',
+    newTokenConfirm: { title: 'Make a new token?', body: 'Scripts that use the current token stop working until you give them the new one.', confirm: 'Replace token' },
+    hint: 'Lets scripts on this Mac open and close profiles (Puppeteer, Playwright, Python, n8n). Only this Mac can reach it, and only with the token. A script that asks for DevTools gets full control of that browser, cookies included, until it closes. Examples: docs/local-api.md.',
+  },
   onOpen: {
     title: 'Opening a profile', restore: 'Reopen last tabs', start: 'Open start pages',
     restoreHint: 'Brings back the tabs from last time, even when the window was closed before the profile stopped. With nothing to bring back, the start pages open.',
@@ -328,6 +336,8 @@ export const en = {
     engine_missing: 'The browser engine is not installed. Install it in Settings.',
     folder_in_use: 'Another process already uses this profile\u2019s folder. Close it first.',
     bad_language: 'That language is not supported.',
+    api_bad_port: 'The port must be between 1024 and 65535.',
+    api_port_busy: 'That port is used by another program. Pick another port.',
     too_many_sites: 'A profile can have at most 10 platforms.',
     unknown_site: 'That platform does not exist.',
     site_name: 'The platform needs a name of 1-40 characters.',

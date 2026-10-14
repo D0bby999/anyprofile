@@ -73,6 +73,24 @@ export namespace fury {
 
 export namespace main {
 	
+	export class APIStatus {
+	    enabled: boolean;
+	    port: number;
+	    running: boolean;
+	    error: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new APIStatus(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.enabled = source["enabled"];
+	        this.port = source["port"];
+	        this.running = source["running"];
+	        this.error = source["error"];
+	    }
+	}
 	export class EngineInfo {
 	    engine: string;
 	    version: string;
@@ -141,6 +159,20 @@ export namespace netproxy {
 
 export namespace service {
 	
+	export class APISettings {
+	    enabled: boolean;
+	    port: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new APISettings(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.enabled = source["enabled"];
+	        this.port = source["port"];
+	    }
+	}
 	export class BulkCreate {
 	    engine: string;
 	    baseName: string;

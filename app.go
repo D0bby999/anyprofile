@@ -35,6 +35,7 @@ type App struct {
 	// bundled fury-config helper and work before any engine is installed.
 	fury     *fury.Fury
 	startErr error
+	api      apiState
 }
 
 func NewApp() *App { return &App{} }
@@ -95,6 +96,7 @@ func (a *App) init() error {
 		}}
 	l.BeforeStart, l.AfterExit = a.svc.BeforeLaunch, a.svc.AfterExit
 	l.Adopt()
+	a.restartAPI()
 	return nil
 }
 

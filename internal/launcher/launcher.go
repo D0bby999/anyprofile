@@ -100,6 +100,17 @@ func (l *Launcher) List() []Info {
 	return out
 }
 
+// Info reports one profile's launch state; ok is false when it is not running.
+func (l *Launcher) Info(profileID string) (Info, bool) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	p, ok := l.procs[profileID]
+	if !ok {
+		return Info{}, false
+	}
+	return p.info, true
+}
+
 func (l *Launcher) set(p *proc, s State, errMsg string) {
 	l.mu.Lock()
 	p.info.State, p.info.Error = s, errMsg
