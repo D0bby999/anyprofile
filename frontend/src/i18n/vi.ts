@@ -43,6 +43,7 @@ export const vi: Messages = {
   confirm: {
     deleteSite: (name: string) => ({ title: `Xoá ${name}?`, body: 'Profile trên nền tảng này sẽ chuyển sang Khác.', confirm: 'Xoá nền tảng' }),
     deleteProxy: { title: 'Xoá proxy này?', body: 'Profile đang dùng nó sẽ mất proxy và hiện IP thật của bạn cho tới khi bạn chọn proxy khác.', confirm: 'Xoá proxy' },
+    trash: (name: string) => ({ title: `Bỏ "${name}" vào thùng rác?`, body: 'Profile sẽ không hiện trong danh sách nữa. Bạn khôi phục được từ Thùng rác cho tới khi xoá hẳn.', confirm: 'Bỏ vào thùng rác' }),
     purge: (name: string) => ({ title: `Xoá hẳn "${name}"?`, body: 'Cookie, đăng nhập và dữ liệu của profile sẽ mất. Không khôi phục được.', confirm: 'Xoá hẳn' }),
     resetFingerprint: { title: 'Đo lại fingerprint?', body: 'Lần mở tới sẽ thành mốc mới. Chỉ làm khi bạn chủ động đổi engine.', confirm: 'Đặt lại mốc' },
     orphans: (n: number) => ({ title: `Xoá ${n} thư mục thừa?`, body: 'Cookie và đăng nhập trong đó mất hẳn. Không khôi phục được.', confirm: 'Xoá thư mục' }),
@@ -97,8 +98,17 @@ export const vi: Messages = {
     submit: 'Tạo profile', creating: 'Đang tạo…',
     identityNote: 'Mỗi profile có một máy giả lập riêng, chọn ngẫu nhiên. Nó không bao giờ đổi.',
   },
+  drawer: {
+    label: (name: string) => `Chi tiết của ${name}`, close: 'Đóng chi tiết',
+    tabs: { overview: 'Tổng quan', account: 'Tài khoản' },
+    rename: 'Đổi tên', network: 'Mạng', platform: 'Nền tảng và trang mở đầu', tags: 'Tag', notes: 'Ghi chú',
+    identity: 'Danh tính', advanced: 'Nâng cao', apply: 'Áp dụng', saved: 'Đã lưu',
+    addTag: 'Thêm tag', removeTag: (tag: string) => `Bỏ tag ${tag}`,
+    nextTime: 'Có hiệu lực từ lần mở profile tới.',
+    moveToTrash: 'Bỏ vào thùng rác', closeFirst: 'Hãy đóng profile trước.',
+    fingerprintChecked: (when: string) => `Đã kiểm ${when}`,
+  },
   editor: {
-    title: 'Sửa profile',
     notes: 'Ghi chú',
     identity: 'Danh tính cố định',
     persona: 'Máy giả lập', seed: 'Seed', engine: 'Engine', timezone: 'Múi giờ', languages: 'Ngôn ngữ', created: 'Tạo lúc',

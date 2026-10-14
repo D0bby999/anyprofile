@@ -29,7 +29,12 @@ type Props = {
   onTrash: (row: service.ProfileRow) => void
   onMessage: (msg: string) => void
   onError: (msg: string) => void
+  /** The profile whose details are open, and a click on a row (not on its controls). */
+  activeId?: string | null
+  onSelectRow?: (id: string) => void
 }
+
+const CONTROLS = 'input, button, a, select, textarea, label, [role="menu"]'
 
 /** Last opened, or how long the browser has been running. */
 function LastOpened({ row, now }: { row: service.ProfileRow; now: Date }) {
@@ -76,7 +81,7 @@ export function ProfileTable(p: Props) {
           {head('no', t.profiles.colNo, 'col-no')}
           {head('name', t.profiles.colName)}
           <th className="col-site">{t.profiles.colSite}</th>
-          <th>{t.profiles.colProxy}</th>
+          <th className="col-proxy">{t.profiles.colProxy}</th>
           <th className="col-health">{t.profiles.colHealth}</th>
           {head('lastOpen', t.profiles.colLastOpen, 'col-lastopen')}
           <th className="col-actions" />
@@ -87,9 +92,11 @@ export function ProfileTable(p: Props) {
           const running = r.state === 'running'
           const busy = r.state === 'starting' || r.state === 'stopping'
           const s = siteById(p.sites, r.site)
-          const cls = [p.selected.has(r.id) ? 'selected' : '', running ? 'running' : ''].join(' ').trim()
+          const cls = [p.selected.has(r.id) ? 'selected' : '', running ? 'running' : '', p.activeId === r.id ? 'active' : ''].join(' ').trim()
           return (
-            <tr key={r.id} className={cls || undefined} onDoubleClick={() => (running ? p.onFocus(r.id) : !busy && p.onStart(r.id))}>
+            <tr key={r.id} className={cls || undefined} aria-current={p.activeId === r.id ? 'true' : undefined}
+              onClick={(e) => { if (e.detail <= 1 && !(e.target as HTMLElement).closest(CONTROLS)) p.onSelectRow?.(r.id) }}
+              onDoubleClick={(e) => { if (!(e.target as HTMLElement).closest(CONTROLS)) (running ? p.onFocus(r.id) : !busy && p.onStart(r.id)) }}>
               <td className="col-check"><input type="checkbox" checked={p.selected.has(r.id)}
                 onClick={(e) => p.onToggle(r.id, e.shiftKey)} onChange={() => {}} aria-label={r.name} /></td>
               <td className="col-no">{r.serial}</td>
@@ -102,7 +109,7 @@ export function ProfileTable(p: Props) {
                 </span>
               </td>
               <td className="col-site"><span className="platform" title={s.name}><SiteGlyph site={s} /><span className="plabel">{s.name}</span></span></td>
-              <td><ProxyCell row={r} /></td>
+              <td className="col-proxy"><ProxyCell row={r} /></td>
               <td className="col-health"><HealthPill row={r} now={now} /></td>
               <td className="nowrap col-lastopen"><LastOpened row={r} now={now} /></td>
               <td className="col-actions">

@@ -41,6 +41,7 @@ export const en = {
   confirm: {
     deleteSite: (name: string) => ({ title: `Delete ${name}?`, body: 'Profiles on this platform move to Other.', confirm: 'Delete platform' }),
     deleteProxy: { title: 'Delete this proxy?', body: 'Profiles using it lose their proxy and show your real IP until you pick another.', confirm: 'Delete proxy' },
+    trash: (name: string) => ({ title: `Move "${name}" to the trash?`, body: 'It stops showing in your lists. You can restore it from Trash until you delete it for good.', confirm: 'Move to trash' }),
     purge: (name: string) => ({ title: `Delete "${name}" for good?`, body: 'Its cookies, logins and data are gone. This cannot be undone.', confirm: 'Delete for good' }),
     resetFingerprint: { title: 'Measure the fingerprint again?', body: 'The next launch becomes the new reference. Do this only after you changed the engine on purpose.', confirm: 'Reset reference' },
     orphans: (n: number) => ({ title: `Delete ${n} leftover folders?`, body: 'Their cookies and logins are gone for good. This cannot be undone.', confirm: 'Delete folders' }),
@@ -95,8 +96,17 @@ export const en = {
     submit: 'Create profile', creating: 'Creating…',
     identityNote: 'Each profile gets its own simulated machine at random. It never changes.',
   },
+  drawer: {
+    label: (name: string) => `Details of ${name}`, close: 'Close details',
+    tabs: { overview: 'Overview', account: 'Account' },
+    rename: 'Rename', network: 'Network', platform: 'Platform and start pages', tags: 'Tags', notes: 'Notes',
+    identity: 'Identity', advanced: 'Advanced', apply: 'Apply', saved: 'Saved',
+    addTag: 'Add a tag', removeTag: (tag: string) => `Remove tag ${tag}`,
+    nextTime: 'Takes effect next time you open the profile.',
+    moveToTrash: 'Move to trash', closeFirst: 'Close the profile first.',
+    fingerprintChecked: (when: string) => `Checked ${when}`,
+  },
   editor: {
-    title: 'Edit profile',
     notes: 'Notes',
     identity: 'Fixed identity',
     persona: 'Simulated machine', seed: 'Seed', engine: 'Engine', timezone: 'Timezone', languages: 'Languages', created: 'Created',

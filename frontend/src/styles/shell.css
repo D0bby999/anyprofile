@@ -106,6 +106,8 @@ button.enginechip:hover { color: var(--ink-soft); background: var(--surface-hove
 .table tbody tr:hover td { background: var(--surface-hover); }
 .table tbody tr.running td { background: var(--running-row); }
 .table tbody tr.selected td { background: var(--accent-soft); }
+.table tbody tr.active td { background: var(--accent-soft); }
+.table tbody tr { cursor: default; }
 .table .col-check { width: 44px; padding-right: 0; }
 .table .col-no { width: 52px; color: var(--muted); }
 .table .col-actions { width: 1%; text-align: right; white-space: nowrap; }
@@ -170,10 +172,51 @@ button.enginechip:hover { color: var(--ink-soft); background: var(--surface-hove
 .sorthead { display: inline-flex; align-items: center; gap: 3px; }
 .card.pad > .seg, .card.pad > .row { align-self: flex-start; }
 
-/* Narrow windows drop secondary columns instead of scrolling sideways. The
-   platform goes first: the sidebar already groups profiles by platform. */
-@media (max-width: 1240px) { .table .col-site { display: none; } }
-@media (max-width: 1080px) { .table .col-lastopen, .cellproxy small { display: none; } }
+/* The table drops secondary columns by its own width (the drawer can take
+   half the room), never scrolling sideways. Platform goes first: the sidebar
+   already groups profiles by platform. */
+.tablewrap { container-type: inline-size; }
+@container (max-width: 960px) { .table .col-site { display: none; } }
+@container (max-width: 800px) { .table .col-lastopen, .cellproxy small { display: none; } }
+@container (max-width: 560px) { .table .col-proxy, .table .col-no { display: none; } }
+@container (max-width: 440px) { .table .col-health { display: none; } }
+
+/* Profiles page with the detail drawer beside the table. */
+.profiles-split { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+.profiles-split.open { grid-template-columns: minmax(0, 1fr) 400px; }
+@media (max-width: 1100px) { .profiles-split.open { grid-template-columns: minmax(0, 1fr) 360px; } }
+.profiles-split > .card.fill { min-width: 0; }
+.drawer { min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
+.drawer-head { flex: 0 0 auto; display: flex; flex-direction: column; gap: 8px; padding: 14px 16px 0; border-bottom: 1px solid var(--line); }
+.drawer-title { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.drawer-title .serial { color: var(--muted); font-size: var(--t-sm); font-variant-numeric: tabular-nums; }
+.drawer-name { min-width: 0; max-width: 100%; padding: 2px 6px; margin-left: -6px; border: 0; border-radius: var(--r-sm); background: none; color: var(--ink); font: inherit; font-size: var(--t-md); font-weight: 650; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: text; }
+.drawer-name:hover { background: var(--surface-hover); }
+.drawer-name-input { flex: 1; min-width: 0; font-size: var(--t-md); font-weight: 650; }
+.drawer-sub { color: var(--muted); font-size: var(--t-xs); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.drawer-actions { display: flex; align-items: center; gap: 8px; }
+.drawer-actions .spacer, .drawer-title .spacer { flex: 1; }
+.tabs { display: flex; gap: 4px; margin: 4px 0 10px; }
+.tabs [role="tab"] { padding: 6px 10px; border: 0; border-radius: var(--r-sm); background: none; color: var(--muted); font: inherit; font-size: var(--t-sm); font-weight: 600; cursor: pointer; }
+.tabs [role="tab"]:hover { color: var(--ink); background: var(--surface-hover); }
+.tabs [role="tab"][aria-selected="true"] { color: var(--accent-ink); background: var(--accent-soft); }
+.drawer-body { flex: 1; min-height: 0; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 20px; }
+.account { display: flex; flex-direction: column; gap: 16px; }
+.dgroup { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.dgroup h3 { display: flex; align-items: center; gap: 8px; font-size: var(--t-sm); font-weight: 650; color: var(--ink-soft); }
+.dgroup .facts { grid-template-columns: 110px 1fr; }
+.dfacts { color: var(--muted); font-size: var(--t-xs); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.nowrap-row { flex-wrap: nowrap; }
+.nowrap-row .select { flex: 1; min-width: 0; }
+.savedmark { color: var(--success-ink); font-size: var(--t-xs); font-weight: 500; }
+.checkrow { font-size: var(--t-sm); font-weight: 500; align-items: flex-start; }
+.textdanger { align-self: flex-start; }
+.tagchips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 6px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); }
+.tagchips:focus-within { border-color: var(--accent-line); }
+.tagchip { gap: 4px; padding-right: 4px; }
+.tagchip button { display: inline-flex; padding: 2px; border: 0; border-radius: 50%; background: none; color: var(--muted); cursor: pointer; }
+.tagchip button:hover { color: var(--ink); background: var(--surface-active); }
+.tagadd { flex: 1; min-width: 100px; border: 0; background: none; color: var(--ink); font: inherit; font-size: var(--t-sm); padding: 4px; outline: none; }
 
 .health { position: relative; display: inline-flex; outline-offset: 2px; border-radius: var(--r-pill); }
 .health .chip { white-space: nowrap; }

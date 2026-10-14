@@ -10,12 +10,14 @@ type Props = {
   row: service.ProfileRow
   login: string
   onLogin: (v: string) => void
+  /** Called when the login field loses focus, to save it. */
+  onLoginCommit?: () => void
   onError: (msg: string) => void
 }
 
 const fail = (e: unknown) => errorText(e)
 
-export function AccountPanel({ row, login, onLogin, onError }: Props) {
+export function AccountPanel({ row, login, onLogin, onLoginCommit, onError }: Props) {
   const [pw, setPw] = useState('')
   const [secret, setSecret] = useState('')
   const [showPw, setShowPw] = useState(false)
@@ -75,14 +77,13 @@ export function AccountPanel({ row, login, onLogin, onError }: Props) {
   }
 
   return (
-    <div className="panel">
-      <span className="row"><Icon name="key" className="icon sm" /><b style={{ fontSize: 'var(--t-sm)' }}>{t.account.title}</b></span>
+    <div className="account" aria-label={t.account.title}>
 
       <label className="field">
         <span className="label">{t.account.login}</span>
         <span className="row">
-          <input className="input" autoComplete="off" value={login} onChange={(e) => onLogin(e.target.value)} />
-          {login && <button type="button" className="iconbtn" onClick={() => copy(login, '')} aria-label={t.account.copy} title={t.account.copy}><Icon name="copy" /></button>}
+          <input className="input" autoComplete="off" value={login} onChange={(e) => onLogin(e.target.value)} onBlur={onLoginCommit} />
+          {login && <button type="button" className="iconbtn" onClick={() => copy(login, t.menu.copiedLogin)} aria-label={t.account.copy} title={t.account.copy}><Icon name="copy" /></button>}
         </span>
       </label>
 

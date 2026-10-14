@@ -6,7 +6,7 @@ import { allTags, errorCode, errorText } from '../lib/format'
 import { siteById, type Site } from '../lib/sites'
 import { EmptyState } from '../components/empty-state'
 import { Icon } from '../components/icons'
-import { ProfileEditor } from '../components/profile-editor'
+import { ProfileDrawer } from '../components/profile-drawer'
 import { ProfileTable, type Sort, type SortKey } from '../components/profile-table'
 import { DuplicateDialog } from '../components/duplicate-dialog'
 import { BulkProxyDialog, BulkSiteDialog, BulkTagDialog } from '../components/bulk-dialogs'
@@ -38,7 +38,7 @@ export function ProfilesPage({ rows, sites, recent, view, engineReady, fileVault
   const [tag, setTag] = useState('')
   const [sort, setSort] = useState<Sort>({ key: 'no', desc: false })
   const [selected, setSelected] = useState<Set<string>>(new Set())
-  const [editing, setEditing] = useState<service.ProfileRow | null>(null)
+  const [activeId, setActiveId] = useState<string | null>(null)
   const [duplicating, setDuplicating] = useState<service.ProfileRow | null>(null)
   const [bulkDialog, setBulkDialog] = useState<'site' | 'tag' | 'proxy' | null>(null)
   const [lastToggled, setLastToggled] = useState<string | null>(null)
@@ -97,6 +97,29 @@ export function ProfilesPage({ rows, sites, recent, view, engineReady, fileVault
     setLastToggled(id)
   }
   const toggleAll = () => setSelected((cur) => (visible.every((r) => cur.has(r.id)) ? new Set() : new Set(visible.map((r) => r.id))))
+  const active = activeId ? rows.find((r) => r.id === activeId) ?? null : null
+  // A profile that left the list (trashed, filtered away elsewhere) closes the drawer.
+  useEffect(() => { if (activeId && !rows.some((r) => r.id === activeId)) setActiveId(null) }, [rows, activeId])
+  const select = (id: string) => setActiveId((cur) => (cur === id ? null : id))
+
+  // Escape closes the drawer; arrows move it through the visible rows, unless typing.
+  useEffect(() => {
+    if (!activeId) return
+    const onKey = (e: KeyboardEvent) => {
+      if (document.querySelector('.backdrop')) return // a dialog is on top
+      const el = e.target instanceof Element ? e.target : null
+      const typing = el?.closest('input, textarea, select, [contenteditable="true"]')
+      if (e.key === 'Escape' && !typing) { setActiveId(null); return }
+      if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && !typing && !el?.closest('[role="tablist"]')) {
+        const i = visible.findIndex((r) => r.id === activeId)
+        const next = visible[i + (e.key === 'ArrowDown' ? 1 : -1)]
+        if (next) { e.preventDefault(); setActiveId(next.id) }
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [activeId, visible])
+
   const runningCount = rows.filter((r) => r.state === 'running').length
   const filtered = query || tag || view !== 'all'
 
@@ -111,64 +134,67 @@ export function ProfilesPage({ rows, sites, recent, view, engineReady, fileVault
             <button className="btn sm" onClick={onNeedEngine}>{t.profiles.installEngine}</button></div>
         )}
         {!fileVaultOn && <div className="banner warn"><Icon name="shield" /><span className="grow">{t.settings.fileVaultOff}</span></div>}
-        <section className="card fill">
-          {selected.size > 0 ? (
-            <div className="toolbar selecting">
-              <span className="selcount">{t.profiles.selected(selected.size)}</span>
-              <button className="btn sm primary" disabled={busy} onClick={() => bulk(Api.StartProfiles)}><Icon name="play" className="icon sm" />{t.profiles.openSelected}</button>
-              <button className="btn sm" disabled={busy} onClick={() => bulk(Api.StopProfiles)}><Icon name="stop" className="icon sm" />{t.profiles.stopSelected}</button>
-              <button className="btn sm danger" disabled={busy}
-                onClick={() => run(async () => { for (const id of selected) await Api.TrashProfile(id); setSelected(new Set()); reload() })}>
-                <Icon name="trash" className="icon sm" />{t.profiles.trashSelected}
-              </button>
-              <button className="btn sm" disabled={busy} onClick={() => setBulkDialog('site')}><Icon name="pencil" className="icon sm" />{t.bulk.site}</button>
-              <button className="btn sm" disabled={busy} onClick={() => setBulkDialog('tag')}><Icon name="plus" className="icon sm" />{t.bulk.tag}</button>
-              <button className="btn sm" disabled={busy} onClick={() => setBulkDialog('proxy')}><Icon name="proxy" className="icon sm" />{t.bulk.proxy}</button>
-              <span className="spacer" />
-              <button className="btn sm ghost" onClick={() => setSelected(new Set())}>{t.profiles.clearSelection}</button>
-            </div>
-          ) : (
-            <div className="toolbar">
-              <div className="searchfield">
-                <Icon name="search" />
-                <input className="input" placeholder={t.profiles.search} value={query} onChange={(e) => setQuery(e.target.value)} aria-label={t.profiles.search} />
+        <div className={`profiles-split${active ? ' open' : ''}`}>
+          <section className="card fill">
+            {selected.size > 0 ? (
+              <div className="toolbar selecting">
+                <span className="selcount">{t.profiles.selected(selected.size)}</span>
+                <button className="btn sm primary" disabled={busy} onClick={() => bulk(Api.StartProfiles)}><Icon name="play" className="icon sm" />{t.profiles.openSelected}</button>
+                <button className="btn sm" disabled={busy} onClick={() => bulk(Api.StopProfiles)}><Icon name="stop" className="icon sm" />{t.profiles.stopSelected}</button>
+                <button className="btn sm danger" disabled={busy}
+                  onClick={() => run(async () => { for (const id of selected) await Api.TrashProfile(id); setSelected(new Set()); reload() })}>
+                  <Icon name="trash" className="icon sm" />{t.profiles.trashSelected}
+                </button>
+                <button className="btn sm" disabled={busy} onClick={() => setBulkDialog('site')}><Icon name="pencil" className="icon sm" />{t.bulk.site}</button>
+                <button className="btn sm" disabled={busy} onClick={() => setBulkDialog('tag')}><Icon name="plus" className="icon sm" />{t.bulk.tag}</button>
+                <button className="btn sm" disabled={busy} onClick={() => setBulkDialog('proxy')}><Icon name="proxy" className="icon sm" />{t.bulk.proxy}</button>
+                <span className="spacer" />
+                <button className="btn sm ghost" onClick={() => setSelected(new Set())}>{t.profiles.clearSelection}</button>
               </div>
-              <select className="select" style={{ width: 160 }} value={tag} onChange={(e) => setTag(e.target.value)} aria-label={t.create.tags}>
-                <option value="">{t.profiles.allTags}</option>
-                {allTags(rows).map((x) => <option key={x} value={x}>{x}</option>)}
-              </select>
-            </div>
-          )}
-          <div className="tablewrap">
-            {rows.length === 0 ? (
-              <EmptyState icon="profiles" title={t.profiles.emptyTitle} text={t.profiles.emptyText}>
-                <button className="btn primary" onClick={onNew}><Icon name="plus" />{t.nav.newProfile}</button>
-              </EmptyState>
-            ) : visible.length === 0 && view === 'running' && !query && !tag ? (
-              <EmptyState icon="running" title={t.profiles.runningEmpty} />
-            ) : visible.length === 0 ? (
-              <EmptyState icon="search" title={t.profiles.noMatchTitle}>
-                <button className="btn" onClick={() => { setQuery(''); setTag(''); onClearView() }}>{t.profiles.clearFilters}</button>
-              </EmptyState>
             ) : (
-              <ProfileTable rows={visible} sites={sites} selected={selected} sort={sort} onSort={onSort}
-                onToggle={toggle} onToggleAll={toggleAll}
-                onStart={(id) => run(() => Api.StartProfile(id))} onStop={(id) => run(() => Api.StopProfile(id))}
-                onFocus={(id) => { Api.FocusProfile(id) }} onEdit={setEditing}
-                onDuplicate={setDuplicating} onMessage={toast.success} onError={showError}
-                onTrash={(row) => run(async () => { await Api.TrashProfile(row.id); reload() })} />
+              <div className="toolbar">
+                <div className="searchfield">
+                  <Icon name="search" />
+                  <input className="input" placeholder={t.profiles.search} value={query} onChange={(e) => setQuery(e.target.value)} aria-label={t.profiles.search} />
+                </div>
+                <select className="select" style={{ width: 160 }} value={tag} onChange={(e) => setTag(e.target.value)} aria-label={t.create.tags}>
+                  <option value="">{t.profiles.allTags}</option>
+                  {allTags(rows).map((x) => <option key={x} value={x}>{x}</option>)}
+                </select>
+              </div>
             )}
-          </div>
-          <div className="statusbar">
-            <span><b>{filtered ? `${visible.length}/${rows.length}` : rows.length}</b> {t.profiles.statusTotal}</span>
-            <span><span className={`live${runningCount ? ' on' : ''}`} /><b>{runningCount}</b> {t.profiles.statusRunning}</span>
-          </div>
-        </section>
+            <div className="tablewrap">
+              {rows.length === 0 ? (
+                <EmptyState icon="profiles" title={t.profiles.emptyTitle} text={t.profiles.emptyText}>
+                  <button className="btn primary" onClick={onNew}><Icon name="plus" />{t.nav.newProfile}</button>
+                </EmptyState>
+              ) : visible.length === 0 && view === 'running' && !query && !tag ? (
+                <EmptyState icon="running" title={t.profiles.runningEmpty} />
+              ) : visible.length === 0 ? (
+                <EmptyState icon="search" title={t.profiles.noMatchTitle}>
+                  <button className="btn" onClick={() => { setQuery(''); setTag(''); onClearView() }}>{t.profiles.clearFilters}</button>
+                </EmptyState>
+              ) : (
+                <ProfileTable rows={visible} sites={sites} selected={selected} sort={sort} onSort={onSort}
+                  onToggle={toggle} onToggleAll={toggleAll}
+                  onStart={(id) => run(() => Api.StartProfile(id))} onStop={(id) => run(() => Api.StopProfile(id))}
+                  onFocus={(id) => { Api.FocusProfile(id) }} onEdit={(row) => setActiveId(row.id)}
+                activeId={activeId} onSelectRow={select}
+                  onDuplicate={setDuplicating} onMessage={toast.success} onError={showError}
+                  onTrash={(row) => run(async () => { await Api.TrashProfile(row.id); reload() })} />
+              )}
+            </div>
+            <div className="statusbar">
+              <span><b>{filtered ? `${visible.length}/${rows.length}` : rows.length}</b> {t.profiles.statusTotal}</span>
+              <span><span className={`live${runningCount ? ' on' : ''}`} /><b>{runningCount}</b> {t.profiles.statusRunning}</span>
+            </div>
+          </section>
+          {active && (
+            <ProfileDrawer key={active.id} row={active} sites={sites} recent={recent} knownTags={allTags(rows)}
+              onClose={() => setActiveId(null)} onStart={(id) => run(() => Api.StartProfile(id))} onStop={(id) => run(() => Api.StopProfile(id))} />
+          )}
+        </div>
       </div>
-      {editing && (
-        <ProfileEditor row={editing} sites={sites} recent={recent} onClose={() => setEditing(null)} onSaved={() => { setEditing(null); reload() }}
-          onTrash={() => run(async () => { await Api.TrashProfile(editing.id); setEditing(null); reload() })} />
-      )}
       {duplicating && (
         <DuplicateDialog row={duplicating} onClose={() => setDuplicating(null)}
           onDone={() => { setDuplicating(null); reload() }} />
