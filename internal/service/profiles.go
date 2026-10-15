@@ -158,6 +158,7 @@ func (s *Service) CreateProfile(ctx context.Context, in NewProfile) (store.Profi
 	if err := s.applyNetwork(ctx, &p); err != nil {
 		return store.Profile{}, err
 	}
+	s.regionStartURLs(&p)
 	if err := s.Store.CreateProfile(&p); err != nil {
 		return store.Profile{}, err
 	}
@@ -179,6 +180,7 @@ func (s *Service) UpdateProfile(ctx context.Context, p store.Profile) error {
 		if err := s.applyNetwork(ctx, &p); err != nil {
 			return err
 		}
+		s.regionStartURLs(&p) // a new country brings its own seller center
 	}
 	startURL, err := normalizeStartURLs(p.StartURL)
 	if err != nil {
@@ -190,6 +192,25 @@ func (s *Service) UpdateProfile(ctx context.Context, p store.Profile) error {
 	}
 	s.notify("profiles")
 	return nil
+}
+
+// proxyCountry is the country the proxy exits in, "" without one.
+func (s *Service) proxyCountry(proxyID string) string {
+	if proxyID == "" {
+		return ""
+	}
+	px, err := s.Store.GetProxy(proxyID)
+	if err != nil {
+		return ""
+	}
+	return px.Country
+}
+
+// regionStartURLs points p's platform start pages at its proxy's country.
+func (s *Service) regionStartURLs(p *store.Profile) {
+	if all, err := s.Sites(); err == nil {
+		p.StartURL = regionStartURLs(p.StartURL, p.Sites, all, s.proxyCountry(p.ProxyID))
+	}
 }
 
 // applyNetwork fills timezone, position and languages from the profile's proxy exit.

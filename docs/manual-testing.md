@@ -100,7 +100,10 @@ Mỗi mục ghi điều phải thấy. Thử ở cả giao diện sáng và tố
     YouTube, Gmail rồi Done: ô Platform có ba thẻ, ô Trang mở đầu có đủ ba dòng. Trong modal, Cancel hoặc Esc
     thì không đổi gì; gõ tên rồi Enter bật/tắt nền tảng đầu tiên khớp. Bấm × trên thẻ YouTube thì dòng
     YouTube Studio biến mất, dòng tự gõ thì giữ nguyên. Ngăn chi tiết và "Set platforms" hàng loạt dùng
-    cùng modal; Esc trong modal chỉ đóng modal, không đóng ngăn chi tiết hay form New profile. Không chọn được "Other"
+    cùng modal; Esc trong modal chỉ đóng modal, không đóng ngăn chi tiết hay form New profile.
+    TikTok Shop mở Seller Center theo nước của proxy: chọn proxy Mỹ thì ô Start page là
+    `https://seller-us.tiktok.com`, đổi sang proxy Việt Nam thì thành `https://seller-vn.tiktok.com`; nước chưa có
+    Seller Center (hoặc không proxy) dùng `https://seller.tiktok.com`. Đổi proxy trong ngăn chi tiết cũng đổi theo. Không chọn được "Other"
     cùng nền tảng khác, và mỗi nền tảng chỉ chọn được một lần. Từ nền tảng thứ hai, dưới ô Platform có dòng
     nhắc "Chỉ thêm nền tảng của cùng một người hoặc một kênh"; bỏ bớt còn một thì dòng đó mất.
 20. **Extension.** Settings → Extensions → "Add folder…", chọn thư mục `/tmp/ext-spike/ext` hoặc một extension

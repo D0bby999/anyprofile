@@ -92,6 +92,20 @@ describe('NewProfileDialog', () => {
     expect(onClose).toHaveBeenCalled()
   })
 
+  it("opens TikTok Shop's seller center for the chosen proxy's country", async () => {
+    proxyList = [freeProxy('10001'), { ...freeProxy('10002'), country: 'VN' }]
+    const shop = site.Site.createFrom({ id: 'tiktok-shop', name: 'TikTok Shop', group: 'commerce', domains: ['seller.tiktok.com'], startUrl: 'https://seller.tiktok.com',
+      startUrls: { US: 'https://seller-us.tiktok.com', VN: 'https://seller-vn.tiktok.com' }, icon: 'tiktok', color: '#FE2C55', custom: false })
+    dialog({ defaultSite: 'tiktok-shop', sites: [...sites, shop] })
+    const urls = () => (screen.getByPlaceholderText(t.create.startUrlHint) as HTMLTextAreaElement).value
+    const proxy = await screen.findByRole('combobox', { name: t.create.proxy })
+    await screen.findByRole('option', { name: /gw.example:10002/ })
+    fireEvent.change(proxy, { target: { value: '10001' } })
+    await waitFor(() => expect(urls()).toBe('https://seller-us.tiktok.com'))
+    fireEvent.change(proxy, { target: { value: '10002' } })
+    await waitFor(() => expect(urls()).toBe('https://seller-vn.tiktok.com'))
+  })
+
   it('asks how many only when creating several profiles', () => {
     dialog()
     expect(screen.queryByRole('spinbutton')).toBeNull()

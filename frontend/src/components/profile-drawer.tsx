@@ -133,7 +133,7 @@ export function ProfileDrawer({ row, sites, knownTags, onClose, onStart, onStop 
         {tab === 'overview' ? (
           <>
             <NetworkGroup row={row} proxies={proxies} running={running} onApply={(proxyId) => update({ proxyId })} onMatchIp={matchIp} />
-            <PlatformGroup value={row.sites} startUrl={row.startUrl} sites={sites} running={running}
+            <PlatformGroup value={row.sites} startUrl={row.startUrl} sites={sites} country={row.proxyCountry} running={running}
               onSites={(ids, startUrl) => update({ sites: ids, startUrl })} onStartUrl={(startUrl) => update({ startUrl })} />
             <ProfileExtensions profileId={row.id} on={row.extensions ?? []} running={running} onError={toast.error} />
             <TagsGroup tags={row.tags} known={knownTags} onChange={(tags) => update({ tags })} />

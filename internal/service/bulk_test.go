@@ -4,6 +4,7 @@ package service
 
 import (
 	"context"
+	"github.com/D0bby999/anyprofile/internal/site"
 	"slices"
 	"strings"
 	"testing"
@@ -174,12 +175,72 @@ func TestPinAndSearch(t *testing.T) {
 }
 
 func TestSyncStartURLs(t *testing.T) {
-	pages := map[string]string{"tiktok": "https://www.tiktok.com/tiktokstudio", "youtube": "https://studio.youtube.com", "other": ""}
-	got := syncStartURLs("https://www.tiktok.com/tiktokstudio\nhttps://mine.example/", []string{"tiktok"}, []string{"youtube"}, pages)
+	sites := []site.Site{
+		{ID: "tiktok", StartURL: "https://www.tiktok.com/tiktokstudio"},
+		{ID: "youtube", StartURL: "https://studio.youtube.com"},
+		{ID: "shop", StartURL: "https://seller.example", StartURLs: map[string]string{"US": "https://seller-us.example", "VN": "https://seller-vn.example"}},
+		{ID: "other"},
+	}
+	got := syncStartURLs("https://www.tiktok.com/tiktokstudio\nhttps://mine.example/", []string{"tiktok"}, []string{"youtube"}, sites, "")
 	if got != "https://mine.example/\nhttps://studio.youtube.com" {
 		t.Fatalf("tiktok -> youtube = %q", got)
 	}
-	if got := syncStartURLs("https://studio.youtube.com", []string{"youtube"}, []string{"youtube", "tiktok"}, pages); got != "https://studio.youtube.com\nhttps://www.tiktok.com/tiktokstudio" {
+	if got := syncStartURLs("https://studio.youtube.com", []string{"youtube"}, []string{"youtube", "tiktok"}, sites, ""); got != "https://studio.youtube.com\nhttps://www.tiktok.com/tiktokstudio" {
 		t.Fatalf("add tiktok = %q", got)
+	}
+	// A country with its own page gets it; a country without gets the default.
+	if got := syncStartURLs("", nil, []string{"shop"}, sites, "us"); got != "https://seller-us.example" {
+		t.Fatalf("add shop in US = %q", got)
+	}
+	if got := syncStartURLs("", nil, []string{"shop"}, sites, "JP"); got != "https://seller.example" {
+		t.Fatalf("add shop in JP = %q", got)
+	}
+	// Removing the platform removes its page whichever country it was for.
+	if got := syncStartURLs("https://seller-vn.example\nhttps://mine.example/", []string{"shop"}, nil, sites, "US"); got != "https://mine.example/" {
+		t.Fatalf("remove shop = %q", got)
+	}
+}
+
+func TestRegionStartURLs(t *testing.T) {
+	sites := []site.Site{{ID: "shop", StartURL: "https://seller.example", StartURLs: map[string]string{"US": "https://seller-us.example", "VN": "https://seller-vn.example"}}}
+	text := "https://seller-vn.example\nhttps://mine.example/"
+	if got := regionStartURLs(text, []string{"shop"}, sites, "US"); got != "https://seller-us.example\nhttps://mine.example/" {
+		t.Fatalf("VN -> US = %q", got)
+	}
+	if got := regionStartURLs(text, []string{"shop"}, sites, ""); got != "https://seller.example\nhttps://mine.example/" {
+		t.Fatalf("VN -> unknown = %q", got)
+	}
+	if got := regionStartURLs(text, nil, sites, "US"); got != text {
+		t.Fatalf("a page of a platform the profile is not on changed: %q", got)
+	}
+}
+
+// TikTok Shop opens the seller center of the proxy's country, and follows a
+// new proxy into another country; typed pages stay.
+func TestStartPageFollowsProxyCountry(t *testing.T) {
+	s, _ := newService(t)
+	ctx := context.Background()
+	if _, err := s.ImportProxies(ctx, "gw.example:10001:u:us\ngw.example:10002:u:vn", ""); err != nil {
+		t.Fatal(err)
+	}
+	pxs, _ := s.ListProxies()
+	ids := map[string]string{}
+	for _, px := range pxs {
+		ids[px.Country] = px.ID
+	}
+	p, err := s.CreateProfile(ctx, NewProfile{Name: "Shop", ProxyID: ids["US"], Sites: []string{"tiktok-shop"},
+		StartURL: "https://seller.tiktok.com\nhttps://mine.example/"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if p.StartURL != "https://seller-us.tiktok.com\nhttps://mine.example/" {
+		t.Fatalf("US proxy: %q", p.StartURL)
+	}
+	p.ProxyID = ids["VN"]
+	if err := s.UpdateProfile(ctx, p); err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := s.Store.GetProfile(p.ID); got.StartURL != "https://seller-vn.tiktok.com\nhttps://mine.example/" {
+		t.Fatalf("after moving to a VN proxy: %q", got.StartURL)
 	}
 }

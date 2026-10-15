@@ -10,6 +10,7 @@ import (
 
 	"github.com/D0bby999/anyprofile/internal/apperr"
 	"github.com/D0bby999/anyprofile/internal/launcher"
+	"github.com/D0bby999/anyprofile/internal/site"
 	"github.com/D0bby999/anyprofile/internal/store"
 )
 
@@ -157,17 +158,13 @@ func (s *Service) SetSitesMany(ids []string, siteIDs []string) error {
 	if err != nil {
 		return err
 	}
-	pages := map[string]string{}
-	for _, x := range all {
-		pages[x.ID] = x.StartURL
-	}
 	defer s.notify("profiles") // also after a partial failure: earlier rows did change
 	for _, id := range ids {
 		p, err := s.Store.GetProfile(id)
 		if err != nil {
 			return err
 		}
-		if p.StartURL, err = normalizeStartURLs(syncStartURLs(p.StartURL, p.Sites, siteIDs, pages)); err != nil {
+		if p.StartURL, err = normalizeStartURLs(syncStartURLs(p.StartURL, p.Sites, siteIDs, all, s.proxyCountry(p.ProxyID))); err != nil {
 			return err
 		}
 		p.Sites = siteIDs
@@ -274,24 +271,49 @@ func (s *Service) AssignProxiesMany(ctx context.Context, ids []string, mode stri
 	return out
 }
 
-// syncStartURLs is the profile form's syncStartUrls (frontend/src/lib/sites.ts).
-func syncStartURLs(text string, before, after []string, pages map[string]string) string {
-	gone := map[string]bool{}
-	for _, id := range before {
-		if !slices.Contains(after, id) && pages[id] != "" {
-			gone[pages[id]] = true
-		}
+// syncStartURLs keeps start pages in step with the platforms: a platform
+// added brings its start page for country cc, one removed takes away its own
+// (for any country), typed lines stay.
+func syncStartURLs(text string, before, after []string, sites []site.Site, cc string) string {
+	byID := map[string]site.Site{}
+	for _, x := range sites {
+		byID[x.ID] = x
 	}
 	var lines []string
 	for _, l := range strings.Split(text, "\n") {
-		if l = strings.TrimSpace(l); l != "" && !gone[l] {
+		l = strings.TrimSpace(l)
+		gone := false
+		for _, id := range before {
+			if !slices.Contains(after, id) && byID[id].IsStartURL(l) {
+				gone = true
+			}
+		}
+		if l != "" && !gone {
 			lines = append(lines, l)
 		}
 	}
 	for _, id := range after {
-		if u := pages[id]; u != "" && !slices.Contains(before, id) && !slices.Contains(lines, u) {
+		x := byID[id]
+		if u := x.StartURLFor(cc); u != "" && !slices.Contains(before, id) && !slices.ContainsFunc(lines, x.IsStartURL) {
 			lines = append(lines, u)
 		}
 	}
 	return strings.Join(lines, "\n")
+}
+
+// regionStartURLs points each platform start page at country cc's version
+// (TikTok Shop US for a US proxy); other lines stay.
+func regionStartURLs(text string, siteIDs []string, sites []site.Site, cc string) string {
+	var out []string
+	for _, l := range strings.Split(text, "\n") {
+		for _, x := range sites {
+			if slices.Contains(siteIDs, x.ID) && x.IsStartURL(strings.TrimSpace(l)) {
+				l = x.StartURLFor(cc)
+			}
+		}
+		if !slices.Contains(out, l) {
+			out = append(out, l)
+		}
+	}
+	return strings.Join(out, "\n")
 }

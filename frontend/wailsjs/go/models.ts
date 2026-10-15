@@ -622,6 +622,7 @@ export namespace site {
 	    group: string;
 	    domains: string[];
 	    startUrl: string;
+	    startUrls?: Record<string, string>;
 	    icon: string;
 	    color: string;
 	    custom: boolean;
@@ -637,6 +638,7 @@ export namespace site {
 	        this.group = source["group"];
 	        this.domains = source["domains"];
 	        this.startUrl = source["startUrl"];
+	        this.startUrls = source["startUrls"];
 	        this.icon = source["icon"];
 	        this.color = source["color"];
 	        this.custom = source["custom"];

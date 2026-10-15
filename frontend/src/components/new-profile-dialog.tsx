@@ -4,7 +4,7 @@ import { Api, service } from '../api'
 import { t } from '../i18n'
 import { errorText, nameSeries, parseTags } from '../lib/format'
 import { readLastProxy, usableLastProxy, writeLastProxy } from '../lib/last-proxy'
-import { guessSite, syncStartUrls, type Site } from '../lib/sites'
+import { guessSite, regionStartUrls, syncStartUrls, type Site } from '../lib/sites'
 import { Dialog } from './dialog'
 import { CHOOSE_PROXY, freeProxies, ProxySelect, RealIpWarning, SharedProxyWarning } from './proxy-select'
 import { SitesPicker } from './site-picker'
@@ -42,9 +42,13 @@ export function NewProfileDialog({ defaultSite, defaults, sites, onClose, onCrea
   // Auto with nothing free must not quietly become "no proxy": ask instead.
   const pick = chosen === 'auto' && proxies !== null && freeProxies(proxies) === 0 ? CHOOSE_PROXY : chosen
   const sharedWith = proxies?.find((p) => p.id === pick)?.usedBy ?? []
+  // Platforms that differ by country (TikTok Shop) open the proxy country's
+  // page; only a change of country rewrites the lines, picks go through pickSites.
+  const country = proxies?.find((p) => p.id === pick)?.country ?? ''
+  useEffect(() => setStartUrl((u) => regionStartUrls(u, platforms, sites, country)), [country])
 
   const pickSites = (ids: string[]) => {
-    setStartUrl(syncStartUrls(startUrl, platforms, ids, sites))
+    setStartUrl(syncStartUrls(startUrl, platforms, ids, sites, country))
     setPlatforms(ids)
   }
 

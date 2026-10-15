@@ -8,6 +8,8 @@ type Props = {
   value: string[]
   startUrl: string
   sites: Site[]
+  /** The proxy's country: platforms that differ by country add its page. */
+  country: string
   running: boolean
   /** Saves the platforms together with the start pages they bring or take away. */
   onSites: (ids: string[], startUrl: string) => void
@@ -15,7 +17,7 @@ type Props = {
 }
 
 /** Platforms save on pick; start pages save on leaving the field. */
-export function PlatformGroup({ value, startUrl, sites, running, onSites, onStartUrl }: Props) {
+export function PlatformGroup({ value, startUrl, sites, country, running, onSites, onStartUrl }: Props) {
   const [urls, setUrls] = useState(startUrl)
   const [invalid, setInvalid] = useState(false)
   useEffect(() => setUrls(startUrl), [startUrl])
@@ -24,7 +26,7 @@ export function PlatformGroup({ value, startUrl, sites, running, onSites, onStar
     setInvalid(!(await onStartUrl(urls.trim())))
   }
   const pick = (ids: string[]) => {
-    const next = syncStartUrls(urls, value, ids, sites)
+    const next = syncStartUrls(urls, value, ids, sites, country)
     setUrls(next)
     onSites(ids, next)
   }
