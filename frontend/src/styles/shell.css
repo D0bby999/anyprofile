@@ -280,6 +280,9 @@ kbd { display: inline-flex; align-items: center; min-width: 22px; height: 20px; 
      outside the table's scroll area and stretch the whole window. The header
      cell is sticky, which anchors it already. */
   .table .col-site { width: 1%; }
+  /* The name shares the room the platform label leaves (and, below, the
+     room of # and Proxy); a fixed share would hand it to the checkbox. */
+  .table .cellname { width: auto; }
   .table td.col-site { position: relative; }
   .table .col-site .plabel, .table .col-site .sitehead {
     position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap;
