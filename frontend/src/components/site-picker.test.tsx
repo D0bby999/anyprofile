@@ -21,7 +21,7 @@ afterEach(cleanup)
 describe('SitePicker', () => {
   it('filters on typing and picks with Enter', () => {
     const onChange = vi.fn()
-    render(<SitePicker value="other" onChange={onChange} sites={sites} recent={[]} />)
+    render(<SitePicker value="other" onChange={onChange} sites={sites} />)
     fireEvent.click(screen.getByRole('button', { name: 'Platform' }))
     const search = screen.getByPlaceholderText(/Search platforms/)
     fireEvent.change(search, { target: { value: 'ets' } })
@@ -35,7 +35,7 @@ describe('SitePicker', () => {
 
   it('closes on Escape without picking', () => {
     const onChange = vi.fn()
-    render(<SitePicker value="other" onChange={onChange} sites={sites} recent={[]} />)
+    render(<SitePicker value="other" onChange={onChange} sites={sites} />)
     fireEvent.click(screen.getByRole('button', { name: 'Platform' }))
     const search = screen.getByPlaceholderText(/Search platforms/)
     fireEvent.keyDown(search, { key: 'Escape' })
@@ -43,17 +43,16 @@ describe('SitePicker', () => {
     expect(onChange).not.toHaveBeenCalled()
   })
 
-  it('shows a Recent group first', () => {
-    render(<SitePicker value="other" onChange={vi.fn()} sites={sites} recent={['etsy', 'tiktok']} />)
+  it('lists platforms by group, with no Recent group', () => {
+    render(<SitePicker value="other" onChange={vi.fn()} sites={sites} />)
     fireEvent.click(screen.getByRole('button', { name: 'Platform' }))
-    expect(screen.getByText('Recent')).toBeTruthy()
-    const options = screen.getAllByRole('option').map((o) => o.textContent)
-    expect(options[0]).toContain('Etsy')
+    expect(screen.queryByText('Recent')).toBeNull()
+    expect(screen.getAllByRole('option')[0].textContent).toContain('TikTok')
   })
 
   it('chooses several platforms in a modal and applies them only on Done', () => {
     const onChange = vi.fn()
-    const { rerender } = render(<SitesPicker value={[]} onChange={onChange} sites={sites} recent={[]} />)
+    const { rerender } = render(<SitesPicker value={[]} onChange={onChange} sites={sites} />)
     expect(screen.getByText(t.sites.noneChosen)).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: t.sites.add }))
     const modal = screen.getByRole('dialog', { name: t.sites.pick })
@@ -66,7 +65,7 @@ describe('SitePicker', () => {
     expect(onChange).toHaveBeenLastCalledWith(['etsy', 'tiktok'])
     expect(screen.queryByRole('dialog')).toBeNull()
 
-    rerender(<SitesPicker value={['etsy', 'tiktok']} onChange={onChange} sites={sites} recent={[]} />)
+    rerender(<SitesPicker value={['etsy', 'tiktok']} onChange={onChange} sites={sites} />)
     expect(screen.getByText(t.sites.samePerson)).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: t.sites.remove('Etsy') }))
     expect(onChange).toHaveBeenLastCalledWith(['tiktok'])
@@ -74,7 +73,7 @@ describe('SitePicker', () => {
 
   it('keeps the platforms when the modal is cancelled, and toggles the first match with Enter', () => {
     const onChange = vi.fn()
-    render(<SitesPicker value={['etsy']} onChange={onChange} sites={sites} recent={[]} />)
+    render(<SitesPicker value={['etsy']} onChange={onChange} sites={sites} />)
     fireEvent.click(screen.getByRole('button', { name: t.sites.change }))
     const search = screen.getByPlaceholderText(/Search platforms/)
     fireEvent.change(search, { target: { value: 'tik' } })

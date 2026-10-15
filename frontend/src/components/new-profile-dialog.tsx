@@ -14,7 +14,6 @@ type Props = {
   defaultSite: string
   defaults: service.Defaults
   sites: Site[]
-  recent: string[]
   onClose: () => void
   onCreated: () => void
   /** 1 for one profile; more opens the dialog in bulk mode ("Create several
@@ -22,7 +21,7 @@ type Props = {
   initialCount?: number
 }
 
-export function NewProfileDialog({ defaultSite, defaults, sites, recent, onClose, onCreated, initialCount = 1 }: Props) {
+export function NewProfileDialog({ defaultSite, defaults, sites, onClose, onCreated, initialCount = 1 }: Props) {
   const [name, setName] = useState('')
   const several = initialCount > 1
   const [count, setCount] = useState(initialCount)
@@ -104,7 +103,7 @@ export function NewProfileDialog({ defaultSite, defaults, sites, recent, onClose
       </div>
       <div className="field">
         <span className="label">{t.create.site}</span>
-        <SitesPicker value={platforms} onChange={pickSites} sites={sites} recent={recent} />
+        <SitesPicker value={platforms} onChange={pickSites} sites={sites} />
       </div>
       {bulk ? (
         <div className="field">

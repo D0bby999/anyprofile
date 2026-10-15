@@ -10,7 +10,6 @@ const groupOrder = ['video', 'social', 'messaging', 'commerce', 'ads', 'freelanc
 
 type PanelProps = {
   sites: Site[]
-  recent: string[]
   isOn: (id: string) => boolean
   /** Returns true when the panel should close. */
   onPick: (id: string) => boolean
@@ -21,7 +20,7 @@ type PanelProps = {
 }
 
 /** The searchable, grouped list of platforms. */
-function SitePanel({ sites, recent, isOn, onPick, onClose, onEnterEmpty, className = 'sitepanel' }: PanelProps) {
+function SitePanel({ sites, isOn, onPick, onClose, onEnterEmpty, className = 'sitepanel' }: PanelProps) {
   const [query, setQuery] = useState('')
   const q = query.trim().toLowerCase()
   const visible = useMemo(() => {
@@ -32,14 +31,12 @@ function SitePanel({ sites, recent, isOn, onPick, onClose, onEnterEmpty, classNa
   const sections = useMemo(() => {
     if (q) return [{ title: '', items: visible }]
     const out: { title: string; items: Site[] }[] = []
-    const recentItems = recent.filter((id) => visible.some((s) => s.id === id)).slice(0, 6).map((id) => siteById(sites, id))
-    if (recentItems.length) out.push({ title: t.siteGroups.recent, items: recentItems })
     for (const g of groupOrder) {
       const items = visible.filter((s) => s.group === g)
       if (items.length) out.push({ title: t.siteGroups[g] ?? g, items })
     }
     return out
-  }, [q, visible, recent, sites])
+  }, [q, visible])
 
   const flat = sections.flatMap((s) => s.items)
 
@@ -85,10 +82,10 @@ function SitePanel({ sites, recent, isOn, onPick, onClose, onEnterEmpty, classNa
   )
 }
 
-type PickerProps = { sites: Site[]; recent: string[] }
+type PickerProps = { sites: Site[] }
 
 /** Inline single-platform chooser: a button plus a panel below it (no floating popover). */
-export function SitePicker({ value, onChange, sites, recent }: PickerProps & { value: string; onChange: (id: string) => void }) {
+export function SitePicker({ value, onChange, sites }: PickerProps & { value: string; onChange: (id: string) => void }) {
   const [open, setOpen] = useState(false)
   const current = siteById(sites, value)
   return (
@@ -97,7 +94,7 @@ export function SitePicker({ value, onChange, sites, recent }: PickerProps & { v
         <SiteGlyph site={current} />
         <span className="grow" style={{ textAlign: 'left' }}>{current.name}</span>
       </button>
-      {open && <SitePanel sites={sites} recent={recent} isOn={(id) => id === value}
+      {open && <SitePanel sites={sites} isOn={(id) => id === value}
         onPick={(id) => { onChange(id); return true }} onClose={() => setOpen(false)} />}
     </div>
   )
@@ -121,7 +118,7 @@ function SiteChips({ chosen, onRemove }: { chosen: Site[]; onRemove: (id: string
 }
 
 /** A modal for choosing several platforms at once; nothing changes until Done. */
-function SitesDialog({ value, sites, recent, onDone, onClose }: PickerProps & { value: string[]; onDone: (ids: string[]) => void; onClose: () => void }) {
+function SitesDialog({ value, sites, onDone, onClose }: PickerProps & { value: string[]; onDone: (ids: string[]) => void; onClose: () => void }) {
   const [draft, setDraft] = useState(() => value.filter((id) => id !== 'other'))
   const toggle = (id: string) => {
     setDraft((d) => (d.includes(id) ? d.filter((x) => x !== id) : [...d, id]))
@@ -140,7 +137,7 @@ function SitesDialog({ value, sites, recent, onDone, onClose }: PickerProps & { 
           <SiteChips chosen={draft.map((id) => siteById(sites, id))} onRemove={toggle} />
         </div>
       )}
-      <SitePanel className="sitepanel big" sites={sites.filter((s) => s.id !== 'other')} recent={recent}
+      <SitePanel className="sitepanel big" sites={sites.filter((s) => s.id !== 'other')}
         isOn={(id) => draft.includes(id)} onPick={toggle} onClose={onClose} onEnterEmpty={done} />
       <span className="hint">{draft.length > 1 ? t.sites.samePerson : t.sites.multiHint}</span>
     </Dialog>
@@ -150,7 +147,7 @@ function SitesDialog({ value, sites, recent, onDone, onClose }: PickerProps & { 
 /** A profile's platforms as chips, with a button that opens the chooser.
  *  Each platform at most once, so one profile never holds two accounts of
  *  the same platform. None means "Other". */
-export function SitesPicker({ value, onChange, sites, recent }: PickerProps & { value: string[]; onChange: (ids: string[]) => void }) {
+export function SitesPicker({ value, onChange, sites }: PickerProps & { value: string[]; onChange: (ids: string[]) => void }) {
   const [open, setOpen] = useState(false)
   const btnRef = useRef<HTMLButtonElement>(null)
   const chosen = value.filter((id) => id !== 'other').map((id) => siteById(sites, id))
@@ -165,7 +162,7 @@ export function SitesPicker({ value, onChange, sites, recent }: PickerProps & { 
         </button>
       </div>
       {chosen.length > 1 && <span className="hint">{t.sites.samePerson}</span>}
-      {open && <SitesDialog value={value} sites={sites} recent={recent} onClose={close}
+      {open && <SitesDialog value={value} sites={sites} onClose={close}
         onDone={(ids) => { onChange(ids); close() }} />}
     </div>
   )

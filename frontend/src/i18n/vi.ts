@@ -32,7 +32,7 @@ export const vi: Messages = {
   siteGroups: {
     video: 'Video và livestream', social: 'Mạng xã hội', messaging: 'Nhắn tin', commerce: 'Thương mại điện tử',
     ads: 'Quảng cáo', freelance: 'Freelance', google: 'Google', payments: 'Thanh toán và crypto',
-    custom: 'Nền tảng của bạn', other: 'Khác', recent: 'Dùng gần đây',
+    custom: 'Nền tảng của bạn', other: 'Khác',
   } as Record<string, string>,
   sites: {
     search: 'Tìm nền tảng', none: 'Không có nền tảng phù hợp',

@@ -22,7 +22,6 @@ import { useToast } from '../components/toast'
 type Props = {
   rows: service.ProfileRow[]
   sites: Site[]
-  recent: string[]
   view: View
   engineReady: boolean
   fileVaultOn: boolean
@@ -50,7 +49,7 @@ function inView(r: service.ProfileRow, v: View): boolean {
   return r.sites.includes(v.slice(5))
 }
 
-export function ProfilesPage({ rows, sites, recent, view, engineReady, fileVaultOn, error, setError, reload, onNew, onNeedEngine, onClearView, onView, activeId, setActiveId }: Props) {
+export function ProfilesPage({ rows, sites, view, engineReady, fileVaultOn, error, setError, reload, onNew, onNeedEngine, onClearView, onView, activeId, setActiveId }: Props) {
   const [query, setQuery] = useState('')
   const [prefs, setPrefs] = useState<TablePrefs>(readTablePrefs)
   const changePrefs = (p: TablePrefs) => { setPrefs(p); writeTablePrefs(p) }
@@ -250,7 +249,7 @@ export function ProfilesPage({ rows, sites, recent, view, engineReady, fileVault
             </div>
           </section>
           {active && (
-            <ProfileDrawer key={active.id} row={active} sites={sites} recent={recent} knownTags={allTags(rows)}
+            <ProfileDrawer key={active.id} row={active} sites={sites} knownTags={allTags(rows)}
               onClose={() => setActiveId(null)} onStart={(id) => run(() => Api.StartProfile(id))} onStop={(id) => run(() => Api.StopProfile(id))} />
           )}
         </div>
@@ -260,7 +259,7 @@ export function ProfilesPage({ rows, sites, recent, view, engineReady, fileVault
           onDone={() => { setDuplicating(null); reload() }} />
       )}
       {bulkDialog === 'site' && (
-        <BulkSiteDialog ids={[...selected]} sites={sites} recent={recent} onClose={() => setBulkDialog(null)}
+        <BulkSiteDialog ids={[...selected]} sites={sites} onClose={() => setBulkDialog(null)}
           onDone={() => { setBulkDialog(null); setSelected(new Set()); reload() }} />
       )}
       {bulkDialog === 'extension' && (

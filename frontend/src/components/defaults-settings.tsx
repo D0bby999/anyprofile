@@ -41,7 +41,7 @@ export function DefaultsSettings() {
     <div className="field">
       <div className="field">
         <span className="label">{t.defaults.site}</span>
-        <SitePicker value={d.site} onChange={(site) => set({ site })} sites={sites} recent={[]} />
+        <SitePicker value={d.site} onChange={(site) => set({ site })} sites={sites} />
       </div>
       <div className="field">
         <span className="label">{t.defaults.proxy}</span>

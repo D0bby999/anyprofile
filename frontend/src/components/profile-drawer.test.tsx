@@ -46,7 +46,7 @@ function Harness() {
   const [activeId, setActiveId] = useState<string | null>(null)
   const [view, setView] = useState<View>('all')
   return (
-    <ProfilesPage rows={rows} sites={sites} recent={[]} view={view} engineReady fileVaultOn error="" setError={vi.fn()}
+    <ProfilesPage rows={rows} sites={sites} view={view} engineReady fileVaultOn error="" setError={vi.fn()}
       reload={vi.fn()} onNew={vi.fn()} onNeedEngine={vi.fn()} onClearView={() => setView('all')} onView={setView}
       activeId={activeId} setActiveId={setActiveId} />
   )

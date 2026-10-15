@@ -8,7 +8,6 @@ type Props = {
   value: string[]
   startUrl: string
   sites: Site[]
-  recent: string[]
   running: boolean
   /** Saves the platforms together with the start pages they bring or take away. */
   onSites: (ids: string[], startUrl: string) => void
@@ -16,7 +15,7 @@ type Props = {
 }
 
 /** Platforms save on pick; start pages save on leaving the field. */
-export function PlatformGroup({ value, startUrl, sites, recent, running, onSites, onStartUrl }: Props) {
+export function PlatformGroup({ value, startUrl, sites, running, onSites, onStartUrl }: Props) {
   const [urls, setUrls] = useState(startUrl)
   const [invalid, setInvalid] = useState(false)
   useEffect(() => setUrls(startUrl), [startUrl])
@@ -32,7 +31,7 @@ export function PlatformGroup({ value, startUrl, sites, recent, running, onSites
   return (
     <section className="dgroup" aria-label={t.drawer.platform}>
       <h3>{t.drawer.platform}</h3>
-      <SitesPicker value={value} onChange={pick} sites={sites} recent={recent} />
+      <SitesPicker value={value} onChange={pick} sites={sites} />
       <textarea className="textarea" rows={Math.min(5, Math.max(2, urls.split('\n').length))} value={urls}
         placeholder={t.create.startUrlHint} aria-label={t.create.startUrl}
         aria-invalid={invalid} onChange={(e) => { setUrls(e.target.value); setInvalid(false) }} onBlur={commit} />

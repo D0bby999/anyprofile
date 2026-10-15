@@ -18,7 +18,7 @@ const rows = [service.ProfileRow.createFrom({
   state: 'stopped', cdpPort: 0, tags: ['shop-us'], notes: '', login: '', lastOpenAt: '', fpVerdict: '', fpDiff: [], pinned: false,
 })]
 const page = (view: View = 'all', onClearView = vi.fn()) => render(
-  <ProfilesPage rows={rows} sites={sites} recent={[]} view={view} engineReady fileVaultOn error="" setError={vi.fn()}
+  <ProfilesPage rows={rows} sites={sites} view={view} engineReady fileVaultOn error="" setError={vi.fn()}
     reload={vi.fn()} onNew={vi.fn()} onNeedEngine={vi.fn()} onClearView={onClearView} onView={vi.fn()} activeId={null} setActiveId={vi.fn()} />,
 )
 

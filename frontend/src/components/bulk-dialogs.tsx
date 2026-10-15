@@ -9,9 +9,9 @@ import { RealIpWarning } from './proxy-select'
 import { SitesPicker } from './site-picker'
 import { useExtensions } from '../hooks/use-extensions'
 
-type BulkProps = { ids: string[]; sites: Site[]; recent: string[]; onClose: () => void; onDone: () => void }
+type BulkProps = { ids: string[]; sites: Site[]; onClose: () => void; onDone: () => void }
 
-export function BulkSiteDialog({ ids, sites, recent, onClose, onDone }: BulkProps) {
+export function BulkSiteDialog({ ids, sites, onClose, onDone }: BulkProps) {
   const [chosen, setChosen] = useState<string[]>([])
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -32,7 +32,7 @@ export function BulkSiteDialog({ ids, sites, recent, onClose, onDone }: BulkProp
         <button type="button" className="btn ghost" onClick={onClose}>{t.common.cancel}</button>
         <button type="submit" className="btn primary" disabled={busy}>{t.bulk.apply}</button>
       </>}>
-      <SitesPicker value={chosen} onChange={setChosen} sites={sites} recent={recent} />
+      <SitesPicker value={chosen} onChange={setChosen} sites={sites} />
       {error && <div className="banner danger" role="alert">{error}</div>}
     </Dialog>
   )

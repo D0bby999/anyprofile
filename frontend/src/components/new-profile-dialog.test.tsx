@@ -32,7 +32,7 @@ const { NewProfileDialog } = await import('./new-profile-dialog')
 
 const defaults = service.Defaults.createFrom({ site: 'other', proxy: 'auto' })
 const dialog = (over: Partial<Parameters<typeof NewProfileDialog>[0]> = {}) =>
-  render(<NewProfileDialog defaultSite="tiktok" defaults={defaults} sites={sites} recent={[]} onClose={vi.fn()} onCreated={vi.fn()} {...over} />)
+  render(<NewProfileDialog defaultSite="tiktok" defaults={defaults} sites={sites} onClose={vi.fn()} onCreated={vi.fn()} {...over} />)
 
 afterEach(() => { cleanup(); createProfile.mockClear(); createProfiles.mockClear(); proxyList = [freeProxy('10001')]; localStorage.clear() })
 

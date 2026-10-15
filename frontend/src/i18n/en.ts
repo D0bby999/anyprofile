@@ -30,7 +30,7 @@ export const en = {
   siteGroups: {
     video: 'Video & live', social: 'Social', messaging: 'Messaging', commerce: 'E-commerce',
     ads: 'Ads', freelance: 'Freelance', google: 'Google', payments: 'Payments & crypto',
-    custom: 'Your platforms', other: 'Other', recent: 'Recent',
+    custom: 'Your platforms', other: 'Other',
   } as Record<string, string>,
   sites: {
     search: 'Search platforms', none: 'No platform matches',

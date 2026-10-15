@@ -29,7 +29,6 @@ const TABS: Tab[] = ['overview', 'account', 'sessions', 'snapshots']
 type Props = {
   row: service.ProfileRow
   sites: Site[]
-  recent: string[]
   knownTags: string[]
   onClose: () => void
   onStart: (id: string) => void
@@ -37,7 +36,7 @@ type Props = {
 }
 
 /** Everything about one profile, edited in place next to the table. */
-export function ProfileDrawer({ row, sites, recent, knownTags, onClose, onStart, onStop }: Props) {
+export function ProfileDrawer({ row, sites, knownTags, onClose, onStart, onStop }: Props) {
   const toast = useToast()
   const confirm = useConfirm()
   const [tab, setTab] = useState<Tab>('overview')
@@ -134,7 +133,7 @@ export function ProfileDrawer({ row, sites, recent, knownTags, onClose, onStart,
         {tab === 'overview' ? (
           <>
             <NetworkGroup row={row} proxies={proxies} running={running} onApply={(proxyId) => update({ proxyId })} onMatchIp={matchIp} />
-            <PlatformGroup value={row.sites} startUrl={row.startUrl} sites={sites} recent={recent} running={running}
+            <PlatformGroup value={row.sites} startUrl={row.startUrl} sites={sites} running={running}
               onSites={(ids, startUrl) => update({ sites: ids, startUrl })} onStartUrl={(startUrl) => update({ startUrl })} />
             <ProfileExtensions profileId={row.id} on={row.extensions ?? []} running={running} onError={toast.error} />
             <TagsGroup tags={row.tags} known={knownTags} onChange={(tags) => update({ tags })} />

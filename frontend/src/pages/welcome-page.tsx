@@ -181,7 +181,7 @@ export function WelcomePage({ sites, fileVaultOn, lang, onLanguage, onDone }: Pr
           </label>
           <div className="field">
             <span className="label">{t.create.site}</span>
-            <SitePicker value={site} onChange={setSite} sites={sites} recent={[]} />
+            <SitePicker value={site} onChange={setSite} sites={sites} />
           </div>
           <p className="wnote"><Icon name="key" className="icon sm" />{t.welcome.keychain}</p>
           <button type="button" className="btn primary wbtn" disabled={!name.trim() || !!busy} onClick={create}>

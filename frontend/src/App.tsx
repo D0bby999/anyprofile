@@ -85,11 +85,6 @@ export default function App() {
     return m
   }, [profiles.rows])
 
-  // Site ids ordered by how often the profiles use them, most first.
-  const recent = useMemo(() =>
-    [...siteCounts.entries()].sort((a, b) => b[1] - a[1]).map(([id]) => id),
-  [siteCounts])
-
   if (startupError) {
     return (
       <main className="app" style={{ alignItems: 'center', justifyContent: 'center' }}>
@@ -160,7 +155,7 @@ export default function App() {
         onNavigate={navigate} onNewProfile={newProfile} />
       <main className="main">
         {page === 'profiles' && (
-          <ProfilesPage rows={profiles.rows} sites={sites} recent={recent} view={view} engineReady={engines === null || engineReady}
+          <ProfilesPage rows={profiles.rows} sites={sites} view={view} engineReady={engines === null || engineReady}
             fileVaultOn={fileVaultOn} error={profiles.error} setError={profiles.setError} reload={profiles.reload}
             onNew={newProfile} onNeedEngine={() => setPage('settings')} onClearView={() => setView('all')} onView={setView}
             activeId={activeId} setActiveId={setActiveId} />
@@ -178,7 +173,7 @@ export default function App() {
       )}
       {sheet && <ShortcutSheet onClose={() => setSheet(false)} />}
       {creating !== false && (
-        <NewProfileDialog initialCount={creating} defaultSite={view.startsWith('site:') ? view.slice(5) : defaults.site} defaults={defaults} sites={sites} recent={recent}
+        <NewProfileDialog initialCount={creating} defaultSite={view.startsWith('site:') ? view.slice(5) : defaults.site} defaults={defaults} sites={sites}
           onClose={() => setCreating(false)}
           onCreated={() => { setCreating(false); setPage('profiles'); profiles.reload(); refreshProxies() }} />
       )}
