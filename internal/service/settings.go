@@ -70,20 +70,20 @@ type Defaults struct {
 	Engine string `json:"engine"`
 	Site   string `json:"site"`   // default "other"
 	Proxy  string `json:"proxy"`  // "auto" (default) or "none"
-	OnOpen string `json:"onOpen"` // "restore" (default) or "start"
+	OnOpen string `json:"onOpen"` // "start" (default) or "restore"
 }
 
-// Defaults reads the saved defaults, falling back to other/auto/restore.
+// Defaults reads the saved defaults, falling back to other/auto/start.
 func (s *Service) Defaults() Defaults {
-	d := Defaults{Engine: s.DefaultEngine(), Site: "other", Proxy: "auto", OnOpen: "restore"}
+	d := Defaults{Engine: s.DefaultEngine(), Site: "other", Proxy: "auto", OnOpen: "start"}
 	if v, err := s.Store.GetSetting("default_site"); err == nil && v != "" && s.checkSite(v) == nil {
 		d.Site = v
 	}
 	if v, err := s.Store.GetSetting("default_proxy"); err == nil && v == "none" {
 		d.Proxy = "none"
 	}
-	if v, err := s.Store.GetSetting(store.SettingOnOpen); err == nil && v == "start" {
-		d.OnOpen = "start"
+	if v, err := s.Store.GetSetting(store.SettingOnOpen); err == nil && v == "restore" {
+		d.OnOpen = "restore"
 	}
 	return d
 }

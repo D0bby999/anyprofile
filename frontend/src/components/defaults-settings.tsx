@@ -10,7 +10,7 @@ import { Icon } from './icons'
 /** The saved defaults. A change is applied to a fresh read, so two sections
  *  of the Settings page never write back each other's stale values. */
 function useDefaults() {
-  const [d, setD] = useState<service.Defaults>(service.Defaults.createFrom({ site: 'other', proxy: 'auto', onOpen: 'restore' }))
+  const [d, setD] = useState<service.Defaults>(service.Defaults.createFrom({ site: 'other', proxy: 'auto', onOpen: 'start' }))
   const [error, setError] = useState('')
 
   useEffect(() => { Api.Defaults().then(setD).catch(() => {}) }, [])
@@ -61,10 +61,10 @@ export function OnOpenSettings() {
   return (
     <div className="field">
       <div className="seg" role="group" aria-label={t.onOpen.title}>
-        <button type="button" aria-pressed={d.onOpen !== 'start'} onClick={() => set({ onOpen: 'restore' })}>{t.onOpen.restore}</button>
-        <button type="button" aria-pressed={d.onOpen === 'start'} onClick={() => set({ onOpen: 'start' })}>{t.onOpen.start}</button>
+        <button type="button" aria-pressed={d.onOpen !== 'restore'} onClick={() => set({ onOpen: 'start' })}>{t.onOpen.start}</button>
+        <button type="button" aria-pressed={d.onOpen === 'restore'} onClick={() => set({ onOpen: 'restore' })}>{t.onOpen.restore}</button>
       </div>
-      <span className="hint">{d.onOpen === 'start' ? t.onOpen.startHint : t.onOpen.restoreHint}</span>
+      <span className="hint">{d.onOpen === 'restore' ? t.onOpen.restoreHint : t.onOpen.startHint}</span>
       <SaveError error={error} />
     </div>
   )

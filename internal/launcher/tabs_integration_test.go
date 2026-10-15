@@ -33,6 +33,10 @@ func TestApostateReopensTabsAfterWindowClosed(t *testing.T) {
 		StartURL: srv.URL + "/start"}); err != nil {
 		t.Fatal(err)
 	}
+	// Reopening last tabs is the opt-in mode; start pages are the default.
+	if err := r.st.SetSetting(store.SettingOnOpen, "restore"); err != nil {
+		t.Fatal(err)
+	}
 	ctx := context.Background()
 	launch := func() *cdppipe.Conn {
 		t.Helper()
@@ -97,8 +101,8 @@ func TestApostateReopensTabsAfterWindowClosed(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// "Open start pages": only the start page, whatever was open before.
-	if err := r.st.SetSetting(store.SettingOnOpen, "start"); err != nil {
+	// The default (nothing chosen): only the start page, whatever was open before.
+	if err := r.st.SetSetting(store.SettingOnOpen, ""); err != nil {
 		t.Fatal(err)
 	}
 	c = launch()

@@ -89,10 +89,12 @@ Mỗi mục ghi điều phải thấy. Thử ở cả giao diện sáng và tố
 15. **Ảnh chụp phiên.** Mở "Thử trực tiếp 1", vào `example.com`, để chạy **hơn 2 phút**, rồi đóng. Tab Snapshots có một ảnh chụp lý do "close". Bấm "Take snapshot", rồi khôi phục ảnh cũ; toast có nút Undo. Settings → Storage hiện tổng dung lượng ảnh chụp.
 16. **Cookie.** Ở "Thử trực tiếp 3", chọn Import cookies và chọn file `internal/cookies/testdata/cookies.txt` trong repo (cookie giả của `example.com`). Toast báo đã nhập 2 cookie và có cảnh báo cookie không thuộc TikTok. Khi profile đang mở, Export cookies hiện cảnh báo rồi lưu file JSON. Xoá file đó sau khi xem.
 17. **Ngôn ngữ.** Settings đổi sang Tiếng Việt: mọi chữ đổi theo, không còn chữ tiếng Anh sót.
-18. **Mở lại tab.** Mở "Thử trực tiếp 4", mở thêm tab `example.com` và `example.org`, chờ vài giây,
-    **đóng cửa sổ trình duyệt bằng nút đỏ**. Trong khoảng 2 giây, profile tự chuyển sang đã đóng trong app
-    (không cần bấm Close), và Chromium không còn trên Dock. Mở lại: hai tab đó hiện lại, không còn tab trống. Settings → "Khi mở profile" chọn "Luôn mở trang mở đầu", đóng rồi mở lại: chỉ còn
-    trang mở đầu của profile. Chọn lại "Mở lại các tab lần trước" sau khi thử.
+18. **Mở theo trang mở đầu.** Mở "Thử trực tiếp 4": cửa sổ có đúng các trang trong ô Start page. Mở thêm tab
+    `example.com` và `example.org`, chờ vài giây, **đóng cửa sổ trình duyệt bằng nút đỏ**. Trong khoảng 2
+    giây, profile tự chuyển sang đã đóng trong app (không cần bấm Close), và Chromium không còn trên Dock. Mở
+    lại: chỉ có các trang trong Start page, không có hai tab vừa mở. Settings → "Khi mở profile" chọn "Mở
+    lại các tab lần trước", làm lại các bước trên: lần mở sau hai tab đó hiện lại, không còn tab trống. Chọn
+    lại "Luôn mở trang mở đầu" sau khi thử.
 19. **Nhiều nền tảng.** Cột nền tảng của "TikTok VN 01" có ba biểu tượng và chữ "TikTok +2"; bấm "YouTube"
     ở cột trái thì profile này vẫn hiện. New profile: bấm "Change platforms" mở một modal riêng; chọn thêm
     YouTube, Gmail rồi Done: ô Platform có ba thẻ, ô Trang mở đầu có đủ ba dòng. Trong modal, Cancel hoặc Esc
@@ -153,7 +155,7 @@ Làm trên bộ **thật**. Thoát app mẫu trước, rồi mở `build/bin/Any
    email, mật khẩu, khoá 2FA cho từng khối. Menu ⋯ của hàng có "Copy password · TikTok" và
    "Copy password · Gmail"; mã 2FA trùng Google Authenticator; clipboard tự xoá sau 90 giây.
 6. **Đóng cửa sổ trình duyệt bằng nút đỏ** (không bấm Close trong app): profile tự đóng trong app sau vài
-   giây. Mở lại từ app: phải vẫn đăng nhập cả hai, và các tab đang mở lúc trước được mở lại.
+   giây. Mở lại từ app: phải vẫn đăng nhập cả hai, và cửa sổ mở đúng các trang trong Start page.
 7. **Extension.** Settings → Extensions → thêm extension, bật cho profile này trong ngăn chi tiết, đóng rồi
    mở profile: `chrome://extensions` có extension đó. Profile khác không có.
 8. **Bookmark.** Đóng profile, menu ⋯ → Import bookmarks… chọn file xuất từ Chrome. Mở lại: thanh

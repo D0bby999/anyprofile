@@ -350,17 +350,17 @@ func TestNormalizeStartURLs(t *testing.T) {
 func TestDefaults(t *testing.T) {
 	s, _ := newService(t)
 	d := s.Defaults()
-	if d.Site != "other" || d.Proxy != "auto" || d.OnOpen != "restore" {
+	if d.Site != "other" || d.Proxy != "auto" || d.OnOpen != "start" {
 		t.Fatalf("defaults = %+v", d)
 	}
-	if err := s.SetDefaults(Defaults{Engine: "fury", Site: "etsy", Proxy: "none", OnOpen: "start"}); err != nil {
+	if err := s.SetDefaults(Defaults{Engine: "fury", Site: "etsy", Proxy: "none", OnOpen: "restore"}); err != nil {
 		t.Fatal(err)
 	}
 	d = s.Defaults()
-	if d.Site != "etsy" || d.Proxy != "none" || d.OnOpen != "start" {
+	if d.Site != "etsy" || d.Proxy != "none" || d.OnOpen != "restore" {
 		t.Fatalf("after set = %+v", d)
 	}
-	if v, _ := s.Store.GetSetting(store.SettingOnOpen); v != "start" {
+	if v, _ := s.Store.GetSetting(store.SettingOnOpen); v != "restore" {
 		t.Fatalf("on_open stored as %q", v)
 	}
 	if err := s.SetDefaults(Defaults{Engine: "fury", Site: "nope", Proxy: "auto", OnOpen: "restore"}); err == nil || !strings.Contains(err.Error(), "unknown_site") {

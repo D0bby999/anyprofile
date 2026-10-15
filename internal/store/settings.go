@@ -4,8 +4,9 @@ package store
 
 import "database/sql"
 
-// SettingOnOpen says what a profile opens with: "restore" (the tabs of last
-// time, the default) or "start" (its start pages, every time).
+// SettingOnOpen says what a profile opens with: "start" (its start pages,
+// every time; the default, also when unset) or "restore" (the tabs of last
+// time).
 const SettingOnOpen = "on_open"
 
 // GetSetting returns the stored value for key, or "" and nil when unset.

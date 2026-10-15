@@ -67,10 +67,11 @@ func (l *Launcher) start(ctx context.Context, p *proc) error {
 	if p.relay != nil {
 		rt.RelayPort = p.relay.Port()
 	}
-	// "start" opens the start pages every time; otherwise Chromium restores the
-	// last session, and the start pages open only when there is none yet.
+	// By default the start pages open every time. With "restore" Chromium
+	// brings back the last session, and the start pages open only when there
+	// is none yet.
 	onOpen, _ := l.st.GetSetting(store.SettingOnOpen)
-	rt.FreshStart = onOpen == "start"
+	rt.FreshStart = onOpen != "restore"
 	hadSession := hasSession(udd)
 	for _, id := range prof.Extensions {
 		if dir := l.dirs.Extension(id); isDir(dir) {
