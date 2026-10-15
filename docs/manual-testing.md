@@ -125,6 +125,11 @@ Làm trên bộ **thật**. Thoát app mẫu trước, rồi mở `build/bin/Any
 
 - Dùng **tài khoản phụ** cho lần thử đầu, không dùng kênh chính.
 - Một tài khoản, một profile, một proxy sticky. Không dùng chung proxy giữa các tài khoản.
+- Dùng proxy **dân cư** (residential) hoặc 4G. Proxy datacenter (ví dụ `dc.decodo.com`, IP của công ty
+  hosting) bị eBay và Reddit chặn ngay ở mức IP: eBay hiện "Something went wrong on our end", Reddit hiện
+  "You've been blocked by network security". Đo ngày 16/10/2026, Chrome thật qua cùng proxy cũng bị chặn y
+  hệt, nên đó không phải lỗi của app. Reddit còn hỏi "Prove your humanity" với mọi trình duyệt mới chưa có
+  cookie, kể cả Chrome thật trên mạng nhà; bấm qua một lần là xong.
 - Với DataImpulse, dùng port sticky **10000 trở lên**. Port 823 đổi IP mỗi lần kết nối; app sẽ từ chối.
 - Không đổi quốc gia proxy của một profile đã đăng nhập. Muốn đổi thì tạo profile mới.
 - Không đăng nhập cùng một tài khoản trên cả Fury và Apostate.
