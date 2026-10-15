@@ -28,10 +28,14 @@ export function IdentityGroup({ row }: { row: service.ProfileRow }) {
         <dt>{t.editor.seed}</dt><dd className="mono">{row.seedHex}</dd>
         <dt>{t.editor.created}</dt><dd>{relativeTime(row.createdAt)}</dd>
         <dt>{t.fp.title}</dt>
-        <dd className="row">
+        <dd className="fpcell">
           <HealthPill row={row} />
-          {row.fpCheckedAt && <span className="muted">{t.drawer.fingerprintChecked(relativeTime(row.fpCheckedAt))}</span>}
-          {row.fpVerdict && <button type="button" className="btn sm ghost" onClick={reset}>{t.fp.reset}</button>}
+          {(row.fpCheckedAt || row.fpVerdict) && (
+            <span className="fpmeta">
+              {row.fpCheckedAt && <span className="muted">{t.drawer.fingerprintChecked(relativeTime(row.fpCheckedAt))}</span>}
+              {row.fpVerdict && <button type="button" className="linkbtn" onClick={reset}>{t.fp.reset}</button>}
+            </span>
+          )}
         </dd>
       </dl>
       <span className="hint">{t.editor.identityHint}</span>
