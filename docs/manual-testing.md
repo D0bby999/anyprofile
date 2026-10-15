@@ -47,7 +47,7 @@ proxy, và đó chính là cách thử đường báo lỗi.
 
 Các profile "Mẫu":
 
-| Profile | Phải thấy ở cột Health |
+| Profile | Phải thấy ở cột Status |
 |---|---|
 | Mẫu: fingerprint đổi | Đỏ, fingerprint thay đổi (canvas, GPU) |
 | Mẫu: đổi quốc gia | Đỏ, quốc gia IP đổi từ US sang CA; ô proxy có huy hiệu đỏ |
@@ -167,7 +167,7 @@ Làm trên bộ **thật**. Thoát app mẫu trước, rồi mở `build/bin/Any
 **Ngày 2: qua đêm**
 
 11. Để profile đóng đến hôm sau rồi mở lại. Phải vẫn đăng nhập cả hai tài khoản, cùng IP (proxy sticky),
-    cột Health không đỏ, thanh trạng thái không báo "need attention" cho profile này.
+    cột Status không đỏ, thanh trạng thái không báo "need attention" cho profile này.
 12. **Chuyển phiên (không bắt buộc, chỉ với tài khoản phụ).** Khi profile đang mở, Export cookies. Tạo
     profile mới với proxy **cùng quốc gia**, Import file đó, mở profile mới: tài khoản đã đăng nhập sẵn.
     Nền tảng có thể đòi xác minh lại vì máy ảo khác; đó là hành vi bình thường. Xoá file cookie sau khi xong.
@@ -181,5 +181,5 @@ Hai bước kiểm còn mở của plan nằm trong các bước trên: bước 
 
 ### Báo lại khi gặp lỗi
 
-Ghi lại profile nào, bước nào, chữ trên toast hoặc cột Health, và chụp đúng vùng bị lỗi.
+Ghi lại profile nào, bước nào, chữ trên toast hoặc cột Status, và chụp đúng vùng bị lỗi.
 Nhật ký nằm ở `~/Library/Application Support/AnyProfile/logs/anyprofile.log` (không chứa mật khẩu).

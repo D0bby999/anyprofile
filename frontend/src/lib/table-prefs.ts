@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 export type Density = 'comfortable' | 'compact'
-export type Column = 'site' | 'proxy' | 'health' | 'lastOpen'
-export const COLUMNS: Column[] = ['site', 'proxy', 'health', 'lastOpen']
+export type Column = 'site' | 'proxy' | 'status'
+export const COLUMNS: Column[] = ['site', 'proxy', 'status']
 export type TablePrefs = { density: Density; hidden: Column[] }
 
 const KEY = 'anyprofile.table'
@@ -13,9 +13,12 @@ type Storage = Pick<globalThis.Storage, 'getItem' | 'setItem'>
 export function readTablePrefs(store: Storage = localStorage): TablePrefs {
   try {
     const v = JSON.parse(store.getItem(KEY) ?? 'null')
+    const old: unknown[] = Array.isArray(v?.hidden) ? v.hidden : []
+    // Health and Last opened became one Status column: hidden only if both were.
+    const hidden = old.includes('health') && old.includes('lastOpen') ? [...old, 'status'] : old
     return {
       density: v?.density === 'compact' ? 'compact' : 'comfortable',
-      hidden: Array.isArray(v?.hidden) ? COLUMNS.filter((c) => v.hidden.includes(c)) : [],
+      hidden: COLUMNS.filter((c) => hidden.includes(c)),
     }
   } catch {
     return { ...DEFAULTS }

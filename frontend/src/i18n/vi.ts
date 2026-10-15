@@ -83,7 +83,7 @@ export const vi: Messages = {
     selected: (n: number) => `Đã chọn ${n}`,
     openSelected: 'Mở', stopSelected: 'Đóng', trashSelected: 'Bỏ vào thùng rác', clearSelection: 'Bỏ chọn',
     pinSelected: 'Ghim', unpinSelected: 'Bỏ ghim',
-    colNo: 'STT', colName: 'Tên', colSite: 'Nền tảng', colProxy: 'Proxy', colHealth: 'Sức khoẻ', colLastOpen: 'Mở lần cuối',
+    colNo: 'STT', colName: 'Tên', colSite: 'Nền tảng', colProxy: 'Proxy', colStatus: 'Trạng thái', sortLastOpen: 'Sắp xếp theo lần mở cuối',
     runningFor: (d: string) => `Đang chạy · ${d}`,
     emptyTitle: 'Chưa có profile nào',
     emptyText: 'Mỗi profile là một trình duyệt riêng với cookie, proxy và dấu vân tay riêng. Tạo profile đầu tiên cho một kênh của bạn.',
@@ -113,7 +113,7 @@ export const vi: Messages = {
   },
   view: {
     button: 'Hiển thị', density: 'Mật độ', comfortable: 'Thoáng', compact: 'Gọn', columns: 'Cột',
-    cols: { site: 'Nền tảng', proxy: 'Proxy', health: 'Sức khoẻ', lastOpen: 'Mở lần cuối' } as Record<string, string>,
+    cols: { site: 'Nền tảng', proxy: 'Proxy', status: 'Trạng thái (sức khoẻ, lần mở cuối)' } as Record<string, string>,
   },
   filters: {
     running: 'Đang chạy', attention: 'Cần chú ý', tag: (x: string) => `Tag: ${x}`, site: (x: string) => `Nền tảng: ${x}`,

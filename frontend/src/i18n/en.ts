@@ -81,7 +81,7 @@ export const en = {
     selected: (n: number) => `${n} selected`,
     openSelected: 'Open', stopSelected: 'Close', trashSelected: 'Move to trash', clearSelection: 'Clear selection',
     pinSelected: 'Pin', unpinSelected: 'Unpin',
-    colNo: '#', colName: 'Name', colSite: 'Platform', colProxy: 'Proxy', colHealth: 'Health', colLastOpen: 'Last opened',
+    colNo: '#', colName: 'Name', colSite: 'Platform', colProxy: 'Proxy', colStatus: 'Status', sortLastOpen: 'Sort by last opened',
     runningFor: (d: string) => `Running · ${d}`,
     emptyTitle: 'No profiles yet',
     emptyText: 'Each profile is its own browser with separate cookies, proxy and fingerprint. Create the first profile for one of your channels.',
@@ -111,7 +111,7 @@ export const en = {
   },
   view: {
     button: 'View', density: 'Density', comfortable: 'Comfortable', compact: 'Compact', columns: 'Columns',
-    cols: { site: 'Platform', proxy: 'Proxy', health: 'Health', lastOpen: 'Last opened' } as Record<string, string>,
+    cols: { site: 'Platform', proxy: 'Proxy', status: 'Status (health, last opened)' } as Record<string, string>,
   },
   filters: {
     running: 'Running', attention: 'Needs attention', tag: (x: string) => `Tag: ${x}`, site: (x: string) => `Platform: ${x}`,

@@ -273,7 +273,6 @@ kbd { display: inline-flex; align-items: center; min-width: 22px; height: 20px; 
 /* Columns leave in order of least use; the platform stays as its icon, which
    tells rows apart at a glance. Each width is what the columns before it need,
    measured, plus room for a scrollbar and longer Vietnamese labels. */
-@container (max-width: 900px) { .table .col-lastopen { display: none; } }
 @container (max-width: 880px) {
   .cellproxy small { display: none; }
   /* The hidden name is anchored in its cell; anchored anywhere else it would sit
@@ -286,7 +285,7 @@ kbd { display: inline-flex; align-items: center; min-width: 22px; height: 20px; 
   }
 }
 @container (max-width: 740px) { .table .col-proxy, .table .col-no { display: none; } }
-@container (max-width: 520px) { .table .col-health { display: none; } .table .cellname { min-width: 120px; } }
+@container (max-width: 520px) { .table .col-status { display: none; } .table .cellname { min-width: 120px; } }
 
 /* Profiles page with the detail drawer beside the table. */
 .profiles-split { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
@@ -366,7 +365,10 @@ kbd { display: inline-flex; align-items: center; min-width: 22px; height: 20px; 
 .lastopen { display: inline-flex; align-items: center; gap: 6px; font-variant-numeric: tabular-nums; }
 .lastopen.running { color: var(--success-ink); }
 .lastopen .live { width: 7px; height: 7px; border-radius: 50%; background: var(--success); }
-.table .col-health { width: 1%; white-space: nowrap; }
+.table .col-status { width: 1%; white-space: nowrap; }
+.cellstatus { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; }
+.cellstatus .lastopen { font-size: var(--t-xs); }
+.table.compact .cellstatus { flex-direction: row; align-items: center; gap: 8px; }
 .cellname .sub { -webkit-mask-image: linear-gradient(to right, #000 88%, transparent); mask-image: linear-gradient(to right, #000 88%, transparent); }
 .ellipsis { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 260px; }
 .table td.stack > small { display: block; margin-top: 3px; font-size: var(--t-xs); }

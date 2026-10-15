@@ -40,7 +40,7 @@ describe('ProfileTable', () => {
     expect(screen.getByText('67.84.146.69')).toBeTruthy()
     expect(screen.getByText('US')).toBeTruthy()
     expect(screen.getByText(t.health.new)).toBeTruthy()
-    expect(screen.queryByText(t.profiles.colHealth)).toBeTruthy()
+    expect(screen.queryByText(t.profiles.colStatus)).toBeTruthy()
     fireEvent.click(screen.getByText(t.profiles.open))
     expect(p.onStart).toHaveBeenCalledWith('a')
     fireEvent.doubleClick(screen.getByText('Kênh A'))

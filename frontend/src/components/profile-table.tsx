@@ -9,7 +9,7 @@ import { Icon } from './icons'
 import { SiteBadges } from './site-glyph'
 import { RowMenu } from './row-menu'
 import { HealthPill } from './health-pill'
-import type { TablePrefs } from '../lib/table-prefs'
+import type { Column, TablePrefs } from '../lib/table-prefs'
 
 export type SortKey = 'no' | 'name' | 'lastOpen'
 export type Sort = { key: SortKey; desc: boolean }
@@ -76,12 +76,12 @@ export function ProfileTable(p: Props) {
   }, [])
   const allSelected = p.rows.length > 0 && p.rows.every((r) => p.selected.has(r.id))
   const head = (key: SortKey, label: string, className?: string) => (
-    <th className={`sortable ${className ?? ''}`} onClick={() => p.onSort(key)}
+    <th className={`sortable ${className ?? ''}`} onClick={() => p.onSort(key)} title={key === 'lastOpen' ? t.profiles.sortLastOpen : undefined}
       aria-sort={p.sort.key === key ? (p.sort.desc ? 'descending' : 'ascending') : undefined}>
       <span className="sorthead">{label}{p.sort.key === key && <Icon name={p.sort.desc ? 'sortDown' : 'sortUp'} className="icon sm" />}</span>
     </th>
   )
-  const shown = (c: 'site' | 'proxy' | 'health' | 'lastOpen') => !p.prefs?.hidden.includes(c)
+  const shown = (c: Column) => !p.prefs?.hidden.includes(c)
   return (
     <table className={`table${p.prefs?.density === 'compact' ? ' compact' : ''}`}>
       <thead>
@@ -91,8 +91,7 @@ export function ProfileTable(p: Props) {
           {head('name', t.profiles.colName)}
           {shown('site') && <th className="col-site"><span className="sitehead">{t.profiles.colSite}</span></th>}
           {shown('proxy') && <th className="col-proxy">{t.profiles.colProxy}</th>}
-          {shown('health') && <th className="col-health">{t.profiles.colHealth}</th>}
-          {shown('lastOpen') && head('lastOpen', t.profiles.colLastOpen, 'col-lastopen')}
+          {shown('status') && head('lastOpen', t.profiles.colStatus, 'col-status')}
           <th className="col-actions" />
         </tr>
       </thead>
@@ -121,8 +120,11 @@ export function ProfileTable(p: Props) {
               </td>
               {shown('site') && <td className="col-site"><SiteBadges ids={r.sites} sites={p.sites} /></td>}
               {shown('proxy') && <td className="col-proxy"><ProxyCell row={r} /></td>}
-              {shown('health') && <td className="col-health"><HealthPill row={r} now={now} /></td>}
-              {shown('lastOpen') && <td className="nowrap col-lastopen"><LastOpened row={r} now={now} /></td>}
+              {shown('status') && (
+                <td className="col-status">
+                  <span className="cellstatus"><HealthPill row={r} now={now} /><LastOpened row={r} now={now} /></span>
+                </td>
+              )}
               <td className="col-actions">
                 <span className="row">
                   {running && (
