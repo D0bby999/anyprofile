@@ -128,19 +128,56 @@ Làm trên bộ **thật**. Thoát app mẫu trước, rồi mở `build/bin/Any
 - Không đăng nhập cùng một tài khoản trên cả Fury và Apostate.
 - File cookie xuất ra cho phép người khác đăng nhập tài khoản. Giữ kín và xoá sau khi dùng.
 
+### Trước khi bắt đầu
+
+- Lần mở đầu tiên của bản mới nâng cấp cơ sở dữ liệu (thêm nhiều nền tảng, tài khoản theo nền tảng,
+  extension). App tự chép bản cũ vào `~/Library/Application Support/AnyProfile/backups/anyprofile-v11-….db`
+  trước khi nâng cấp. Mở xong, profile cũ phải còn đủ, tài khoản cũ hiện dưới nền tảng đầu tiên của profile.
+- Chuẩn bị: 1–2 proxy sticky có user/pass, 1 tài khoản phụ (ví dụ TikTok) và tài khoản Gmail phụ của
+  cùng "người" đó, file bookmark xuất từ Chrome, một extension nhẹ (ví dụ thư mục đã giải nén).
+
 ### Các bước
 
-1. **Thêm proxy.** Trang Proxies → Import, dán một dòng `host:port:user:pass` (port sticky). Mật khẩu đi thẳng vào Keychain. Sau khi kiểm, proxy hiện quốc gia và IP ra.
-2. **Tạo profile.** New profile: engine Apostate (mặc định), chọn proxy vừa thêm, nền tảng TikTok (hoặc nền tảng của tài khoản).
-3. **Mở lần đầu.** macOS có thể hỏi quyền với mục "Chromium Safe Storage": chọn **Always Allow**. Nếu chỉ chọn Allow, lần mở sau sẽ mất đăng nhập.
-4. **Kiểm khi đang mở.** Ngăn chi tiết: nhóm Checks báo tất cả đạt; tab Sessions có một hàng với IP ra đúng quốc gia proxy. Nếu muốn, vào `browserscan.net` để so; danh sách trang kiểm đầy đủ ở `docs/browser-fingerprint-testing.md`.
-5. **Đăng nhập** tài khoản phụ như bình thường. Lưu email, mật khẩu và khoá 2FA (nếu có) ở tab Account, để lần sau dùng menu Copy.
-6. **Đóng và mở lại** sau vài phút. Phải vẫn đăng nhập, không phải nhập lại mật khẩu.
-7. **Ảnh chụp.** Nếu lần mở trước kéo dài hơn 2 phút, tab Snapshots có ảnh chụp "close". Chụp thêm một ảnh bằng tay trước mọi thay đổi lớn.
-8. **Qua đêm.** Để profile đóng đến hôm sau rồi mở lại. Phải vẫn đăng nhập, cùng IP (proxy sticky), không có cảnh báo đỏ ở cột Health.
-9. **Chuyển phiên (không bắt buộc, chỉ với tài khoản phụ).** Khi profile đang mở, Export cookies. Tạo profile mới với proxy **cùng quốc gia**, Import file đó, mở profile mới: tài khoản đã đăng nhập sẵn. Nền tảng có thể đòi xác minh lại vì máy ảo khác; đó là hành vi bình thường. Xoá file cookie sau khi xong.
+**Ngày 1: tạo và đăng nhập**
 
-Hai bước kiểm còn mở của plan nằm trong các bước trên: bước 4 hoàn tất phase 9, bước 7 hoàn tất phase 11.
+1. **Thêm proxy.** Trang Proxies → Import, dán một dòng `host:port:user:pass` (port sticky). Mật khẩu đi
+   thẳng vào Keychain. Sau khi kiểm, proxy hiện quốc gia và IP ra.
+2. **Tạo profile.** New profile: đặt tên, Add platform → chọn TikTok và Gmail → Done, chọn proxy vừa thêm.
+   Ô Start page có hai dòng.
+3. **Mở lần đầu.** macOS có thể hỏi quyền với mục "Chromium Safe Storage": chọn **Always Allow**. Nếu chỉ
+   chọn Allow, lần mở sau sẽ mất đăng nhập. Cửa sổ mở hai tab TikTok Studio và Gmail.
+4. **Kiểm khi đang mở.** Ngăn chi tiết: nhóm Checks báo tất cả đạt; tab Sessions có một hàng với IP ra đúng
+   quốc gia proxy. Mở thêm tab `browserscan.net`: IP là IP proxy, múi giờ khớp IP, không có "Canvas
+   Tampering"; danh sách trang kiểm đầy đủ ở `docs/browser-fingerprint-testing.md`.
+5. **Đăng nhập** hai tài khoản phụ như bình thường. Tab Account có hai khối TikTok và Gmail: lưu
+   email, mật khẩu, khoá 2FA cho từng khối. Menu ⋯ của hàng có "Copy password · TikTok" và
+   "Copy password · Gmail"; mã 2FA trùng Google Authenticator; clipboard tự xoá sau 90 giây.
+6. **Đóng cửa sổ trình duyệt bằng ⌘Q** (không bấm Close trong app), rồi mở lại từ app. Phải vẫn đăng
+   nhập cả hai, và các tab đang mở lúc trước được mở lại.
+7. **Extension.** Settings → Extensions → thêm extension, bật cho profile này trong ngăn chi tiết, đóng rồi
+   mở profile: `chrome://extensions` có extension đó. Profile khác không có.
+8. **Bookmark.** Đóng profile, menu ⋯ → Import bookmarks… chọn file xuất từ Chrome. Mở lại: thanh
+   bookmark có thư mục "Imported".
+9. **API (không bắt buộc).** Settings → Local API → On, Copy token. Trong Terminal:
+   `curl -s -H "Authorization: Bearer <token>" http://127.0.0.1:51525/v1/profiles` ra danh sách profile.
+   Tắt API xong: `lsof -nP -iTCP:51525 -sTCP:LISTEN` không ra gì.
+10. **Ảnh chụp.** Nếu lần mở trước kéo dài hơn 2 phút, tab Snapshots có ảnh chụp "close". Chụp thêm một
+    ảnh bằng tay.
+
+**Ngày 2: qua đêm**
+
+11. Để profile đóng đến hôm sau rồi mở lại. Phải vẫn đăng nhập cả hai tài khoản, cùng IP (proxy sticky),
+    cột Health không đỏ, thanh trạng thái không báo "need attention" cho profile này.
+12. **Chuyển phiên (không bắt buộc, chỉ với tài khoản phụ).** Khi profile đang mở, Export cookies. Tạo
+    profile mới với proxy **cùng quốc gia**, Import file đó, mở profile mới: tài khoản đã đăng nhập sẵn.
+    Nền tảng có thể đòi xác minh lại vì máy ảo khác; đó là hành vi bình thường. Xoá file cookie sau khi xong.
+
+**Trong vài ngày tiếp theo**
+
+13. Dùng profile như bình thường (đăng bài, xem, nhắn tin). Đạt khi không tài khoản nào bị đăng xuất bất
+    thường, bị khoá, hay bị đòi xác minh lặp lại.
+
+Hai bước kiểm còn mở của plan nằm trong các bước trên: bước 4 hoàn tất phase 9, bước 10 hoàn tất phase 11.
 
 ### Báo lại khi gặp lỗi
 
