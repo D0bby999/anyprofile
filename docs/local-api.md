@@ -59,6 +59,9 @@ curl -s -H "$AUTH" -X POST -d '{"devtools":true}' $API/profiles/<id>/start
 curl -s -H "$AUTH" -X POST $API/profiles/<id>/stop
 ```
 
+Đóng hết trang (hay đóng cửa sổ cuối cùng) thì profile tự đóng sau khoảng 2 giây, như khi người dùng bấm
+nút đỏ. Script muốn thay trang thì mở trang mới trước rồi mới đóng trang cũ.
+
 Puppeteer (Node):
 
 ```js

@@ -80,10 +80,8 @@ func TestApostateReopensTabsAfterWindowClosed(t *testing.T) {
 			c.Call(ctx, "", "Target.closeTarget", map[string]any{"targetId": tg.TargetID})
 		}
 	}
-	time.Sleep(tabsEvery + time.Second) // an empty list must not replace the saved one
-	if err := l.Stop(id); err != nil {
-		t.Fatal(err)
-	}
+	// The last window gone, the browser quits by itself, saving its session.
+	waitStopped(t, l, id)
 
 	// Launch 2: both tabs come back, and no empty new tab is left.
 	c = launch()
@@ -108,4 +106,15 @@ func TestApostateReopensTabsAfterWindowClosed(t *testing.T) {
 	if err := l.Stop(id); err != nil {
 		t.Fatal(err)
 	}
+}
+
+// waitStopped waits for a profile's browser to quit on its own.
+func waitStopped(t *testing.T, l *Launcher, id string) {
+	t.Helper()
+	for deadline := time.Now().Add(20 * time.Second); time.Now().Before(deadline); time.Sleep(200 * time.Millisecond) {
+		if _, ok := l.Info(id); !ok {
+			return
+		}
+	}
+	t.Fatal("the browser kept running after its last window closed")
 }

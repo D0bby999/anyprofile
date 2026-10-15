@@ -132,6 +132,7 @@ func (l *Launcher) start(ctx context.Context, p *proc) error {
 	l.set(p, Running, "")
 	if p.cdp != nil {
 		go l.capture(prof, eng, p.cdp, p.sessionID)
+		go l.quitWithLastWindow(prof.ID, p.cdp)
 		if !rt.FreshStart {
 			go l.keepTabs(prof.ID, udd, prof.StartURLs(), hadSession, p.cdp)
 		}

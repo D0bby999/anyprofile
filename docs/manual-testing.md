@@ -90,8 +90,8 @@ Mỗi mục ghi điều phải thấy. Thử ở cả giao diện sáng và tố
 16. **Cookie.** Ở "Thử trực tiếp 3", chọn Import cookies và chọn file `internal/cookies/testdata/cookies.txt` trong repo (cookie giả của `example.com`). Toast báo đã nhập 2 cookie và có cảnh báo cookie không thuộc TikTok. Khi profile đang mở, Export cookies hiện cảnh báo rồi lưu file JSON. Xoá file đó sau khi xem.
 17. **Ngôn ngữ.** Settings đổi sang Tiếng Việt: mọi chữ đổi theo, không còn chữ tiếng Anh sót.
 18. **Mở lại tab.** Mở "Thử trực tiếp 4", mở thêm tab `example.com` và `example.org`, chờ vài giây,
-    **đóng cửa sổ trình duyệt bằng nút đỏ**, rồi bấm Stop trong app. Mở lại: hai tab đó hiện lại, không
-    còn tab trống. Settings → "Khi mở profile" chọn "Luôn mở trang mở đầu", đóng rồi mở lại: chỉ còn
+    **đóng cửa sổ trình duyệt bằng nút đỏ**. Trong khoảng 2 giây, profile tự chuyển sang đã đóng trong app
+    (không cần bấm Close), và Chromium không còn trên Dock. Mở lại: hai tab đó hiện lại, không còn tab trống. Settings → "Khi mở profile" chọn "Luôn mở trang mở đầu", đóng rồi mở lại: chỉ còn
     trang mở đầu của profile. Chọn lại "Mở lại các tab lần trước" sau khi thử.
 19. **Nhiều nền tảng.** Cột nền tảng của "TikTok VN 01" có ba biểu tượng và chữ "TikTok +2"; bấm "YouTube"
     ở cột trái thì profile này vẫn hiện. New profile: bấm "Change platforms" mở một modal riêng; chọn thêm
@@ -152,8 +152,8 @@ Làm trên bộ **thật**. Thoát app mẫu trước, rồi mở `build/bin/Any
 5. **Đăng nhập** hai tài khoản phụ như bình thường. Tab Account có hai khối TikTok và Gmail: lưu
    email, mật khẩu, khoá 2FA cho từng khối. Menu ⋯ của hàng có "Copy password · TikTok" và
    "Copy password · Gmail"; mã 2FA trùng Google Authenticator; clipboard tự xoá sau 90 giây.
-6. **Đóng cửa sổ trình duyệt bằng ⌘Q** (không bấm Close trong app), rồi mở lại từ app. Phải vẫn đăng
-   nhập cả hai, và các tab đang mở lúc trước được mở lại.
+6. **Đóng cửa sổ trình duyệt bằng nút đỏ** (không bấm Close trong app): profile tự đóng trong app sau vài
+   giây. Mở lại từ app: phải vẫn đăng nhập cả hai, và các tab đang mở lúc trước được mở lại.
 7. **Extension.** Settings → Extensions → thêm extension, bật cho profile này trong ngăn chi tiết, đóng rồi
    mở profile: `chrome://extensions` có extension đó. Profile khác không có.
 8. **Bookmark.** Đóng profile, menu ⋯ → Import bookmarks… chọn file xuất từ Chrome. Mở lại: thanh
