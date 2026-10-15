@@ -154,6 +154,7 @@ export const vi: Messages = {
   flags: {
     country_changed: 'Đổi quốc gia', country_changedText: (to: string, from: string) => `Proxy giờ đi ra ở ${to}. Lần trước là ${from}.`,
     ip_changed: 'IP mới', ip_changedText: 'Địa chỉ IP mới so với lần trước, cùng quốc gia.',
+    ipv6_elsewhere: 'IPv6 ra nơi khác', ipv6_elsewhereText: (profile: string, ip: string) => `Trang có IPv6 thấy proxy ở một địa chỉ khác, múi giờ ${ip}; profile dùng ${profile}. Hãy hỏi nhà cung cấp cách chỉ dùng IPv4, hoặc dùng proxy khác.`,
     tz_mismatch: 'Lệch múi giờ', tz_mismatchText: (profile: string, ip: string) => `Múi giờ của profile (${profile}) không khớp vị trí của IP (${ip}).`,
     exit_failed: 'Chưa kiểm IP', exit_failedText: (err: string) => `Không kiểm được IP lúc mở: ${err}.`,
     direct: 'IP thật', directText: 'Mở bằng IP thật của bạn.',
@@ -229,7 +230,8 @@ export const vi: Messages = {
     failedLine: (line: number, err: string) => `Dòng ${line}: ${err}`,
     passwordNote: 'Mật khẩu được cất trong Keychain của macOS và không bao giờ hiện lại.',
     checkAll: 'Kiểm tra tất cả', check: 'Kiểm tra lại', rename: 'Đổi tên',
-    colLabel: 'Proxy', colExit: 'IP ra và múi giờ', colUsedBy: 'Profile đang dùng', colStatus: 'Tình trạng',
+    colLabel: 'Proxy', colExit: 'IP ra và múi giờ',
+    ipv6Elsewhere: (ip: string, tz: string) => `Trang có IPv6 thấy proxy này ở ${ip}, múi giờ ${tz}, khác nơi của địa chỉ IPv4.`, colUsedBy: 'Profile đang dùng', colStatus: 'Tình trạng',
     ok: 'Dùng được', rotating: 'IP xoay', unchecked: 'Chưa kiểm tra',
     checkedAgo: (s: string) => `Kiểm tra ${s}`,
     expires: 'Hết hạn', expiresOn: 'Ngày hết hạn (tuỳ chọn)', expiringSoon: 'Sắp hết hạn', expired: 'Đã hết hạn',

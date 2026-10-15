@@ -114,12 +114,17 @@ func TestCheckThroughProxy(t *testing.T) {
 			fmt.Fprint(w, "1.2.3.4")
 		case "/ip-rotating":
 			fmt.Fprintf(w, "5.6.7.%d", n.Add(1))
+		case "/ip64-v6":
+			fmt.Fprint(w, "2001:db8::7")
+		case "/at/2001:db8::7/json":
+			fmt.Fprint(w, `{"ip":"2001:db8::7","country":"US","timezone":"America/Chicago"}`)
 		}
 	}))
 	defer geo.Close()
-	old := [3]string{ipinfoURL, ipwhoURL, ipifyURL}
-	defer func() { ipinfoURL, ipwhoURL, ipifyURL = old[0], old[1], old[2] }()
-	ipinfoURL, ipwhoURL = geo.URL+"/json", geo.URL+"/none"
+	old := [5]string{ipinfoURL, ipwhoURL, ipifyURL, ip64URL, ipinfoAt}
+	defer func() { ipinfoURL, ipwhoURL, ipifyURL, ip64URL, ipinfoAt = old[0], old[1], old[2], old[3], old[4] }()
+	ipinfoURL, ipwhoURL, ipinfoAt = geo.URL+"/json", geo.URL+"/none", geo.URL+"/at/%s/json"
+	ip64URL = geo.URL + "/ip-sticky" // no IPv6: the same address
 
 	up, _ := fakeHTTPProxy(t)
 	ipifyURL = geo.URL + "/ip-sticky"
@@ -127,9 +132,15 @@ func TestCheckThroughProxy(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if e.IP != "1.2.3.4" || e.Timezone != "Asia/Ho_Chi_Minh" || e.Lat == nil || *e.Lat != 21.0 || e.Rotating {
+	if e.IP != "1.2.3.4" || e.Timezone != "Asia/Ho_Chi_Minh" || e.Lat == nil || *e.Lat != 21.0 || e.Rotating || e.IPv6 != "" {
 		t.Fatalf("exit = %+v", e)
 	}
+	// Sites with IPv6 see another address, in another place.
+	ip64URL = geo.URL + "/ip64-v6"
+	if e, _ := Check(context.Background(), up); e.IPv6 != "2001:db8::7" || e.IPv6Timezone != "America/Chicago" {
+		t.Fatalf("ipv6 exit = %q %q", e.IPv6, e.IPv6Timezone)
+	}
+	ip64URL = geo.URL + "/ip-sticky"
 	ipifyURL = geo.URL + "/ip-rotating"
 	if e, _ := Check(context.Background(), up); !e.Rotating {
 		t.Fatal("rotating proxy not flagged")

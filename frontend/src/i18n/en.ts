@@ -152,6 +152,7 @@ export const en = {
   flags: {
     country_changed: 'Country changed', country_changedText: (to: string, from: string) => `The proxy now exits in ${to}. Last time it was ${from}.`,
     ip_changed: 'New IP', ip_changedText: 'New IP address since last time, same country.',
+    ipv6_elsewhere: 'IPv6 exits elsewhere', ipv6_elsewhereText: (profile: string, ip: string) => `Sites with IPv6 see this proxy at another address, in ${ip}; the profile uses ${profile}. Ask the provider for IPv4 only, or use another proxy.`,
     tz_mismatch: 'Timezone mismatch', tz_mismatchText: (profile: string, ip: string) => `The profile\u2019s timezone (${profile}) does not match the IP\u2019s location (${ip}).`,
     exit_failed: 'IP not checked', exit_failedText: (err: string) => `Could not check the IP at launch: ${err}.`,
     direct: 'Real IP', directText: 'Opens with your real IP.',
@@ -227,7 +228,8 @@ export const en = {
     failedLine: (line: number, err: string) => `Line ${line}: ${err}`,
     passwordNote: 'Passwords are kept in the macOS Keychain and never shown again.',
     checkAll: 'Check all', check: 'Check again', rename: 'Rename',
-    colLabel: 'Proxy', colExit: 'Exit IP and timezone', colUsedBy: 'Used by', colStatus: 'Status',
+    colLabel: 'Proxy', colExit: 'Exit IP and timezone',
+    ipv6Elsewhere: (ip: string, tz: string) => `Sites with IPv6 see this proxy at ${ip}, in ${tz}, not where its IPv4 address is.`, colUsedBy: 'Used by', colStatus: 'Status',
     ok: 'Working', rotating: 'rotating IP', unchecked: 'Not checked',
     checkedAgo: (s: string) => `Checked ${s}`,
     expires: 'Expires', expiresOn: 'Expires on (optional)', expiringSoon: 'Expires soon', expired: 'Expired',

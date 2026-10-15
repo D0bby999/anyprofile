@@ -134,6 +134,10 @@ Làm trên bộ **thật**. Thoát app mẫu trước, rồi mở `build/bin/Any
   "You've been blocked by network security". Đo ngày 16/10/2026, Chrome thật qua cùng proxy cũng bị chặn y
   hệt, nên đó không phải lỗi của app. Reddit còn hỏi "Prove your humanity" với mọi trình duyệt mới chưa có
   cookie, kể cả Chrome thật trên mạng nhà; bấm qua một lần là xong.
+- Một số proxy dân cư đi ra bằng **IPv4 ở một nơi và IPv6 ở nơi khác**; trang có IPv6 (Pixelscan, Google…) thấy
+  địa chỉ IPv6. Khi kiểm proxy, app đo cả hai: trang Proxies hiện dòng cam "IPv6 · <múi giờ>" nếu khác, và profile
+  có cảnh báo "IPv6 exits elsewhere" ở cột Status. Gặp cảnh báo này thì hỏi nhà cung cấp cách chỉ dùng IPv4, hoặc
+  đổi proxy.
 - Với DataImpulse, dùng port sticky **10000 trở lên**. Port 823 đổi IP mỗi lần kết nối; app sẽ từ chối.
 - Không đổi quốc gia proxy của một profile đã đăng nhập. Muốn đổi thì tạo profile mới.
 - Không đăng nhập cùng một tài khoản trên cả Fury và Apostate.

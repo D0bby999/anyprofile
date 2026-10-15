@@ -185,7 +185,8 @@ func (l *Launcher) measureExit(profileID string, sessionID int64, up netproxy.Up
 		msg = err.Error()
 		l.log.Warn("exit check", "profile", profileID, "err", msg)
 	}
-	if err := l.st.SetSessionExit(sessionID, e.IP, e.Country, e.Timezone, msg); err != nil {
+	if err := l.st.SetSessionExit(sessionID, store.Session{ExitIP: e.IP, ExitCountry: e.Country, ExitTZ: e.Timezone,
+		ExitError: msg, ExitIP6: e.IPv6, ExitTZ6: e.IPv6Timezone}); err != nil {
 		l.log.Warn("save exit", "profile", profileID, "err", err)
 	}
 	if l.OnData != nil {

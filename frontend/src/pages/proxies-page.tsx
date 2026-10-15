@@ -99,7 +99,14 @@ export function ProxiesPage({ onChanged }: { onChanged: () => void }) {
                       <td>{p.exitIp ? (
                         <span className="cellproxy">
                           <span className="cc">{p.country || '?'}</span>
-                          <span><span className="mono selectable">{p.exitIp}</span>{p.timezone && <span className="tzline">{p.timezone}</span>}</span>
+                          <span>
+                            <span className="mono selectable">{p.exitIp}</span>{p.timezone && <span className="tzline">{p.timezone}</span>}
+                            {p.timezone6 && p.timezone6 !== p.timezone && (
+                              <span className="tzline warn" title={t.proxies.ipv6Elsewhere(p.exitIp6, p.timezone6)}>
+                                <Icon name="alert" className="icon xs" />IPv6 · {p.timezone6}
+                              </span>
+                            )}
+                          </span>
                         </span>
                       ) : <span className="faint">{t.proxies.unchecked}</span>}</td>
                       <td className="stack nowrap"><ProxyState p={p} />{p.checkedAt && <small className="faint">{t.proxies.checkedAgo(relativeTime(p.checkedAt))}</small>}</td>

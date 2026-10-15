@@ -57,4 +57,11 @@ describe('health', () => {
     expect(h.reasons).toContain(t.checks.text.webrtc_ip)
     expect(h.reasons).toHaveLength(2)
   })
+
+  it('explains an IPv6 exit in another timezone', () => {
+    const h = health({ ...base, fpVerdict: 'match', flags: [{ id: 'ipv6_elsewhere', level: 'warn', params: { profile: 'America/New_York', ip: 'America/Chicago' } }] })
+    expect(h.level).toBe('warn')
+    expect(h.label).toBe(t.flags.ipv6_elsewhere)
+    expect(h.reasons[0]).toContain('America/Chicago')
+  })
 })

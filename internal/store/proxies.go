@@ -10,15 +10,19 @@ import (
 // Proxy is an upstream proxy. Its password is not here: it lives in the
 // Keychain under secrets.ServiceProxy with the proxy id as the account.
 type Proxy struct {
-	ID        string   `json:"id"`
-	Label     string   `json:"label"`
-	Scheme    string   `json:"scheme"` // "http" | "socks5"
-	Host      string   `json:"host"`
-	Port      int      `json:"port"`
-	Username  string   `json:"username"`
-	ExitIP    string   `json:"exitIp"`
-	Country   string   `json:"country"`
-	Timezone  string   `json:"timezone"`
+	ID       string `json:"id"`
+	Label    string `json:"label"`
+	Scheme   string `json:"scheme"` // "http" | "socks5"
+	Host     string `json:"host"`
+	Port     int    `json:"port"`
+	Username string `json:"username"`
+	ExitIP   string `json:"exitIp"`
+	Country  string `json:"country"`
+	Timezone string `json:"timezone"`
+	// ExitIP6 and Timezone6 are set when sites with IPv6 see the proxy at
+	// another address than ExitIP.
+	ExitIP6   string   `json:"exitIp6"`
+	Timezone6 string   `json:"timezone6"`
 	Lat       *float64 `json:"lat"`
 	Lon       *float64 `json:"lon"`
 	Rotating  bool     `json:"rotating"`
@@ -29,12 +33,13 @@ type Proxy struct {
 }
 
 const proxyCols = `id, label, scheme, host, port, username, COALESCE(exit_ip, ''), COALESCE(country, ''),
-	COALESCE(timezone, ''), lat, lon, rotating, COALESCE(checked_at, ''), created_at, note, expires_on`
+	COALESCE(timezone, ''), lat, lon, rotating, COALESCE(checked_at, ''), created_at, note, expires_on, exit_ip6, timezone6`
 
 func scanProxy(row interface{ Scan(...any) error }) (Proxy, error) {
 	var p Proxy
 	err := row.Scan(&p.ID, &p.Label, &p.Scheme, &p.Host, &p.Port, &p.Username, &p.ExitIP,
-		&p.Country, &p.Timezone, &p.Lat, &p.Lon, &p.Rotating, &p.CheckedAt, &p.CreatedAt, &p.Note, &p.ExpiresOn)
+		&p.Country, &p.Timezone, &p.Lat, &p.Lon, &p.Rotating, &p.CheckedAt, &p.CreatedAt, &p.Note, &p.ExpiresOn,
+		&p.ExitIP6, &p.Timezone6)
 	if errors.Is(err, sql.ErrNoRows) {
 		return p, ErrNotFound
 	}
@@ -81,7 +86,8 @@ func (s *Store) UpdateProxyMeta(id, label, note, expiresOn string) error {
 // SaveProxyCheck records where the proxy exits, as measured through it.
 func (s *Store) SaveProxyCheck(p Proxy) error {
 	res, err := s.db.Exec(`UPDATE proxies SET exit_ip=?, country=?, timezone=?, lat=?, lon=?, rotating=?,
-		checked_at=? WHERE id=?`, p.ExitIP, p.Country, p.Timezone, p.Lat, p.Lon, p.Rotating, now(), p.ID)
+		exit_ip6=?, timezone6=?, checked_at=? WHERE id=?`,
+		p.ExitIP, p.Country, p.Timezone, p.Lat, p.Lon, p.Rotating, p.ExitIP6, p.Timezone6, now(), p.ID)
 	return affected(res, err)
 }
 

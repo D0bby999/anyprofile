@@ -495,6 +495,8 @@ export namespace service {
 	    exitIp: string;
 	    country: string;
 	    timezone: string;
+	    exitIp6: string;
+	    timezone6: string;
 	    lat?: number;
 	    lon?: number;
 	    rotating: boolean;
@@ -520,6 +522,8 @@ export namespace service {
 	        this.exitIp = source["exitIp"];
 	        this.country = source["country"];
 	        this.timezone = source["timezone"];
+	        this.exitIp6 = source["exitIp6"];
+	        this.timezone6 = source["timezone6"];
 	        this.lat = source["lat"];
 	        this.lon = source["lon"];
 	        this.rotating = source["rotating"];
@@ -817,6 +821,8 @@ export namespace store {
 	    exitIp: string;
 	    country: string;
 	    timezone: string;
+	    exitIp6: string;
+	    timezone6: string;
 	    lat?: number;
 	    lon?: number;
 	    rotating: boolean;
@@ -840,6 +846,8 @@ export namespace store {
 	        this.exitIp = source["exitIp"];
 	        this.country = source["country"];
 	        this.timezone = source["timezone"];
+	        this.exitIp6 = source["exitIp6"];
+	        this.timezone6 = source["timezone6"];
 	        this.lat = source["lat"];
 	        this.lon = source["lon"];
 	        this.rotating = source["rotating"];
@@ -861,6 +869,8 @@ export namespace store {
 	    exitCountry: string;
 	    exitTz: string;
 	    exitError: string;
+	    exitIp6: string;
+	    exitTz6: string;
 	    checks: number[];
 	
 	    static createFrom(source: any = {}) {
@@ -880,6 +890,8 @@ export namespace store {
 	        this.exitCountry = source["exitCountry"];
 	        this.exitTz = source["exitTz"];
 	        this.exitError = source["exitError"];
+	        this.exitIp6 = source["exitIp6"];
+	        this.exitTz6 = source["exitTz6"];
 	        this.checks = source["checks"];
 	    }
 	}

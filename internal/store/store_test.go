@@ -549,13 +549,14 @@ func TestSessions(t *testing.T) {
 		t.Fatal("second EndSession moved the stop time")
 	}
 
-	s.SetSessionExit(all[2].ID, "1.1.1.1", "US", "America/New_York", "")
-	s.SetSessionExit(all[1].ID, "2.2.2.2", "DE", "Europe/Berlin", "")
+	s.SetSessionExit(all[2].ID, Session{ExitIP: "1.1.1.1", ExitCountry: "US", ExitTZ: "America/New_York"})
+	s.SetSessionExit(all[1].ID, Session{ExitIP: "2.2.2.2", ExitCountry: "DE", ExitTZ: "Europe/Berlin", ExitIP6: "2001:db8::1", ExitTZ6: "Europe/Paris"})
 	ex, err := s.LatestExits([]string{"p1", "p2"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if ex["p1"][0].ExitIP != "2.2.2.2" || ex["p1"][1].ExitIP != "1.1.1.1" || ex["p2"][0].ID != 0 {
+	if ex["p1"][0].ExitIP != "2.2.2.2" || ex["p1"][1].ExitIP != "1.1.1.1" || ex["p2"][0].ID != 0 ||
+		ex["p1"][0].ExitTZ6 != "Europe/Paris" || ex["p1"][1].ExitIP6 != "" {
 		t.Fatalf("latest exits = %+v", ex)
 	}
 

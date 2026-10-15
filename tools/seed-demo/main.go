@@ -399,7 +399,7 @@ func (s *seeder) history(p store.Profile, n int, last *exit) error {
 			return err
 		}
 		if e.ip != "" || e.err != "" {
-			if err := s.st.SetSessionExit(x.ID, e.ip, e.country, e.tz, e.err); err != nil {
+			if err := s.st.SetSessionExit(x.ID, store.Session{ExitIP: e.ip, ExitCountry: e.country, ExitTZ: e.tz, ExitError: e.err}); err != nil {
 				return err
 			}
 		}

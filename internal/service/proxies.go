@@ -130,6 +130,7 @@ func (s *Service) CheckProxyByID(ctx context.Context, id string) (store.Proxy, e
 		return px, apperr.Newf("proxy_unreachable", "%v", err)
 	}
 	px.ExitIP, px.Country, px.Timezone, px.Lat, px.Lon, px.Rotating = e.IP, e.Country, e.Timezone, e.Lat, e.Lon, e.Rotating
+	px.ExitIP6, px.Timezone6 = e.IPv6, e.IPv6Timezone
 	if err := s.Store.SaveProxyCheck(px); err != nil {
 		return px, err
 	}

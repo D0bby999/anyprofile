@@ -21,7 +21,7 @@ export function flagText(f: Flag): { label: string; text: string } {
   let text = ''
   if (typeof make === 'function') {
     text = f.id === 'country_changed' ? make(countryName(p.to), countryName(p.from))
-      : f.id === 'tz_mismatch' ? make(p.profile, p.ip)
+      : f.id === 'tz_mismatch' || f.id === 'ipv6_elsewhere' ? make(p.profile, p.ip)
         : f.id === 'exit_failed' ? make(p.error) : make()
   } else if (typeof make === 'string') {
     text = make

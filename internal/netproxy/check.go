@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -24,7 +25,11 @@ type Exit struct {
 	Lon       *float64 `json:"lon"`
 	LatencyMs int64    `json:"latencyMs"`
 	Rotating  bool     `json:"rotating"` // the exit IP changed between probes
-	Source    string   `json:"source"`
+	// IPv6 is the address sites with IPv6 see, when it is not IP (some
+	// residential pools leave through an IPv6 in another city), and where it is.
+	IPv6         string `json:"ipv6"`
+	IPv6Timezone string `json:"ipv6Timezone"`
+	Source       string `json:"source"`
 }
 
 // Geo lookups always go through the proxy (never from the real IP) and always
@@ -33,6 +38,8 @@ var (
 	ipinfoURL = "https://ipinfo.io/json"
 	ipwhoURL  = "https://ipwho.is/"
 	ipifyURL  = "https://api.ipify.org"
+	ip64URL   = "https://api64.ipify.org" // answers over IPv6 when the exit has one
+	ipinfoAt  = "https://ipinfo.io/%s/json"
 )
 
 func clientVia(up Upstream, keepAlive bool) *http.Client {
@@ -59,6 +66,7 @@ func Check(ctx context.Context, up Upstream) (Exit, error) {
 	}
 	e.LatencyMs = time.Since(t0).Milliseconds()
 	e.Timezone = NormalizeTimezone(e.Country, e.Timezone)
+	e.IPv6, e.IPv6Timezone = otherIPv6(ctx, clientVia(up, true), e.IP)
 
 	// Two more fresh connections: a sticky proxy keeps its IP, a rotating one does not.
 	fresh := clientVia(up, false)
@@ -70,6 +78,21 @@ func Check(ctx context.Context, up Upstream) (Exit, error) {
 		}
 	}
 	return e, nil
+}
+
+// otherIPv6 asks a dual-stack site which address the proxy uses; when that is
+// an IPv6 other than ip4 it is looked up, through the proxy too. Best effort:
+// any failure leaves both empty.
+func otherIPv6(ctx context.Context, c *http.Client, ip4 string) (string, string) {
+	ip, err := getText(ctx, c, ip64URL)
+	if err != nil || !strings.Contains(ip, ":") || ip == ip4 {
+		return "", ""
+	}
+	e, err := geoIPInfoFrom(ctx, c, fmt.Sprintf(ipinfoAt, url.PathEscape(ip)))
+	if err != nil {
+		return ip, ""
+	}
+	return ip, NormalizeTimezone(e.Country, e.Timezone)
 }
 
 func getText(ctx context.Context, c *http.Client, u string) (string, error) {
@@ -93,7 +116,11 @@ func getText(ctx context.Context, c *http.Client, u string) (string, error) {
 }
 
 func geoIPInfo(ctx context.Context, c *http.Client) (Exit, error) {
-	body, err := getText(ctx, c, ipinfoURL)
+	return geoIPInfoFrom(ctx, c, ipinfoURL)
+}
+
+func geoIPInfoFrom(ctx context.Context, c *http.Client, u string) (Exit, error) {
+	body, err := getText(ctx, c, u)
 	if err != nil {
 		return Exit{}, err
 	}

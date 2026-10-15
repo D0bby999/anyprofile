@@ -25,17 +25,19 @@ type Session struct {
 	ExitCountry   string          `json:"exitCountry"`
 	ExitTZ        string          `json:"exitTz"`
 	ExitError     string          `json:"exitError"`
+	ExitIP6       string          `json:"exitIp6"` // set when sites with IPv6 see another address
+	ExitTZ6       string          `json:"exitTz6"`
 	Checks        json.RawMessage `json:"checks"`
 }
 
 const sessionCols = `id, profile_id, engine, engine_version, proxy_id, started_at, stopped_at,
-	exit_ip, exit_country, exit_tz, exit_error, checks`
+	exit_ip, exit_country, exit_tz, exit_error, checks, exit_ip6, exit_tz6`
 
 func scanSession(row interface{ Scan(...any) error }) (Session, error) {
 	var x Session
 	var checks string
 	err := row.Scan(&x.ID, &x.ProfileID, &x.Engine, &x.EngineVersion, &x.ProxyID, &x.StartedAt, &x.StoppedAt,
-		&x.ExitIP, &x.ExitCountry, &x.ExitTZ, &x.ExitError, &checks)
+		&x.ExitIP, &x.ExitCountry, &x.ExitTZ, &x.ExitError, &checks, &x.ExitIP6, &x.ExitTZ6)
 	x.Checks = json.RawMessage(checks)
 	return x, err
 }
@@ -62,9 +64,9 @@ func (s *Store) EndSession(id int64) error {
 	return err
 }
 
-func (s *Store) SetSessionExit(id int64, ip, country, tz, errMsg string) error {
-	_, err := s.db.Exec(`UPDATE sessions SET exit_ip = ?, exit_country = ?, exit_tz = ?, exit_error = ? WHERE id = ?`,
-		ip, country, tz, errMsg, id)
+func (s *Store) SetSessionExit(id int64, x Session) error {
+	_, err := s.db.Exec(`UPDATE sessions SET exit_ip = ?, exit_country = ?, exit_tz = ?, exit_error = ?,
+		exit_ip6 = ?, exit_tz6 = ? WHERE id = ?`, x.ExitIP, x.ExitCountry, x.ExitTZ, x.ExitError, x.ExitIP6, x.ExitTZ6, id)
 	return err
 }
 
@@ -126,7 +128,7 @@ func (s *Store) LatestExits(profileIDs []string) (map[string][2]Session, error) 
 		var checks string
 		var rn int
 		if err := rows.Scan(&x.ID, &x.ProfileID, &x.Engine, &x.EngineVersion, &x.ProxyID, &x.StartedAt, &x.StoppedAt,
-			&x.ExitIP, &x.ExitCountry, &x.ExitTZ, &x.ExitError, &checks, &rn); err != nil {
+			&x.ExitIP, &x.ExitCountry, &x.ExitTZ, &x.ExitError, &checks, &x.ExitIP6, &x.ExitTZ6, &rn); err != nil {
 			return nil, err
 		}
 		x.Checks = json.RawMessage(checks)

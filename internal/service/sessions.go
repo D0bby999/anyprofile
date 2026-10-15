@@ -12,7 +12,7 @@ import (
 // Flag is a warning about a profile's exit; the UI turns ID and Params into
 // a sentence, so no English is built here.
 type Flag struct {
-	ID     string            `json:"id"`    // country_changed, ip_changed, tz_mismatch, exit_failed, direct
+	ID     string            `json:"id"`    // country_changed, ip_changed, tz_mismatch, ipv6_elsewhere, exit_failed, direct
 	Level  string            `json:"level"` // danger, warn or info
 	Params map[string]string `json:"params"`
 }
@@ -56,6 +56,12 @@ func exitFlags(p store.Profile, latest, previous *store.Session) []Flag {
 	if latest.ExitTZ != "" && netproxy.CanonicalZone(latest.ExitTZ) != netproxy.CanonicalZone(p.Timezone) {
 		flags = append(flags, Flag{ID: "tz_mismatch", Level: "warn",
 			Params: map[string]string{"profile": p.Timezone, "ip": latest.ExitTZ}})
+	}
+	// Sites with IPv6 see the proxy at another address; a page comparing the
+	// clock with that address's place finds the profile an hour or more off.
+	if latest.ExitTZ6 != "" && netproxy.CanonicalZone(latest.ExitTZ6) != netproxy.CanonicalZone(p.Timezone) {
+		flags = append(flags, Flag{ID: "ipv6_elsewhere", Level: "warn",
+			Params: map[string]string{"profile": p.Timezone, "ip": latest.ExitTZ6}})
 	}
 	return flags
 }
