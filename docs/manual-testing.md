@@ -103,7 +103,8 @@ Mỗi mục ghi điều phải thấy. Thử ở cả giao diện sáng và tố
     cùng modal; Esc trong modal chỉ đóng modal, không đóng ngăn chi tiết hay form New profile.
     TikTok Shop mở Seller Center theo nước của proxy: chọn proxy Mỹ thì ô Start page là
     `https://seller-us.tiktok.com`, đổi sang proxy Việt Nam thì thành `https://seller-vn.tiktok.com`; nước chưa có
-    Seller Center (hoặc không proxy) dùng `https://seller.tiktok.com`. Đổi proxy trong ngăn chi tiết cũng đổi theo. Không chọn được "Other"
+    Seller Center (hoặc không proxy) dùng `https://seller.tiktok.com`. Đổi proxy trong ngăn chi tiết cũng đổi theo.
+    Shopee (8 nước), Lazada (6 nước) và Amazon Seller Central (22 thị trường) làm giống vậy. Không chọn được "Other"
     cùng nền tảng khác, và mỗi nền tảng chỉ chọn được một lần. Từ nền tảng thứ hai, dưới ô Platform có dòng
     nhắc "Chỉ thêm nền tảng của cùng một người hoặc một kênh"; bỏ bớt còn một thì dòng đó mất.
 20. **Extension.** Settings → Extensions → "Add folder…", chọn thư mục `/tmp/ext-spike/ext` hoặc một extension

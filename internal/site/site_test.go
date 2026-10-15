@@ -40,14 +40,18 @@ func TestCatalog(t *testing.T) {
 		if !colorRe.MatchString(s.Color) {
 			t.Errorf("%q: bad color %q", s.ID, s.Color)
 		}
-		// A country's start page must be https, on one of the platform's own
-		// domains (so the platform is recognized from it), keyed by ISO code.
+		// A country's start page must be https, on (a subdomain of) one of the
+		// platform's own domains (so the platform is recognized from it), keyed by ISO code.
 		for cc, u := range s.StartURLs {
 			if !regexp.MustCompile(`^[A-Z]{2}$`).MatchString(cc) || cc == "UK" {
 				t.Errorf("%q: bad country %q", s.ID, cc)
 			}
 			host := strings.TrimPrefix(u, "https://")
-			if host == u || !slices.Contains(s.Domains, strings.SplitN(host, "/", 2)[0]) {
+			onDomain := func(d string) bool {
+				h := strings.SplitN(host, "/", 2)[0]
+				return h == d || strings.HasSuffix(h, "."+d)
+			}
+			if host == u || !slices.ContainsFunc(s.Domains, onDomain) {
 				t.Errorf("%q: start page for %s %q is not https on its domains", s.ID, cc, u)
 			}
 		}
