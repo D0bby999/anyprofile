@@ -190,6 +190,7 @@ kbd { display: inline-flex; align-items: center; min-width: 22px; height: 20px; 
 .cellproxy { display: flex; align-items: center; gap: 8px; }
 .cellproxy .cc.danger { background: var(--danger-soft); color: var(--danger-ink); }
 .cellproxy .mono { color: var(--ink-soft); }
+.cellproxy .tzline { display: block; color: var(--faint); font-size: var(--t-xs); white-space: nowrap; }
 .cellproxy small { display: block; color: var(--faint); font-size: var(--t-xs); max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .statusbar { display: flex; align-items: center; gap: 16px; height: 46px; padding: 0 16px; border-top: 1px solid var(--line); color: var(--muted); font-size: var(--t-sm); }

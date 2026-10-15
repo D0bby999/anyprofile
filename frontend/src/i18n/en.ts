@@ -227,7 +227,7 @@ export const en = {
     failedLine: (line: number, err: string) => `Line ${line}: ${err}`,
     passwordNote: 'Passwords are kept in the macOS Keychain and never shown again.',
     checkAll: 'Check all', check: 'Check again', rename: 'Rename',
-    colLabel: 'Proxy', colExit: 'Exit IP', colTimezone: 'Timezone', colUsedBy: 'Used by', colStatus: 'Status',
+    colLabel: 'Proxy', colExit: 'Exit IP and timezone', colUsedBy: 'Used by', colStatus: 'Status',
     ok: 'Working', rotating: 'rotating IP', unchecked: 'Not checked',
     checkedAgo: (s: string) => `Checked ${s}`,
     expires: 'Expires', expiresOn: 'Expires on (optional)', expiringSoon: 'Expires soon', expired: 'Expired',

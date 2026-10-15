@@ -89,15 +89,19 @@ export function ProxiesPage({ onChanged }: { onChanged: () => void }) {
             ) : (
               <table className="table">
                 <thead>
-                  <tr><th>{t.proxies.colLabel}</th><th>{t.proxies.colExit}</th><th>{t.proxies.colTimezone}</th>
+                  <tr><th>{t.proxies.colLabel}</th><th>{t.proxies.colExit}</th>
                     <th>{t.proxies.colStatus}</th><th>{t.proxies.expires}</th><th>{t.proxies.colUsedBy}</th><th className="col-actions" /></tr>
                 </thead>
                 <tbody>
                   {rows.map((p) => (
                     <tr key={p.id}>
                       <td className="cellname"><b className="selectable">{p.label}</b><span className="mono">{p.scheme}://{p.host}:{p.port}</span>{p.note && <small className="faint ellipsis">{p.note}</small>}</td>
-                      <td>{p.exitIp ? <span className="cellproxy"><span className="cc">{p.country || '?'}</span><span className="mono selectable">{p.exitIp}</span></span> : <span className="faint">{t.proxies.unchecked}</span>}</td>
-                      <td className="muted">{p.timezone}</td>
+                      <td>{p.exitIp ? (
+                        <span className="cellproxy">
+                          <span className="cc">{p.country || '?'}</span>
+                          <span><span className="mono selectable">{p.exitIp}</span>{p.timezone && <span className="tzline">{p.timezone}</span>}</span>
+                        </span>
+                      ) : <span className="faint">{t.proxies.unchecked}</span>}</td>
                       <td className="stack nowrap"><ProxyState p={p} />{p.checkedAt && <small className="faint">{t.proxies.checkedAgo(relativeTime(p.checkedAt))}</small>}</td>
                       <td className="stack nowrap">
                         {p.expiresOn && <span className="muted">{new Date(p.expiresOn + 'T00:00:00').toLocaleDateString(language)}</span>}

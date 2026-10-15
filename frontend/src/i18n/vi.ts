@@ -229,7 +229,7 @@ export const vi: Messages = {
     failedLine: (line: number, err: string) => `Dòng ${line}: ${err}`,
     passwordNote: 'Mật khẩu được cất trong Keychain của macOS và không bao giờ hiện lại.',
     checkAll: 'Kiểm tra tất cả', check: 'Kiểm tra lại', rename: 'Đổi tên',
-    colLabel: 'Proxy', colExit: 'IP ra', colTimezone: 'Múi giờ', colUsedBy: 'Profile đang dùng', colStatus: 'Tình trạng',
+    colLabel: 'Proxy', colExit: 'IP ra và múi giờ', colUsedBy: 'Profile đang dùng', colStatus: 'Tình trạng',
     ok: 'Dùng được', rotating: 'IP xoay', unchecked: 'Chưa kiểm tra',
     checkedAgo: (s: string) => `Kiểm tra ${s}`,
     expires: 'Hết hạn', expiresOn: 'Ngày hết hạn (tuỳ chọn)', expiringSoon: 'Sắp hết hạn', expired: 'Đã hết hạn',
