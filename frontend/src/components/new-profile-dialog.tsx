@@ -17,12 +17,14 @@ type Props = {
   recent: string[]
   onClose: () => void
   onCreated: () => void
-  /** 1 for one profile; more opens the dialog in bulk mode. */
+  /** 1 for one profile; more opens the dialog in bulk mode ("Create several
+   *  profiles"), the only mode that asks how many. */
   initialCount?: number
 }
 
 export function NewProfileDialog({ defaultSite, defaults, sites, recent, onClose, onCreated, initialCount = 1 }: Props) {
   const [name, setName] = useState('')
+  const several = initialCount > 1
   const [count, setCount] = useState(initialCount)
   const [platforms, setPlatforms] = useState<string[]>(defaultSite && defaultSite !== 'other' ? [defaultSite] : [])
   // null until the user picks in this dialog: the last profile's choice is offered first.
@@ -83,20 +85,22 @@ export function NewProfileDialog({ defaultSite, defaults, sites, recent, onClose
   const preview = nameSeries(name.trim(), count)
 
   return (
-    <Dialog title={t.create.title} icon="plus" onClose={onClose} onSubmit={submit}
+    <Dialog title={several ? t.palette.createSeveral : t.create.title} icon="plus" onClose={onClose} onSubmit={submit}
       footer={<>
         <button type="button" className="btn ghost" onClick={onClose}>{t.common.cancel}</button>
         <button type="submit" className="btn primary" disabled={!name.trim() || busy || blocked}>{busy ? t.create.creating : t.create.submit}</button>
       </>}>
-      <div className="grid2">
+      <div className={several ? 'grid2' : undefined}>
         <label className="field">
           <span className="label">{bulk ? t.create.namePrefix : t.create.name}</span>
           <input className="input" autoFocus value={name} placeholder={t.create.namePlaceholder} onChange={(e) => setName(e.target.value)} />
         </label>
-        <label className="field">
-          <span className="label">{t.create.count}</span>
-          <input className="input" type="number" min={1} max={100} value={count} onChange={(e) => setCount(Math.max(1, Math.min(100, Number(e.target.value) || 1)))} />
-        </label>
+        {several && (
+          <label className="field">
+            <span className="label">{t.create.count}</span>
+            <input className="input" type="number" min={2} max={100} value={count} onChange={(e) => setCount(Math.max(2, Math.min(100, Number(e.target.value) || 2)))} />
+          </label>
+        )}
       </div>
       <div className="field">
         <span className="label">{t.create.site}</span>

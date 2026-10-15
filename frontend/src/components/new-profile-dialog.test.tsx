@@ -92,9 +92,19 @@ describe('NewProfileDialog', () => {
     expect(onClose).toHaveBeenCalled()
   })
 
+  it('asks how many only when creating several profiles', () => {
+    dialog()
+    expect(screen.queryByRole('spinbutton')).toBeNull()
+    expect(screen.getByRole('dialog', { name: t.create.title })).toBeTruthy()
+    cleanup()
+    dialog({ initialCount: 5 })
+    expect((screen.getByRole('spinbutton') as HTMLInputElement).value).toBe('5')
+    expect(screen.getByRole('dialog', { name: t.palette.createSeveral })).toBeTruthy()
+  })
+
   it('bulk-creates with a name prefix and proxy mode', async () => {
     const onCreated = vi.fn()
-    dialog({ onCreated })
+    dialog({ onCreated, initialCount: 5 })
     const name = screen.getByPlaceholderText(t.create.namePlaceholder)
     fireEvent.change(name, { target: { value: 'Shop' } })
     const count = document.querySelector('input[type="number"]') as HTMLInputElement
@@ -108,7 +118,7 @@ describe('NewProfileDialog', () => {
 
   it('sends the engine chosen under Advanced, and none by default', async () => {
     const onCreated = vi.fn()
-    dialog({ onCreated })
+    dialog({ onCreated, initialCount: 5 })
     const name = screen.getByPlaceholderText(t.create.namePlaceholder)
     fireEvent.change(name, { target: { value: 'Shop' } })
     fireEvent.change(screen.getByRole('spinbutton'), { target: { value: '2' } })
