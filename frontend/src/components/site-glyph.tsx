@@ -19,12 +19,15 @@ export function SiteGlyph({ site }: { site: Site }) {
 
 /** A profile's platforms: every badge, the main platform's name, and how many
  *  more there are. The full list is in the tooltip. */
+/** At most this many icons in a row; the label and the tooltip count the rest. */
+const MAX_GLYPHS = 3
+
 export function SiteBadges({ ids, sites }: { ids: string[]; sites: Site[] }) {
   const list = (ids.length ? ids : ['other']).map((id) => siteById(sites, id))
   const names = list.map((s) => s.name).join(', ')
   return (
     <span className="platform" title={names}>
-      <span className="glyphs">{list.map((s) => <SiteGlyph key={s.id} site={s} />)}</span>
+      <span className="glyphs">{list.slice(0, MAX_GLYPHS).map((s) => <SiteGlyph key={s.id} site={s} />)}</span>
       <span className="plabel">{list[0].name}{list.length > 1 ? ` +${list.length - 1}` : ''}</span>
     </span>
   )
