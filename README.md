@@ -1,38 +1,63 @@
 # AnyProfile
 
-A multi-profile browser manager for creators on macOS. Each profile is a
-separate browser identity with its own cookies, its own proxy and a consistent
-device fingerprint, so several TikTok or YouTube channels can be worked on side
-by side without their sessions mixing.
+A multi-profile browser manager for creators, on macOS and Windows. Each
+profile is a separate browser identity with its own cookies, its own proxy and
+a consistent device fingerprint, so several TikTok, YouTube or seller accounts
+can be worked on side by side without their sessions mixing.
 
-Phase 1 status: Apple Silicon Macs only, one engine (Fury), manual use.
+Status: beta. macOS 13+ on Apple Silicon, and Windows 10/11 x64.
 
 ## How it works
 
-- **Engine:** the [Fury](https://github.com/furyteamtop/fury-antidetect-browser)
-  core, a patched Chromium 155. AnyProfile downloads the pinned, notarized
-  release on first use and verifies it. It runs the core as-is.
-- **Identity:** each profile gets one of Fury's measured macOS personas and its
-  own random seed at creation. Both are fixed for the profile's life.
+- **Engines:** [Apostate](https://github.com/heretic-tech/apostate) (default,
+  macOS and Windows) and the [Fury](https://github.com/furyteamtop/fury-antidetect-browser)
+  core (macOS only), both patched Chromium 155. AnyProfile downloads the pinned
+  release on first use, verifies it and runs it as-is.
+- **Identity:** a profile gets a persona of the computer's own operating system
+  and its own random seed at creation, fixed for the profile's life. A profile
+  opens only on the OS that created it: another OS's persona would render with
+  this machine's fonts and GPU.
 - **Network:** a profile's proxy is reached through a relay on `127.0.0.1`
   inside AnyProfile, so the browser never sees the proxy password. The
-  timezone, position and languages come from the proxy's exit IP.
-- **Data:** `~/Library/Application Support/AnyProfile` holds the SQLite
-  database, the engines and one folder per profile.
+  timezone and languages come from the proxy's exit IP, and the app warns when
+  the exit moves (country, timezone, an IPv6 exit elsewhere).
+- **Data:** `~/Library/Application Support/AnyProfile` on macOS,
+  `%APPDATA%\AnyProfile` on Windows, holds the SQLite database, the engines
+  and one folder per profile.
+- **Updates:** Settings → Version checks for a new release once a day and
+  installs it after verifying its signature. See `docs/releasing.md`.
+
+## Install
+
+Download the newest release: `AnyProfile-macos-arm64.zip` (unzip, move
+`AnyProfile.app` to Applications) or `AnyProfile-amd64-installer.exe`.
+Builds are not signed by Apple or Microsoft yet: on macOS, open it once from
+System Settings → Privacy & Security → Open Anyway; on Windows, choose More
+info → Run anyway. Windows details: `docs/windows.md`.
 
 ## Build
 
-Requirements: macOS 13+ on Apple Silicon, Go (the toolchain in `go.mod` is
-fetched automatically), Node 20+, Rust 1.87+, and the Wails CLI v2.14
-(`go install github.com/wailsapp/wails/v2/cmd/wails@v2.14.0`).
+Requirements: Go (the toolchain in `go.mod` is fetched automatically), Node
+20+, Rust 1.87+, and the Wails CLI v2.14
+(`go install github.com/wailsapp/wails/v2/cmd/wails@v2.14.0`). macOS 13+ on
+Apple Silicon for the Mac app; Windows with NSIS for the Windows installer.
 
 ```sh
 make build             # build/bin/AnyProfile.app
+make build-windows     # on Windows: build/bin/AnyProfile-amd64-installer.exe
 make dev               # live-reload development
 make test              # Go unit tests, TypeScript check, Vitest
-make lint              # SPDX headers, gofmt, vet, govulncheck, npm audit, clippy
-ANYPROFILE_TEST_FURY_APP=/path/to/Fury.app make test-integration
+make lint              # SPDX headers, gofmt, vet (also for Windows), govulncheck, npm audit, clippy
+ANYPROFILE_TEST_APOSTATE_APP=/path/to/Chromium.app make test-integration
 ```
+
+## Help
+
+Settings → Help → Copy diagnostics puts a report on the clipboard with the
+app and OS versions and the end of the log, with e-mail and IP addresses,
+proxy user names and secrets removed. Paste it into a GitHub issue.
+
+What the app stores and sends, and the terms of use: `docs/privacy-and-terms.md`.
 
 ## Security
 
@@ -41,7 +66,7 @@ AnyProfile is built to be handed to other people, so:
 - **No secret on a command line, in the environment, in a log or in the
   database.** The fingerprint config and the cookie key reach the browser on
   inherited pipes. Proxy passwords and cookie keys live in the macOS Keychain
-  (never synchronized to iCloud).
+  (never synchronized to iCloud) or Windows Credential Manager (never roamed).
 - **Cookies are encrypted with a per-profile key**, not the fixed key that
   `--use-mock-keychain` uses. A fingerprint of the key is kept beside the
   profile. If the key goes missing, the launch is refused rather than
@@ -61,8 +86,8 @@ AnyProfile is built to be handed to other people, so:
   a hard-coded GitHub Releases URL. `fury-shared` is pinned by commit, and Go,
   npm and Cargo use lockfiles. `make lint` runs `govulncheck` and `npm audit`.
 - **Owner-only files.** The data directory is `0700` and the database `0600`.
-  Browsing history and site storage rely on FileVault, and the app warns when
-  FileVault is off.
+  Browsing history and site storage rely on FileVault (BitLocker on Windows),
+  and the app warns when it is off.
 - **Fails closed.** If AnyProfile quits while a proxied browser is still
   running, that browser loses its network instead of falling back to your real
   IP.
