@@ -315,6 +315,12 @@ export const vi: Messages = {
     import: 'Nhập bookmark\u2026', folder: 'Imported', closeFirst: 'Đóng profile trước',
     imported: (n: number) => `Đã nhập ${n} bookmark vào thư mục "Imported" trên thanh bookmark.`,
   },
+  support: {
+    title: 'Trợ giúp',
+    copy: 'Sao chép thông tin chẩn đoán',
+    copied: 'Đã sao chép. Hãy dán vào báo cáo lỗi của bạn.',
+    hint: 'Sao chép phiên bản app, hệ điều hành, tình trạng engine, số profile và proxy, và phần cuối log của app. Email, địa chỉ IP, tên đăng nhập proxy và mọi thứ giống mật khẩu đều được xoá, và không nêu tên profile, proxy hay tài khoản nào. App không gửi gì đi: bạn tự chọn nơi dán.',
+  },
   update: {
     title: 'Phiên bản',
     current: (v: string) => `AnyProfile ${v}`,

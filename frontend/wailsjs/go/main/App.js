@@ -50,6 +50,10 @@ export function CopyAccountPassword(arg1, arg2) {
   return window['go']['main']['App']['CopyAccountPassword'](arg1, arg2);
 }
 
+export function CopyDiagnostics() {
+  return window['go']['main']['App']['CopyDiagnostics']();
+}
+
 export function CreateProfile(arg1) {
   return window['go']['main']['App']['CreateProfile'](arg1);
 }

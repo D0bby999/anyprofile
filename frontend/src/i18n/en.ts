@@ -314,6 +314,12 @@ export const en = {
     import: 'Import bookmarks\u2026', folder: 'Imported', closeFirst: 'Close the profile first',
     imported: (n: number) => `Imported ${n} bookmarks into the "Imported" folder on the bookmarks bar.`,
   },
+  support: {
+    title: 'Help',
+    copy: 'Copy diagnostics',
+    copied: 'Diagnostics copied. Paste them into your bug report.',
+    hint: 'Copies the app version, the operating system, engine status, how many profiles and proxies there are, and the end of the app log. E-mail addresses, IP addresses, proxy user names and anything that looks like a password are removed, and no profile, proxy or account is named. Nothing is sent: you choose where to paste it.',
+  },
   update: {
     title: 'Version',
     current: (v: string) => `AnyProfile ${v}`,

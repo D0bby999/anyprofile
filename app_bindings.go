@@ -549,3 +549,10 @@ func (a *App) InstallUpdate() error {
 	}()
 	return nil
 }
+
+// CopyDiagnostics puts a redacted report (versions, counts, end of the log)
+// on the clipboard for a bug report. It holds no secret, so it is not
+// cleared later the way a password is.
+func (a *App) CopyDiagnostics() error {
+	return a.must(func() error { return runtime.ClipboardSetText(a.ctx, a.svc.Diagnostics(a.ctx)) })
+}

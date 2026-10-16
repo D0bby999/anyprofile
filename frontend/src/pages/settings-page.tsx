@@ -8,6 +8,7 @@ import { SiteSettings } from '../components/site-settings'
 import { StorageSettings } from '../components/storage-settings'
 import { DefaultsSettings, OnOpenSettings } from '../components/defaults-settings'
 import { UpdateSettings } from '../components/update-settings'
+import { SupportSettings } from '../components/support-settings'
 import { APISettings } from '../components/api-settings'
 import { ExtensionSettings } from '../components/extension-settings'
 import { PageHead } from '../components/page-head'
@@ -99,6 +100,11 @@ export function SettingsPage({ engines, engineCounts, defaults, onEnginesChanged
           <div className={`banner ${fileVaultOn ? 'ok' : 'warn'}`}><Icon name="shield" />
             <span className="grow">{fileVaultOn ? t.settings.fileVaultOn : t.settings.fileVaultOff}</span></div>
           <p className="desc" style={{ margin: 0 }}>{t.settings.secretsNote}</p>
+        </section>
+
+        <section className="card pad">
+          <h2>{t.support.title}</h2>
+          <SupportSettings />
         </section>
       </div>
     </>

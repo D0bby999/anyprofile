@@ -31,6 +31,8 @@ export function CopyAPIToken():Promise<void>;
 
 export function CopyAccountPassword(arg1:string,arg2:string):Promise<void>;
 
+export function CopyDiagnostics():Promise<void>;
+
 export function CreateProfile(arg1:service.NewProfile):Promise<store.Profile>;
 
 export function CreateProfiles(arg1:service.BulkCreate):Promise<Array<store.Profile>>;
