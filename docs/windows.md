@@ -16,6 +16,7 @@ Windows, khớp với máy thật: font, GPU và hệ điều hành đều là c
 | Phím tắt | ⌘ | Ctrl |
 | Đóng trình duyệt có lưu cookie | SIGHUP | `Browser.close` qua pipe DevTools, hoặc WM_CLOSE |
 | Kiểm bản engine | Hash SHA-256 và chữ ký Apple | Hash SHA-256 của `chrome.exe` và `chrome.dll`. Bản Windows của Apostate không có chữ ký số |
+| File bổ sung | Không | `155.0.8059.31.manifest` cạnh `chrome.exe`: bản 0.5.1 thiếu nó nên Windows không chạy được (heretic-tech/apostate#2); app tự tạo khi cài |
 
 Như trên macOS, app không mở cổng mạng nào cho trình duyệt: DevTools đi qua hai pipe được chuyền cho
 `chrome.exe` bằng `--remote-debugging-io-pipes`.
@@ -57,6 +58,8 @@ Workflow **windows** chạy trên máy Windows của GitHub:
 - test tích hợp với trình duyệt thật: mở và đóng, cookie còn sau khi mở lại, fingerprint giữ nguyên, các
   kiểm tra nhất quán đạt, không có cổng TCP nào mở, trình duyệt sống sót khi app đóng pipe, đóng cửa sổ
   cuối thì profile đóng, extension và bookmark, API trên máy.
+
+Lần chạy đầu tiên đạt toàn bộ: 2026-10-17, commit `af804d8`, máy `windows-2022` của GitHub.
 
 Phần chỉ kiểm được bằng tay trên một máy Windows thật:
 
