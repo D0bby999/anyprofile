@@ -20,6 +20,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -383,7 +384,9 @@ func TestApostateLifecycle(t *testing.T) {
 	if err := json.Unmarshal([]byte(last), &s); err != nil {
 		t.Fatal(err)
 	}
-	if s.HWC != 4 || s.TZ != "Asia/Taipei" || !fingerprint.LangsMatch(s.Langs, "zh-TW,zh,en", true) || s.Platform != "MacIntel" || !strings.Contains(s.UA, "Chrome/155.") {
+	// HWC is pinned at 4 and clamped to the host's cores, as the app does.
+	if s.HWC != min(4, runtime.NumCPU()) || s.TZ != "Asia/Taipei" || !fingerprint.LangsMatch(s.Langs, "zh-TW,zh,en", true) ||
+		s.Platform != fingerprint.NavPlatform(apostate.HostPlatform) || !strings.Contains(s.UA, "Chrome/155.") {
 		t.Fatalf("sample = %+v", s)
 	}
 	if ss, _ := r.st.Sessions(id, 10); len(ss) != 1 || ss[0].StoppedAt != "" || ss[0].Engine != "apostate" {
@@ -518,7 +521,7 @@ func TestApostateCookiesInAndOut(t *testing.T) {
 	if err := os.WriteFile(exported, out, 0o600); err != nil {
 		t.Fatal(err)
 	}
-	if st, _ := os.Stat(exported); st.Mode().Perm() != 0o600 {
+	if st, _ := os.Stat(exported); runtime.GOOS != "windows" && st.Mode().Perm() != 0o600 {
 		t.Fatalf("export mode = %v", st.Mode().Perm())
 	}
 	back, _, err := cookies.Parse(out)

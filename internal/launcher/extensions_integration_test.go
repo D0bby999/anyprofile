@@ -75,6 +75,12 @@ func marked(t *testing.T, l *Launcher, id, url string) string {
 		t.Fatal(err)
 	}
 	defer l.Stop(id)
+	t.Cleanup(func() {
+		if t.Failed() {
+			b, _ := os.ReadFile(filepath.Join(l.dirs.Logs(), "browser-"+id+".log"))
+			t.Logf("browser log:\n%s", b)
+		}
+	})
 	wctx, cancel := context.WithTimeout(ctx, 20*time.Second)
 	defer cancel()
 	c, err := l.WaitConn(wctx, id)
@@ -102,6 +108,9 @@ func markIn(t *testing.T, c interface {
 	}
 	var att struct{ SessionID string }
 	json.Unmarshal(raw, &att)
+	// A content script runs at document_idle, which a slow machine reaches
+	// after readyState is complete: "none" is only final after a grace.
+	var noneSince time.Time
 	for deadline := time.Now().Add(15 * time.Second); time.Now().Before(deadline); time.Sleep(300 * time.Millisecond) {
 		raw, err = c.Call(ctx, att.SessionID, "Runtime.evaluate", map[string]any{
 			"expression": `document.readyState === "complete" ? (document.documentElement.dataset.apMark || "none") : ""`, "returnByValue": true})
@@ -110,9 +119,17 @@ func markIn(t *testing.T, c interface {
 		}
 		var v struct{ Result struct{ Value string } }
 		json.Unmarshal(raw, &v)
-		if v.Result.Value != "" {
+		switch {
+		case v.Result.Value == "none" && noneSince.IsZero():
+			noneSince = time.Now()
+		case v.Result.Value == "none" && time.Since(noneSince) > 3*time.Second:
+			return "none"
+		case v.Result.Value != "" && v.Result.Value != "none":
 			return v.Result.Value
 		}
+	}
+	if !noneSince.IsZero() {
+		return "none"
 	}
 	t.Fatal("page never loaded")
 	return ""
