@@ -4,7 +4,7 @@ GOVULNCHECK ?= $(shell command -v govulncheck 2>/dev/null || echo $(HOME)/go/bin
 FURY_CONFIG := tools/fury-config/target/release/fury-config
 APP         := build/bin/AnyProfile.app
 
-.PHONY: dev build fury-config test test-integration lint
+.PHONY: dev build build-windows fury-config test test-integration lint
 
 fury-config:
 	cd tools/fury-config && cargo build --release --locked
@@ -24,6 +24,14 @@ build: fury-config
 	codesign --force --deep --sign "$(SIGN_ID)" $(APP)
 	codesign --verify --deep --strict $(APP)
 
+# Windows x64 app and installer. Runs on Windows (Git Bash): fury-config needs
+# the MSVC Rust toolchain and the installer NSIS. CI runs the same steps in
+# .github/workflows/windows.yml. Output: build/bin/AnyProfile-amd64-installer.exe.
+build-windows: fury-config
+	mkdir -p build/bin
+	cp $(FURY_CONFIG).exe build/bin/fury-config.exe
+	$(WAILS) build -platform windows/amd64 -nsis
+
 test: fury-config
 	go test ./internal/... -count=1
 	cd frontend && npm run typecheck && npm test
@@ -36,6 +44,7 @@ lint:
 	./scripts/check-spdx.sh
 	gofmt -l . | (! grep .) || (echo "gofmt needed" >&2; exit 1)
 	go vet ./...
+	GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go vet -tags "integration network keychain" ./...
 	$(GOVULNCHECK) ./...
 	cd frontend && npm audit --omit=dev
 	cd tools/fury-config && cargo clippy --release --locked -- -D warnings

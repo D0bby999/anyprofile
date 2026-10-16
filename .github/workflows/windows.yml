@@ -1,0 +1,72 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Tests AnyProfile on Windows with the real Apostate browser, then builds the
+# x64 installer. The browser tests need a desktop session, which the hosted
+# Windows runners have.
+name: windows
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    runs-on: windows-2022
+    timeout-minutes: 60
+    defaults:
+      run:
+        shell: bash
+    env:
+      APOSTATE_ZIP: apostate-155.0.8059.31-windows-x64.zip
+      APOSTATE_SHA256: 8e55e44fb7f58619461e1d42a947446dcc08a2b46493c420c8e62ae27ab9c7e5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Go unit tests
+        run: go test ./... -count=1
+      - name: Windows Credential Manager round trip
+        run: go test -tags keychain ./internal/secrets -count=1 -v
+      - name: Frontend tests
+        working-directory: frontend
+        run: npm ci && npm run typecheck && npm test
+
+      - name: Download the pinned Apostate release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download v0.5.1 -R heretic-tech/apostate -p "$APOSTATE_ZIP" -D "$RUNNER_TEMP"
+          echo "$APOSTATE_SHA256  $RUNNER_TEMP/$APOSTATE_ZIP" | sha256sum -c
+          7z x -y -o"$RUNNER_TEMP/apostate" "$RUNNER_TEMP/$APOSTATE_ZIP" > /dev/null
+      - name: Install and verify it the way the app does
+        env:
+          ANYPROFILE_APOSTATE_ZIP: ${{ runner.temp }}\apostate-155.0.8059.31-windows-x64.zip
+        run: go test -tags network -run TestInstallRealRelease ./internal/engine/apostate -count=1 -v
+      - name: Integration tests with the real browser
+        env:
+          ANYPROFILE_TEST_APOSTATE_APP: ${{ runner.temp }}\apostate\apostate-155.0.8059.31-windows-x64
+        run: go test -tags integration ./internal/launcher ./internal/service -count=1 -v -timeout 30m
+
+      - name: Build the app and the installer
+        run: |
+          go install github.com/wailsapp/wails/v2/cmd/wails@v2.14.0
+          (cd tools/fury-config && cargo build --release --locked)
+          mkdir -p build/bin
+          cp tools/fury-config/target/release/fury-config.exe build/bin/
+          wails build -platform windows/amd64 -nsis
+      - uses: actions/upload-artifact@v4
+        with:
+          name: anyprofile-windows-x64
+          path: build/bin/AnyProfile-amd64-installer.exe
+          retention-days: 14
