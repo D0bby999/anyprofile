@@ -22,6 +22,10 @@ There is no AnyProfile account and no AnyProfile server.
 - **Directly:** the browser engine download from GitHub Releases on first use, and, when updates are on, one
   request a day to GitHub for `latest.json`. That request carries no identifier beyond what any web request
   carries (your IP address and the app version in the User-Agent).
+- **When you click a partner link:** a provider under Proxies → Buy proxies, or an app on the Creator tools page,
+  opens in your default browser, not in a profile. Some are referral links, so AnyProfile may earn a commission
+  and you pay the same price; PostClaw links carry `utm_source=anyprofile`. The list ships with the app, and
+  AnyProfile itself sends nothing about the click.
 - **Nothing else.** No analytics, no crash reports, no telemetry. Settings → Help → Copy diagnostics only fills
   your clipboard; you decide where to paste it.
 
@@ -54,6 +58,10 @@ Không có tài khoản AnyProfile, không có máy chủ AnyProfile.
 - **Đi thẳng:** tải engine trình duyệt từ GitHub Releases ở lần đầu, và khi bật tự kiểm tra cập nhật, mỗi ngày một
   lần hỏi GitHub file `latest.json`. Yêu cầu này không mang định danh nào ngoài những gì mọi yêu cầu web đều có
   (địa chỉ IP của bạn và phiên bản app trong User-Agent).
+- **Khi bạn bấm link đối tác:** nhà cung cấp trong Proxy → Mua proxy, hoặc ứng dụng ở trang Công cụ cho creator,
+  mở trong trình duyệt mặc định, không mở trong profile. Một số là link giới thiệu, nên AnyProfile có thể nhận hoa
+  hồng, giá bạn trả không đổi; link PostClaw mang `utm_source=anyprofile`. Danh sách nằm sẵn trong app, và
+  AnyProfile không tự gửi gì về lượt bấm.
 - **Ngoài ra không gì cả.** Không thống kê, không báo cáo lỗi tự động. Settings → Help → Copy diagnostics chỉ chép
   vào clipboard; bạn tự quyết dán ở đâu.
 
