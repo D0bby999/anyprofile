@@ -3,7 +3,7 @@
 The notes of each release tag are shown in the app's update prompt; this file
 keeps them together.
 
-## 0.1.0 (unreleased)
+## 0.1.0 (2026-10-17)
 
 First beta.
 
@@ -18,3 +18,5 @@ First beta.
 - Accounts with passwords and 2FA codes, extensions per profile, bookmark
   import, snapshots, a local API for scripts.
 - In-app updates with signed releases, and Copy diagnostics for bug reports.
+- Buy proxies: a list of proxy providers to open in your browser, and
+  Creator tools with PostClaw.

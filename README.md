@@ -21,6 +21,9 @@ Status: beta. macOS 13+ on Apple Silicon, and Windows 10/11 x64.
   inside AnyProfile, so the browser never sees the proxy password. The
   timezone and languages come from the proxy's exit IP, and the app warns when
   the exit moves (country, timezone, an IPv6 exit elsewhere).
+- **Buying proxies:** Proxies → Buy proxies lists providers that suit
+  long-lived accounts and opens them in your default browser. Some are
+  referral links; see `docs/privacy-and-terms.md`.
 - **Data:** `~/Library/Application Support/AnyProfile` on macOS,
   `%APPDATA%\AnyProfile` on Windows, holds the SQLite database, the engines
   and one folder per profile.
@@ -29,7 +32,8 @@ Status: beta. macOS 13+ on Apple Silicon, and Windows 10/11 x64.
 
 ## Install
 
-Download the newest release: `AnyProfile-macos-arm64.zip` (unzip, move
+Download the newest release from
+[Releases](https://github.com/D0bby999/anyprofile/releases/latest): `AnyProfile-macos-arm64.zip` (unzip, move
 `AnyProfile.app` to Applications) or `AnyProfile-amd64-installer.exe`.
 Builds are not signed by Apple or Microsoft yet: on macOS, open it once from
 System Settings → Privacy & Security → Open Anyway; on Windows, choose More

@@ -45,9 +45,16 @@ không tự cập nhật được: app báo người dùng chuyển `AnyProfile.
 3. Workflow `.github/workflows/release.yml` build bản macOS và Windows, ký, rồi tạo release có
    `AnyProfile-macos-arm64.zip`, `AnyProfile-amd64-installer.exe` và `latest.json`.
 
-App đọc `https://github.com/D0bby999/anyprofile/releases/latest/download/latest.json`. **Release của repo
-riêng tư không tải được khi chưa đăng nhập**, nên app của người khác chỉ cập nhật được sau khi repo (hoặc
-một repo chỉ chứa release) là công khai.
+App đọc `https://github.com/D0bby999/anyprofile/releases/latest/download/latest.json` (repo công khai).
+
+## Hai repo
+
+- `D0bby999/anyprofile` (công khai): mã nguồn, CI, các bản phát hành. Lịch sử đã viết lại ngày 2026-10-17:
+  email tác giả là địa chỉ noreply của GitHub, không có `plans/` hay ảnh chụp màn hình.
+- `D0bby999/anyprofile-private` (riêng tư): lịch sử gốc trước khi công khai, cho bản mở rộng cá nhân.
+  Lịch sử của nó khác repo công khai; muốn dùng tiếp thì tạo nhánh mới từ `origin/master`.
+
+Bản phát hành đầu: `v0.1.0`, 2026-10-17.
 
 ## Thử mà không phát hành
 
