@@ -14,3 +14,6 @@ func hostMemBytes() uint64 {
 
 // verifyApp checks the Apple code signature and that it is Apostate's team.
 func verifyApp(app string) error { return engine.VerifyCodesign(app, teamID) }
+
+// completeApp has nothing to add to the macOS release.
+func completeApp(string) error { return nil }

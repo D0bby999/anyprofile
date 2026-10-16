@@ -24,6 +24,11 @@ type stamp struct {
 func (a *Apostate) dir() string        { return a.dirs.Engine("apostate", Version) }
 func (a *Apostate) BinaryPath() string { return filepath.Join(a.dir(), binRel) }
 
+// Complete adds what the pinned release lacks on this OS to an app folder
+// (see completeApp). Install and Status call it; test rigs that link an
+// extracted release call it themselves.
+func (a *Apostate) Complete() error { return completeApp(a.AppPath()) }
+
 // AppPath is the installed app: Chromium.app on macOS, the folder holding
 // chrome.exe on Windows.
 func (a *Apostate) AppPath() string       { return filepath.Join(a.dir(), appRel) }
@@ -39,6 +44,11 @@ func (a *Apostate) Status(ctx context.Context) engine.Status {
 	defer a.mu.Unlock()
 	st := engine.Status{Version: a.Pinned()}
 	if _, err := os.Stat(a.BinaryPath()); err != nil {
+		return st
+	}
+	// Installs made before completeApp existed get the missing file now.
+	if err := completeApp(a.AppPath()); err != nil {
+		st.Problem = err.Error()
 		return st
 	}
 	fi, err := os.Stat(a.frameworkPath())
@@ -115,6 +125,9 @@ func (a *Apostate) installFrom(zipPath, staging string) error {
 		return err
 	}
 	if err := verifyApp(filepath.Join(tree, appRel)); err != nil {
+		return err
+	}
+	if err := completeApp(filepath.Join(tree, appRel)); err != nil {
 		return err
 	}
 	if err := os.RemoveAll(a.dir()); err != nil {

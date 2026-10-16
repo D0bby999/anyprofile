@@ -207,3 +207,22 @@ func TestBuildLaunchRefusesAnotherOS(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestCompleteIsIdempotent(t *testing.T) {
+	a := testEngine(t)
+	if err := os.MkdirAll(a.AppPath(), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	for range 2 {
+		if err := a.Complete(); err != nil {
+			t.Fatal(err)
+		}
+	}
+	entries, _ := os.ReadDir(a.AppPath())
+	if platform == "windows" && (len(entries) != 1 || entries[0].Name() != Chromium+".manifest") {
+		t.Fatalf("app folder holds %v", entries)
+	}
+	if platform != "windows" && len(entries) != 0 {
+		t.Fatalf("macOS app changed: %v", entries)
+	}
+}

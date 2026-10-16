@@ -323,6 +323,9 @@ func newApostateRig(t *testing.T) *rig {
 	if err := os.Symlink(app, eng.AppPath()); err != nil {
 		t.Fatal(err)
 	}
+	if err := eng.Complete(); err != nil {
+		t.Fatal(err)
+	}
 	st, err := store.Open(dirs.DB(), dirs.Backups())
 	if err != nil {
 		t.Fatal(err)
