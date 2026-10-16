@@ -26,6 +26,10 @@ export function CheckProxy(arg1) {
   return window['go']['main']['App']['CheckProxy'](arg1);
 }
 
+export function CheckUpdate() {
+  return window['go']['main']['App']['CheckUpdate']();
+}
+
 export function ClearAccountPassword(arg1, arg2) {
   return window['go']['main']['App']['ClearAccountPassword'](arg1, arg2);
 }
@@ -134,6 +138,10 @@ export function InstallEngine(arg1) {
   return window['go']['main']['App']['InstallEngine'](arg1);
 }
 
+export function InstallUpdate() {
+  return window['go']['main']['App']['InstallUpdate']();
+}
+
 export function Language() {
   return window['go']['main']['App']['Language']();
 }
@@ -230,6 +238,10 @@ export function SetTOTP(arg1, arg2, arg3) {
   return window['go']['main']['App']['SetTOTP'](arg1, arg2, arg3);
 }
 
+export function SetUpdateAuto(arg1) {
+  return window['go']['main']['App']['SetUpdateAuto'](arg1);
+}
+
 export function Sites() {
   return window['go']['main']['App']['Sites']();
 }
@@ -288,4 +300,8 @@ export function UpdateProxy(arg1, arg2) {
 
 export function UpdateSite(arg1, arg2) {
   return window['go']['main']['App']['UpdateSite'](arg1, arg2);
+}
+
+export function UpdateStatus() {
+  return window['go']['main']['App']['UpdateStatus']();
 }

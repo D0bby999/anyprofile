@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Api, service } from '../api'
+import { useUpdate } from '../hooks/use-update'
 import { language, t } from '../i18n'
 import { allTags, errorCode, errorText, fold } from '../lib/format'
 import { siteById, type Site } from '../lib/sites'
@@ -32,6 +33,8 @@ type Props = {
   onNeedEngine: () => void
   onClearView: () => void
   onView: (v: View) => void
+  /** Opens Settings, where an available update is installed. */
+  onOpenSettings: () => void
   /** The profile whose details drawer is open; App owns it so ⌘K can open one. */
   activeId: string | null
   setActiveId: (id: string | null | ((cur: string | null) => string | null)) => void
@@ -49,7 +52,7 @@ function inView(r: service.ProfileRow, v: View): boolean {
   return r.sites.includes(v.slice(5))
 }
 
-export function ProfilesPage({ rows, sites, view, engineReady, fileVaultOn, error, setError, reload, onNew, onNeedEngine, onClearView, onView, activeId, setActiveId }: Props) {
+export function ProfilesPage({ rows, sites, view, engineReady, fileVaultOn, error, setError, reload, onNew, onNeedEngine, onClearView, onView, onOpenSettings, activeId, setActiveId }: Props) {
   const [query, setQuery] = useState('')
   const [prefs, setPrefs] = useState<TablePrefs>(readTablePrefs)
   const changePrefs = (p: TablePrefs) => { setPrefs(p); writeTablePrefs(p) }
@@ -161,6 +164,7 @@ export function ProfilesPage({ rows, sites, view, engineReady, fileVaultOn, erro
 
   const runningCount = rows.filter((r) => r.state === 'running').length
   const attentionCount = rows.filter(needsAttention).length
+  const [update] = useUpdate()
   // The status bar filters by state; a second click shows everything again.
   const statusFilter = (v: View) => () => (view === v ? onClearView() : onView(v))
   const filtered = query || view !== 'all'
@@ -244,6 +248,11 @@ export function ProfilesPage({ rows, sites, view, engineReady, fileVaultOn, erro
               {attentionCount > 0 && (
                 <button type="button" className="statusbtn" aria-pressed={view === 'attention'} onClick={statusFilter('attention')}>
                   <Icon name="alert" className="icon sm warnicon" /><b>{attentionCount}</b> {t.profiles.statusAttention(attentionCount)}
+                </button>
+              )}
+              {update?.available && (
+                <button type="button" className="statusbtn updbtn" onClick={onOpenSettings}>
+                  <Icon name="download" className="icon sm" />{t.update.available(update.latest)}
                 </button>
               )}
             </div>

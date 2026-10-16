@@ -8,7 +8,7 @@ import { debounce } from './lib/debounce'
 
 export type LaunchInfo = { profileId: string; state: string; pid: number; cdpPort: number; error: string }
 export type EngineProgress = { engine: string; done: number; total: number }
-export type DataKind = 'profiles' | 'proxies' | 'sites' | 'settings' | 'snapshots' | 'extensions'
+export type DataKind = 'profiles' | 'proxies' | 'sites' | 'settings' | 'snapshots' | 'extensions' | 'update'
 
 /** Write to the OS clipboard; navigator.clipboard may be blocked in the WebView. */
 export const copyText = (s: string) => ClipboardSetText(s)
@@ -26,4 +26,9 @@ export function onLaunchChanged(fn: (info: LaunchInfo) => void): () => void {
 
 export function onEngineProgress(fn: (p: EngineProgress) => void): () => void {
   return EventsOn('engine:progress', fn)
+}
+
+/** Download progress of an update, in bytes; total is -1 when unknown. */
+export function onUpdateProgress(fn: (done: number, total: number) => void): () => void {
+  return EventsOn('update:progress', fn)
 }

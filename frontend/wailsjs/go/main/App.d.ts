@@ -19,6 +19,8 @@ export function CheckAllProxies():Promise<void>;
 
 export function CheckProxy(arg1:string):Promise<store.Proxy>;
 
+export function CheckUpdate():Promise<service.UpdateStatus>;
+
 export function ClearAccountPassword(arg1:string,arg2:string):Promise<void>;
 
 export function ClearCache():Promise<number>;
@@ -73,6 +75,8 @@ export function ImportProxies(arg1:string,arg2:string):Promise<service.ImportRes
 
 export function InstallEngine(arg1:string):Promise<void>;
 
+export function InstallUpdate():Promise<void>;
+
 export function Language():Promise<string>;
 
 export function ListExtensions():Promise<Array<store.Extension>>;
@@ -121,6 +125,8 @@ export function SetSnapshotSettings(arg1:service.SnapshotSettings):Promise<void>
 
 export function SetTOTP(arg1:string,arg2:string,arg3:string):Promise<void>;
 
+export function SetUpdateAuto(arg1:boolean):Promise<void>;
+
 export function Sites():Promise<Array<site.Site>>;
 
 export function SnapshotSettings():Promise<service.SnapshotSettings>;
@@ -150,3 +156,5 @@ export function UpdateProfile(arg1:store.Profile):Promise<void>;
 export function UpdateProxy(arg1:string,arg2:service.ProxyMeta):Promise<void>;
 
 export function UpdateSite(arg1:string,arg2:service.SiteInput):Promise<void>;
+
+export function UpdateStatus():Promise<service.UpdateStatus>;

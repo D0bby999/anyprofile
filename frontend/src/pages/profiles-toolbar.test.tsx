@@ -8,7 +8,8 @@ import type { View } from '../components/sidebar'
 
 vi.mock('../api', async (orig) => ({
   ...(await orig<typeof import('../api')>()),
-  Api: { ListProxies: () => Promise.resolve([]) },
+  onDataChanged: () => () => {},
+  Api: { ListProxies: () => Promise.resolve([]), UpdateStatus: () => Promise.resolve(null) },
 }))
 const { ProfilesPage } = await import('./profiles-page')
 
@@ -19,7 +20,7 @@ const rows = [service.ProfileRow.createFrom({
 })]
 const page = (view: View = 'all', onClearView = vi.fn()) => render(
   <ProfilesPage rows={rows} sites={sites} view={view} engineReady fileVaultOn error="" setError={vi.fn()}
-    reload={vi.fn()} onNew={vi.fn()} onNeedEngine={vi.fn()} onClearView={onClearView} onView={vi.fn()} activeId={null} setActiveId={vi.fn()} />,
+    reload={vi.fn()} onNew={vi.fn()} onNeedEngine={vi.fn()} onClearView={onClearView} onView={vi.fn()} onOpenSettings={vi.fn()} activeId={null} setActiveId={vi.fn()} />,
 )
 
 afterEach(() => { cleanup(); localStorage.clear() })

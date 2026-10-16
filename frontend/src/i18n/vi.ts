@@ -315,6 +315,18 @@ export const vi: Messages = {
     import: 'Nhập bookmark\u2026', folder: 'Imported', closeFirst: 'Đóng profile trước',
     imported: (n: number) => `Đã nhập ${n} bookmark vào thư mục "Imported" trên thanh bookmark.`,
   },
+  update: {
+    title: 'Phiên bản',
+    current: (v: string) => `AnyProfile ${v}`,
+    available: (v: string) => `Đã có phiên bản ${v}`,
+    upToDate: 'Đây là phiên bản mới nhất.',
+    check: 'Kiểm tra cập nhật', checking: 'Đang kiểm tra…',
+    install: 'Cập nhật và khởi động lại', installing: 'Đang cài…', downloading: (pct: number) => `Đang tải… ${pct}%`,
+    closeFirst: (n: number) => `Hãy đóng ${n === 1 ? 'profile đang mở' : `${n} profile đang mở`} trước: cập nhật sẽ khởi động lại AnyProfile.`,
+    confirm: (v: string) => ({ title: `Cập nhật lên ${v}?`, body: 'AnyProfile tải phiên bản mới, kiểm chữ ký, rồi tự đóng và mở lại. Profile, đăng nhập và mật khẩu giữ nguyên.', confirm: 'Cập nhật và khởi động lại' }),
+    autoLabel: 'Tự kiểm tra', autoOff: 'Kiểm tra bằng tay', autoOn: 'Kiểm tra mỗi ngày một lần',
+    hint: 'Lần kiểm tra chỉ hỏi số phiên bản mới nhất, không gửi gì về bạn hay các profile. Bản cập nhật có chữ ký; bản không có chữ ký đúng sẽ bị từ chối.',
+  },
   api: {
     title: 'API trên máy', off: 'Tắt', on: 'Bật', port: 'Cổng',
     listening: (port: number) => `Đang nghe ở 127.0.0.1:${port}`,

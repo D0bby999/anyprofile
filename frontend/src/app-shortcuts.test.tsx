@@ -11,6 +11,7 @@ const profile = {
 }
 const flags = { onboarded: true, created: true }
 const api: Record<string, (...a: unknown[]) => Promise<unknown>> = {
+  UpdateStatus: () => Promise.resolve(null),
   ListProfiles: () => Promise.resolve(flags.created ? [profile] : []),
   CreateProfiles: () => { flags.created = true; return Promise.resolve([{ id: 'tw' }]) },
   FinishOnboarding: () => Promise.resolve(),

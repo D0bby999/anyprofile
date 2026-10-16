@@ -11,6 +11,7 @@ import (
 	"github.com/D0bby999/anyprofile/internal/site"
 	"github.com/D0bby999/anyprofile/internal/store"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
+	"time"
 )
 
 // Engine
@@ -503,4 +504,48 @@ func (a *App) must(fn func() error) error {
 		return err
 	}
 	return fn()
+}
+
+// Updates
+
+func (a *App) UpdateStatus() (service.UpdateStatus, error) {
+	if err := a.ready(); err != nil {
+		return service.UpdateStatus{}, err
+	}
+	return a.svc.UpdateStatus(), nil
+}
+
+func (a *App) SetUpdateAuto(on bool) error {
+	return a.must(func() error { return a.svc.SetUpdateAuto(on) })
+}
+
+func (a *App) CheckUpdate() (service.UpdateStatus, error) {
+	if err := a.ready(); err != nil {
+		return service.UpdateStatus{}, err
+	}
+	return a.svc.CheckUpdate(a.ctx, true)
+}
+
+// InstallUpdate downloads, verifies and installs the newest release, then
+// quits; the installer starts the new version. Progress goes out as
+// "update:progress" events with done and total bytes.
+func (a *App) InstallUpdate() error {
+	if err := a.ready(); err != nil {
+		return err
+	}
+	var last int64
+	err := a.svc.InstallUpdate(a.ctx, func(done, total int64) {
+		if done-last >= 1<<20 || done == total {
+			last = done
+			runtime.EventsEmit(a.ctx, "update:progress", done, total)
+		}
+	})
+	if err != nil {
+		return err
+	}
+	go func() {
+		time.Sleep(300 * time.Millisecond) // let the call return to the UI first
+		runtime.Quit(a.ctx)
+	}()
+	return nil
 }

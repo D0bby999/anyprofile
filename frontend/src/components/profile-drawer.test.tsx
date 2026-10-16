@@ -13,6 +13,7 @@ vi.mock('../api', async (orig) => ({
   ...(await orig<typeof import('../api')>()),
   onDataChanged: () => () => {},
   Api: {
+    UpdateStatus: () => Promise.resolve(null),
     ListExtensions: () => Promise.resolve([{ id: 'ext-1', name: 'Helper', version: '1.0', createdAt: '', profiles: 1 }]),
     SetExtensionMany: (...a: unknown[]) => setExtensionMany(...a),
     ListProxies: () => Promise.resolve([
@@ -47,7 +48,7 @@ function Harness() {
   const [view, setView] = useState<View>('all')
   return (
     <ProfilesPage rows={rows} sites={sites} view={view} engineReady fileVaultOn error="" setError={vi.fn()}
-      reload={vi.fn()} onNew={vi.fn()} onNeedEngine={vi.fn()} onClearView={() => setView('all')} onView={setView}
+      reload={vi.fn()} onNew={vi.fn()} onNeedEngine={vi.fn()} onClearView={() => setView('all')} onView={setView} onOpenSettings={vi.fn()}
       activeId={activeId} setActiveId={setActiveId} />
   )
 }

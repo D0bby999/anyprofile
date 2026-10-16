@@ -314,6 +314,18 @@ export const en = {
     import: 'Import bookmarks\u2026', folder: 'Imported', closeFirst: 'Close the profile first',
     imported: (n: number) => `Imported ${n} bookmarks into the "Imported" folder on the bookmarks bar.`,
   },
+  update: {
+    title: 'Version',
+    current: (v: string) => `AnyProfile ${v}`,
+    available: (v: string) => `Version ${v} is available`,
+    upToDate: 'This is the newest version.',
+    check: 'Check for updates', checking: 'Checking…',
+    install: 'Update and restart', installing: 'Installing…', downloading: (pct: number) => `Downloading… ${pct}%`,
+    closeFirst: (n: number) => `Close the ${n === 1 ? 'open profile' : `${n} open profiles`} first: the update restarts AnyProfile.`,
+    confirm: (v: string) => ({ title: `Update to ${v}?`, body: 'AnyProfile downloads the new version, checks its signature, then closes and opens again. Profiles, logins and passwords stay as they are.', confirm: 'Update and restart' }),
+    autoLabel: 'Check automatically', autoOff: 'Check by hand', autoOn: 'Check once a day',
+    hint: 'A check only asks for the newest version number and sends nothing about you or your profiles. Updates are signed; one that is not is refused.',
+  },
   api: {
     title: 'Local API', off: 'Off', on: 'On', port: 'Port',
     listening: (port: number) => `Listening on 127.0.0.1:${port}`,

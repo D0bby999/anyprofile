@@ -3,6 +3,9 @@ WAILS       ?= $(shell command -v wails 2>/dev/null || echo $(HOME)/go/bin/wails
 GOVULNCHECK ?= $(shell command -v govulncheck 2>/dev/null || echo $(HOME)/go/bin/govulncheck)
 FURY_CONFIG := tools/fury-config/target/release/fury-config
 APP         := build/bin/AnyProfile.app
+# The app's version, from wails.json; the in-app updater compares against it.
+VERSION     ?= $(shell sed -n 's/.*"productVersion": *"\([^"]*\)".*/\1/p' wails.json)
+LDFLAGS     := -X github.com/D0bby999/anyprofile/internal/update.Current=$(VERSION)
 
 .PHONY: dev build build-windows fury-config test test-integration lint
 
@@ -19,7 +22,7 @@ SIGN_ID ?= $(shell security find-identity -v -p codesigning 2>/dev/null | grep -
 # wails build signs the bundle ad hoc; adding the helper breaks that seal,
 # so the bundle is re-signed after the copy.
 build: fury-config
-	$(WAILS) build -clean -platform darwin/arm64
+	$(WAILS) build -clean -platform darwin/arm64 -ldflags "$(LDFLAGS)"
 	cp $(FURY_CONFIG) $(APP)/Contents/Resources/fury-config
 	codesign --force --deep --sign "$(SIGN_ID)" $(APP)
 	codesign --verify --deep --strict $(APP)
@@ -30,7 +33,7 @@ build: fury-config
 build-windows: fury-config
 	mkdir -p build/bin
 	cp $(FURY_CONFIG).exe build/bin/fury-config.exe
-	$(WAILS) build -platform windows/amd64 -nsis
+	$(WAILS) build -platform windows/amd64 -nsis -ldflags "$(LDFLAGS)"
 
 test: fury-config
 	go test ./internal/... -count=1

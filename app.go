@@ -100,6 +100,13 @@ func (a *App) init() error {
 	l.BeforeStart, l.AfterExit = a.svc.BeforeLaunch, a.svc.AfterExit
 	l.Adopt()
 	a.restartAPI()
+	a.svc.CleanUpdates()
+	go func() {
+		// Once a day at most, and only when automatic checks are on.
+		if st, _ := a.svc.CheckUpdate(context.Background(), false); st.Available {
+			runtime.EventsEmit(a.ctx, "data:changed", "update")
+		}
+	}()
 	return nil
 }
 

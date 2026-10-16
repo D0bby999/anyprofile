@@ -157,14 +157,14 @@ export default function App() {
         {page === 'profiles' && (
           <ProfilesPage rows={profiles.rows} sites={sites} view={view} engineReady={engines === null || engineReady}
             fileVaultOn={fileVaultOn} error={profiles.error} setError={profiles.setError} reload={profiles.reload}
-            onNew={newProfile} onNeedEngine={() => setPage('settings')} onClearView={() => setView('all')} onView={setView}
+            onNew={newProfile} onNeedEngine={() => setPage('settings')} onOpenSettings={() => setPage('settings')} onClearView={() => setView('all')} onView={setView}
             activeId={activeId} setActiveId={setActiveId} />
         )}
         {page === 'proxies' && <ProxiesPage onChanged={() => { refreshProxies(); profiles.reload() }} />}
         {page === 'trash' && <TrashPage onChanged={profiles.reload} />}
         {page === 'settings' && (
           <SettingsPage engines={engines ?? []} engineCounts={engineCounts} defaults={defaults} onEnginesChanged={refreshEngines} theme={theme} onTheme={setTheme} fileVaultOn={fileVaultOn}
-            lang={lang} onLanguage={changeLanguage} />
+            lang={lang} onLanguage={changeLanguage} openProfiles={profiles.rows.filter((r) => r.state === 'running').length} />
         )}
       </main>
       {palette && (

@@ -1,0 +1,99 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Pushing a tag vX.Y.Z builds AnyProfile for macOS and Windows, signs both
+# files for the in-app updater and publishes them with latest.json as a
+# GitHub release. The tag must equal productVersion in wails.json.
+# Needs the secret UPDATE_SIGNING_KEY (go run ./tools/release export-key).
+name: release
+
+on:
+  push:
+    tags: ['v*.*.*']
+
+permissions:
+  contents: read
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: v
+        run: |
+          v="${GITHUB_REF_NAME#v}"
+          want=$(jq -r .info.productVersion wails.json)
+          if [ "$v" != "$want" ]; then echo "tag $v but wails.json says $want" >&2; exit 1; fi
+          grep -q "Current = \"$v\"" internal/update/update.go || { echo "internal/update Current is not $v" >&2; exit 1; }
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+
+  macos:
+    needs: version
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: go install github.com/wailsapp/wails/v2/cmd/wails@v2.14.0
+      - name: Build
+        run: make build VERSION=${{ needs.version.outputs.version }} WAILS=$(go env GOPATH)/bin/wails
+      - name: Zip the app
+        run: ditto -c -k --keepParent build/bin/AnyProfile.app AnyProfile-macos-arm64.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos
+          path: AnyProfile-macos-arm64.zip
+
+  windows:
+    needs: version
+    runs-on: windows-2022
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: go install github.com/wailsapp/wails/v2/cmd/wails@v2.14.0
+      - name: Build the app and the installer
+        run: make build-windows VERSION=${{ needs.version.outputs.version }} WAILS=$(go env GOPATH)/bin/wails
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: build/bin/AnyProfile-amd64-installer.exe
+
+  publish:
+    needs: [version, macos, windows]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Sign and write latest.json
+        env:
+          UPDATE_SIGNING_KEY: ${{ secrets.UPDATE_SIGNING_KEY }}
+          V: ${{ needs.version.outputs.version }}
+        run: |
+          git tag -l --format='%(contents)' "$GITHUB_REF_NAME" > notes.txt
+          go run ./tools/release manifest -version "$V" -notes-file notes.txt -o dist/latest.json \
+            -base-url "https://github.com/$GITHUB_REPOSITORY/releases/download/$GITHUB_REF_NAME" \
+            darwin-arm64=dist/AnyProfile-macos-arm64.zip windows-amd64=dist/AnyProfile-amd64-installer.exe
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" dist/* --title "AnyProfile ${GITHUB_REF_NAME#v}" --notes-file notes.txt

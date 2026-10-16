@@ -7,6 +7,7 @@ import { Icon, type IconName } from '../components/icons'
 import { SiteSettings } from '../components/site-settings'
 import { StorageSettings } from '../components/storage-settings'
 import { DefaultsSettings, OnOpenSettings } from '../components/defaults-settings'
+import { UpdateSettings } from '../components/update-settings'
 import { APISettings } from '../components/api-settings'
 import { ExtensionSettings } from '../components/extension-settings'
 import { PageHead } from '../components/page-head'
@@ -16,6 +17,8 @@ import { EngineSettings } from '../components/engine-settings'
 type Props = {
   engines: main.EngineInfo[]
   engineCounts: Record<string, number>
+  /** Browsers open now; an update waits until they are closed. */
+  openProfiles: number
   defaults: service.Defaults
   onEnginesChanged: () => void
   theme: ThemeChoice
@@ -25,7 +28,7 @@ type Props = {
   onLanguage: (l: Language) => void
 }
 
-export function SettingsPage({ engines, engineCounts, defaults, onEnginesChanged, theme, onTheme, fileVaultOn, lang, onLanguage }: Props) {
+export function SettingsPage({ engines, engineCounts, defaults, onEnginesChanged, theme, onTheme, fileVaultOn, lang, onLanguage, openProfiles }: Props) {
   const { sites, reload: reloadSites } = useSites()
   const themes: [ThemeChoice, string, IconName][] = [['system', t.settings.themeSystem, 'monitor'], ['light', t.settings.themeLight, 'sun'], ['dark', t.settings.themeDark, 'moon']]
 
@@ -74,6 +77,11 @@ export function SettingsPage({ engines, engineCounts, defaults, onEnginesChanged
         <section className="card pad">
           <h2>{t.extensions.title}</h2>
           <ExtensionSettings />
+        </section>
+
+        <section className="card pad" id="settings-update">
+          <h2>{t.update.title}</h2>
+          <UpdateSettings openProfiles={openProfiles} />
         </section>
 
         <section className="card pad">

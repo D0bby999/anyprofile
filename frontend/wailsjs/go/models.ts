@@ -615,6 +615,30 @@ export namespace service {
 	        this.secondsLeft = source["secondsLeft"];
 	    }
 	}
+	export class UpdateStatus {
+	    current: string;
+	    latest: string;
+	    date: string;
+	    notes: string;
+	    available: boolean;
+	    checkedAt: string;
+	    auto: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new UpdateStatus(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.current = source["current"];
+	        this.latest = source["latest"];
+	        this.date = source["date"];
+	        this.notes = source["notes"];
+	        this.available = source["available"];
+	        this.checkedAt = source["checkedAt"];
+	        this.auto = source["auto"];
+	    }
+	}
 
 }
 

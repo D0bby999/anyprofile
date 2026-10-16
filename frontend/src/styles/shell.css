@@ -393,3 +393,8 @@ kbd { display: inline-flex; align-items: center; min-width: 22px; height: 20px; 
   .actbtn { min-width: 0; }
   .cellname { width: 28%; }
 }
+
+/* Settings → Version and the status bar's update button. */
+.updnotes { display: block; margin-top: 4px; white-space: pre-line; color: var(--ink-soft); }
+.statusbtn.updbtn { margin-left: auto; color: var(--accent-ink, var(--ink)); }
+
