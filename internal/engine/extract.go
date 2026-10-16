@@ -171,7 +171,8 @@ func extractZipEntry(f *zip.File, root, target string) error {
 // AbsLink reports a link target that is absolute in any OS's spelling: an
 // archive made on Unix says "/etc", which Windows alone would not call absolute.
 func AbsLink(link string) bool {
-	return filepath.IsAbs(link) || strings.HasPrefix(link, "/") || strings.HasPrefix(link, `\`) || filepath.VolumeName(link) != ""
+	drive := len(link) >= 2 && link[1] == ':' && (link[0]|0x20 >= 'a' && link[0]|0x20 <= 'z')
+	return drive || filepath.IsAbs(link) || strings.HasPrefix(link, "/") || strings.HasPrefix(link, `\`)
 }
 
 func within(root, p string) bool {
