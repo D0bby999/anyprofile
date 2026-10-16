@@ -49,4 +49,3 @@ require (
 	modernc.org/memory v1.12.1 // indirect
 )
 
-// replace github.com/wailsapp/wails/v2 v2.14.0 => (local module cache)

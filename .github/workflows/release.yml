@@ -63,8 +63,14 @@ jobs:
         with:
           node-version: 22
       - run: go install github.com/wailsapp/wails/v2/cmd/wails@v2.14.0
+      # Same steps as make build-windows; the runner has no make.
       - name: Build the app and the installer
-        run: make build-windows VERSION=${{ needs.version.outputs.version }} WAILS=$(go env GOPATH)/bin/wails
+        run: |
+          (cd tools/fury-config && cargo build --release --locked)
+          mkdir -p build/bin
+          cp tools/fury-config/target/release/fury-config.exe build/bin/
+          wails build -platform windows/amd64 -nsis \
+            -ldflags "-X github.com/D0bby999/anyprofile/internal/update.Current=${{ needs.version.outputs.version }}"
       - uses: actions/upload-artifact@v4
         with:
           name: windows
@@ -84,6 +90,8 @@ jobs:
         with:
           path: dist
           merge-multiple: true
+      - name: Read the tag's notes
+        run: git fetch --force origin "refs/tags/$GITHUB_REF_NAME:refs/tags/$GITHUB_REF_NAME"
       - name: Sign and write latest.json
         env:
           UPDATE_SIGNING_KEY: ${{ secrets.UPDATE_SIGNING_KEY }}
