@@ -34,13 +34,14 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
+      # First: main.go embeds frontend/dist, which the build fills.
+      - name: Frontend tests and build
+        working-directory: frontend
+        run: npm ci && npm run typecheck && npm test && npm run build
       - name: Go unit tests
         run: go test ./... -count=1
       - name: Windows Credential Manager round trip
         run: go test -tags keychain ./internal/secrets -count=1 -v
-      - name: Frontend tests
-        working-directory: frontend
-        run: npm ci && npm run typecheck && npm test
 
       - name: Download the pinned Apostate release
         env:

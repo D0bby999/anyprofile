@@ -75,7 +75,7 @@ func ExtractTarXZ(src, dst string) error {
 			}
 		case tar.TypeSymlink:
 			// Relative links inside the bundle only.
-			if filepath.IsAbs(h.Linkname) || !within(root, filepath.Join(filepath.Dir(target), h.Linkname)) {
+			if AbsLink(h.Linkname) || !within(root, filepath.Join(filepath.Dir(target), h.Linkname)) {
 				return fmt.Errorf("symlink escapes destination: %s -> %s", h.Name, h.Linkname)
 			}
 			if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
@@ -135,7 +135,7 @@ func extractZipEntry(f *zip.File, root, target string) error {
 			return err
 		}
 		link := string(b)
-		if filepath.IsAbs(link) || !within(root, filepath.Join(filepath.Dir(target), link)) {
+		if AbsLink(link) || !within(root, filepath.Join(filepath.Dir(target), link)) {
 			return fmt.Errorf("zip symlink %q escapes the destination", f.Name)
 		}
 		if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
@@ -166,6 +166,12 @@ func extractZipEntry(f *zip.File, root, target string) error {
 	default:
 		return fmt.Errorf("unsupported zip entry %s (mode %v)", f.Name, mode)
 	}
+}
+
+// AbsLink reports a link target that is absolute in any OS's spelling: an
+// archive made on Unix says "/etc", which Windows alone would not call absolute.
+func AbsLink(link string) bool {
+	return filepath.IsAbs(link) || strings.HasPrefix(link, "/") || strings.HasPrefix(link, `\`) || filepath.VolumeName(link) != ""
 }
 
 func within(root, p string) bool {

@@ -31,6 +31,9 @@ func (fakeEngine) NewIdentity(context.Context, uint64) (engine.Identity, error) 
 	return engine.Identity{PersonaID: "macos-m4-1710x1112", Platform: "macos"}, nil
 }
 func (fakeEngine) UsesCookieKey() bool { return true }
+func (f fakeEngine) Status(context.Context) engine.Status {
+	return engine.Status{Version: f.Pinned(), Installed: true}
+}
 
 // fakeEngine2 stands in for a second engine that pins hardware values.
 type fakeEngine2 struct{ engine.Engine }

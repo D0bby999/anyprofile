@@ -75,6 +75,8 @@ func TestUnpackRefusesUnsafeOrBrokenInput(t *testing.T) {
 	cases := map[string]string{
 		"zip slip":     write(t, "s.zip", zipOf(t, map[string]string{"manifest.json": manifest, "../../evil.js": "x"})),
 		"absolute":     write(t, "a.zip", zipOf(t, map[string]string{"manifest.json": manifest, "/tmp/evil.js": "x"})),
+		"drive":        write(t, "d.zip", zipOf(t, map[string]string{"manifest.json": manifest, "C:/evil.js": "x"})),
+		"stream":       write(t, "c.zip", zipOf(t, map[string]string{"manifest.json": manifest, "a.js:evil": "x"})),
 		"no manifest":  write(t, "m.zip", zipOf(t, map[string]string{"a.js": "1"})),
 		"bad manifest": write(t, "b.zip", zipOf(t, map[string]string{"manifest.json": `{"manifest_version": 1, "name": "x", "version": "1"}`})),
 		"not a zip":    write(t, "n.zip", []byte("hello")),

@@ -26,6 +26,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/D0bby999/anyprofile/internal/engine"
 )
 
 const (
@@ -327,7 +329,7 @@ func untar(tr *tar.Reader, dst string) error {
 				return err
 			}
 		case tar.TypeSymlink:
-			if filepath.IsAbs(h.Linkname) || !within(root, filepath.Join(filepath.Dir(target), h.Linkname)) {
+			if engine.AbsLink(h.Linkname) || !within(root, filepath.Join(filepath.Dir(target), h.Linkname)) {
 				return fmt.Errorf("snapshot link %q escapes the folder", h.Name)
 			}
 			if err := os.MkdirAll(filepath.Dir(target), 0o700); err != nil {

@@ -68,7 +68,7 @@ func TestBuildLaunchProxy(t *testing.T) {
 	if !slices.Equal(spec.Env, wantEnv) {
 		t.Fatalf("env = %v", spec.Env)
 	}
-	if len(spec.Pipes) != 0 || !spec.CDPPipe || !strings.HasSuffix(spec.Binary, binRel) {
+	if len(spec.Pipes) != 0 || !spec.CDPPipe || !strings.HasSuffix(spec.Binary, filepath.FromSlash(binRel)) {
 		t.Fatalf("spec = %+v", spec)
 	}
 }

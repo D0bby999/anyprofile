@@ -123,7 +123,8 @@ func extractFile(src, dst string) error {
 	var total int64
 	for _, f := range zr.File {
 		name := path.Clean(strings.ReplaceAll(f.Name, `\`, "/"))
-		if name == "." || strings.HasPrefix(name, "../") || name == ".." || path.IsAbs(name) {
+		// A colon is a drive ("C:/x") or a hidden data stream ("a:b") on Windows.
+		if name == "." || strings.HasPrefix(name, "../") || name == ".." || path.IsAbs(name) || strings.Contains(name, ":") {
 			return fmt.Errorf("unsafe path %q in the archive", f.Name)
 		}
 		target := filepath.Join(dst, filepath.FromSlash(name))

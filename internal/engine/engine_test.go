@@ -181,3 +181,16 @@ func TestExtractZipRejects(t *testing.T) {
 		}
 	}
 }
+
+func TestAbsLinkInEveryOSSpelling(t *testing.T) {
+	for _, l := range []string{"/etc", `\Windows`, `C:\x`, "C:/x", `\\server\share`} {
+		if !AbsLink(l) {
+			t.Errorf("%q not seen as absolute", l)
+		}
+	}
+	for _, l := range []string{"Versions/Current", "../A", "a"} {
+		if AbsLink(l) {
+			t.Errorf("%q seen as absolute", l)
+		}
+	}
+}
