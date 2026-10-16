@@ -6,6 +6,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"testing"
 	"time"
@@ -92,7 +93,7 @@ func TestOpenSetsModeAndIsIdempotent(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if st.Mode().Perm() != 0o600 {
+	if runtime.GOOS != "windows" && st.Mode().Perm() != 0o600 {
 		t.Fatalf("db mode = %v", st.Mode().Perm())
 	}
 	// A world-readable WAL left by an older build is tightened on open.
@@ -102,7 +103,7 @@ func TestOpenSetsModeAndIsIdempotent(t *testing.T) {
 	if s2, err := Open(path, filepath.Dir(path)); err == nil {
 		s2.Close()
 	}
-	if st, err := os.Stat(path + "-wal"); err == nil && st.Mode().Perm() != 0o600 {
+	if st, err := os.Stat(path + "-wal"); err == nil && runtime.GOOS != "windows" && st.Mode().Perm() != 0o600 {
 		t.Fatalf("wal mode = %v", st.Mode().Perm())
 	}
 	s2, err := Open(path, filepath.Dir(path))

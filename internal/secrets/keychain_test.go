@@ -9,7 +9,8 @@ import (
 	"testing"
 )
 
-// Touches the real login keychain, so it only runs with -tags keychain.
+// Touches the real login keychain (Credential Manager on Windows), so it only
+// runs with -tags keychain.
 func TestKeychainRoundTrip(t *testing.T) {
 	const svc, acct = "dev.anyprofile.test", "roundtrip"
 	k := Keychain{}

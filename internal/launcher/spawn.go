@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"syscall"
 	"time"
 
 	"github.com/D0bby999/anyprofile/internal/cdppipe"
@@ -16,12 +15,12 @@ import (
 )
 
 // spawn execs the browser in its own process group. Each spec.Pipes[i] is
-// written into a pipe the child reads as fd 3+i (or 5+i when CDPPipe is set);
-// the data never touches disk, argv or the environment. When spec.CDPPipe is
-// set, the DevTools command/reply pipes are fds 3 and 4 and the returned conn
-// speaks to them; the browser also holds copies on fds 7 and 8 so it survives
-// the app closing its ends. Output goes to logPath (truncated per launch), a
-// file rather than a pipe so the browser survives the app crashing.
+// written into a pipe the child reads; the data never touches disk, argv or
+// the environment. When spec.CDPPipe is set, the returned conn speaks to the
+// DevTools command/reply pipes, and the browser also holds copies of the
+// app's ends so it survives the app closing them. How the pipes reach the
+// child is per OS (passFiles). Output goes to logPath (truncated per launch),
+// a file rather than a pipe so the browser survives the app crashing.
 func spawn(spec engine.LaunchSpec, udd, logPath string) (int, <-chan error, *cdppipe.Conn, error) {
 	os.Remove(filepath.Join(udd, "DevToolsActivePort"))
 	logf, err := os.OpenFile(logPath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o600)
@@ -33,7 +32,7 @@ func spawn(spec engine.LaunchSpec, udd, logPath string) (int, <-chan error, *cdp
 	cmd := exec.Command(spec.Binary, spec.Args...)
 	cmd.Env = append(os.Environ(), spec.Env...)
 	cmd.Stdout, cmd.Stderr = logf, logf
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	cmd.SysProcAttr = procAttr()
 
 	var readers, writers []*os.File
 	var cmdR, cmdW, respR, respW *os.File
@@ -71,14 +70,13 @@ func spawn(spec engine.LaunchSpec, udd, logPath string) (int, <-chan error, *cdp
 		readers, writers = append(readers, r), append(writers, w)
 	}
 
+	var cdp []*os.File
 	if spec.CDPPipe {
-		cmd.ExtraFiles = []*os.File{cmdR, respW}
-		cmd.ExtraFiles = append(cmd.ExtraFiles, readers...)
-		// fds 7 and 8 keep the browser from ever seeing EOF on the pipes
-		// after the app closes its own ends or crashes.
-		cmd.ExtraFiles = append(cmd.ExtraFiles, cmdW, respR)
-	} else {
-		cmd.ExtraFiles = readers
+		cdp = []*os.File{cmdR, respW, cmdW, respR}
+	}
+	if err := passFiles(cmd, cdp, readers); err != nil {
+		closeAll()
+		return 0, nil, nil, err
 	}
 	if err := cmd.Start(); err != nil {
 		closeAll()

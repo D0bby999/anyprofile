@@ -79,7 +79,10 @@ func (a *App) init() error {
 	if err := ap.CleanStale(); err != nil {
 		log.Warn("clean stale engine files", "engine", "apostate", "err", err)
 	}
-	a.engines = map[string]engine.Engine{"fury": a.fury, "apostate": ap}
+	a.engines = map[string]engine.Engine{"apostate": ap}
+	if furyRuns {
+		a.engines["fury"] = a.fury
+	}
 	sec := secrets.Keychain{}
 	l := launcher.New(st, sec, dirs, engineList(a.engines),
 		func(in launcher.Info) { runtime.EventsEmit(a.ctx, "launch:changed", in) }, log)
@@ -155,7 +158,7 @@ func furyConfigPath() (string, error) {
 	}
 	exe, _ = filepath.EvalSymlinks(exe)
 	dir := filepath.Dir(exe)
-	for _, p := range append([]string{filepath.Join(dir, "../Resources/fury-config")}, devConfigCandidates(dir)...) {
+	for _, p := range append([]string{filepath.Join(dir, bundledConfigRel)}, devConfigCandidates(dir)...) {
 		if fi, err := os.Stat(p); err == nil && fi.Mode().IsRegular() {
 			return filepath.Clean(p), nil
 		}

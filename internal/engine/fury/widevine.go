@@ -10,8 +10,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-
-	"golang.org/x/sys/unix"
 )
 
 // The Widevine CDM may not be redistributed, so AnyProfile ships none. Like
@@ -100,7 +98,7 @@ func copyIfChanged(src, dst string) error {
 		return err
 	}
 	os.Remove(dst)
-	if unix.Clonefile(src, dst, 0) == nil {
+	if clone(src, dst) == nil {
 		return nil // APFS clone: no extra space per profile
 	}
 	in, err := os.Open(src)

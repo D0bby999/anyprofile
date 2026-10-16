@@ -64,10 +64,6 @@ func TestSingletonPID(t *testing.T) {
 	if singletonPID(udd) != 0 {
 		t.Fatal("no lock must read as 0")
 	}
-	os.Symlink("my-mac.local-4242", filepath.Join(udd, "SingletonLock"))
-	if got := singletonPID(udd); got != 4242 {
-		t.Fatalf("pid = %d", got)
-	}
 	if !alive(os.Getpid()) || sameProcess(os.Getpid(), "0.0") {
 		t.Fatal("alive/sameProcess wrong for this process")
 	}

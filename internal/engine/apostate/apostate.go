@@ -18,7 +18,6 @@ import (
 	"github.com/D0bby999/anyprofile/internal/engine"
 	"github.com/D0bby999/anyprofile/internal/paths"
 	"github.com/D0bby999/anyprofile/internal/store"
-	"golang.org/x/sys/unix"
 )
 
 // Apostate implements engine.Engine.
@@ -36,8 +35,9 @@ func New(dirs paths.Dirs) *Apostate { return &Apostate{dirs: dirs} }
 
 func (a *Apostate) ID() string { return "apostate" }
 
-// UsesCookieKey is false: Apostate keeps its cookie key in the Keychain item
-// "Chromium Safe Storage" and never reads one from AnyProfile.
+// UsesCookieKey is false: Apostate keeps its cookie key itself, in the
+// Keychain item "Chromium Safe Storage" on macOS and DPAPI-encrypted in the
+// profile's Local State on Windows, and never reads one from AnyProfile.
 func (a *Apostate) UsesCookieKey() bool { return false }
 
 // ProbeSeesPrimaryLanguageOnly is true: measured 2026-10-14, a hidden tab
@@ -49,17 +49,16 @@ func (a *Apostate) hostInfo() (int, int) {
 	if a.host != nil {
 		return a.host()
 	}
-	mem, _ := unix.SysctlUint64("hw.memsize")
-	return runtime.NumCPU(), int(mem >> 30)
+	return runtime.NumCPU(), int(hostMemBytes() >> 30)
 }
 
-// NewIdentity pins the core count and memory of this Mac. The machine itself
-// comes from the profile's seed (seed_hex), drawn by the service, so roll is
-// unused. Only the macOS persona is offered: on a Mac, Apostate's Windows
-// persona renders with the host's fonts, which detection sites notice.
+// NewIdentity pins the core count and memory of this computer. The machine
+// itself comes from the profile's seed (seed_hex), drawn by the service, so
+// roll is unused. The persona is the host's own OS (release_<os>.go): another
+// OS's persona renders with the host's fonts, which detection sites notice.
 func (a *Apostate) NewIdentity(ctx context.Context, roll uint64) (engine.Identity, error) {
 	cores, mem := a.hostInfo()
-	return engine.Identity{PersonaID: "apostate-macos", Platform: "macos",
+	return engine.Identity{PersonaID: personaID, Platform: platform,
 		Meta: store.EngineMeta{HWC: cores, MemGiB: mem}}, nil
 }
 
@@ -111,9 +110,16 @@ func blockGeolocation(prefs string) error {
 
 var seedRe = regexp.MustCompile(`^[0-9a-f]{16}$`)
 
+// ErrOtherOS refuses a profile created on another operating system.
+var ErrOtherOS = errors.New("this profile opens only on the operating system it was created on")
+
 func (a *Apostate) BuildLaunch(ctx context.Context, p store.Profile, rt engine.Runtime) (engine.LaunchSpec, error) {
 	if !seedRe.MatchString(p.SeedHex) {
 		return engine.LaunchSpec{}, fmt.Errorf("profile %s has an invalid seed", p.ID)
+	}
+	// A persona of another OS would render with this host's fonts and GPU.
+	if p.Platform != "" && p.Platform != platform {
+		return engine.LaunchSpec{}, fmt.Errorf("%w: it was created on %s", ErrOtherOS, p.Platform)
 	}
 	// Without these three, Chromium shows a "Google API keys are missing" bar
 	// on the first tab; the page can measure the lost height.
@@ -135,20 +141,22 @@ func (a *Apostate) BuildLaunch(ctx context.Context, p store.Profile, rt engine.R
 		"--disable-field-trial-config",
 		"--disk-cache-size=20971520",
 		"--window-name="+engine.WindowName(p),
-		// The seed fixes the machine; the platform keeps it a Mac.
+		// The seed fixes the machine; the platform keeps it the host's OS.
 		"--fingerprint="+p.SeedHex,
-		"--fingerprint-platform=macos",
+		"--fingerprint-platform="+platform,
 	)
 	if p.Timezone != "" {
 		// Apostate's own default is the host zone even behind a proxy.
 		args = append(args, "--fingerprint-timezone="+p.Timezone)
-		env = append([]string{"TZ=" + p.Timezone}, env...)
+		if setsTZ {
+			env = append([]string{"TZ=" + p.Timezone}, env...)
+		}
 	}
 	if p.Languages != "" {
 		// --lang has no effect on navigator.languages in Apostate; this does.
 		args = append(args, "--fingerprint-locale="+p.Languages)
 	}
-	// Pinned at creation so the seed keeps the same values on another Mac or
+	// Pinned at creation so the seed keeps the same values on another host or
 	// after a persona-table change. Apostate refuses values above the host's.
 	cores, mem := a.hostInfo()
 	if p.EngineMeta.HWC > 0 {

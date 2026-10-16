@@ -15,7 +15,6 @@ import (
 	"github.com/D0bby999/anyprofile/internal/netproxy"
 	"github.com/D0bby999/anyprofile/internal/secrets"
 	"github.com/D0bby999/anyprofile/internal/store"
-	"golang.org/x/sys/unix"
 )
 
 func (l *Launcher) start(ctx context.Context, p *proc) error {
@@ -97,12 +96,12 @@ func (l *Launcher) start(ctx context.Context, p *proc) error {
 		if p.cdp != nil {
 			p.cdp.Close()
 		}
-		signalGroup(pid, unix.SIGKILL)
+		killTree(pid)
 		return err
 	}
 	startTime, err := pidStartTime(pid)
 	if err != nil {
-		signalGroup(pid, unix.SIGKILL)
+		killTree(pid)
 		return err
 	}
 	cdp := 0
@@ -111,7 +110,7 @@ func (l *Launcher) start(ctx context.Context, p *proc) error {
 	}
 	if err := l.st.PutLaunch(store.Launch{ProfileID: prof.ID, PID: pid, PIDStartTime: startTime,
 		RelayPort: rt.RelayPort, CDPPort: cdp}); err != nil {
-		signalGroup(pid, unix.SIGKILL)
+		killTree(pid)
 		return err
 	}
 	_ = l.st.MarkOpened(prof.ID)

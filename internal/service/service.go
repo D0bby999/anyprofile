@@ -90,10 +90,3 @@ func localZone() string {
 	}
 	return "UTC"
 }
-
-// FileVaultOn reports whether the system volume is encrypted. Profile data
-// other than cookies (history, local storage) relies on it.
-func FileVaultOn() bool {
-	out, err := execOutput("/usr/bin/fdesetup", "status")
-	return err == nil && strings.Contains(out, "FileVault is On")
-}

@@ -77,3 +77,21 @@ func TestChecksApplyByEngineAndProxy(t *testing.T) {
 		t.Error("MajorVersion")
 	}
 }
+
+func TestPlatformFollowsProfileOS(t *testing.T) {
+	win := cleanSample()
+	win.Platform = "Win32"
+	for _, c := range []struct {
+		os   string
+		s    Sample
+		pass bool
+	}{{"macos", cleanSample(), true}, {"", cleanSample(), true}, {"windows", win, true}, {"windows", cleanSample(), false}, {"macos", win, false}} {
+		e := apostateExpect()
+		e.OS = c.os
+		for _, ch := range Checks(c.s, e) {
+			if ch.ID == "platform" && ch.OK != c.pass {
+				t.Errorf("os %q platform %q: ok = %v, want %v", c.os, c.s.Platform, ch.OK, c.pass)
+			}
+		}
+	}
+}

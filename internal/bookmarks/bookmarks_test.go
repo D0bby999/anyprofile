@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 )
 
@@ -83,7 +84,7 @@ func TestAddToProfileKeepsWhatIsThere(t *testing.T) {
 	if doc.Checksum != "" {
 		t.Fatal("a stale checksum was kept")
 	}
-	if fi, _ := os.Stat(filepath.Join(udd, "Default", "Bookmarks")); fi.Mode().Perm() != 0o600 {
+	if fi, _ := os.Stat(filepath.Join(udd, "Default", "Bookmarks")); runtime.GOOS != "windows" && fi.Mode().Perm() != 0o600 {
 		t.Fatalf("mode = %v", fi.Mode().Perm())
 	}
 }

@@ -11,6 +11,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -52,7 +53,7 @@ func TestExtractKeepsModesAndSymlinks(t *testing.T) {
 		t.Fatal(err)
 	}
 	fi, err := os.Stat(filepath.Join(dst, "X.app/Contents/MacOS/X"))
-	if err != nil || fi.Mode().Perm()&0o100 == 0 {
+	if err != nil || (runtime.GOOS != "windows" && fi.Mode().Perm()&0o100 == 0) {
 		t.Fatalf("binary not executable: %v %v", fi, err)
 	}
 	if l, err := os.Readlink(filepath.Join(dst, "X.app/Contents/Current")); err != nil || l != "MacOS" {
@@ -146,7 +147,7 @@ func TestExtractZip(t *testing.T) {
 		t.Fatal(err)
 	}
 	st, err := os.Stat(filepath.Join(dst, "B.framework/Versions/A/bin"))
-	if err != nil || st.Mode().Perm() != 0o755 {
+	if err != nil || (runtime.GOOS != "windows" && st.Mode().Perm() != 0o755) {
 		t.Fatalf("bin = %v %v", st, err)
 	}
 	if l, err := os.Readlink(filepath.Join(dst, "B.framework/Versions/Current")); err != nil || l != "A" {

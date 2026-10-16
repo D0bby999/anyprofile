@@ -11,6 +11,7 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/D0bby999/anyprofile/internal/cdppipe"
 	"golang.org/x/sys/unix"
 )
 
@@ -56,6 +57,16 @@ func sameProcess(pid int, startTime string) bool {
 	st, err := pidStartTime(pid)
 	return err == nil && st == startTime
 }
+
+// askQuit asks the browser to quit the way a menu Quit does, saving its
+// session and cookie jar. SIGHUP, not SIGTERM: from Chromium 155 a SIGTERM on
+// macOS means "the login session is ending" and exits without writing the
+// cookie jar (measured by the Fury authors and again here). Main process
+// only; it shuts its helpers down.
+func askQuit(pid int, _ *cdppipe.Conn) { unix.Kill(pid, unix.SIGHUP) }
+
+// killTree ends the browser and its helpers at once; unsaved data is lost.
+func killTree(pid int) { signalGroup(pid, unix.SIGKILL) }
 
 func signalGroup(pid int, sig syscall.Signal) {
 	// The browser leads its own process group (Setpgid), so -pid reaches its helpers.

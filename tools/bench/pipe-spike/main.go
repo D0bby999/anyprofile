@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+//go:build darwin
+
 // pipe-spike checks, on a throwaway profile, that the Fury core
 //
 //  1. accepts its config and cookie key on fds 5 and 6,

@@ -5,6 +5,7 @@ package apostate
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"slices"
@@ -43,7 +44,7 @@ func TestBuildLaunchProxy(t *testing.T) {
 		"--user-data-dir=/u", "--no-default-browser-check", "--no-first-run", "--restore-last-session",
 		"--disable-background-networking", "--disable-domain-reliability", "--disable-breakpad",
 		"--safebrowsing-disable-auto-update", "--disable-field-trial-config", "--disk-cache-size=20971520",
-		"--window-name=#3 Shop", "--fingerprint=00000000000a11ce", "--fingerprint-platform=macos",
+		"--window-name=#3 Shop", "--fingerprint=00000000000a11ce", "--fingerprint-platform=" + platform,
 		"--fingerprint-timezone=Asia/Taipei", "--fingerprint-locale=zh-TW,zh,en",
 		"--fingerprint-hardware-concurrency=8", "--fingerprint-device-memory=16",
 		"--proxy-server=http://127.0.0.1:41000", "--proxy-bypass-list=<-loopback>", "--disable-quic",
@@ -60,7 +61,10 @@ func TestBuildLaunchProxy(t *testing.T) {
 			}
 		}
 	}
-	wantEnv := []string{"TZ=Asia/Taipei", "GOOGLE_API_KEY=no", "GOOGLE_DEFAULT_CLIENT_ID=no", "GOOGLE_DEFAULT_CLIENT_SECRET=no"}
+	wantEnv := []string{"GOOGLE_API_KEY=no", "GOOGLE_DEFAULT_CLIENT_ID=no", "GOOGLE_DEFAULT_CLIENT_SECRET=no"}
+	if setsTZ {
+		wantEnv = append([]string{"TZ=Asia/Taipei"}, wantEnv...)
+	}
 	if !slices.Equal(spec.Env, wantEnv) {
 		t.Fatalf("env = %v", spec.Env)
 	}
@@ -186,5 +190,20 @@ func TestPrepareProfileGeolocation(t *testing.T) {
 	}
 	if b, _ := os.ReadFile(prefs); string(b) != "{" {
 		t.Fatalf("broken prefs changed to %q", b)
+	}
+}
+
+func TestBuildLaunchRefusesAnotherOS(t *testing.T) {
+	p := testProfile()
+	p.Platform = "windows"
+	if platform == "windows" {
+		p.Platform = "macos"
+	}
+	if _, err := testEngine(t).BuildLaunch(context.Background(), p, engine.Runtime{UserDataDir: "/u"}); !errors.Is(err, ErrOtherOS) {
+		t.Fatalf("err = %v, want ErrOtherOS", err)
+	}
+	p.Platform = platform
+	if _, err := testEngine(t).BuildLaunch(context.Background(), p, engine.Runtime{UserDataDir: "/u"}); err != nil {
+		t.Fatal(err)
 	}
 }

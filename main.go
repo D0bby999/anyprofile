@@ -5,7 +5,6 @@ package main
 import (
 	"embed"
 	"log"
-	"syscall"
 
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
@@ -18,9 +17,7 @@ import (
 var assets embed.FS
 
 func main() {
-	// Owner-only for everything this process creates, including SQLite's
-	// -wal/-shm files, which hold database pages, and the browsers it spawns.
-	syscall.Umask(0o077)
+	ownerOnlyFiles()
 	app := NewApp()
 	err := wails.Run(&options.App{
 		Title:     "AnyProfile",

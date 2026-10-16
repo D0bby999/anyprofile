@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 // Package secrets keeps proxy passwords and per-profile cookie keys out of the
-// database, logs and command lines. Production storage is the macOS Keychain.
+// database, logs and command lines. Production storage is the macOS Keychain,
+// or Windows Credential Manager on Windows.
 package secrets
 
 import (

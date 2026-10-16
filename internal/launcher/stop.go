@@ -7,8 +7,6 @@ import (
 	"fmt"
 	"sync"
 	"time"
-
-	"golang.org/x/sys/unix"
 )
 
 // watch waits for exit (wait is nil for an adopted process) and cleans up.
@@ -56,21 +54,17 @@ func (l *Launcher) Stop(profileID string) error {
 		}
 		return fmt.Errorf("profile is %s", p.info.State)
 	}
-	pid := p.info.PID
+	pid, cdp := p.info.PID, p.cdp
 	l.mu.Unlock()
 	l.set(p, Stopping, "")
-	// SIGHUP, not SIGTERM: from Chromium 155 a SIGTERM on macOS means "the
-	// login session is ending" and exits without writing the cookie jar
-	// (measured by the Fury authors and again here). SIGHUP takes the same
-	// path as a menu Quit. Main process only; it shuts its helpers down.
-	unix.Kill(pid, unix.SIGHUP)
+	askQuit(pid, cdp)
 	select {
 	case <-p.done:
 		return nil
 	case <-time.After(l.termGrace):
 	}
 	l.log.Warn("browser did not quit when asked; killing, unsaved data is lost", "profile", profileID, "pid", pid)
-	signalGroup(pid, unix.SIGKILL)
+	killTree(pid)
 	select {
 	case <-p.done:
 		return nil

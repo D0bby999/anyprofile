@@ -28,7 +28,7 @@ func TestLastWindowClosedQuits(t *testing.T) {
 				Languages: "en-US,en", UILocale: "en-US", StartURL: srv.URL + "/"}
 			if name == "apostate" {
 				r = newApostateRig(t)
-				p.Engine, p.EngineVersion, p.PersonaID, p.Platform = "apostate", apostate.Version, "apostate-macos", "macos"
+				p.Engine, p.EngineVersion, p.PersonaID, p.Platform = "apostate", apostate.Version, apostate.HostPersona, apostate.HostPlatform
 			} else {
 				r = newRig(t)
 				ident, err := r.eng.NewIdentity(context.Background(), 7)

@@ -7,7 +7,9 @@ package launcher
 // Runs the real Fury core and Apostate. Needs:
 //   ANYPROFILE_TEST_FURY_APP      path to an extracted, verified Fury.app (0.3.5)
 //   tools/fury-config built       (make fury-config)
-//   ANYPROFILE_TEST_APOSTATE_APP  path to Apostate's Chromium.app (0.5.1)
+//   ANYPROFILE_TEST_APOSTATE_APP  path to Apostate 0.5.1: its Chromium.app on
+//                                 macOS, the folder holding chrome.exe on Windows
+// Fury runs on macOS only; its tests skip without ANYPROFILE_TEST_FURY_APP.
 
 import (
 	"context"
@@ -21,7 +23,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"syscall"
 	"testing"
 	"time"
 
@@ -51,7 +52,7 @@ func newRig(t *testing.T) *rig {
 	}
 	cfgBin, _ := filepath.Abs("../../tools/fury-config/target/release/fury-config")
 	// Short root: Chromium's SingletonSocket path must fit in sun_path.
-	root, err := os.MkdirTemp("/tmp", "apit")
+	root, err := os.MkdirTemp(shortTemp(), "apit")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -89,11 +90,6 @@ func (r *rig) profile(t *testing.T, i int) string {
 		t.Fatal(err)
 	}
 	return id
-}
-
-func listeningPorts(t *testing.T, pid int) string {
-	out, _ := exec.Command("lsof", "-nP", "-a", "-iTCP", "-sTCP:LISTEN", "-g", strconv.Itoa(pid)).Output()
-	return strings.TrimSpace(string(out))
 }
 
 func TestLifecycleFiveProfiles(t *testing.T) {
@@ -158,7 +154,7 @@ func TestLifecycleFiveProfiles(t *testing.T) {
 			t.Errorf("pid %d survived StopAll", in.PID)
 		}
 	}
-	if out, _ := exec.Command("pgrep", "-f", r.dirs.Root).Output(); len(out) > 0 {
+	if out := processesUsing(t, r.dirs.Root); out != "" {
 		t.Errorf("leftover processes: %s", out)
 	}
 	if ls, _ := r.st.ListLaunches(); len(ls) != 0 {
@@ -271,8 +267,8 @@ func TestFingerprintCheck(t *testing.T) {
 	l.mu.Lock()
 	pid = l.procs[id].info.PID
 	l.mu.Unlock()
-	if err := syscall.Kill(pid, 0); err != nil {
-		t.Fatalf("browser died after the app closed its pipe: %v", err)
+	if !alive(pid) {
+		t.Fatal("browser died after the app closed its pipe")
 	}
 	if err := l.Stop(id); err != nil {
 		t.Fatal(err)
@@ -313,7 +309,7 @@ func newApostateRig(t *testing.T) *rig {
 	if app == "" {
 		t.Skip("ANYPROFILE_TEST_APOSTATE_APP not set")
 	}
-	root, err := os.MkdirTemp("/tmp", "apit")
+	root, err := os.MkdirTemp(shortTemp(), "apit")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -322,9 +318,9 @@ func newApostateRig(t *testing.T) *rig {
 	if err := dirs.Ensure(); err != nil {
 		t.Fatal(err)
 	}
-	dir := filepath.Join(dirs.Engine("apostate", apostate.Version), "apostate-155.0.8059.31-macos-arm64")
-	os.MkdirAll(dir, 0o700)
-	if err := os.Symlink(app, filepath.Join(dir, "Chromium.app")); err != nil {
+	eng := apostate.New(dirs)
+	os.MkdirAll(filepath.Dir(eng.AppPath()), 0o700)
+	if err := os.Symlink(app, eng.AppPath()); err != nil {
 		t.Fatal(err)
 	}
 	st, err := store.Open(dirs.DB(), dirs.Backups())
@@ -332,7 +328,6 @@ func newApostateRig(t *testing.T) *rig {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { st.Close() })
-	eng := apostate.New(dirs)
 	eng.MockKeychain = true // a test must never raise a Keychain dialog
 	return &rig{dirs: dirs, st: st, sec: secrets.NewMemory(), eng: eng}
 }
@@ -343,7 +338,7 @@ func TestApostateLifecycle(t *testing.T) {
 	l.Capture = true
 	const id = "ap1"
 	if err := r.st.CreateProfile(&store.Profile{ID: id, Name: "Apostate", Engine: "apostate",
-		EngineVersion: apostate.Version, PersonaID: "apostate-macos", Platform: "macos",
+		EngineVersion: apostate.Version, PersonaID: apostate.HostPersona, Platform: apostate.HostPlatform,
 		SeedHex: "00000000000a11ce", Timezone: "Asia/Taipei", Languages: "zh-TW,zh,en", UILocale: "zh-TW",
 		EngineMeta: store.EngineMeta{HWC: 4, MemGiB: 8}}); err != nil {
 		t.Fatal(err)
@@ -426,15 +421,15 @@ func TestApostateLifecycle(t *testing.T) {
 	// sit on fds 5 and 6: Apostate has no data pipes).
 	p2.cdp.Close()
 	time.Sleep(3 * time.Second)
-	if err := syscall.Kill(pid, 0); err != nil {
-		t.Fatalf("browser died after the app closed its pipe: %v", err)
+	if !alive(pid) {
+		t.Fatal("browser died after the app closed its pipe")
 	}
 	if err := l.Stop(id); err != nil {
 		t.Fatal(err)
 	}
 	udd := r.dirs.Profile(id)
-	if out, _ := exec.Command("pgrep", "-f", udd).Output(); len(strings.TrimSpace(string(out))) > 0 {
-		t.Fatalf("processes left for %s: %s", udd, out)
+	if left := processesUsing(t, udd); left != "" {
+		t.Fatalf("processes left for %s: %s", udd, left)
 	}
 }
 
@@ -464,7 +459,7 @@ func TestApostateCookiesInAndOut(t *testing.T) {
 	l.Capture = true
 	const id = "ap2"
 	if err := r.st.CreateProfile(&store.Profile{ID: id, Name: "Cookies", Engine: "apostate",
-		EngineVersion: apostate.Version, PersonaID: "apostate-macos", Platform: "macos",
+		EngineVersion: apostate.Version, PersonaID: apostate.HostPersona, Platform: apostate.HostPlatform,
 		SeedHex: "00000000000b0b0b", Timezone: "UTC", Languages: "en-US,en", UILocale: "en-US"}); err != nil {
 		t.Fatal(err)
 	}

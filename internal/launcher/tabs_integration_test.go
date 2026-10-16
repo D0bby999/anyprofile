@@ -28,7 +28,7 @@ func TestApostateReopensTabsAfterWindowClosed(t *testing.T) {
 	defer srv.Close()
 	const id = "ap3"
 	if err := r.st.CreateProfile(&store.Profile{ID: id, Name: "Tabs", Engine: "apostate",
-		EngineVersion: apostate.Version, PersonaID: "apostate-macos", Platform: "macos",
+		EngineVersion: apostate.Version, PersonaID: apostate.HostPersona, Platform: apostate.HostPlatform,
 		SeedHex: "00000000000c0c0c", Timezone: "UTC", Languages: "en-US,en", UILocale: "en-US",
 		StartURL: srv.URL + "/start"}); err != nil {
 		t.Fatal(err)

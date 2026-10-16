@@ -15,11 +15,11 @@ import (
 	"github.com/D0bby999/anyprofile/internal/paths"
 )
 
-// Installs the pinned release (~158 MB) and verifies it end to end. With
+// Installs the pinned release of this OS (~150-190 MB) and verifies it end to end. With
 // ANYPROFILE_APOSTATE_ZIP set to an already downloaded zip, the download is
 // skipped and every other step still runs.
 func TestInstallRealRelease(t *testing.T) {
-	root, err := os.MkdirTemp("/tmp", "apnet")
+	root, err := os.MkdirTemp("", "apnet")
 	if err != nil {
 		t.Fatal(err)
 	}

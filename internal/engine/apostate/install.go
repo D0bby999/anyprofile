@@ -21,8 +21,12 @@ type stamp struct {
 	SHA256  string `json:"sha256"`
 }
 
-func (a *Apostate) dir() string           { return a.dirs.Engine("apostate", Version) }
-func (a *Apostate) BinaryPath() string    { return filepath.Join(a.dir(), binRel) }
+func (a *Apostate) dir() string        { return a.dirs.Engine("apostate", Version) }
+func (a *Apostate) BinaryPath() string { return filepath.Join(a.dir(), binRel) }
+
+// AppPath is the installed app: Chromium.app on macOS, the folder holding
+// chrome.exe on Windows.
+func (a *Apostate) AppPath() string       { return filepath.Join(a.dir(), appRel) }
 func (a *Apostate) frameworkPath() string { return filepath.Join(a.dir(), frameworkRel) }
 func (a *Apostate) stampPath() string     { return filepath.Join(a.dir(), ".verified.json") }
 
@@ -69,7 +73,8 @@ func (a *Apostate) writeStamp() error {
 }
 
 // Install downloads the pinned release and verifies it in order: zip hash,
-// extraction, binary hash, framework hash, then Apple code signature and team.
+// extraction, binary hash, framework hash, then (macOS) Apple code signature
+// and team.
 // Nothing is moved into place until every check passes.
 func (a *Apostate) Install(ctx context.Context, progress engine.Progress) error {
 	a.mu.Lock()
@@ -109,7 +114,7 @@ func (a *Apostate) installFrom(zipPath, staging string) error {
 	if err := engine.VerifySHA256(filepath.Join(tree, frameworkRel), frameworkSHA); err != nil {
 		return err
 	}
-	if err := engine.VerifyCodesign(filepath.Join(tree, appRel), teamID); err != nil {
+	if err := verifyApp(filepath.Join(tree, appRel)); err != nil {
 		return err
 	}
 	if err := os.RemoveAll(a.dir()); err != nil {

@@ -5,6 +5,7 @@ package launcher
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"strconv"
 	"testing"
@@ -46,7 +47,7 @@ func TestTabsFileRoundTrip(t *testing.T) {
 		t.Fatalf("readTabs = %v", got)
 	}
 	fi, err := os.Stat(filepath.Join(udd, tabsFile))
-	if err != nil || fi.Mode().Perm() != 0o600 {
+	if err != nil || (runtime.GOOS != "windows" && fi.Mode().Perm() != 0o600) {
 		t.Fatalf("tabs file mode = %v, %v", fi.Mode().Perm(), err)
 	}
 	// Anything not http(s) in the file is dropped on the way back in.

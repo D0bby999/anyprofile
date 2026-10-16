@@ -23,6 +23,7 @@ type Check struct {
 // Expect is what the profile and its engine promise.
 type Expect struct {
 	Engine, Timezone, Languages string
+	OS                          string // the profile's platform: "macos" or "windows"
 	ChromiumMajor               int
 	Proxied                     bool
 	HWC                         int  // 0: not pinned
@@ -62,7 +63,7 @@ func Checks(s Sample, e Expect) []Check {
 		got = m[1]
 	}
 	add("ua_version", "danger", got == strconv.Itoa(e.ChromiumMajor), got, strconv.Itoa(e.ChromiumMajor))
-	add("platform", "danger", s.Platform == "MacIntel", s.Platform, "MacIntel")
+	add("platform", "danger", s.Platform == NavPlatform(e.OS), s.Platform, NavPlatform(e.OS))
 	if s.ChromeH >= 0 {
 		add("chrome_height", "warn", s.ChromeH <= maxChromeHeight, strconv.Itoa(s.ChromeH), "≤ "+strconv.Itoa(maxChromeHeight))
 	}
@@ -73,6 +74,15 @@ func Checks(s Sample, e Expect) []Check {
 		}
 	}
 	return out
+}
+
+// NavPlatform is the navigator.platform Chrome reports on os ("macos" when
+// empty, as in profiles created before Windows support).
+func NavPlatform(os string) string {
+	if os == "windows" {
+		return "Win32"
+	}
+	return "MacIntel"
 }
 
 // MajorVersion is the leading number of a version string ("155.0.8059.31" -> 155).

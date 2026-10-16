@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -47,20 +48,29 @@ func (b testBackend) Stop(id string) error { return b.s.Launcher.Stop(id) }
 
 // A script opens a profile with DevTools through the API, drives it over
 // the WebSocket the API returns, and closes it; the port is gone after.
+// shortTemp keeps test data under /tmp on macOS: Chromium's SingletonSocket
+// path must stay under the 104-byte limit of a Unix socket name.
+func shortTemp() string {
+	if runtime.GOOS == "darwin" {
+		return "/tmp"
+	}
+	return ""
+}
+
 func TestAPIDrivesARealBrowser(t *testing.T) {
 	app := os.Getenv("ANYPROFILE_TEST_APOSTATE_APP")
 	if app == "" {
 		t.Skip("ANYPROFILE_TEST_APOSTATE_APP not set")
 	}
-	root, _ := os.MkdirTemp("/tmp", "apapi")
+	root, _ := os.MkdirTemp(shortTemp(), "apapi")
 	t.Cleanup(func() { os.RemoveAll(root) })
 	dirs := paths.Dirs{Root: root}
 	if err := dirs.Ensure(); err != nil {
 		t.Fatal(err)
 	}
-	dir := filepath.Join(dirs.Engine("apostate", apostate.Version), "apostate-155.0.8059.31-macos-arm64")
-	os.MkdirAll(dir, 0o700)
-	if err := os.Symlink(app, filepath.Join(dir, "Chromium.app")); err != nil {
+	eng := apostate.New(dirs)
+	os.MkdirAll(filepath.Dir(eng.AppPath()), 0o700)
+	if err := os.Symlink(app, eng.AppPath()); err != nil {
 		t.Fatal(err)
 	}
 	st, err := store.Open(dirs.DB(), dirs.Backups())
@@ -68,7 +78,6 @@ func TestAPIDrivesARealBrowser(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { st.Close() })
-	eng := apostate.New(dirs)
 	eng.MockKeychain = true
 	log := slog.New(slog.NewTextHandler(io.Discard, nil))
 	sec := secrets.NewMemory()
@@ -77,7 +86,7 @@ func TestAPIDrivesARealBrowser(t *testing.T) {
 	s := &Service{Dirs: dirs, Store: st, Secrets: sec, Log: log, Launcher: l,
 		Engines: map[string]engine.Engine{"apostate": eng}, Preferred: "apostate"}
 	if err := st.CreateProfile(&store.Profile{ID: "api1", Name: "API", Engine: "apostate",
-		EngineVersion: apostate.Version, PersonaID: "apostate-macos", Platform: "macos",
+		EngineVersion: apostate.Version, PersonaID: apostate.HostPersona, Platform: apostate.HostPlatform,
 		SeedHex: "00000000000d0d0d", Timezone: "UTC", Languages: "en-US,en", UILocale: "en-US"}); err != nil {
 		t.Fatal(err)
 	}

@@ -1,5 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+// Fury runs on macOS only (see engines_windows.go).
+
+//go:build darwin
+
 package fury
 
 import (

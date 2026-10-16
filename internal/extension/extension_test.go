@@ -69,7 +69,8 @@ func TestUnpackFolderZipAndCRX(t *testing.T) {
 func TestUnpackRefusesUnsafeOrBrokenInput(t *testing.T) {
 	link := t.TempDir()
 	os.WriteFile(filepath.Join(link, "manifest.json"), []byte(manifest), 0o600)
-	os.Symlink("/etc/passwd", filepath.Join(link, "passwd"))
+	// Windows without Developer Mode cannot make symlinks; that case is then moot.
+	linked := os.Symlink("/etc/passwd", filepath.Join(link, "passwd")) == nil
 
 	cases := map[string]string{
 		"zip slip":     write(t, "s.zip", zipOf(t, map[string]string{"manifest.json": manifest, "../../evil.js": "x"})),
@@ -77,7 +78,9 @@ func TestUnpackRefusesUnsafeOrBrokenInput(t *testing.T) {
 		"no manifest":  write(t, "m.zip", zipOf(t, map[string]string{"a.js": "1"})),
 		"bad manifest": write(t, "b.zip", zipOf(t, map[string]string{"manifest.json": `{"manifest_version": 1, "name": "x", "version": "1"}`})),
 		"not a zip":    write(t, "n.zip", []byte("hello")),
-		"symlink":      link,
+	}
+	if linked {
+		cases["symlink"] = link
 	}
 	for name, src := range cases {
 		dst := filepath.Join(t.TempDir(), "e1")

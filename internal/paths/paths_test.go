@@ -3,26 +3,28 @@
 package paths
 
 import (
+	"path/filepath"
 	"strings"
 	"testing"
 )
 
 func TestDefaultHonoursAbsoluteOverride(t *testing.T) {
-	t.Setenv(EnvDataDir, "/tmp/ap-test-root/")
+	root := filepath.Join(t.TempDir(), "ap-test-root")
+	t.Setenv(EnvDataDir, root+string(filepath.Separator))
 	d, err := Default()
-	if err != nil || d.Root != "/tmp/ap-test-root" {
+	if err != nil || d.Root != root {
 		t.Fatalf("override = %q %v", d.Root, err)
 	}
 	t.Setenv(EnvDataDir, "relative/dir")
 	d, err = Default()
-	if err != nil || !strings.HasSuffix(d.Root, "/AnyProfile") {
+	if err != nil || !strings.HasSuffix(d.Root, string(filepath.Separator)+"AnyProfile") {
 		t.Fatalf("relative override must be ignored, got %q %v", d.Root, err)
 	}
 }
 
 func TestProfileSnapshotsIsUnderSnapshots(t *testing.T) {
-	d := Dirs{Root: "/r"}
-	if d.ProfileSnapshots("abc") != "/r/snapshots/abc" || !strings.HasPrefix(d.ProfileSnapshots("abc"), d.Snapshots()+"/") {
+	d := Dirs{Root: filepath.FromSlash("/r")}
+	if d.ProfileSnapshots("abc") != filepath.FromSlash("/r/snapshots/abc") || !strings.HasPrefix(d.ProfileSnapshots("abc"), d.Snapshots()+string(filepath.Separator)) {
 		t.Fatalf("snapshots = %s", d.ProfileSnapshots("abc"))
 	}
 }

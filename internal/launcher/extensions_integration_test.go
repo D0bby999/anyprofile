@@ -31,7 +31,7 @@ func TestExtensionLoads(t *testing.T) {
 				Languages: "en-US,en", UILocale: "en-US", StartURL: srv.URL + "/"}
 			if name == "apostate" {
 				r = newApostateRig(t)
-				p.Engine, p.EngineVersion, p.PersonaID, p.Platform = "apostate", apostate.Version, "apostate-macos", "macos"
+				p.Engine, p.EngineVersion, p.PersonaID, p.Platform = "apostate", apostate.Version, apostate.HostPersona, apostate.HostPlatform
 			} else {
 				r = newRig(t)
 				ident, err := r.eng.NewIdentity(context.Background(), 7)
@@ -123,8 +123,8 @@ func TestImportedBookmarksShowInChromium(t *testing.T) {
 	r := newApostateRig(t)
 	l := r.launcher(t)
 	l.Capture = true
-	p := &store.Profile{ID: "bm1", Name: "Bm", Engine: "apostate", EngineVersion: apostate.Version, PersonaID: "apostate-macos",
-		Platform: "macos", SeedHex: "00000000000f0f0f", Timezone: "UTC", Languages: "en-US,en", UILocale: "en-US"}
+	p := &store.Profile{ID: "bm1", Name: "Bm", Engine: "apostate", EngineVersion: apostate.Version, PersonaID: apostate.HostPersona,
+		Platform: apostate.HostPlatform, SeedHex: "00000000000f0f0f", Timezone: "UTC", Languages: "en-US,en", UILocale: "en-US"}
 	if err := r.st.CreateProfile(p); err != nil {
 		t.Fatal(err)
 	}
