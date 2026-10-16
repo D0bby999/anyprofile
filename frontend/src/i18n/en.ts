@@ -15,6 +15,7 @@ export const en = {
     newProfile: 'New profile', all: 'All profiles', running: 'Running', proxies: 'Proxies',
     trash: 'Trash', settings: 'Settings', sites: 'Platforms',
     attention: 'Needs attention', tags: 'Tags', showAll: (n: number) => `Show all (${n})`, showFewer: 'Show fewer',
+    tools: 'Creator tools',
   },
   common: {
     save: 'Save', cancel: 'Cancel', close: 'Close', delete: 'Delete', loading: 'Loading…', refresh: 'Refresh',
@@ -244,6 +245,20 @@ export const en = {
     note: 'Note', editTitle: 'Edit proxy',
     unused: 'Unused',
     emptyTitle: 'Add a sticky proxy to give each profile its own IP.', emptyAction: 'Paste proxies',
+    buy: 'Buy proxies',
+  },
+  tools: { title: 'Creator tools', sub: 'Apps that work well with AnyProfile. They open in your browser.' },
+  partners: {
+    disclosure: 'Some of these are referral links: AnyProfile may earn a commission, and you pay the same price.',
+    desc: {
+      iproyal: 'Residential traffic that does not expire, plus static ISP and mobile.',
+      decodo: 'Formerly Smartproxy. Large residential and mobile pools with sticky sessions.',
+      proxycheap: 'Low-cost static ISP and rotating residential proxies.',
+      soax: 'Residential and mobile proxies you can target by city and carrier.',
+      nodemaven: 'Residential proxies filtered for IP quality, popular with antidetect browsers.',
+      webshare: 'Mostly datacenter proxies, with a free tier. Good for testing, not for real accounts.',
+      postclaw: 'Schedule and publish posts for every TikTok, YouTube, Facebook and Instagram account from one place.',
+    } as Record<string, string>,
   },
   trash: {
     title: 'Trash', total: (n: number) => `${n} profiles`,

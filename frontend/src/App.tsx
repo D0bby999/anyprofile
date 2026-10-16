@@ -13,6 +13,7 @@ import { Icon, LogoMark } from './components/icons'
 import { ProfilesPage } from './pages/profiles-page'
 import { ProxiesPage } from './pages/proxies-page'
 import { TrashPage } from './pages/trash-page'
+import { ToolsPage } from './pages/tools-page'
 import { SettingsPage } from './pages/settings-page'
 import { WelcomePage } from './pages/welcome-page'
 import { CommandPalette, type Command } from './components/command-palette'
@@ -140,6 +141,7 @@ export default function App() {
     { id: 'attention', label: t.nav.attention, icon: 'alert', run: () => navigate('profiles', 'attention') },
     { id: 'proxies', label: t.nav.proxies, icon: 'proxy', run: () => setPage('proxies') },
     { id: 'trash', label: t.nav.trash, icon: 'trash', run: () => setPage('trash') },
+    { id: 'tools', label: t.nav.tools, icon: 'spark', run: () => setPage('tools') },
     { id: 'settings', label: t.nav.settings, icon: 'settings', run: () => setPage('settings') },
   ]
   const openProfile = (id: string) => { setPage('profiles'); setActiveId(id) }
@@ -162,6 +164,7 @@ export default function App() {
         )}
         {page === 'proxies' && <ProxiesPage onChanged={() => { refreshProxies(); profiles.reload() }} />}
         {page === 'trash' && <TrashPage onChanged={profiles.reload} />}
+        {page === 'tools' && <ToolsPage />}
         {page === 'settings' && (
           <SettingsPage engines={engines ?? []} engineCounts={engineCounts} defaults={defaults} onEnginesChanged={refreshEngines} theme={theme} onTheme={setTheme} fileVaultOn={fileVaultOn}
             lang={lang} onLanguage={changeLanguage} openProfiles={profiles.rows.filter((r) => r.state === 'running').length} />

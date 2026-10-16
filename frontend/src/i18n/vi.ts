@@ -16,6 +16,7 @@ export const vi: Messages = {
     newProfile: 'Profile mới', all: 'Tất cả profile', running: 'Đang chạy', proxies: 'Proxy',
     trash: 'Thùng rác', settings: 'Cài đặt', sites: 'Nền tảng',
     attention: 'Cần chú ý', tags: 'Tag', showAll: (n: number) => `Xem tất cả (${n})`, showFewer: 'Thu gọn',
+    tools: 'Công cụ cho creator',
   },
   common: {
     save: 'Lưu', cancel: 'Huỷ', close: 'Đóng', delete: 'Xoá', loading: 'Đang tải…', refresh: 'Làm mới',
@@ -245,6 +246,20 @@ export const vi: Messages = {
     note: 'Ghi chú', editTitle: 'Sửa proxy',
     unused: 'Chưa dùng',
     emptyTitle: 'Thêm proxy sticky để mỗi profile có IP riêng.', emptyAction: 'Dán proxy',
+    buy: 'Mua proxy',
+  },
+  tools: { title: 'Công cụ cho creator', sub: 'Ứng dụng dùng tốt cùng AnyProfile. Mở trong trình duyệt của bạn.' },
+  partners: {
+    disclosure: 'Một số link là link giới thiệu: AnyProfile có thể nhận hoa hồng, giá bạn trả không đổi.',
+    desc: {
+      iproyal: 'Lưu lượng residential không hết hạn, kèm ISP tĩnh và mobile.',
+      decodo: 'Tên cũ là Smartproxy. Kho residential và mobile lớn, có phiên sticky.',
+      proxycheap: 'ISP tĩnh và residential xoay giá rẻ.',
+      soax: 'Proxy residential và mobile, chọn được thành phố và nhà mạng.',
+      nodemaven: 'Proxy residential được lọc theo chất lượng IP, nhiều người dùng trình duyệt antidetect chọn.',
+      webshare: 'Phần lớn là proxy datacenter, có gói miễn phí. Hợp để thử, không hợp cho tài khoản thật.',
+      postclaw: 'Lên lịch và đăng bài cho mọi tài khoản TikTok, YouTube, Facebook, Instagram từ một nơi.',
+    } as Record<string, string>,
   },
   trash: {
     title: 'Thùng rác', total: (n: number) => `${n} profile`,

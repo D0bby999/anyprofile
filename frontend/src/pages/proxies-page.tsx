@@ -7,6 +7,7 @@ import { EmptyState } from '../components/empty-state'
 import { Icon } from '../components/icons'
 import { PageHead } from '../components/page-head'
 import { ProxyEditDialog } from '../components/proxy-edit-dialog'
+import { BuyProxyDialog } from '../components/partner-grid'
 import { useToast } from '../components/toast'
 import { useConfirm } from '../components/confirm'
 
@@ -26,6 +27,7 @@ export function ProxiesPage({ onChanged }: { onChanged: () => void }) {
   const confirm = useConfirm()
   const [editing, setEditing] = useState<service.ProxyRow | null>(null)
   const [expiresOn, setExpiresOn] = useState('')
+  const [buying, setBuying] = useState(false)
   const paste = useRef<HTMLTextAreaElement>(null)
 
   const load = useCallback(() => { Api.ListProxies().then((r) => setRows(r ?? [])).catch((e) => toast.error(errorText(e))) }, [toast])
@@ -61,6 +63,7 @@ export function ProxiesPage({ onChanged }: { onChanged: () => void }) {
           onClick={() => run('all', () => Api.CheckAllProxies())}>
           <Icon name="refresh" />{t.proxies.checkAll}
         </button>
+        <button className="btn nodrag" onClick={() => setBuying(true)}><Icon name="cart" />{t.proxies.buy}</button>
       </PageHead>
       <div className="pagebody">
         <section className="card pad">
@@ -84,7 +87,10 @@ export function ProxiesPage({ onChanged }: { onChanged: () => void }) {
           <div className="tablewrap">
             {rows.length === 0 ? (
               <EmptyState icon="proxy" title={t.proxies.emptyTitle}>
-                <button className="btn" onClick={() => paste.current?.focus()}>{t.proxies.emptyAction}</button>
+                <span className="row">
+                  <button className="btn" onClick={() => paste.current?.focus()}>{t.proxies.emptyAction}</button>
+                  <button className="btn" onClick={() => setBuying(true)}><Icon name="cart" />{t.proxies.buy}</button>
+                </span>
               </EmptyState>
             ) : (
               <table className="table">
@@ -129,6 +135,7 @@ export function ProxiesPage({ onChanged }: { onChanged: () => void }) {
           </div>
         </section>
       </div>
+      {buying && <BuyProxyDialog onClose={() => setBuying(false)} />}
       {editing && <ProxyEditDialog row={editing} onClose={() => setEditing(null)} onSaved={() => { setEditing(null); load(); onChanged() }} />}
     </>
   )

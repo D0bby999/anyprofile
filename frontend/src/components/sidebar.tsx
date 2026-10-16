@@ -7,7 +7,7 @@ import type { Site } from '../lib/sites'
 import { SiteGlyph } from './site-glyph'
 import { Icon, LogoMark, type IconName } from './icons'
 
-export type Page = 'profiles' | 'proxies' | 'trash' | 'settings'
+export type Page = 'profiles' | 'proxies' | 'trash' | 'tools' | 'settings'
 /** What the profile table shows: everything, the running ones, the ones that
  *  need attention (both picked from the status bar), one platform, or one tag. */
 export type View = 'all' | 'running' | 'attention' | `site:${string}` | `tag:${string}`
@@ -97,6 +97,7 @@ export function Sidebar({ page, view, counts, tags, sites, siteCounts, proxyCoun
         )}
       </nav>
       <div className="sidefoot">
+        {item(t.nav.tools, 'spark', page === 'tools', () => onNavigate('tools'))}
         {item(t.nav.settings, 'settings', page === 'settings', () => onNavigate('settings'))}
         {engineLabel && (engineReady ? (
           <div className="enginechip"><span className="state ok" />{engineLabel}</div>
