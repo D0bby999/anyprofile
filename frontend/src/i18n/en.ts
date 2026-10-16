@@ -2,6 +2,13 @@
 // English is the source catalog: vi.ts is typed against it, so a missing or
 // extra key there fails the typecheck.
 
+import { isWindows, modLabel as M } from '../lib/platform'
+
+// Where secrets live and what encrypts the disk, on the computer the app runs on.
+const vault = isWindows ? 'Windows Credential Manager' : 'the macOS Keychain'
+const vaultShort = isWindows ? 'Windows Credential Manager' : 'the Keychain'
+const disk = isWindows ? 'BitLocker' : 'FileVault'
+
 export const en = {
   appName: 'AnyProfile',
   nav: {
@@ -53,8 +60,8 @@ export const en = {
     exportCookies: { title: 'Export the cookies?', body: 'This file lets anyone sign in to these accounts. Keep it private and delete it after use.', confirm: 'Export' },
     trash: (name: string) => ({ title: `Move "${name}" to the trash?`, body: 'It stops showing in your lists. You can restore it from Trash until you delete it for good.', confirm: 'Move to trash' }),
     purge: (name: string) => ({ title: `Delete "${name}" for good?`, body: 'Its cookies, logins and data are gone. This cannot be undone.', confirm: 'Delete for good' }),
-    forgetAccount: (site: string) => ({ title: `Forget the ${site} account?`, body: 'Its login, password and 2FA secret are deleted from this Mac. The account itself is not touched.', confirm: 'Forget account' }),
-    deleteExtension: (name: string, n: number) => ({ title: `Delete ${name}?`, body: n ? `It is turned off in ${n === 1 ? '1 profile' : `${n} profiles`} and removed from this Mac.` : 'It is removed from this Mac.', confirm: 'Delete extension' }),
+    forgetAccount: (site: string) => ({ title: `Forget the ${site} account?`, body: 'Its login, password and 2FA secret are deleted from this computer. The account itself is not touched.', confirm: 'Forget account' }),
+    deleteExtension: (name: string, n: number) => ({ title: `Delete ${name}?`, body: n ? `It is turned off in ${n === 1 ? '1 profile' : `${n} profiles`} and removed from this computer.` : 'It is removed from this computer.', confirm: 'Delete extension' }),
     resetFingerprint: { title: 'Measure the fingerprint again?', body: 'The next launch becomes the new reference. Do this only after you changed the engine on purpose.', confirm: 'Reset reference' },
     orphans: (n: number) => ({ title: `Delete ${n} leftover folders?`, body: 'Their cookies and logins are gone for good. This cannot be undone.', confirm: 'Delete folders' }),
   },
@@ -127,9 +134,9 @@ export const en = {
   keys: {
     title: 'Keyboard shortcuts',
     rows: [
-      ['⌘K', 'Open the command palette'], ['⌘N', 'New profile'], ['⌘F  /', 'Search profiles'],
-      ['↑  ↓', 'Move between rows'], ['Enter', 'Open the details of the row'], ['⌘Enter', 'Open the browser, or bring it to the front'],
-      ['Space', 'Select or unselect the row'], ['⌘A', 'Select every row shown'], ['Esc', 'Close the top layer, then clear the selection'],
+      [`${M}K`, 'Open the command palette'], [`${M}N`, 'New profile'], [`${M}F  /`, 'Search profiles'],
+      ['↑  ↓', 'Move between rows'], ['Enter', 'Open the details of the row'], [`${M}Enter`, 'Open the browser, or bring it to the front'],
+      ['Space', 'Select or unselect the row'], [`${M}A`, 'Select every row shown'], ['Esc', 'Close the top layer, then clear the selection'],
       ['?', 'Show this list'],
     ] as [string, string][],
   },
@@ -138,7 +145,7 @@ export const en = {
     engineTitle: 'Install the browser',
     engineText: 'AnyProfile runs each profile in Apostate, a patched Chromium. It is checked against the publisher\u2019s signature before first use.',
     engineDone: (v: string) => `Apostate ${v} installed`,
-    install: 'Install', fileVault: 'Turn on FileVault so saved logins stay encrypted on disk.',
+    install: 'Install', fileVault: `Turn on ${disk} so saved logins stay encrypted on disk.`,
     proxyTitle: 'Add a proxy', proxyText: 'Each profile needs its own sticky proxy, so every account has its own IP.',
     proxyPlaceholder: 'host:port:user:password\nhttp://user:password@host:port',
     checkAdd: 'Check and add', checking: 'Checking…', continue: 'Continue',
@@ -146,8 +153,9 @@ export const en = {
     skipProxy: 'Continue without a proxy', noProxyWarn: 'Profiles without a proxy show your real IP.', continueAnyway: 'Continue anyway',
     notChecked: 'not checked',
     profileTitle: 'Create your first profile', namePlaceholder: 'e.g. Etsy shop US',
-    keychain: 'macOS may ask once whether AnyProfile can use the Keychain. Choose Always Allow.',
-    create: 'Create profile', creating: 'Creating…', created: 'Profile created. Press ⌘Enter to open it.',
+    keychain: isWindows ? 'Passwords and keys are kept in Windows Credential Manager, under your Windows account.'
+      : 'macOS may ask once whether AnyProfile can use the Keychain. Choose Always Allow.',
+    create: 'Create profile', creating: 'Creating…', created: `Profile created. Press ${M}Enter to open it.`,
   },
   flags: {
     country_changed: 'Country changed', country_changedText: (to: string, from: string) => `The proxy now exits in ${to}. Last time it was ${from}.`,
@@ -166,7 +174,7 @@ export const en = {
       tz_profile: 'The browser clock uses a different timezone than the profile.',
       langs: 'The browser languages differ from the profile.',
       ua_version: 'The browser reports a different Chrome version than the engine.',
-      platform: 'The browser does not report a Mac.',
+      platform: 'The browser reports another operating system than the profile\u2019s.',
       chrome_height: 'A bar is taking space at the top of the page. Sites can measure it.',
       geolocation: 'Sites could read your real location.',
       hwc_pin: 'The CPU core count differs from the value pinned for this profile.',
@@ -226,7 +234,7 @@ export const en = {
     import: 'Add and check', importing: 'Adding and checking…',
     added: (n: number) => `Added ${n} proxies.`,
     failedLine: (line: number, err: string) => `Line ${line}: ${err}`,
-    passwordNote: 'Passwords are kept in the macOS Keychain and never shown again.',
+    passwordNote: `Passwords are kept in ${vault} and never shown again.`,
     checkAll: 'Check all', check: 'Check again', rename: 'Rename',
     colLabel: 'Proxy', colExit: 'Exit IP and timezone',
     ipv6Elsewhere: (ip: string, tz: string) => `Sites with IPv6 see this proxy at ${ip}, in ${tz}, not where its IPv4 address is.`, colUsedBy: 'Used by', colStatus: 'Status',
@@ -247,9 +255,11 @@ export const en = {
     themeTitle: 'Appearance', themeSystem: 'System', themeLight: 'Light', themeDark: 'Dark',
     languageTitle: 'Language', languageEn: 'English', languageVi: 'Tiếng Việt',
     securityTitle: 'Security',
-    fileVaultOn: 'FileVault is on. Profile data on disk is encrypted.',
-    fileVaultOff: 'FileVault is off. Profiles\u2019 history and site data sit unencrypted on disk. Turn it on in System Settings, under Privacy & Security.',
-    secretsNote: 'Proxy passwords and cookie encryption keys live in the Keychain. No control port is open unless you enable diagnostics.',
+    fileVaultOn: `${disk} is on. Profile data on disk is encrypted.`,
+    fileVaultOff: `${disk} is off. Profiles\u2019 history and site data sit unencrypted on disk. ` + (isWindows
+      ? 'Turn on Device encryption or BitLocker in Windows Settings, under Privacy & security.'
+      : 'Turn it on in System Settings, under Privacy & Security.'),
+    secretsNote: `Proxy passwords and cookie encryption keys live in ${vaultShort}. No control port is open unless you enable diagnostics.`,
   },
   bulk: {
     site: 'Platform…', tag: 'Add tag…', proxy: 'Proxies…',
@@ -288,7 +298,7 @@ export const en = {
     totpPlaceholder: '2FA secret or otpauth:// link',
     copyCode: 'Copy code',
     secondsLeft: (n: number) => `${n}s`,
-    note: 'The password and the 2FA secret stay in the macOS Keychain and are never shown.',
+    note: `The password and the 2FA secret stay in ${vault} and are never shown.`,
     removedNote: 'Accounts of platforms no longer on this profile. Add the platform back to use them, or forget them.',
     forget: 'Forget',
   },
@@ -310,7 +320,7 @@ export const en = {
     copyToken: 'Copy token', newToken: 'New token',
     tokenCopied: 'Token copied. It is cleared from the clipboard in 90 s.',
     newTokenConfirm: { title: 'Make a new token?', body: 'Scripts that use the current token stop working until you give them the new one.', confirm: 'Replace token' },
-    hint: 'Lets scripts on this Mac open and close profiles (Puppeteer, Playwright, Python, n8n). Only this Mac can reach it, and only with the token. A script that asks for DevTools gets full control of that browser, cookies included, until it closes. Examples: docs/local-api.md.',
+    hint: 'Lets scripts on this computer open and close profiles (Puppeteer, Playwright, Python, n8n). Only this computer can reach it, and only with the token. A script that asks for DevTools gets full control of that browser, cookies included, until it closes. Examples: docs/local-api.md.',
   },
   onOpen: {
     title: 'Opening a profile', restore: 'Reopen last tabs', start: 'Open start pages',
@@ -352,8 +362,8 @@ export const en = {
     profile_not_trashed: 'Move the profile to the trash first.',
     proxy_in_use: 'A running profile uses this proxy. Close it first.',
     proxy_unreachable: 'The proxy did not answer. Check the address, port and password, or ask the provider.',
-    cookie_key_lost: 'This profile\u2019s cookie key is missing from the Keychain. Opening it with a new key would sign it out of every site.',
-    cookie_key_mismatch: 'The Keychain holds a different cookie key than this profile was created with.',
+    cookie_key_lost: `This profile\u2019s cookie key is missing from ${vaultShort}. Opening it with a new key would sign it out of every site.`,
+    cookie_key_mismatch: `${isWindows ? 'Windows Credential Manager' : 'The Keychain'} holds a different cookie key than this profile was created with.`,
     engine_missing: 'The browser engine is not installed. Install it in Settings.',
     folder_in_use: 'Another process already uses this profile\u2019s folder. Close it first.',
     bad_language: 'That language is not supported.',

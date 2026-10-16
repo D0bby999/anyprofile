@@ -4,6 +4,7 @@ import type { service } from '../api'
 import { t } from '../i18n'
 import { fold } from '../lib/format'
 import { machineLabel } from '../lib/persona'
+import { modDown, modLabel } from '../lib/platform'
 import { Icon, type IconName } from './icons'
 
 export type Command = { id: string; label: string; icon: IconName; run: () => void }
@@ -73,8 +74,8 @@ export function CommandPalette({ profiles, actions, places, onOpenProfile, onLau
     if (e.nativeEvent.isComposing) return
     if (e.key === 'ArrowDown') { e.preventDefault(); setCursor((c) => Math.min(c + 1, flat.length - 1)) }
     if (e.key === 'ArrowUp') { e.preventDefault(); setCursor((c) => Math.max(c - 1, 0)) }
-    if (e.key === 'Enter') { e.preventDefault(); choose(flat[cursor], e.metaKey) }
-    if (e.key === 'Escape' || (e.key === 'k' && e.metaKey)) { e.preventDefault(); e.stopPropagation(); onClose() }
+    if (e.key === 'Enter') { e.preventDefault(); choose(flat[cursor], modDown(e)) }
+    if (e.key === 'Escape' || (e.key === 'k' && modDown(e))) { e.preventDefault(); e.stopPropagation(); onClose() }
   }
 
   let index = -1
@@ -97,10 +98,10 @@ export function CommandPalette({ profiles, actions, places, onOpenProfile, onLau
                 const i = index
                 return (
                   <div key={item.key} id={`pal-${item.key}`} role="option" aria-selected={i === cursor} className="palette-item"
-                    onMouseMove={() => setCursor(i)} onClick={(e) => choose(item, e.metaKey)}>
+                    onMouseMove={() => setCursor(i)} onClick={(e) => choose(item, modDown(e))}>
                     {item.kind === 'profile' ? <Icon name="profiles" className="icon sm" /> : <Icon name={item.icon} className="icon sm" />}
                     <span className="grow">{item.label}{item.kind === 'profile' && <small>{item.sub}</small>}</span>
-                    {i === cursor && item.kind === 'profile' && <kbd>⌘↵</kbd>}
+                    {i === cursor && item.kind === 'profile' && <kbd>{modLabel}↵</kbd>}
                   </div>
                 )
               })}

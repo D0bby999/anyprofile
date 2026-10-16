@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
+import { isWindows, modDown } from './platform'
 
 /** A key combo: "mod+k", "mod+enter", "/", "?", "up", "down", "enter", "space", "escape". */
 export type Shortcut = {
@@ -17,7 +18,7 @@ const names: Record<string, string> = { arrowup: 'up', arrowdown: 'down', ' ': '
 /** The combo a keyboard event stands for, as written in a Shortcut. */
 export function comboOf(e: Pick<KeyboardEvent, 'key' | 'metaKey' | 'ctrlKey' | 'altKey'>): string {
   const key = e.key.toLowerCase()
-  return (e.metaKey ? 'mod+' : '') + (names[key] ?? key)
+  return (modDown(e) ? 'mod+' : '') + (names[key] ?? key)
 }
 
 function typingIn(target: EventTarget | null): boolean {
@@ -27,7 +28,8 @@ function typingIn(target: EventTarget | null): boolean {
 export function handleKey(e: KeyboardEvent) {
   // Vietnamese and other input methods compose with keydown events; never act on them.
   if (e.isComposing || e.keyCode === 229) return
-  if (e.ctrlKey || e.altKey) return
+  // The other modifier (Ctrl on a Mac, the Windows key on Windows) belongs to the system.
+  if (e.altKey || (isWindows ? e.metaKey : e.ctrlKey)) return
   const combo = comboOf(e)
   const typing = typingIn(e.target)
   // Enter and Space keep pressing the focused button, link or tab.

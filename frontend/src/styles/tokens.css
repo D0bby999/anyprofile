@@ -87,7 +87,7 @@
   --sidebar-w: 236px;
   --titlebar-h: 38px; /* room for the macOS traffic lights */
   --font: "Inter Variable", "Inter", -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
-  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, "Cascadia Mono", Consolas, monospace;
 
   --t-2xs: 10.5px;
   --t-xs: 11.5px;
@@ -106,6 +106,9 @@
   --tag-7: oklch(0.6 0.17 10);
   --tag-8: oklch(0.56 0.15 300);
 }
+
+/* Windows draws its own title bar above the page. */
+html.win { --titlebar-h: 12px; }
 
 /* Dark is composed, not inverted: neutral charcoal, elevation by lighter
    surfaces instead of shadows, and a lifted accent for text. */

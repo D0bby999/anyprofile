@@ -3,6 +3,12 @@
 // the typecheck.
 
 import type { Messages } from './en'
+import { isWindows, modLabel as M } from '../lib/platform'
+
+// Nơi cất bí mật và thứ mã hoá ổ đĩa, theo máy đang chạy app.
+const vault = isWindows ? 'Windows Credential Manager' : 'Keychain của macOS'
+const vaultShort = isWindows ? 'Windows Credential Manager' : 'Keychain'
+const disk = isWindows ? 'BitLocker' : 'FileVault'
 
 export const vi: Messages = {
   appName: 'AnyProfile',
@@ -129,9 +135,9 @@ export const vi: Messages = {
   keys: {
     title: 'Phím tắt',
     rows: [
-      ['⌘K', 'Mở bảng lệnh'], ['⌘N', 'Profile mới'], ['⌘F  /', 'Tìm profile'],
-      ['↑  ↓', 'Chuyển giữa các hàng'], ['Enter', 'Mở chi tiết của hàng'], ['⌘Enter', 'Mở trình duyệt, hoặc đưa nó lên trước'],
-      ['Space', 'Chọn hoặc bỏ chọn hàng'], ['⌘A', 'Chọn mọi hàng đang hiện'], ['Esc', 'Đóng lớp trên cùng, rồi bỏ chọn'],
+      [`${M}K`, 'Mở bảng lệnh'], [`${M}N`, 'Profile mới'], [`${M}F  /`, 'Tìm profile'],
+      ['↑  ↓', 'Chuyển giữa các hàng'], ['Enter', 'Mở chi tiết của hàng'], [`${M}Enter`, 'Mở trình duyệt, hoặc đưa nó lên trước'],
+      ['Space', 'Chọn hoặc bỏ chọn hàng'], [`${M}A`, 'Chọn mọi hàng đang hiện'], ['Esc', 'Đóng lớp trên cùng, rồi bỏ chọn'],
       ['?', 'Hiện danh sách này'],
     ] as [string, string][],
   },
@@ -140,7 +146,7 @@ export const vi: Messages = {
     engineTitle: 'Cài trình duyệt',
     engineText: 'AnyProfile chạy mỗi profile trong Apostate, một bản Chromium đã vá. Nó được kiểm chữ ký của nhà phát hành trước lần dùng đầu.',
     engineDone: (v: string) => `Đã cài Apostate ${v}`,
-    install: 'Cài đặt', fileVault: 'Bật FileVault để đăng nhập đã lưu được mã hoá trên ổ đĩa.',
+    install: 'Cài đặt', fileVault: `Bật ${disk} để đăng nhập đã lưu được mã hoá trên ổ đĩa.`,
     proxyTitle: 'Thêm proxy', proxyText: 'Mỗi profile cần một proxy sticky riêng, để mỗi tài khoản có IP riêng.',
     proxyPlaceholder: 'host:port:user:password\nhttp://user:password@host:port',
     checkAdd: 'Kiểm và thêm', checking: 'Đang kiểm…', continue: 'Tiếp tục',
@@ -148,8 +154,9 @@ export const vi: Messages = {
     skipProxy: 'Tiếp tục không có proxy', noProxyWarn: 'Profile không có proxy sẽ hiện IP thật của bạn.', continueAnyway: 'Vẫn tiếp tục',
     notChecked: 'chưa kiểm',
     profileTitle: 'Tạo profile đầu tiên', namePlaceholder: 'Ví dụ: Shop Etsy US',
-    keychain: 'macOS có thể hỏi một lần xem AnyProfile có được dùng Keychain không. Chọn Always Allow.',
-    create: 'Tạo profile', creating: 'Đang tạo…', created: 'Đã tạo profile. Nhấn ⌘Enter để mở.',
+    keychain: isWindows ? 'Mật khẩu và khoá được cất trong Windows Credential Manager, theo tài khoản Windows của bạn.'
+      : 'macOS có thể hỏi một lần xem AnyProfile có được dùng Keychain không. Chọn Always Allow.',
+    create: 'Tạo profile', creating: 'Đang tạo…', created: `Đã tạo profile. Nhấn ${M}Enter để mở.`,
   },
   flags: {
     country_changed: 'Đổi quốc gia', country_changedText: (to: string, from: string) => `Proxy giờ đi ra ở ${to}. Lần trước là ${from}.`,
@@ -168,7 +175,7 @@ export const vi: Messages = {
       tz_profile: 'Đồng hồ của trình duyệt dùng múi giờ khác với profile.',
       langs: 'Ngôn ngữ của trình duyệt khác với profile.',
       ua_version: 'Trình duyệt báo phiên bản Chrome khác với engine.',
-      platform: 'Trình duyệt không báo là máy Mac.',
+      platform: 'Trình duyệt báo hệ điều hành khác với của profile.',
       chrome_height: 'Có một thanh chiếm chỗ ở đầu trang. Trang web đo được nó.',
       geolocation: 'Trang web có thể đọc vị trí thật của bạn.',
       hwc_pin: 'Số nhân CPU khác với giá trị đã ghim cho profile này.',
@@ -228,7 +235,7 @@ export const vi: Messages = {
     import: 'Thêm và kiểm tra', importing: 'Đang thêm và kiểm tra…',
     added: (n: number) => `Đã thêm ${n} proxy.`,
     failedLine: (line: number, err: string) => `Dòng ${line}: ${err}`,
-    passwordNote: 'Mật khẩu được cất trong Keychain của macOS và không bao giờ hiện lại.',
+    passwordNote: `Mật khẩu được cất trong ${vault} và không bao giờ hiện lại.`,
     checkAll: 'Kiểm tra tất cả', check: 'Kiểm tra lại', rename: 'Đổi tên',
     colLabel: 'Proxy', colExit: 'IP ra và múi giờ',
     ipv6Elsewhere: (ip: string, tz: string) => `Trang có IPv6 thấy proxy này ở ${ip}, múi giờ ${tz}, khác nơi của địa chỉ IPv4.`, colUsedBy: 'Profile đang dùng', colStatus: 'Tình trạng',
@@ -249,9 +256,11 @@ export const vi: Messages = {
     themeTitle: 'Giao diện', themeSystem: 'Theo hệ thống', themeLight: 'Sáng', themeDark: 'Tối',
     languageTitle: 'Ngôn ngữ', languageEn: 'English', languageVi: 'Tiếng Việt',
     securityTitle: 'Bảo mật',
-    fileVaultOn: 'FileVault đang bật. Dữ liệu profile trên ổ đĩa được mã hoá.',
-    fileVaultOff: 'FileVault đang tắt. Lịch sử và dữ liệu trang của các profile nằm trên ổ đĩa không mã hoá. Nên bật trong System Settings, mục Privacy & Security.',
-    secretsNote: 'Mật khẩu proxy và khoá mã hoá cookie nằm trong Keychain. Không có cổng điều khiển nào mở khi bạn chưa bật chẩn đoán.',
+    fileVaultOn: `${disk} đang bật. Dữ liệu profile trên ổ đĩa được mã hoá.`,
+    fileVaultOff: `${disk} đang tắt. Lịch sử và dữ liệu trang của các profile nằm trên ổ đĩa không mã hoá. ` + (isWindows
+      ? 'Nên bật Device encryption hoặc BitLocker trong Windows Settings, mục Privacy & security.'
+      : 'Nên bật trong System Settings, mục Privacy & Security.'),
+    secretsNote: `Mật khẩu proxy và khoá mã hoá cookie nằm trong ${vaultShort}. Không có cổng điều khiển nào mở khi bạn chưa bật chẩn đoán.`,
   },
   bulk: {
     site: 'Nền tảng…', tag: 'Thêm tag…', proxy: 'Proxy…',
@@ -290,7 +299,7 @@ export const vi: Messages = {
     totpPlaceholder: 'Secret 2FA hoặc link otpauth://',
     copyCode: 'Chép mã',
     secondsLeft: (n: number) => `${n} giây`,
-    note: 'Mật khẩu và secret 2FA nằm trong Keychain của macOS và không bao giờ hiện ra.',
+    note: `Mật khẩu và secret 2FA nằm trong ${vault} và không bao giờ hiện ra.`,
     removedNote: 'Tài khoản của nền tảng đã bỏ khỏi profile. Thêm lại nền tảng để dùng, hoặc quên chúng.',
     forget: 'Quên',
   },
@@ -312,7 +321,7 @@ export const vi: Messages = {
     copyToken: 'Chép token', newToken: 'Token mới',
     tokenCopied: 'Đã chép token. Token sẽ tự xoá khỏi bộ nhớ tạm sau 90 giây.',
     newTokenConfirm: { title: 'Tạo token mới?', body: 'Các script đang dùng token cũ sẽ ngừng chạy cho tới khi bạn đưa token mới cho chúng.', confirm: 'Thay token' },
-    hint: 'Cho script trên máy Mac này mở và đóng profile (Puppeteer, Playwright, Python, n8n). Chỉ máy này gọi được, và phải có token. Script xin DevTools sẽ điều khiển toàn bộ trình duyệt đó, kể cả cookie, cho tới khi nó đóng. Ví dụ: docs/local-api.md.',
+    hint: 'Cho script trên máy này mở và đóng profile (Puppeteer, Playwright, Python, n8n). Chỉ máy này gọi được, và phải có token. Script xin DevTools sẽ điều khiển toàn bộ trình duyệt đó, kể cả cookie, cho tới khi nó đóng. Ví dụ: docs/local-api.md.',
   },
   onOpen: {
     title: 'Khi mở profile', restore: 'Mở lại các tab lần trước', start: 'Luôn mở trang mở đầu',
@@ -354,8 +363,8 @@ export const vi: Messages = {
     profile_not_trashed: 'Hãy bỏ profile vào thùng rác trước.',
     proxy_in_use: 'Một profile đang chạy dùng proxy này. Hãy đóng profile đó trước.',
     proxy_unreachable: 'Proxy không phản hồi. Kiểm tra địa chỉ, cổng và mật khẩu, hoặc hỏi nhà cung cấp.',
-    cookie_key_lost: 'Khoá cookie của profile này không còn trong Keychain. Mở bằng khoá mới sẽ đăng xuất mọi trang.',
-    cookie_key_mismatch: 'Keychain đang giữ khoá cookie khác với khoá profile được tạo.',
+    cookie_key_lost: `Khoá cookie của profile này không còn trong ${vaultShort}. Mở bằng khoá mới sẽ đăng xuất mọi trang.`,
+    cookie_key_mismatch: `${vaultShort} đang giữ khoá cookie khác với khoá profile được tạo.`,
     engine_missing: 'Chưa cài engine trình duyệt. Hãy cài trong mục Cài đặt.',
     folder_in_use: 'Một tiến trình khác đang dùng thư mục của profile này. Hãy đóng nó trước.',
     bad_language: 'Ngôn ngữ này không được hỗ trợ.',

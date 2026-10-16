@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { t } from '../i18n'
 import { tagColor } from '../lib/tags'
+import { modLabel } from '../lib/platform'
 import type { Site } from '../lib/sites'
 import { SiteGlyph } from './site-glyph'
 import { Icon, LogoMark, type IconName } from './icons'
@@ -51,7 +52,7 @@ export function Sidebar({ page, view, counts, tags, sites, siteCounts, proxyCoun
         <LogoMark />
         <b>{t.appName}</b>
       </div>
-      <button className="btn primary block newbtn nodrag" onClick={onNewProfile} title={`${t.nav.newProfile} ⌘N`}>
+      <button className="btn primary block newbtn nodrag" onClick={onNewProfile} title={`${t.nav.newProfile} ${modLabel}N`}>
         <Icon name="plus" />
         {t.nav.newProfile}
       </button>

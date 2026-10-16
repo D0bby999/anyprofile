@@ -10,6 +10,10 @@ import { ToastProvider } from './components/toast'
 import { ConfirmProvider } from './components/confirm'
 import { Api } from './api'
 import { setLanguage } from './i18n'
+import { isWindows } from './lib/platform'
+
+// Windows draws its own title bar above the page; no room for traffic lights.
+if (isWindows) document.documentElement.classList.add('win')
 
 const root = createRoot(document.getElementById('root')!)
 Api.Language().then(setLanguage).catch(() => setLanguage('en')).finally(() => root.render(
