@@ -63,7 +63,7 @@ export function ProxiesPage({ onChanged }: { onChanged: () => void }) {
           onClick={() => run('all', () => Api.CheckAllProxies())}>
           <Icon name="refresh" />{t.proxies.checkAll}
         </button>
-        <button className="btn nodrag" onClick={() => setBuying(true)}><Icon name="cart" />{t.proxies.buy}</button>
+        <button className="btn buy nodrag" onClick={() => setBuying(true)}><Icon name="cart" />{t.proxies.buy}</button>
       </PageHead>
       <div className="pagebody">
         <section className="card pad">
@@ -89,7 +89,7 @@ export function ProxiesPage({ onChanged }: { onChanged: () => void }) {
               <EmptyState icon="proxy" title={t.proxies.emptyTitle}>
                 <span className="row">
                   <button className="btn" onClick={() => paste.current?.focus()}>{t.proxies.emptyAction}</button>
-                  <button className="btn" onClick={() => setBuying(true)}><Icon name="cart" />{t.proxies.buy}</button>
+                  <button className="btn buy" onClick={() => setBuying(true)}><Icon name="cart" />{t.proxies.buy}</button>
                 </span>
               </EmptyState>
             ) : (

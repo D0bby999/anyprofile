@@ -48,4 +48,15 @@ describe('ProxiesPage', () => {
     fireEvent.click(within(dialog).getByRole('button', { name: /IPRoyal/ }))
     expect(openExternal).toHaveBeenCalledWith('https://iproyal.com/')
   })
+
+  it('narrows Buy proxies to one proxy type', async () => {
+    render(<ConfirmProvider><ToastProvider><ProxiesPage onChanged={vi.fn()} /></ToastProvider></ConfirmProvider>)
+    await screen.findByText('1.2.3.4')
+    fireEvent.click(screen.getByRole('button', { name: t.proxies.buy }))
+    const dialog = screen.getByRole('dialog', { name: t.proxies.buy })
+    fireEvent.click(within(within(dialog).getByRole('group', { name: t.partners.filter })).getByRole('button', { name: t.partners.types.mobile }))
+    const mobile = partnersOf('proxy').filter((p) => p.types?.includes('mobile'))
+    expect(within(dialog).getAllByRole('listitem')).toHaveLength(mobile.length)
+    expect(within(dialog).queryByText('Massive')).toBeNull()
+  })
 })

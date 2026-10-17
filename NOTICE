@@ -64,6 +64,11 @@ Bootstrap Icons and theSVG
   (https://github.com/glincker/thesvg), Copyright (c) 2025 thesvg.org, MIT.
   Full texts: frontend/src/sites/LICENSE-extra-icons.txt.
 
+Partner logos
+  frontend/src/assets/partners/ holds the icons that proxy providers and creator
+  tools publish on their own websites, shown next to links to those sites. Each
+  logo is a trademark of its owner; no endorsement is implied.
+
 Inter typeface
   Bundled through @fontsource-variable/inter. Copyright The Inter Project
   Authors. License: SIL Open Font License 1.1.

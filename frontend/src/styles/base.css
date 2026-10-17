@@ -64,6 +64,10 @@ input, textarea { caret-color: var(--accent); }
 .btn.stop { color: var(--on-fill); background: var(--danger-fill); border-color: var(--danger-fill); box-shadow: 0 1px 2px rgba(220, 59, 50, .26); }
 .btn.stop .icon { color: currentColor; }
 .btn.stop:hover:not(:disabled) { color: var(--on-fill); background: var(--danger-fill-hover); border-color: var(--danger-fill-hover); }
+/* Buy: green, so it never reads as the page's blue primary action or a plain tool button. */
+.btn.buy { color: var(--success-ink); background: var(--success-soft); border-color: var(--success-line); }
+.btn.buy .icon { color: currentColor; }
+.btn.buy:hover:not(:disabled) { color: var(--success-ink); background: var(--success-line); border-color: var(--success); }
 .btn.danger { color: var(--danger-ink); }
 .btn.danger:hover:not(:disabled) { color: var(--danger-ink); background: var(--danger-soft); border-color: var(--danger-line); }
 .btn.ghost { color: var(--muted); background: transparent; border-color: transparent; box-shadow: none; }
