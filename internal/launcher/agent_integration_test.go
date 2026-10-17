@@ -206,6 +206,13 @@ func TestAgentDrivesApostateOverThePipe(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	// It answers once the page is there, and its own request is in the log.
+	if !strings.HasSuffix(opened.URL, "/second") {
+		t.Fatalf("open_tab answered before the page: %+v", opened)
+	}
+	if reqs, err := b.Requests(ctx, opened.ID, "/second", []string{"Document"}, 0); err != nil || !strings.Contains(reqs, " 200 ") {
+		t.Fatalf("the new tab's own request is not logged: %q, %v", reqs, err)
+	}
 	tabs, _ := b.Tabs(ctx)
 	if len(tabs) != 2 || !tabs[0].Current && !tabs[1].Current {
 		t.Fatalf("tabs = %+v", tabs)

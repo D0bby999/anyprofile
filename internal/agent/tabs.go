@@ -205,7 +205,9 @@ func (b *Browser) OpenTab(ctx context.Context, rawURL string) (Tab, error) {
 	var r struct {
 		TargetID string `json:"targetId"`
 	}
-	if err := b.call(ctx, "", "Target.createTarget", map[string]any{"url": rawURL}, &r); err != nil {
+	// Blank first, so the network log is on before the page's own request,
+	// and the wait follows that page rather than the blank one.
+	if err := b.call(ctx, "", "Target.createTarget", map[string]any{"url": "about:blank"}, &r); err != nil {
 		return Tab{}, err
 	}
 	t, err := b.attach(ctx, r.TargetID)
@@ -215,8 +217,7 @@ func (b *Browser) OpenTab(ctx context.Context, rawURL string) (Tab, error) {
 	b.mu.Lock()
 	b.current = r.TargetID
 	b.mu.Unlock()
-	b.waitLoaded(ctx, t, "")
-	return b.describe(ctx, t), nil
+	return b.goTo(ctx, t, rawURL)
 }
 
 // CloseTab closes a tab; the browser stays open.
@@ -252,23 +253,12 @@ func (b *Browser) Navigate(ctx context.Context, id, rawURL, action string) (Tab,
 	if err != nil {
 		return Tab{}, err
 	}
-	loader := ""
 	switch {
 	case rawURL != "":
 		if err := checkURL(rawURL); err != nil {
 			return Tab{}, err
 		}
-		var r struct {
-			LoaderID  string `json:"loaderId"`
-			ErrorText string `json:"errorText"`
-		}
-		if err := b.call(ctx, t.session, "Page.navigate", map[string]any{"url": rawURL}, &r); err != nil {
-			return Tab{}, err
-		}
-		if r.ErrorText != "" {
-			return Tab{}, apperr.Newf("agent_navigate", "the page did not load: %s", r.ErrorText)
-		}
-		loader = r.LoaderID
+		return b.goTo(ctx, t, rawURL)
 	case action == "reload":
 		if err := b.call(ctx, t.session, "Page.reload", map[string]any{}, nil); err != nil {
 			return Tab{}, err
@@ -296,10 +286,24 @@ func (b *Browser) Navigate(ctx context.Context, id, rawURL, action string) (Tab,
 	default:
 		return Tab{}, apperr.New("agent_navigate", "give a url, or action back, forward or reload")
 	}
-	if loader == "" {
-		time.Sleep(300 * time.Millisecond) // let the old document go first
+	time.Sleep(300 * time.Millisecond) // let the old document go first
+	b.waitLoaded(ctx, t, "")
+	return b.describe(ctx, t), nil
+}
+
+// goTo loads rawURL in the tab and waits for that document.
+func (b *Browser) goTo(ctx context.Context, t *tab, rawURL string) (Tab, error) {
+	var r struct {
+		LoaderID  string `json:"loaderId"`
+		ErrorText string `json:"errorText"`
 	}
-	b.waitLoaded(ctx, t, loader)
+	if err := b.call(ctx, t.session, "Page.navigate", map[string]any{"url": rawURL}, &r); err != nil {
+		return Tab{}, err
+	}
+	if r.ErrorText != "" {
+		return Tab{}, apperr.Newf("agent_navigate", "the page did not load: %s", r.ErrorText)
+	}
+	b.waitLoaded(ctx, t, r.LoaderID)
 	return b.describe(ctx, t), nil
 }
 
