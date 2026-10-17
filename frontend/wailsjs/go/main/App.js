@@ -106,6 +106,10 @@ export function DuplicateProfile(arg1) {
   return window['go']['main']['App']['DuplicateProfile'](arg1);
 }
 
+export function EngineReleases(arg1) {
+  return window['go']['main']['App']['EngineReleases'](arg1);
+}
+
 export function EngineStatus(arg1) {
   return window['go']['main']['App']['EngineStatus'](arg1);
 }
@@ -148,6 +152,10 @@ export function ImportProxies(arg1, arg2) {
 
 export function InstallEngine(arg1) {
   return window['go']['main']['App']['InstallEngine'](arg1);
+}
+
+export function InstallEngineVersion(arg1, arg2) {
+  return window['go']['main']['App']['InstallEngineVersion'](arg1, arg2);
 }
 
 export function InstallUpdate() {
@@ -196,6 +204,10 @@ export function PurgeProfile(arg1) {
 
 export function QuickCreate(arg1) {
   return window['go']['main']['App']['QuickCreate'](arg1);
+}
+
+export function RemoveEngineVersion(arg1, arg2) {
+  return window['go']['main']['App']['RemoveEngineVersion'](arg1, arg2);
 }
 
 export function ResetFingerprint(arg1) {

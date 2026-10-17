@@ -34,8 +34,8 @@ func (l *Launcher) start(ctx context.Context, p *proc) error {
 	if !ok {
 		return fmt.Errorf("engine %q is not available", prof.Engine)
 	}
-	if st := eng.Status(ctx); !st.Installed {
-		return apperr.Newf("engine_missing", "engine %s %s is not installed", prof.Engine, st.Version.Version)
+	if err := l.pickVersion(ctx, eng, &prof); err != nil {
+		return err
 	}
 	udd := l.dirs.Profile(prof.ID)
 	if err := os.MkdirAll(udd, 0o700); err != nil {

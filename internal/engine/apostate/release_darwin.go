@@ -6,7 +6,9 @@ package apostate
 // only the macOS persona is offered: Apostate's Windows persona renders with
 // the host's fonts, which detection sites notice.
 const (
-	platform  = "macos"
+	platform = "macos"
+	// hostPlat is the release's platform in the engine catalog.
+	hostPlat  = "darwin-arm64"
 	personaID = "apostate-macos"
 	// setsTZ: the libc clock follows TZ, so the browser's own time code agrees
 	// with --fingerprint-timezone.

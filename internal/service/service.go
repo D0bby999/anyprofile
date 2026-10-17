@@ -35,9 +35,12 @@ type Service struct {
 	// the engine new profiles get when the user has not chosen one.
 	Engines   map[string]engine.Engine
 	Preferred string
-	Locale    LocaleFunc
-	Launcher  *launcher.Launcher
-	Log       *slog.Logger
+	// Catalog holds the engines' releases; the signed list from latest.json
+	// is added to it. Nil in tests that do not care.
+	Catalog  *engine.Catalog
+	Locale   LocaleFunc
+	Launcher *launcher.Launcher
+	Log      *slog.Logger
 	// Clock is nil in production (time.Now); tests fix it.
 	Clock func() time.Time
 	// OnChange is told the kind of data a write changed: "profiles",

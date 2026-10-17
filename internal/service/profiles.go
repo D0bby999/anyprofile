@@ -151,7 +151,7 @@ func (s *Service) CreateProfile(ctx context.Context, in NewProfile) (store.Profi
 		return store.Profile{}, err
 	}
 	p := store.Profile{
-		ID: randomHex(8), Name: in.Name, Engine: eng.ID(), EngineVersion: eng.Pinned().Version,
+		ID: randomHex(8), Name: in.Name, Engine: eng.ID(), EngineVersion: s.newProfileVersion(ctx, eng),
 		EngineMeta: id.Meta, PersonaID: id.PersonaID, SeedHex: randomHex(8), Platform: id.Platform, ProxyID: in.ProxyID,
 		Sites: in.Sites, StartURL: startURL, Notes: in.Notes, Tags: in.Tags,
 	}

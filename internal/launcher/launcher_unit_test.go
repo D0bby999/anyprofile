@@ -80,7 +80,10 @@ type stubEngine struct {
 }
 
 func (stubEngine) ID() string { return "stub" }
-func (stubEngine) Status(context.Context) engine.Status {
+func (stubEngine) Releases() []engine.Release {
+	return []engine.Release{{Engine: "stub", Version: "1.0"}}
+}
+func (stubEngine) Status(context.Context, string) engine.Status {
 	return engine.Status{Installed: true}
 }
 func (stubEngine) PrepareProfile(store.Profile, engine.Runtime) error { return nil }

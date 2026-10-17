@@ -40,7 +40,7 @@ func (a *App) Engines() ([]EngineInfo, error) {
 	def := a.svc.DefaultEngine()
 	var out []EngineInfo
 	for _, eng := range engineList(a.engines) {
-		out = append(out, EngineInfo{Status: eng.Status(a.ctx), Default: eng.ID() == def})
+		out = append(out, EngineInfo{Status: a.svc.EngineState(a.ctx, eng), Default: eng.ID() == def})
 	}
 	return out, nil
 }
@@ -50,18 +50,51 @@ func (a *App) EngineStatus(id string) (engine.Status, error) {
 	if err != nil {
 		return engine.Status{}, err
 	}
-	return eng.Status(a.ctx), nil
+	return a.svc.EngineState(a.ctx, eng), nil
 }
 
-// InstallEngine downloads and verifies an engine, emitting "engine:progress".
+// InstallEngine downloads and verifies an engine's newest release.
 func (a *App) InstallEngine(id string) error {
 	eng, err := a.engine(id)
 	if err != nil {
 		return err
 	}
-	return eng.Install(a.ctx, func(done, total int64) {
-		runtime.EventsEmit(a.ctx, "engine:progress", map[string]any{"engine": id, "done": done, "total": total})
+	rels := eng.Releases()
+	if len(rels) == 0 {
+		return apperr.New("bad_engine", "this engine has no release for this computer")
+	}
+	return a.InstallEngineVersion(id, rels[0].Version)
+}
+
+// InstallEngineVersion downloads and verifies one version, emitting
+// "engine:progress".
+func (a *App) InstallEngineVersion(id, version string) error {
+	eng, err := a.engine(id)
+	if err != nil {
+		return err
+	}
+	err = eng.Install(a.ctx, version, func(done, total int64) {
+		runtime.EventsEmit(a.ctx, "engine:progress", map[string]any{"engine": id, "version": version, "done": done, "total": total})
 	})
+	if err != nil {
+		return err
+	}
+	a.svc.Log.Info("engine installed", "engine", id, "version", version)
+	return nil
+}
+
+// EngineReleases lists an engine's versions, newest first.
+func (a *App) EngineReleases(id string) ([]service.EngineRelease, error) {
+	if err := a.ready(); err != nil {
+		return nil, err
+	}
+	return a.svc.EngineReleases(a.ctx, id)
+}
+
+// RemoveEngineVersion deletes an installed version; its profiles move to a
+// newer one of the same catalogue.
+func (a *App) RemoveEngineVersion(id, version string) error {
+	return a.must(func() error { return a.svc.RemoveEngineVersion(a.ctx, id, version) })
 }
 
 func (a *App) Personas() ([]fury.Persona, error) {

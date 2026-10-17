@@ -51,7 +51,7 @@ func (l *Launcher) capture(prof store.Profile, eng engine.Engine, c *cdppipe.Con
 // saveChecks records the consistency checks of this launch on its session.
 func (l *Launcher) saveChecks(prof store.Profile, eng engine.Engine, s fingerprint.Sample, primaryOnly bool, sessionID int64) {
 	e := fingerprint.Expect{Engine: prof.Engine, Timezone: prof.Timezone, Languages: prof.Languages, OS: prof.Platform,
-		ChromiumMajor: fingerprint.MajorVersion(eng.Pinned().Chromium), Proxied: prof.ProxyID != "",
+		ChromiumMajor: fingerprint.MajorVersion(releaseChromium(eng, prof.EngineVersion)), Proxied: prof.ProxyID != "",
 		PrimaryLangOnly: primaryOnly}
 	if prof.Engine == "apostate" && prof.EngineMeta.HWC > 0 {
 		e.HWC = min(prof.EngineMeta.HWC, runtime.NumCPU()) // the engine clamps to the host the same way

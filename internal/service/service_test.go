@@ -25,22 +25,27 @@ import (
 
 type fakeEngine struct{ engine.Engine }
 
-func (fakeEngine) ID() string             { return "fury" }
-func (fakeEngine) Pinned() engine.Version { return engine.Version{Engine: "fury", Version: "9.9.9"} }
+func (fakeEngine) ID() string { return "fury" }
+func (fakeEngine) Releases() []engine.Release {
+	return []engine.Release{{Engine: "fury", Version: "9.9.9", Catalogue: "c"}}
+}
 func (fakeEngine) NewIdentity(context.Context, uint64) (engine.Identity, error) {
 	return engine.Identity{PersonaID: "macos-m4-1710x1112", Platform: "macos"}, nil
 }
 func (fakeEngine) UsesCookieKey() bool { return true }
-func (f fakeEngine) Status(context.Context) engine.Status {
-	return engine.Status{Version: f.Pinned(), Installed: true}
+func (fakeEngine) Status(_ context.Context, v string) engine.Status {
+	return engine.Status{Version: engine.Version{Engine: "fury", Version: v}, Installed: v == "9.9.9"}
 }
 
 // fakeEngine2 stands in for a second engine that pins hardware values.
 type fakeEngine2 struct{ engine.Engine }
 
 func (fakeEngine2) ID() string { return "apostate" }
-func (fakeEngine2) Pinned() engine.Version {
-	return engine.Version{Engine: "apostate", Version: "0.5.1"}
+func (fakeEngine2) Releases() []engine.Release {
+	return []engine.Release{{Engine: "apostate", Version: "0.5.1", Catalogue: "c"}}
+}
+func (fakeEngine2) Status(_ context.Context, v string) engine.Status {
+	return engine.Status{Version: engine.Version{Engine: "apostate", Version: v}}
 }
 func (fakeEngine2) NewIdentity(context.Context, uint64) (engine.Identity, error) {
 	return engine.Identity{PersonaID: "macos", Platform: "macos", Meta: store.EngineMeta{HWC: 4, MemGiB: 8}}, nil

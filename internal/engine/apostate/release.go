@@ -6,6 +6,8 @@
 // redistributes it.
 package apostate
 
+import "github.com/D0bby999/anyprofile/internal/engine"
+
 // The pinned release. Hashes were checked against the downloaded files and the
 // release's .manifest.json on 2026-10-14 (macOS) and 2026-10-16 (Windows)
 // (plans/reports/research-261014-0001-apostate-integration.md). Each OS's
@@ -25,3 +27,11 @@ const (
 	HostPlatform = platform
 	HostPersona  = personaID
 )
+
+// Builtin is the pinned release for this OS, as catalog data.
+func Builtin() []engine.Release {
+	return []engine.Release{{Engine: "apostate", Version: Version, Chromium: Chromium, Platform: hostPlat,
+		Date: "2026-09-30", URL: zipURL, SHA256: zipSHA256,
+		Files: map[string]string{binRel: binarySHA256, frameworkRel: frameworkSHA},
+		Bin:   binRel, App: appRel, TeamID: teamID, Catalogue: Catalogue}}
+}

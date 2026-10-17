@@ -59,6 +59,8 @@ export function DeleteSnapshot(arg1:number):Promise<void>;
 
 export function DuplicateProfile(arg1:service.DuplicateInput):Promise<Array<store.Profile>>;
 
+export function EngineReleases(arg1:string):Promise<Array<service.EngineRelease>>;
+
 export function EngineStatus(arg1:string):Promise<engine.Status>;
 
 export function Engines():Promise<Array<main.EngineInfo>>;
@@ -80,6 +82,8 @@ export function ImportCookies(arg1:string):Promise<service.CookieImport>;
 export function ImportProxies(arg1:string,arg2:string):Promise<service.ImportResult>;
 
 export function InstallEngine(arg1:string):Promise<void>;
+
+export function InstallEngineVersion(arg1:string,arg2:string):Promise<void>;
 
 export function InstallUpdate():Promise<void>;
 
@@ -104,6 +108,8 @@ export function Personas():Promise<Array<fury.Persona>>;
 export function PurgeProfile(arg1:string):Promise<void>;
 
 export function QuickCreate(arg1:string):Promise<store.Profile>;
+
+export function RemoveEngineVersion(arg1:string,arg2:string):Promise<void>;
 
 export function ResetFingerprint(arg1:string):Promise<void>;
 

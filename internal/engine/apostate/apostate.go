@@ -29,9 +29,14 @@ type Apostate struct {
 	MockKeychain bool
 	// host reports logical cores and installed GiB; nil means the real machine.
 	host func() (cores, memGiB int)
+	cat  *engine.Catalog
 }
 
-func New(dirs paths.Dirs) *Apostate { return &Apostate{dirs: dirs} }
+// New returns the engine with the pinned release only; SetCatalog adds the
+// signed list.
+func New(dirs paths.Dirs) *Apostate {
+	return &Apostate{dirs: dirs, cat: engine.NewCatalog("", Builtin()...)}
+}
 
 func (a *Apostate) ID() string { return "apostate" }
 
@@ -121,6 +126,10 @@ func (a *Apostate) BuildLaunch(ctx context.Context, p store.Profile, rt engine.R
 	if p.Platform != "" && p.Platform != platform {
 		return engine.LaunchSpec{}, fmt.Errorf("%w: it was created on %s", ErrOtherOS, p.Platform)
 	}
+	r, err := a.release(p.EngineVersion)
+	if err != nil {
+		return engine.LaunchSpec{}, err
+	}
 	// Without these three, Chromium shows a "Google API keys are missing" bar
 	// on the first tab; the page can measure the lost height.
 	env := []string{"GOOGLE_API_KEY=no", "GOOGLE_DEFAULT_CLIENT_ID=no", "GOOGLE_DEFAULT_CLIENT_SECRET=no"}
@@ -192,5 +201,6 @@ func (a *Apostate) BuildLaunch(ctx context.Context, p store.Profile, rt engine.R
 		args = append(args, "--load-extension="+strings.Join(rt.Extensions, ","))
 	}
 	args = append(args, rt.StartURLs...)
-	return engine.LaunchSpec{Binary: a.BinaryPath(), Args: args, Env: env, CDPPipe: rt.CDPPipe}, nil
+	bin := filepath.Join(a.dir(r.Version), filepath.FromSlash(r.Bin))
+	return engine.LaunchSpec{Binary: bin, Args: args, Env: env, CDPPipe: rt.CDPPipe}, nil
 }

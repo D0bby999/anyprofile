@@ -29,7 +29,7 @@ func testEngine(t *testing.T) *Apostate {
 }
 
 func testProfile() store.Profile {
-	return store.Profile{ID: "p1", Name: "Shop", Serial: 3, SeedHex: "00000000000a11ce",
+	return store.Profile{ID: "p1", Name: "Shop", Serial: 3, EngineVersion: Version, SeedHex: "00000000000a11ce",
 		Timezone: "Asia/Taipei", Languages: "zh-TW,zh,en", EngineMeta: store.EngineMeta{HWC: 8, MemGiB: 16}}
 }
 

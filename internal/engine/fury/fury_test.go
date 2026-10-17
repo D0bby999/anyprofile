@@ -47,17 +47,30 @@ func fakeCore(t *testing.T, binary string) []byte {
 	return buf.Bytes()
 }
 
+// serveCore serves body over TLS as the only release in f's catalog, with
+// the given hashes, and returns that release.
+func serveCore(t *testing.T, f *Fury, body []byte, tarSHA, binSHA string) engine.Release {
+	srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.Write(body) }))
+	t.Cleanup(srv.Close)
+	old := http.DefaultClient
+	http.DefaultClient = srv.Client()
+	t.Cleanup(func() { http.DefaultClient = old })
+	r := Builtin()[0]
+	r.URL, r.SHA256, r.Files = srv.URL+"/core.tar.xz", tarSHA, map[string]string{binRel: binSHA}
+	f.SetCatalog(engine.NewCatalog("", r))
+	return r
+}
+
 func TestInstallVerifiesThenStamps(t *testing.T) {
 	core := fakeCore(t, "core-binary")
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.Write(core) }))
-	defer srv.Close()
 	dirs := paths.Dirs{Root: t.TempDir()}
 	f := New(dirs, "/nonexistent")
-	f.tarballURL, f.skipCodesign = srv.URL, true
+	f.skipCodesign = true
+	ctx := context.Background()
 
 	// Wrong tarball hash: refused, nothing installed, nothing left behind.
-	f.tarballSHA, f.binarySHA = strings.Repeat("0", 64), sha([]byte("core-binary"))
-	if err := f.Install(context.Background(), nil); err == nil {
+	serveCore(t, f, core, strings.Repeat("0", 64), sha([]byte("core-binary")))
+	if err := f.Install(ctx, Version, nil); err == nil {
 		t.Fatal("bad tarball hash accepted")
 	}
 	if left, _ := filepath.Glob(filepath.Join(dirs.Engines(), "fury", "*")); len(left) != 0 {
@@ -65,35 +78,45 @@ func TestInstallVerifiesThenStamps(t *testing.T) {
 	}
 
 	// Wrong binary hash: refused too.
-	f.tarballSHA, f.binarySHA = sha(core), strings.Repeat("1", 64)
-	if err := f.Install(context.Background(), nil); err == nil {
+	serveCore(t, f, core, sha(core), strings.Repeat("1", 64))
+	if err := f.Install(ctx, Version, nil); err == nil {
 		t.Fatal("bad binary hash accepted")
 	}
 
-	f.binarySHA = sha([]byte("core-binary"))
-	if err := f.Install(context.Background(), nil); err != nil {
+	r := serveCore(t, f, core, sha(core), sha([]byte("core-binary")))
+	if err := f.Install(ctx, Version, nil); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := os.Stat(f.BinaryPath()); err != nil {
+	bin := filepath.Join(f.dir(Version), r.Bin)
+	if _, err := os.Stat(bin); err != nil {
 		t.Fatal(err)
 	}
 	if left, _ := filepath.Glob(filepath.Join(dirs.Engines(), "fury", "*.tar.xz")); len(left) != 0 {
 		t.Fatalf("tarball kept: %v", left)
 	}
-	if st := f.Status(context.Background()); !st.Installed {
+	if st := f.Status(ctx, Version); !st.Installed {
 		t.Fatalf("fresh install reported as %+v", st)
 	}
 
 	// One changed byte (same size, new mtime) must be caught.
-	os.WriteFile(f.BinaryPath(), []byte("core-binarY"), 0o755)
-	if st := f.Status(context.Background()); st.Installed || st.Problem == "" {
+	os.WriteFile(bin, []byte("core-binarY"), 0o755)
+	if st := f.Status(ctx, Version); st.Installed || st.Problem == "" {
 		t.Fatalf("tampered core reported as %+v", st)
+	}
+	if err := f.Remove(Version); err != nil {
+		t.Fatal(err)
+	}
+	if st := f.Status(ctx, Version); st.Installed {
+		t.Fatal("removed version still installed")
+	}
+	if st := f.Status(ctx, "9.9.9"); st.Problem == "" {
+		t.Fatal("an unknown version has no problem")
 	}
 }
 
 func testProfile() store.Profile {
 	lat, lon := 40.71, -74.0
-	return store.Profile{ID: "p1", Name: "Kenh 1", PersonaID: "macos-m4-1710x1112", SeedHex: "00112233aabbccdd",
+	return store.Profile{ID: "p1", Name: "Kenh 1", EngineVersion: Version, PersonaID: "macos-m4-1710x1112", SeedHex: "00112233aabbccdd",
 		Timezone: "America/New_York", Languages: "en-US,en", UILocale: "en-US", Lat: &lat, Lon: &lon, Serial: 7}
 }
 
@@ -108,11 +131,11 @@ func TestWindowName(t *testing.T) {
 
 func TestDeriveIsDeterministic(t *testing.T) {
 	f := New(paths.Dirs{Root: t.TempDir()}, configBinForTest(t))
-	a, err := f.deriveConfig(context.Background(), testProfile())
+	a, err := f.deriveConfig(context.Background(), testProfile(), "155.0.8059.39")
 	if err != nil {
 		t.Fatal(err)
 	}
-	b, _ := f.deriveConfig(context.Background(), testProfile())
+	b, _ := f.deriveConfig(context.Background(), testProfile(), "155.0.8059.39")
 	if !bytes.Equal(a, b) || !bytes.Contains(a, []byte(`"schema_version":1`)) {
 		t.Fatalf("derive not deterministic or missing schema_version (%d bytes)", len(a))
 	}
@@ -190,13 +213,13 @@ func TestStageWidevineFromFakeChrome(t *testing.T) {
 func TestCleanStale(t *testing.T) {
 	dirs := paths.Dirs{Root: t.TempDir()}
 	f := New(dirs, "/nonexistent")
-	if err := os.MkdirAll(f.dir(), 0o700); err != nil {
+	if err := os.MkdirAll(f.dir(Version), 0o700); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(f.dir(), "keep"), []byte("x"), 0o600); err != nil {
+	if err := os.WriteFile(filepath.Join(f.dir(Version), "keep"), []byte("x"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	parent := filepath.Dir(f.dir())
+	parent := filepath.Dir(f.dir(Version))
 	staging := filepath.Join(parent, ".staging-0.3.5", "Fury.app")
 	if err := os.MkdirAll(staging, 0o700); err != nil {
 		t.Fatal(err)
@@ -204,7 +227,7 @@ func TestCleanStale(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(staging, "x"), []byte("x"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	tarball := filepath.Join(parent, tarballName)
+	tarball := filepath.Join(parent, "fury-core-"+Version+"-macos-arm64.tar.xz")
 	if err := os.WriteFile(tarball, []byte("x"), 0o600); err != nil {
 		t.Fatal(err)
 	}
@@ -217,7 +240,7 @@ func TestCleanStale(t *testing.T) {
 	if _, err := os.Stat(tarball); !os.IsNotExist(err) {
 		t.Fatal("tarball survived")
 	}
-	if _, err := os.Stat(filepath.Join(f.dir(), "keep")); err != nil {
+	if _, err := os.Stat(filepath.Join(f.dir(Version), "keep")); err != nil {
 		t.Fatal("installed version was removed")
 	}
 }

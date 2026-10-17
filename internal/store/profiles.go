@@ -216,6 +216,12 @@ func (s *Store) UpdateProfile(p Profile) error {
 	return err
 }
 
+// SetEngineVersion moves a profile to another version of its engine.
+func (s *Store) SetEngineVersion(id, version string) error {
+	res, err := s.db.Exec(`UPDATE profiles SET engine_version = ?, updated_at = ? WHERE id = ?`, version, now(), id)
+	return affected(res, err)
+}
+
 // FingerprintBaseline returns the stored baseline sample (JSON), or "".
 func (s *Store) FingerprintBaseline(id string) (string, error) {
 	var v string

@@ -6,8 +6,11 @@
 //	go run ./tools/release pubkey     print the public half again
 //	go run ./tools/release export-key | gh secret set UPDATE_SIGNING_KEY
 //	                                   hand the key to CI; refuses a terminal
-//	go run ./tools/release manifest -version 0.2.0 -base-url URL [-notes-file F] [-o latest.json] \
-//	    darwin-arm64=AnyProfile-macos-arm64.zip windows-amd64=AnyProfile-amd64-installer.exe
+//	go run ./tools/release manifest -version 0.2.0 -base-url URL [-notes-file F] [-engines engines.json] \
+//	    [-o latest.json] darwin-arm64=AnyProfile-macos-arm64.zip windows-amd64=AnyProfile-amd64-installer.exe
+//	go run ./tools/release engines -manifest latest.json engines.json
+//	                                   sign engines.json into an existing latest.json, so a tested
+//	                                   engine version reaches users without an app release
 //
 // The private key comes from UPDATE_SIGNING_KEY (base64 Ed25519 seed; CI) or,
 // on a Mac, from the Keychain item keygen made. It is never printed.
@@ -29,6 +32,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/D0bby999/anyprofile/internal/engine"
 	"github.com/D0bby999/anyprofile/internal/update"
 )
 
@@ -49,6 +53,8 @@ func main() {
 		err = exportKey()
 	case "manifest":
 		err = manifest(os.Args[2:])
+	case "engines":
+		err = engines(os.Args[2:])
 	default:
 		err = fmt.Errorf("unknown command %q", os.Args[1])
 	}
@@ -111,6 +117,7 @@ func manifest(args []string) error {
 	version := fs.String("version", "", "release version, MAJOR.MINOR.PATCH")
 	baseURL := fs.String("base-url", "", "https URL the files are served under")
 	notesFile := fs.String("notes-file", "", "release notes (plain text)")
+	enginesFile := fs.String("engines", "", "engine releases to sign in (engines.json)")
 	out := fs.String("o", "", "write here instead of stdout")
 	fs.Parse(args)
 	if !update.Newer(*version, "0.0.0") || !strings.HasPrefix(*baseURL, "https://") || fs.NArg() == 0 {
@@ -127,6 +134,11 @@ func manifest(args []string) error {
 			return err
 		}
 		m.Notes = strings.TrimSpace(string(b))
+	}
+	if *enginesFile != "" {
+		if m.Engines, m.EnginesSig, err = signEngines(key, *enginesFile); err != nil {
+			return err
+		}
 	}
 	for _, pair := range fs.Args() {
 		platform, file, ok := strings.Cut(pair, "=")
@@ -147,6 +159,57 @@ func manifest(args []string) error {
 		return err
 	}
 	return os.WriteFile(*out, append(b, '\n'), 0o644)
+}
+
+// engines signs an engine list into an existing latest.json, in place.
+func engines(args []string) error {
+	fs := flag.NewFlagSet("engines", flag.ExitOnError)
+	path := fs.String("manifest", "", "latest.json to update")
+	fs.Parse(args)
+	if *path == "" || fs.NArg() != 1 {
+		return errors.New("engines needs -manifest latest.json and the engines.json to sign")
+	}
+	b, err := os.ReadFile(*path)
+	if err != nil {
+		return err
+	}
+	var m update.Manifest
+	if err := json.Unmarshal(b, &m); err != nil {
+		return fmt.Errorf("read %s: %w", *path, err)
+	}
+	key, err := signingKey()
+	if err != nil {
+		return err
+	}
+	if m.Engines, m.EnginesSig, err = signEngines(key, fs.Arg(0)); err != nil {
+		return err
+	}
+	out, _ := json.MarshalIndent(m, "", "  ")
+	return os.WriteFile(*path, append(out, '\n'), 0o644)
+}
+
+// signEngines reads engines.json, refuses any release the app would refuse,
+// and signs the list's compact form.
+func signEngines(key ed25519.PrivateKey, path string) (json.RawMessage, string, error) {
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return nil, "", err
+	}
+	var rs []engine.Release
+	if err := json.Unmarshal(b, &rs); err != nil {
+		return nil, "", fmt.Errorf("read %s: %w", path, err)
+	}
+	for _, r := range rs {
+		if err := r.Validate(); err != nil {
+			return nil, "", err
+		}
+	}
+	raw, _ := json.Marshal(rs)
+	msg, err := update.EnginesMessage(raw)
+	if err != nil {
+		return nil, "", err
+	}
+	return raw, base64.StdEncoding.EncodeToString(ed25519.Sign(key, msg)), nil
 }
 
 func fileSHA256(p string) (string, error) {

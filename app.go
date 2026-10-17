@@ -23,6 +23,7 @@ import (
 	"github.com/D0bby999/anyprofile/internal/secrets"
 	"github.com/D0bby999/anyprofile/internal/service"
 	"github.com/D0bby999/anyprofile/internal/store"
+	"github.com/D0bby999/anyprofile/internal/update"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
@@ -83,6 +84,11 @@ func (a *App) init() error {
 	if err := ap.CleanStale(); err != nil {
 		log.Warn("clean stale engine files", "engine", "apostate", "err", err)
 	}
+	// One catalog for both: the compiled-in releases, and the signed list
+	// from latest.json once LoadEngineList or an update check adds it.
+	cat := engine.NewCatalog(update.Current, append(apostate.Builtin(), fury.Builtin()...)...)
+	ap.SetCatalog(cat)
+	a.fury.SetCatalog(cat)
 	a.engines = map[string]engine.Engine{"apostate": ap}
 	if furyRuns {
 		a.engines["fury"] = a.fury
@@ -94,7 +100,7 @@ func (a *App) init() error {
 	l.CheckExit = netproxy.Check
 	l.OnData = func(kind string) { runtime.EventsEmit(a.ctx, "data:changed", kind) }
 	a.svc = &service.Service{Dirs: dirs, Store: st, Secrets: sec, Launcher: l, Log: log,
-		Engines: a.engines, Preferred: "apostate",
+		Engines: a.engines, Preferred: "apostate", Catalog: cat,
 		OnChange:   func(kind string) { runtime.EventsEmit(a.ctx, "data:changed", kind) },
 		CheckProxy: netproxy.Check,
 		Locale: func(ctx context.Context, cc string) (string, []string, error) {
@@ -102,6 +108,7 @@ func (a *App) init() error {
 			return loc.UILocale, loc.Languages, err
 		}}
 	l.BeforeStart, l.AfterExit = a.svc.BeforeLaunch, a.svc.AfterExit
+	a.svc.LoadEngineList()
 	l.Adopt()
 	a.agent = agent.NewHub(time.Minute)
 	a.agent.Behind = l.Behind

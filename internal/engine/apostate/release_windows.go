@@ -7,7 +7,11 @@ package apostate
 // Authenticode-signed, so the pinned hashes are the only check. A Windows
 // host gets the Windows persona, whose fonts and GPU are the machine's own.
 const (
-	platform  = "windows"
+	platform = "windows"
+	// hostPlat is the release's platform in the engine catalog.
+	hostPlat = "windows-amd64"
+	// teamID is empty: the build is not signed.
+	teamID    = ""
 	personaID = "apostate-windows"
 	// setsTZ is false: the Windows C runtime reads TZ as a POSIX rule such as
 	// "EST5EDT" and would misread an IANA name. --fingerprint-timezone is enough.

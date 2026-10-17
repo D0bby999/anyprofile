@@ -2,7 +2,7 @@
 
 // Package engine defines what AnyProfile needs from a browser engine, and the
 // download/verify helpers engines share. Each profile is bound to one engine
-// at creation; fury is the only implementation in phase 1.
+// at creation, and to one of its versions.
 package engine
 
 import (
@@ -77,10 +77,13 @@ type PrimaryLanguageProbe interface {
 // Engine is one browser engine implementation.
 type Engine interface {
 	ID() string
-	Pinned() Version
-	Status(ctx context.Context) Status
-	Install(ctx context.Context, progress Progress) error
-	BinaryPath() string
+	// Releases lists the builds this computer can install, newest first.
+	Releases() []Release
+	// Status, Install and Remove act on one version (ErrUnknownRelease when
+	// the catalog has none). BuildLaunch runs the profile's EngineVersion.
+	Status(ctx context.Context, version string) Status
+	Install(ctx context.Context, version string, progress Progress) error
+	Remove(version string) error
 	// NewIdentity picks a persona for a new profile. roll is uniform random.
 	NewIdentity(ctx context.Context, roll uint64) (Identity, error)
 	// UsesCookieKey reports whether BuildLaunch needs Runtime.CookieKey. Engines

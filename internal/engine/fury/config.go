@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"os/exec"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/D0bby999/anyprofile/internal/engine"
@@ -83,10 +84,12 @@ func (f *Fury) Personas(ctx context.Context) ([]Persona, error) {
 
 // deriveConfig produces the core's fingerprint config for a profile. The
 // same profile always yields the same bytes.
-func (f *Fury) deriveConfig(ctx context.Context, p store.Profile) ([]byte, error) {
+// chromium is the core's version, for the UA and client hints.
+func (f *Fury) deriveConfig(ctx context.Context, p store.Profile, chromium string) ([]byte, error) {
+	major, _, _ := strings.Cut(chromium, ".")
 	args := []string{"derive", "--persona", p.PersonaID, "--seed", p.SeedHex,
 		"--timezone", p.Timezone, "--languages", p.Languages, "--ui-locale", p.UILocale,
-		"--chrome-major", ChromeMajor, "--chrome-full", Chromium}
+		"--chrome-major", major, "--chrome-full", chromium}
 	if p.Lat != nil && p.Lon != nil {
 		args = append(args, "--lat", strconv.FormatFloat(*p.Lat, 'f', -1, 64),
 			"--lon", strconv.FormatFloat(*p.Lon, 'f', -1, 64))

@@ -64,8 +64,10 @@ func (s *Service) Diagnostics(ctx context.Context) string {
 	}
 	sort.Strings(ids)
 	for _, id := range ids {
-		st := s.Engines[id].Status(ctx)
-		fmt.Fprintf(&b, "Engine %s %s (Chromium %s): installed=%v %s\n", id, st.Version.Version, st.Version.Chromium, st.Installed, st.Problem)
+		for _, r := range s.Engines[id].Releases() {
+			st := s.Engines[id].Status(ctx, r.Version)
+			fmt.Fprintf(&b, "Engine %s %s (Chromium %s): installed=%v %s\n", id, r.Version, r.Chromium, st.Installed, st.Problem)
+		}
 	}
 	fmt.Fprintf(&b, "Default engine: %s\n", s.DefaultEngine())
 	if ps, err := s.Store.ListProfiles(store.ProfileFilter{}); err == nil {

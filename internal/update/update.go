@@ -10,6 +10,7 @@
 package update
 
 import (
+	"bytes"
 	"context"
 	"crypto/ed25519"
 	"crypto/sha256"
@@ -26,6 +27,8 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+
+	"github.com/D0bby999/anyprofile/internal/engine"
 )
 
 // Current is this build's version. Release builds set it from the tag:
@@ -64,6 +67,44 @@ type Manifest struct {
 	Date    string           `json:"date"`
 	Notes   string           `json:"notes"`
 	Assets  map[string]Asset `json:"assets"`
+	// Engines lists engine releases tested with AnyProfile, so a new engine
+	// version needs no new app. EnginesSig signs its compact JSON (see
+	// EnginesMessage); both are empty when the release lists none.
+	Engines    json.RawMessage `json:"engines,omitempty"`
+	EnginesSig string          `json:"enginesSig,omitempty"`
+}
+
+// EnginesMessage is what the engine list's signature covers: its JSON with
+// all insignificant space removed, so indenting latest.json breaks nothing.
+func EnginesMessage(raw []byte) ([]byte, error) {
+	var b bytes.Buffer
+	if err := json.Compact(&b, raw); err != nil {
+		return nil, err
+	}
+	return append([]byte("anyprofile-engines\n"), b.Bytes()...), nil
+}
+
+var ErrBadEnginesSignature = errors.New("the engine list is not signed by AnyProfile's release key")
+
+// VerifyEngines checks the engine list's signature and reads it.
+func VerifyEngines(raw []byte, sig string) ([]engine.Release, error) {
+	return verifyEngines(publicKey, raw, sig)
+}
+
+func verifyEngines(pub ed25519.PublicKey, raw []byte, sig string) ([]engine.Release, error) {
+	msg, err := EnginesMessage(raw)
+	if err != nil {
+		return nil, fmt.Errorf("read engine list: %w", err)
+	}
+	s, err := base64.StdEncoding.DecodeString(sig)
+	if err != nil || len(pub) != ed25519.PublicKeySize || !ed25519.Verify(pub, msg, s) {
+		return nil, ErrBadEnginesSignature
+	}
+	var rs []engine.Release
+	if err := json.Unmarshal(raw, &rs); err != nil {
+		return nil, fmt.Errorf("read engine list: %w", err)
+	}
+	return rs, nil
 }
 
 // Platform names this build's asset, e.g. "darwin-arm64" or "windows-amd64".

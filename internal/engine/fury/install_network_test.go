@@ -22,24 +22,24 @@ func TestInstallRealRelease(t *testing.T) {
 	}
 	t.Cleanup(func() { os.RemoveAll(root) })
 	f := New(paths.Dirs{Root: root}, "/nonexistent")
-	if st := f.Status(context.Background()); st.Installed {
+	if st := f.Status(context.Background(), Version); st.Installed {
 		t.Fatal("empty dir reported installed")
 	}
 	t0 := time.Now()
 	var last int64
-	if err := f.Install(context.Background(), func(d, _ int64) { last = d }); err != nil {
+	if err := f.Install(context.Background(), Version, func(d, _ int64) { last = d }); err != nil {
 		t.Fatal(err)
 	}
 	t.Logf("installed in %v, %d MB downloaded", time.Since(t0).Round(time.Second), last>>20)
-	if st := f.Status(context.Background()); !st.Installed || st.Problem != "" {
+	if st := f.Status(context.Background(), Version); !st.Installed || st.Problem != "" {
 		t.Fatalf("status after install = %+v", st)
 	}
 	t1 := time.Now()
-	if st := f.Status(context.Background()); !st.Installed {
+	if st := f.Status(context.Background(), Version); !st.Installed {
 		t.Fatal("second status check failed")
 	}
 	t.Logf("status check with stamp: %v", time.Since(t1))
-	if _, err := os.Stat(filepath.Join(f.dir(), "..", tarballName)); !os.IsNotExist(err) {
-		t.Fatal("tarball left behind")
+	if left, _ := filepath.Glob(filepath.Join(f.dir(Version), "..", "*.tar.xz")); len(left) != 0 {
+		t.Fatalf("tarball left behind: %v", left)
 	}
 }

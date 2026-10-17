@@ -255,6 +255,32 @@ export namespace service {
 	        this.proxy = source["proxy"];
 	    }
 	}
+	export class EngineRelease {
+	    engine: string;
+	    version: string;
+	    chromium: string;
+	    installed: boolean;
+	    problem: string;
+	    date: string;
+	    notes: string;
+	    profiles: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new EngineRelease(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.engine = source["engine"];
+	        this.version = source["version"];
+	        this.chromium = source["chromium"];
+	        this.installed = source["installed"];
+	        this.problem = source["problem"];
+	        this.date = source["date"];
+	        this.notes = source["notes"];
+	        this.profiles = source["profiles"];
+	    }
+	}
 	export class ExitSummary {
 	    ip: string;
 	    country: string;

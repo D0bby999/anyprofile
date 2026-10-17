@@ -5,7 +5,7 @@
 package launcher
 
 // Runs the real Fury core and Apostate. Needs:
-//   ANYPROFILE_TEST_FURY_APP      path to an extracted, verified Fury.app (0.3.5)
+//   ANYPROFILE_TEST_FURY_APP      path to an extracted, verified Fury.app (fury.Version)
 //   tools/fury-config built       (make fury-config)
 //   ANYPROFILE_TEST_APOSTATE_APP  path to Apostate 0.5.1: its Chromium.app on
 //                                 macOS, the folder holding chrome.exe on Windows

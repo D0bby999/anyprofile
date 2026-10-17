@@ -169,3 +169,33 @@ func TestCurrentMatchesWailsJSON(t *testing.T) {
 		t.Fatalf("wails.json %q, Current %q, %v", w.Info.ProductVersion, Current, err)
 	}
 }
+
+func TestEngineListSignature(t *testing.T) {
+	pub, key, _ := ed25519.GenerateKey(nil)
+	compact := []byte(`[{"engine":"fury","version":"0.4.6"}]`)
+	msg, _ := EnginesMessage(compact)
+	sig := base64.StdEncoding.EncodeToString(ed25519.Sign(key, msg))
+
+	// latest.json is indented after signing: the list still verifies.
+	m := Manifest{Version: "0.2.0", Engines: compact, EnginesSig: sig}
+	pretty, _ := json.MarshalIndent(m, "", "  ")
+	var back Manifest
+	if err := json.Unmarshal(pretty, &back); err != nil {
+		t.Fatal(err)
+	}
+	rs, err := verifyEngines(pub, back.Engines, back.EnginesSig)
+	if err != nil || len(rs) != 1 || rs[0].Version != "0.4.6" {
+		t.Fatalf("verify = %+v, %v", rs, err)
+	}
+	// One changed value, or another key: refused.
+	if _, err := verifyEngines(pub, []byte(`[{"engine":"fury","version":"0.4.7"}]`), sig); !errors.Is(err, ErrBadEnginesSignature) {
+		t.Fatalf("changed list = %v", err)
+	}
+	other, _, _ := ed25519.GenerateKey(nil)
+	if _, err := verifyEngines(other, compact, sig); !errors.Is(err, ErrBadEnginesSignature) {
+		t.Fatalf("other key = %v", err)
+	}
+	if _, err := verifyEngines(pub, compact, "not base64!"); err == nil {
+		t.Fatal("a bad signature passed")
+	}
+}

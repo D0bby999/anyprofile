@@ -77,6 +77,7 @@ func (s *Service) CheckUpdate(ctx context.Context, force bool) (UpdateStatus, er
 		}
 		return st, apperr.Newf("update_check", "could not check for updates: %v", err)
 	}
+	s.takeEngineList(m.Engines, m.EnginesSig)
 	b, _ := json.Marshal(knownRelease{Version: m.Version, Date: m.Date, Notes: m.Notes})
 	if err := s.Store.SetSetting("update_latest", string(b)); err != nil {
 		return st, err
@@ -130,4 +131,50 @@ func (s *Service) updatesDir() string { return filepath.Join(s.Dirs.Root, "updat
 func (s *Service) CleanUpdates() {
 	os.RemoveAll(s.updatesDir())
 	update.CleanStale()
+}
+
+// engineList is the last verified engine list, kept so it holds offline.
+type engineList struct {
+	Raw json.RawMessage `json:"raw"`
+	Sig string          `json:"sig"`
+}
+
+// takeEngineList verifies the engine list of a fetched manifest and, when it
+// passes, keeps it and adds it to the catalog. A bad list is logged and the
+// one kept before stays.
+func (s *Service) takeEngineList(raw json.RawMessage, sig string) {
+	if s.Catalog == nil || len(raw) == 0 {
+		return
+	}
+	rs, err := update.VerifyEngines(raw, sig)
+	if err != nil {
+		s.Log.Warn("engine list", "err", err)
+		return
+	}
+	if err := s.Catalog.SetListed(rs); err != nil {
+		s.Log.Warn("engine list has releases that cannot be used", "err", err)
+	}
+	b, _ := json.Marshal(engineList{Raw: raw, Sig: sig})
+	if err := s.Store.SetSetting("engine_list", string(b)); err != nil {
+		s.Log.Warn("save engine list", "err", err)
+	}
+	s.notify("engines")
+}
+
+// LoadEngineList adds the kept engine list to the catalog, checking its
+// signature again: the database is not trusted with it.
+func (s *Service) LoadEngineList() {
+	v, _ := s.Store.GetSetting("engine_list")
+	var l engineList
+	if s.Catalog == nil || v == "" || json.Unmarshal([]byte(v), &l) != nil {
+		return
+	}
+	rs, err := update.VerifyEngines(l.Raw, l.Sig)
+	if err != nil {
+		s.Log.Warn("kept engine list", "err", err)
+		return
+	}
+	if err := s.Catalog.SetListed(rs); err != nil {
+		s.Log.Warn("kept engine list has releases that cannot be used", "err", err)
+	}
 }

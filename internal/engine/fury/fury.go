@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -20,17 +21,17 @@ type Fury struct {
 	dirs      paths.Dirs
 	configBin string // absolute path to the bundled fury-config
 	mu        sync.Mutex
+	cat       *engine.Catalog
 
 	// Overridable in tests only.
-	tarballURL, tarballSHA, binarySHA string
-	skipCodesign                      bool
-	chromeApps                        []string // where to look for Chrome's Widevine CDM
+	skipCodesign bool
+	chromeApps   []string // where to look for Chrome's Widevine CDM
 }
 
 // New returns the engine. configBin must be an absolute path.
 func New(dirs paths.Dirs, configBin string) *Fury {
-	return &Fury{dirs: dirs, configBin: configBin, tarballURL: tarballURL,
-		tarballSHA: tarballSHA256, binarySHA: binarySHA256, chromeApps: defaultChromeApps()}
+	return &Fury{dirs: dirs, configBin: configBin, cat: engine.NewCatalog("", Builtin()...),
+		chromeApps: defaultChromeApps()}
 }
 
 func (f *Fury) ID() string { return "fury" }
@@ -51,7 +52,11 @@ func (f *Fury) BuildLaunch(ctx context.Context, p store.Profile, rt engine.Runti
 	if len(rt.CookieKey) != 32 {
 		return engine.LaunchSpec{}, fmt.Errorf("cookie key must be 32 bytes")
 	}
-	cfg, err := f.deriveConfig(ctx, p)
+	r, err := f.release(p.EngineVersion)
+	if err != nil {
+		return engine.LaunchSpec{}, err
+	}
+	cfg, err := f.deriveConfig(ctx, p, r.Chromium)
 	if err != nil {
 		return engine.LaunchSpec{}, err
 	}
@@ -99,7 +104,7 @@ func (f *Fury) BuildLaunch(ctx context.Context, p store.Profile, rt engine.Runti
 	}
 	args = append(args, rt.StartURLs...)
 	return engine.LaunchSpec{
-		Binary:  f.BinaryPath(),
+		Binary:  filepath.Join(f.dir(r.Version), filepath.FromSlash(r.Bin)),
 		Args:    args,
 		Env:     []string{"TZ=" + p.Timezone},
 		Pipes:   [][]byte{cfg, rt.CookieKey},

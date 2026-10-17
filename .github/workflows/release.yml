@@ -98,7 +98,7 @@ jobs:
           V: ${{ needs.version.outputs.version }}
         run: |
           git tag -l --format='%(contents)' "$GITHUB_REF_NAME" > notes.txt
-          go run ./tools/release manifest -version "$V" -notes-file notes.txt -o dist/latest.json \
+          go run ./tools/release manifest -version "$V" -notes-file notes.txt -engines engines.json -o dist/latest.json \
             -base-url "https://github.com/$GITHUB_REPOSITORY/releases/download/$GITHUB_REF_NAME" \
             darwin-arm64=dist/AnyProfile-macos-arm64.zip windows-amd64=dist/AnyProfile-amd64-installer.exe
       - name: Publish the release
