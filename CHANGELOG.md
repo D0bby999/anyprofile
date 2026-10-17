@@ -30,6 +30,8 @@ keeps them together.
   Focus on the profile's row shows it.
 - The row of a profile an AI agent is driving pulses violet, like a
   recording light, instead of an Agent chip in the Status column.
+- An agent's open_tab opens a tab in the profile's window instead of a
+  window of its own, which looked like a second browser.
 
 ## 0.1.0 (2026-10-17)
 

@@ -248,7 +248,7 @@ func (s *Server) mcpHandler() http.Handler {
 			return s.tabs(ctx, p, b)
 		})
 
-	add(s, srv, "open_tab", "Open an address in a new tab, which becomes the current tab. It opens in a window of its own, behind the app the user is in.", false,
+	add(s, srv, "open_tab", "Open an address in a new tab of the profile's window, which becomes the current tab. Prefer navigate in the tab already open; open a tab only when you need a second page, and close it with close_tab when done.", false,
 		func(ctx context.Context, in urlIn) (*mcp.CallToolResult, error) {
 			_, b, err := s.browser(in.Profile)
 			if err != nil {

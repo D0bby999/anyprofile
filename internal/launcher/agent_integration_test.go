@@ -7,6 +7,7 @@ package launcher
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"image/jpeg"
 	"net/http"
@@ -20,6 +21,7 @@ import (
 	"time"
 
 	"github.com/D0bby999/anyprofile/internal/agent"
+	"github.com/D0bby999/anyprofile/internal/cdppipe"
 	"github.com/D0bby999/anyprofile/internal/engine/apostate"
 	"github.com/D0bby999/anyprofile/internal/store"
 )
@@ -236,6 +238,11 @@ func TestAgentDrivesApostateOverThePipe(t *testing.T) {
 	if len(tabs) != 2 || !tabs[0].Current && !tabs[1].Current {
 		t.Fatalf("tabs = %+v", tabs)
 	}
+	// A tab of the one window, as a person opens it: a second window looks
+	// like a second browser.
+	if n := windowCount(ctx, t, c); n != 1 {
+		t.Fatalf("the browser has %d windows after open_tab, want 1", n)
+	}
 	if err := b.CloseTab(ctx, opened.ID); err != nil {
 		t.Fatal(err)
 	}
@@ -245,4 +252,40 @@ func TestAgentDrivesApostateOverThePipe(t *testing.T) {
 	if got := hub.Active(); len(got) != 1 || got[0] != id {
 		t.Fatalf("active = %v", got)
 	}
+}
+
+// windowCount counts the browser windows that hold a page.
+func windowCount(ctx context.Context, t *testing.T, c *cdppipe.Conn) int {
+	t.Helper()
+	raw, err := c.Call(ctx, "", "Target.getTargets", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var r struct {
+		TargetInfos []struct {
+			TargetID string `json:"targetId"`
+			Type     string `json:"type"`
+		} `json:"targetInfos"`
+	}
+	if err := json.Unmarshal(raw, &r); err != nil {
+		t.Fatal(err)
+	}
+	windows := map[int]bool{}
+	for _, ti := range r.TargetInfos {
+		if ti.Type != "page" {
+			continue
+		}
+		raw, err := c.Call(ctx, "", "Browser.getWindowForTarget", map[string]any{"targetId": ti.TargetID})
+		if err != nil {
+			t.Fatal(err)
+		}
+		var w struct {
+			WindowID int `json:"windowId"`
+		}
+		if err := json.Unmarshal(raw, &w); err != nil {
+			t.Fatal(err)
+		}
+		windows[w.WindowID] = true
+	}
+	return len(windows)
 }

@@ -217,8 +217,9 @@ func (b *Browser) activate(ctx context.Context, t *tab) error {
 	return nil
 }
 
-// OpenTab opens url in a new tab, in a window of its own behind the user's
-// apps; it becomes the current tab.
+// OpenTab opens url in a new tab of the browser's window, as a person would;
+// it becomes the current tab. A window of its own looked like a second
+// browser and stayed open after the agent was done.
 func (b *Browser) OpenTab(ctx context.Context, rawURL string) (Tab, error) {
 	b.touch()
 	if err := checkURL(rawURL); err != nil {
@@ -228,9 +229,16 @@ func (b *Browser) OpenTab(ctx context.Context, rawURL string) (Tab, error) {
 		TargetID string `json:"targetId"`
 	}
 	// Blank first, so the network log is on before the page's own request,
-	// and the wait follows that page rather than the blank one. A window of
-	// its own, opened behind: the user's tabs and focus stay as they are.
-	if err := b.call(ctx, "", "Target.createTarget", map[string]any{"url": "about:blank", "newWindow": true, "background": true}, &r); err != nil {
+	// and the wait follows that page rather than the blank one. Shown at once,
+	// like a tab a person opens; showing it can bring the window forward, so
+	// the browser is sent back behind the user's app as for activate.
+	after := func() {}
+	if b.hub.Behind != nil {
+		after = b.hub.Behind(b.profileID)
+	}
+	err := b.call(ctx, "", "Target.createTarget", map[string]any{"url": "about:blank"}, &r)
+	after()
+	if err != nil {
 		return Tab{}, err
 	}
 	t, err := b.attach(ctx, r.TargetID)

@@ -101,7 +101,7 @@ Mẫu miễn phí: `examples/recipes/check-login.md`. Template script Playwright
 - Không đổi kích thước cửa sổ, viewport hay thiết bị giả lập. Ảnh chụp được thu nhỏ trong AnyProfile, không thu
   nhỏ trên trang.
 - Agent làm việc **phía sau**: profile mở qua MCP hoặc API không giành focus của app bạn đang dùng, `open_tab` mở
-  trong một cửa sổ riêng nằm sau, và agent không kéo trình duyệt lên trước khi bấm, gõ hay chụp. Muốn xem, bấm nút
+  một tab trong cửa sổ của profile (không mở cửa sổ thứ hai), và agent không kéo trình duyệt lên trước khi bấm, gõ hay chụp. Muốn xem, bấm nút
   Focus ở dòng của profile. Nếu Chromium vẫn tự nhảy lên lúc khởi động, AnyProfile ẩn nó một nhịp để macOS trả focus
   cho app trước đó; có thể thấy cửa sổ loé lên một chút.
 - Profile đang bị agent điều khiển có nhãn **Agent** ở bảng profile và ở ngăn chi tiết. Nhãn tắt sau một phút agent
