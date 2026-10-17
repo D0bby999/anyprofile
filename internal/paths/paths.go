@@ -48,9 +48,15 @@ func (d Dirs) ProfileSnapshots(id string) string {
 func (d Dirs) Extensions() string         { return filepath.Join(d.Root, "extensions") }
 func (d Dirs) Extension(id string) string { return filepath.Join(d.Extensions(), id) }
 
+// Uploads holds the only files an AI agent may put into a page's file input.
+func (d Dirs) Uploads() string { return filepath.Join(d.Root, "uploads") }
+
+// Recipes holds the agent recipes (*.md) the MCP endpoint offers.
+func (d Dirs) Recipes() string { return filepath.Join(d.Root, "recipes") }
+
 // Ensure creates every directory with owner-only permissions, tightening any that exist.
 func (d Dirs) Ensure() error {
-	for _, p := range []string{d.Root, d.Engines(), d.Profiles(), d.Logs(), d.Backups(), d.Snapshots(), d.Extensions()} {
+	for _, p := range []string{d.Root, d.Engines(), d.Profiles(), d.Logs(), d.Backups(), d.Snapshots(), d.Extensions(), d.Uploads(), d.Recipes()} {
 		if err := os.MkdirAll(p, 0o700); err != nil {
 			return fmt.Errorf("create %s: %w", p, err)
 		}

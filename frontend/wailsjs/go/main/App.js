@@ -14,6 +14,10 @@ export function AddTagMany(arg1, arg2) {
   return window['go']['main']['App']['AddTagMany'](arg1, arg2);
 }
 
+export function AgentProfiles() {
+  return window['go']['main']['App']['AgentProfiles']();
+}
+
 export function AssignProxiesMany(arg1, arg2) {
   return window['go']['main']['App']['AssignProxiesMany'](arg1, arg2);
 }
@@ -52,6 +56,10 @@ export function CopyAccountPassword(arg1, arg2) {
 
 export function CopyDiagnostics() {
   return window['go']['main']['App']['CopyDiagnostics']();
+}
+
+export function CopyMCPCommand() {
+  return window['go']['main']['App']['CopyMCPCommand']();
 }
 
 export function CreateProfile(arg1) {
@@ -172,6 +180,10 @@ export function NewAPIToken() {
 
 export function Onboarded() {
   return window['go']['main']['App']['Onboarded']();
+}
+
+export function OpenAgentFolder(arg1) {
+  return window['go']['main']['App']['OpenAgentFolder'](arg1);
 }
 
 export function Personas() {

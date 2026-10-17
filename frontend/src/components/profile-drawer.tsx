@@ -9,6 +9,7 @@ import { AccountsPanel } from './account-panel'
 import { ProfileExtensions } from './extension-settings'
 import { useConfirm } from './confirm'
 import { HealthPill } from './health-pill'
+import { AgentChip } from './agent-chip'
 import { Icon } from './icons'
 import { SiteGlyph } from './site-glyph'
 import { useToast } from './toast'
@@ -33,10 +34,12 @@ type Props = {
   onClose: () => void
   onStart: (id: string) => void
   onStop: (id: string) => void
+  /** An AI agent is driving this profile now. */
+  agent?: boolean
 }
 
 /** Everything about one profile, edited in place next to the table. */
-export function ProfileDrawer({ row, sites, knownTags, onClose, onStart, onStop }: Props) {
+export function ProfileDrawer({ row, sites, knownTags, onClose, onStart, onStop, agent }: Props) {
   const toast = useToast()
   const confirm = useConfirm()
   const [tab, setTab] = useState<Tab>('overview')
@@ -108,6 +111,7 @@ export function ProfileDrawer({ row, sites, knownTags, onClose, onStart, onStop 
         </div>
         <div className="drawer-actions">
           <HealthPill row={row} />
+          {agent && <AgentChip />}
           <span className="spacer" />
           {running || row.state === 'stopping' ? (
             <button type="button" className="btn sm stop actbtn" disabled={busy} onClick={() => onStop(row.id)}>

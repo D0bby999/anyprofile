@@ -58,6 +58,13 @@ describe('ProfileTable', () => {
     expect(screen.getByText(t.profiles.runningFor(t.time.span(0, 12)))).toBeTruthy()
   })
 
+  it('marks the profiles an AI agent is driving', () => {
+    render(<ProfileTable {...props([row({ id: 'a', state: 'running' }), row({ id: 'b', name: 'Kênh B' })])} agents={new Set(['a'])} />)
+    const chips = screen.getAllByTitle(t.agent.title)
+    expect(chips).toHaveLength(1)
+    expect(chips[0].closest('tr')?.textContent).toContain('Kênh A')
+  })
+
   it('disables the action while a profile is starting', () => {
     render(<ProfileTable {...props([row({ state: 'starting' })])} />)
     expect((screen.getByRole('button', { name: new RegExp(t.profiles.opening) }) as HTMLButtonElement).disabled).toBe(true)

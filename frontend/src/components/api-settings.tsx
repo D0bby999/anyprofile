@@ -66,6 +66,19 @@ export function APISettings() {
         <button type="button" className="btn sm ghost" disabled={!st.enabled} onClick={newToken}>{t.api.newToken}</button>
       </span>
       <span className="hint">{t.api.hint}</span>
+      <div className="field">
+        <span className="label">{t.api.mcpTitle}</span>
+        <code className="mono selectable">http://127.0.0.1:{st.port}/mcp</code>
+        <span className="row">
+          <button type="button" className="btn sm" disabled={!st.enabled} onClick={() => run(() => Api.CopyMCPCommand(), t.api.mcpCopied)}>
+            <Icon name="copy" className="icon sm" />{t.api.mcpCopy}
+          </button>
+          <button type="button" className="btn sm ghost" onClick={() => Api.OpenAgentFolder('uploads').catch((e) => setError(errorText(e)))}>{t.api.openUploads}</button>
+          <button type="button" className="btn sm ghost" onClick={() => Api.OpenAgentFolder('recipes').catch((e) => setError(errorText(e)))}>{t.api.openRecipes}</button>
+        </span>
+        <span className="hint">{t.api.foldersHint}</span>
+        <span className="hint">{t.api.mcpHint}</span>
+      </div>
       {error && <div className="banner danger" role="alert"><Icon name="alert" /><span className="grow">{error}</span></div>}
     </div>
   )

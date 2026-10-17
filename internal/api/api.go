@@ -21,6 +21,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/D0bby999/anyprofile/internal/agent"
 	"github.com/D0bby999/anyprofile/internal/apperr"
 	"github.com/D0bby999/anyprofile/internal/store"
 )
@@ -45,6 +46,9 @@ type Backend interface {
 	Profiles() ([]Profile, error)
 	Start(ctx context.Context, id string, devtools bool) error
 	Stop(id string) error
+	// Pipe is the DevTools pipe of a running profile; a browser adopted after
+	// a crash has none.
+	Pipe(id string) (agent.Conn, bool)
 }
 
 // Server serves the API on one loopback port with one token.
@@ -56,6 +60,13 @@ type Server struct {
 	srv     *http.Server
 	// devtoolsURL finds a browser's WebSocket URL; tests replace it.
 	devtoolsURL func(port int) string
+	// Agent keeps the MCP endpoint's view of each browser; /mcp is served
+	// when it is set. It outlives the server, which restarts with Settings.
+	Agent *agent.Hub
+	// Uploads is the only folder upload_file takes files from; Recipes holds
+	// the recipes /mcp offers. Both are read again on every request.
+	Uploads, Recipes string
+	prompts          promptSet
 }
 
 func New(b Backend, log *slog.Logger, port int, token string) *Server {
@@ -91,6 +102,9 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /v1/profiles/{id}", s.get)
 	mux.HandleFunc("POST /v1/profiles/{id}/start", s.start)
 	mux.HandleFunc("POST /v1/profiles/{id}/stop", s.stop)
+	if s.Agent != nil {
+		mux.Handle("/mcp", s.mcpHandler())
+	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		rec := &statusWriter{ResponseWriter: w, code: http.StatusOK}
 		if code, msg := s.refuse(r); code != 0 {

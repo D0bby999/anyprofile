@@ -10,6 +10,8 @@ let status = { enabled: false, port: 51525, running: false, error: '' }
 const setAPISettings = vi.fn(async (s: { enabled: boolean; port: number }) => { status = { ...status, ...s, running: s.enabled }; return status })
 const copyAPIToken = vi.fn().mockResolvedValue(undefined)
 const newAPIToken = vi.fn().mockResolvedValue(undefined)
+const copyMCPCommand = vi.fn().mockResolvedValue(undefined)
+const openAgentFolder = vi.fn().mockResolvedValue(undefined)
 vi.mock('../api', async (orig) => ({
   ...(await orig<typeof import('../api')>()),
   Api: {
@@ -17,6 +19,8 @@ vi.mock('../api', async (orig) => ({
     SetAPISettings: (s: { enabled: boolean; port: number }) => setAPISettings(s),
     CopyAPIToken: () => copyAPIToken(),
     NewAPIToken: () => newAPIToken(),
+    CopyMCPCommand: () => copyMCPCommand(),
+    OpenAgentFolder: (w: string) => openAgentFolder(w),
   },
 }))
 const { APISettings } = await import('./api-settings')
@@ -41,6 +45,18 @@ describe('APISettings', () => {
     expect(newAPIToken).not.toHaveBeenCalled()
     fireEvent.click(await screen.findByRole('button', { name: t.api.newTokenConfirm.confirm }))
     await waitFor(() => expect(newAPIToken).toHaveBeenCalled())
+  })
+
+  it('shows the MCP address and copies the Claude Code command through Go', async () => {
+    status = { ...status, enabled: true, running: true, port: 51600 }
+    view()
+    expect(await screen.findByText('http://127.0.0.1:51600/mcp')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: new RegExp(t.api.mcpCopy) }))
+    await waitFor(() => expect(copyMCPCommand).toHaveBeenCalled())
+    expect(await screen.findByText(t.api.mcpCopied)).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: t.api.openUploads }))
+    fireEvent.click(screen.getByRole('button', { name: t.api.openRecipes }))
+    expect(openAgentFolder.mock.calls).toEqual([['uploads'], ['recipes']])
   })
 
   it('explains a busy port', async () => {

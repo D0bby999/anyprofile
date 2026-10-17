@@ -9,6 +9,7 @@ import { Icon } from './icons'
 import { SiteBadges } from './site-glyph'
 import { RowMenu } from './row-menu'
 import { HealthPill } from './health-pill'
+import { AgentChip } from './agent-chip'
 import type { Column, TablePrefs } from '../lib/table-prefs'
 
 export type SortKey = 'no' | 'name' | 'lastOpen'
@@ -35,6 +36,8 @@ type Props = {
   /** The row the arrow keys point at. */
   cursorId?: string | null
   onSelectRow?: (id: string) => void
+  /** Profiles an AI agent is driving now. */
+  agents?: Set<string>
   prefs?: TablePrefs
 }
 
@@ -122,7 +125,7 @@ export function ProfileTable(p: Props) {
               {shown('proxy') && <td className="col-proxy"><ProxyCell row={r} /></td>}
               {shown('status') && (
                 <td className="col-status">
-                  <span className="cellstatus"><HealthPill row={r} now={now} /><LastOpened row={r} now={now} /></span>
+                  <span className="cellstatus"><HealthPill row={r} now={now} />{p.agents?.has(r.id) && <AgentChip />}<LastOpened row={r} now={now} /></span>
                 </td>
               )}
               <td className="col-actions">

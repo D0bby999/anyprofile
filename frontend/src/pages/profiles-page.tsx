@@ -19,6 +19,7 @@ import { needsAttention } from '../lib/health'
 import type { View } from '../components/sidebar'
 import { PageHead } from '../components/page-head'
 import { useToast } from '../components/toast'
+import { useAgentProfiles } from '../hooks/use-agent'
 
 type Props = {
   rows: service.ProfileRow[]
@@ -54,6 +55,7 @@ function inView(r: service.ProfileRow, v: View): boolean {
 
 export function ProfilesPage({ rows, sites, view, engineReady, fileVaultOn, error, setError, reload, onNew, onNeedEngine, onClearView, onView, onOpenSettings, activeId, setActiveId }: Props) {
   const [query, setQuery] = useState('')
+  const agents = useAgentProfiles()
   const [prefs, setPrefs] = useState<TablePrefs>(readTablePrefs)
   const changePrefs = (p: TablePrefs) => { setPrefs(p); writeTablePrefs(p) }
   const [sort, setSort] = useState<Sort>({ key: 'no', desc: false })
@@ -231,7 +233,7 @@ export function ProfilesPage({ rows, sites, view, engineReady, fileVaultOn, erro
                   <button className="btn" onClick={() => { setQuery(''); onClearView() }}>{t.profiles.clearFilters}</button>
                 </EmptyState>
               ) : (
-                <ProfileTable rows={visible} sites={sites} selected={selected} sort={sort} onSort={onSort}
+                <ProfileTable rows={visible} sites={sites} selected={selected} sort={sort} onSort={onSort} agents={agents}
                   onToggle={toggle} onToggleAll={toggleAll}
                   onStart={(id) => run(() => Api.StartProfile(id))} onStop={(id) => run(() => Api.StopProfile(id))}
                   onFocus={(id) => { Api.FocusProfile(id) }} onEdit={(row) => setActiveId(row.id)}
@@ -258,7 +260,7 @@ export function ProfilesPage({ rows, sites, view, engineReady, fileVaultOn, erro
             </div>
           </section>
           {active && (
-            <ProfileDrawer key={active.id} row={active} sites={sites} knownTags={allTags(rows)}
+            <ProfileDrawer key={active.id} row={active} sites={sites} knownTags={allTags(rows)} agent={agents.has(active.id)}
               onClose={() => setActiveId(null)} onStart={(id) => run(() => Api.StartProfile(id))} onStop={(id) => run(() => Api.StopProfile(id))} />
           )}
         </div>

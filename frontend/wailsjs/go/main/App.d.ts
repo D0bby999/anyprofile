@@ -13,6 +13,8 @@ export function AddExtension(arg1:boolean):Promise<store.Extension>;
 
 export function AddTagMany(arg1:Array<string>,arg2:string):Promise<void>;
 
+export function AgentProfiles():Promise<Array<string>>;
+
 export function AssignProxiesMany(arg1:Array<string>,arg2:string):Promise<Record<string, string>>;
 
 export function CheckAllProxies():Promise<void>;
@@ -32,6 +34,8 @@ export function CopyAPIToken():Promise<void>;
 export function CopyAccountPassword(arg1:string,arg2:string):Promise<void>;
 
 export function CopyDiagnostics():Promise<void>;
+
+export function CopyMCPCommand():Promise<void>;
 
 export function CreateProfile(arg1:service.NewProfile):Promise<store.Profile>;
 
@@ -92,6 +96,8 @@ export function MatchExit(arg1:string):Promise<void>;
 export function NewAPIToken():Promise<void>;
 
 export function Onboarded():Promise<boolean>;
+
+export function OpenAgentFolder(arg1:string):Promise<void>;
 
 export function Personas():Promise<Array<fury.Persona>>;
 

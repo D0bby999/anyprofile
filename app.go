@@ -13,6 +13,7 @@ import (
 	"sort"
 	"time"
 
+	"github.com/D0bby999/anyprofile/internal/agent"
 	"github.com/D0bby999/anyprofile/internal/engine"
 	"github.com/D0bby999/anyprofile/internal/engine/apostate"
 	"github.com/D0bby999/anyprofile/internal/engine/fury"
@@ -36,6 +37,9 @@ type App struct {
 	fury     *fury.Fury
 	startErr error
 	api      apiState
+	// agent is what the MCP endpoint knows of each browser; it lives as long
+	// as the app, across restarts of the API server.
+	agent *agent.Hub
 }
 
 func NewApp() *App { return &App{} }
@@ -99,6 +103,11 @@ func (a *App) init() error {
 		}}
 	l.BeforeStart, l.AfterExit = a.svc.BeforeLaunch, a.svc.AfterExit
 	l.Adopt()
+	a.agent = agent.NewHub(time.Minute)
+	a.agent.OnActive = func(id string, on bool) {
+		log.Info("agent", "profile", id, "driving", on)
+		runtime.EventsEmit(a.ctx, "data:changed", "agent")
+	}
 	a.restartAPI()
 	a.svc.CleanUpdates()
 	go func() {

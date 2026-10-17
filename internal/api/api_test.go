@@ -12,6 +12,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/D0bby999/anyprofile/internal/agent"
 	"github.com/D0bby999/anyprofile/internal/apperr"
 )
 
@@ -21,6 +22,8 @@ type fake struct {
 	devtools bool
 	stopped  []string
 	startErr error
+	pipe     agent.Conn
+	adopted  bool // running browsers have no pipe
 }
 
 func (f *fake) Profiles() ([]Profile, error) { return f.profiles, nil }
