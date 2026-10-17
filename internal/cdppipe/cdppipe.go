@@ -40,13 +40,14 @@ type Conn struct {
 	mu     sync.Mutex
 	next   int
 	wait   map[int]chan wireMsg
-	events chan Event
+	subs   map[chan Event]struct{}
+	gone   bool // the browser side went away; guarded by mu
 	closed chan struct{}
 }
 
 // New starts reading r in the background. w carries commands to the browser.
 func New(w, r *os.File) *Conn {
-	c := &Conn{w: w, wait: map[int]chan wireMsg{}, events: make(chan Event, 64), closed: make(chan struct{})}
+	c := &Conn{w: w, wait: map[int]chan wireMsg{}, subs: map[chan Event]struct{}{}, closed: make(chan struct{})}
 	go c.readLoop(r)
 	return c
 }
@@ -57,7 +58,13 @@ func (c *Conn) readLoop(r *os.File) {
 	for {
 		b, err := br.ReadBytes(0)
 		if err != nil {
-			close(c.events)
+			c.mu.Lock()
+			c.gone = true
+			for ch := range c.subs {
+				close(ch)
+			}
+			c.subs = nil
+			c.mu.Unlock()
 			close(c.closed)
 			return
 		}
@@ -76,11 +83,16 @@ func (c *Conn) readLoop(r *os.File) {
 			continue
 		}
 		// The reader must never block, or the reply pipe could fill up. Drop
-		// events when the consumer is slow rather than blocking here.
-		select {
-		case c.events <- Event{Method: m.Method, SessionID: m.SessionID, Params: m.Params}:
-		default:
+		// events for a subscriber that is slow rather than blocking here.
+		ev := Event{Method: m.Method, SessionID: m.SessionID, Params: m.Params}
+		c.mu.Lock()
+		for ch := range c.subs {
+			select {
+			case ch <- ev:
+			default:
+			}
 		}
+		c.mu.Unlock()
 	}
 }
 
@@ -114,8 +126,27 @@ func (c *Conn) Call(ctx context.Context, session, method string, params any) (js
 	}
 }
 
-// Events delivers protocol events; it is closed when the browser side goes away.
-func (c *Conn) Events() <-chan Event { return c.events }
+// Subscribe delivers every protocol event from now on to a channel of its own,
+// buffered to size events; a full channel misses events. The channel is closed
+// by cancel, or when the browser side goes away.
+func (c *Conn) Subscribe(size int) (events <-chan Event, cancel func()) {
+	ch := make(chan Event, size)
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.gone {
+		close(ch)
+		return ch, func() {}
+	}
+	c.subs[ch] = struct{}{}
+	return ch, func() {
+		c.mu.Lock()
+		defer c.mu.Unlock()
+		if _, ok := c.subs[ch]; ok {
+			delete(c.subs, ch)
+			close(ch)
+		}
+	}
+}
 
 // Done is closed when the browser side goes away.
 func (c *Conn) Done() <-chan struct{} { return c.closed }

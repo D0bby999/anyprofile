@@ -47,17 +47,80 @@ func newPair(t *testing.T) (*Conn, *os.File) {
 func TestCallAndEvents(t *testing.T) {
 	c, _ := newPair(t)
 	defer c.Close()
+	// Two subscribers both get the event; neither takes it from the other.
+	a, cancelA := c.Subscribe(4)
+	defer cancelA()
+	b, cancelB := c.Subscribe(4)
+	defer cancelB()
 	res, err := c.Call(context.Background(), "", "Browser.getVersion", nil)
 	if err != nil || string(res) != `{"ok":true}` {
 		t.Fatalf("call = %s, %v", res, err)
 	}
-	select {
-	case ev := <-c.Events():
-		if ev.Method != "X.y" {
-			t.Fatalf("event = %+v", ev)
+	for _, ch := range []<-chan Event{a, b} {
+		select {
+		case ev := <-ch:
+			if ev.Method != "X.y" {
+				t.Fatalf("event = %+v", ev)
+			}
+		case <-time.After(time.Second):
+			t.Fatal("no event")
 		}
+	}
+}
+
+func TestCancelClosesOnlyThatSubscriber(t *testing.T) {
+	c, _ := newPair(t)
+	defer c.Close()
+	a, cancelA := c.Subscribe(4)
+	b, cancelB := c.Subscribe(4)
+	defer cancelB()
+	cancelA()
+	cancelA() // twice is harmless
+	if _, ok := <-a; ok {
+		t.Fatal("a cancelled subscription must be closed")
+	}
+	c.Call(context.Background(), "", "X", nil)
+	select {
+	case <-b:
 	case <-time.After(time.Second):
-		t.Fatal("no event")
+		t.Fatal("the other subscriber stopped getting events")
+	}
+}
+
+// A subscriber that never reads must not hold up replies.
+func TestSlowSubscriberDoesNotBlockCalls(t *testing.T) {
+	c, _ := newPair(t)
+	defer c.Close()
+	_, cancel := c.Subscribe(1)
+	defer cancel()
+	for i := 0; i < 20; i++ {
+		ctx, done := context.WithTimeout(context.Background(), time.Second)
+		if _, err := c.Call(ctx, "", "X", nil); err != nil {
+			t.Fatalf("call %d: %v", i, err)
+		}
+		done()
+	}
+}
+
+func TestSubscriptionsCloseWithThePipe(t *testing.T) {
+	c, browserW := newPair(t)
+	ch, cancel := c.Subscribe(4)
+	defer cancel()
+	browserW.Close()
+	deadline := time.After(time.Second)
+	for {
+		select {
+		case _, ok := <-ch:
+			if !ok {
+				late, _ := c.Subscribe(4)
+				if _, ok := <-late; ok {
+					t.Fatal("a subscription after the pipe closed must be closed")
+				}
+				return
+			}
+		case <-deadline:
+			t.Fatal("subscription not closed with the pipe")
+		}
 	}
 }
 

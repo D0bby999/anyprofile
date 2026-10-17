@@ -99,9 +99,11 @@ func Capture(ctx context.Context, c *cdppipe.Conn) (Sample, error) {
 		return Sample{}, err
 	}
 	// Fulfil every paused request with a minimal local page; no network.
+	events, unsubscribe := c.Subscribe(64)
+	defer unsubscribe()
 	go func() {
-		for ev := range c.Events() {
-			if ev.Method != "Fetch.requestPaused" {
+		for ev := range events {
+			if ev.Method != "Fetch.requestPaused" || ev.SessionID != sid {
 				continue
 			}
 			var p struct {
