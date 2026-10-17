@@ -23,6 +23,15 @@ func snapshotProfile(t *testing.T) (*Service, string) {
 	}
 	write(t, filepath.Join(dir, "Default", "Cookies"), "v1")
 	write(t, filepath.Join(dir, "Default", "Cache", "x"), "cache")
+	for _, d := range []string{"WasmTtsEngine/1", "component_crx_cache", "Default/Service Worker/CacheStorage", "Default/Service Worker/Database"} {
+		if err := os.MkdirAll(filepath.Join(dir, d), 0o700); err != nil {
+			t.Fatal(err)
+		}
+	}
+	write(t, filepath.Join(dir, "WasmTtsEngine", "1", "voice"), "tts")
+	write(t, filepath.Join(dir, "component_crx_cache", "a.crx"), "crx")
+	write(t, filepath.Join(dir, "Default", "Service Worker", "CacheStorage", "c"), "site cache")
+	write(t, filepath.Join(dir, "Default", "Service Worker", "Database", "d"), "registrations")
 	return s, p.ID
 }
 
@@ -58,6 +67,17 @@ func TestSnapshotRestoreAndUndo(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(s.Dirs.Profile(id), "Default", "Cache")); !os.IsNotExist(err) {
 		t.Fatal("cache came back from the snapshot")
 	}
+	dir := s.Dirs.Profile(id)
+	if _, err := os.Stat(filepath.Join(dir, "Default", "Service Worker", "CacheStorage")); !os.IsNotExist(err) {
+		t.Fatal("the sites' cache came back from the snapshot")
+	}
+	if got := read(t, filepath.Join(dir, "Default", "Service Worker", "Database", "d")); got != "registrations" {
+		t.Fatalf("service worker registrations = %q", got)
+	}
+	// Components are not in the snapshot; the ones on disk are kept.
+	if got := read(t, filepath.Join(dir, "WasmTtsEngine", "1", "voice")); got != "tts" {
+		t.Fatalf("component after restore = %q", got)
+	}
 	list, _ := s.Snapshots(id)
 	if len(list) != 2 || list[0].Reason != "before-restore" || list[0].ID != before {
 		t.Fatalf("snapshots = %+v", list)
@@ -78,6 +98,9 @@ func TestSnapshotOnCloseAndKeep(t *testing.T) {
 	wait := func() { s.BeforeLaunch(id) } // returns once the close snapshot is written
 	s.AfterExit(id, 30*time.Second)
 	wait()
+	if _, err := os.Stat(filepath.Join(s.Dirs.Profile(id), "component_crx_cache")); !os.IsNotExist(err) {
+		t.Fatal("the download cache is still there after the browser closed")
+	}
 	if list, _ := s.Snapshots(id); len(list) != 0 {
 		t.Fatalf("a 30 s session was saved: %d", len(list))
 	}

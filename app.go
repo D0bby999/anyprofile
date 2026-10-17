@@ -119,6 +119,7 @@ func (a *App) init() error {
 		}}
 	l.BeforeStart, l.AfterExit = a.svc.BeforeLaunch, a.svc.AfterExit
 	a.svc.LoadEngineList()
+	go a.svc.PruneEngines(context.Background())
 	l.Adopt()
 	a.agent = agent.NewHub(time.Minute)
 	a.agent.Behind = l.Behind

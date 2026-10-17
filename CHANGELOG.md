@@ -53,6 +53,15 @@ keeps them together.
 - Open no longer brings the new browser to the front: it opens behind the
   app, so several profiles can be opened in a row, and the screen stays on
   the desktop you are on. Focus on the row shows it.
+- Close snapshots are about 20 times smaller (a few MB instead of ~30 MB)
+  and quicker: they leave out the sites' Cache API storage and the
+  components Chromium downloads again by itself. Restoring one keeps the
+  components already on disk.
+- A closed profile drops Chromium's copies of its downloads
+  (component_crx_cache), about 60 MB a profile.
+- An engine version no profile uses is removed at launch once a newer one is
+  installed (~330 MB each). The newest installed version always stays.
+
 ## 0.1.0 (2026-10-17)
 
 First beta.

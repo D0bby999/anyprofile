@@ -26,7 +26,22 @@ type StorageInfo struct {
 
 // cacheDirs are Chromium caches, safe to delete while the browser is closed.
 var cacheDirs = []string{"Default/Cache", "Default/Code Cache", "Default/GPUCache",
-	"GrShaderCache", "ShaderCache", "GraphiteDawnCache"}
+	"GrShaderCache", "ShaderCache", "GraphiteDawnCache", "GPUPersistentCache",
+	"Default/DawnGraphiteCache", "Default/DawnWebGPUCache"}
+
+// componentDirs are what Chromium's component updater downloads into every
+// profile (speech, suggestions, certificate and safety lists, Widevine). It
+// fetches each again when missing, through the profile's proxy.
+var componentDirs = []string{"ActorSafetyLists", "AmountExtractionHeuristicRegexes",
+	"CaptchaProviders", "CertificateRevocation", "Crowd Deny", "FileTypePolicies",
+	"FirstPartySetsPreloaded", "MEIPreload", "OnDeviceHeadSuggestModel", "OptimizationHints",
+	"OptimizationGuidePredictionModels", "OriginTrials", "PKIMetadata",
+	"PrivacySandboxAttestationsPreloaded", "SSLErrorAssistant", "Safe Browsing", "SafetyTips",
+	"Subresource Filter", "TrustTokenKeyCommitments", "WasmTtsEngine", "WidevineCdm", "ZxcvbnData"}
+
+// downloadCaches keep a copy of every component and extension download, for
+// updates; the installed copies are elsewhere. ~60 MB a profile.
+var downloadCaches = []string{"component_crx_cache", "extensions_crx_cache"}
 
 // dirSize sums the size of the regular files under path; errors are ignored
 // (a vanished file mid-walk is simply not counted).

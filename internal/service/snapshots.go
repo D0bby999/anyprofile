@@ -29,11 +29,13 @@ const (
 )
 
 // snapshotSkip are folders and files a snapshot leaves out: Chromium caches
-// (rebuilt on demand), lock files of a running browser, crash reports, and
-// components Chromium downloads again by itself.
-var snapshotSkip = append(append([]string(nil), cacheDirs...),
+// (rebuilt on demand, the sites' Cache API included), lock files of a running
+// browser, crash reports, and components Chromium downloads again by itself.
+// What stays (cookies, storage, history, settings) is a few MB; with the rest
+// a close snapshot was ~30 MB.
+var snapshotSkip = append(append(append(append([]string(nil), cacheDirs...), componentDirs...), downloadCaches...),
 	"SingletonLock", "SingletonCookie", "SingletonSocket", "lockfile", "DevToolsActivePort",
-	"Crashpad", "component_crx_cache", "Safe Browsing", "OptimizationGuidePredictionModels", "WidevineCdm")
+	"Crashpad", "Default/Service Worker/CacheStorage")
 
 func skipInSnapshot(rel string, _ fs.DirEntry) bool {
 	for _, s := range snapshotSkip {
@@ -251,6 +253,13 @@ func (s *Service) RestoreSnapshot(snapshotID int64) (int64, error) {
 	cur := s.Dirs.Profile(id)
 	hadCur := fileExists(cur)
 	if hadCur {
+		// Components are not in the snapshot: keep the ones on disk rather
+		// than have the browser download them again.
+		for _, c := range componentDirs {
+			if !fileExists(filepath.Join(staging, c)) {
+				os.Rename(filepath.Join(cur, c), filepath.Join(staging, c))
+			}
+		}
 		os.RemoveAll(old)
 		if err := os.Rename(cur, old); err != nil {
 			os.RemoveAll(staging)
@@ -307,18 +316,22 @@ func (s *Service) BeforeLaunch(profileID string) error {
 	return nil
 }
 
-// AfterExit snapshots a profile that ran long enough (Launcher.AfterExit). The
-// lock is taken before returning, so a launch right after waits for it.
+// AfterExit drops the profile's download caches and snapshots a profile that
+// ran long enough (Launcher.AfterExit). The lock is taken before returning,
+// so a launch right after waits for it.
 func (s *Service) AfterExit(profileID string, ranFor time.Duration) {
-	if ranFor < autoSnapshotAfter || !s.SnapshotSettings().Auto {
-		return
-	}
 	lock := s.lockFor(profileID)
 	if !lock.acquire(busyWait) {
 		return
 	}
 	go func() {
 		defer lock.release()
+		for _, c := range downloadCaches {
+			os.RemoveAll(filepath.Join(s.Dirs.Profile(profileID), c))
+		}
+		if ranFor < autoSnapshotAfter || !s.SnapshotSettings().Auto {
+			return
+		}
 		if _, err := s.takeLocked(profileID, "close"); err != nil {
 			s.Log.Warn("snapshot on close", "profile", profileID, "err", err)
 		}

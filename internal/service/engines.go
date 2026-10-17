@@ -133,6 +133,35 @@ func (s *Service) RemoveEngineVersion(ctx context.Context, id, version string) e
 	return eng.Remove(version)
 }
 
+// PruneEngines removes installed versions no profile uses, the trash
+// included, once a newer version of the same engine is installed. Profiles
+// move to a newer version on their own, and each old one left ~330 MB on
+// disk. The newest installed version always stays, so a profile can still be
+// made without a download.
+func (s *Service) PruneEngines(ctx context.Context) {
+	for _, eng := range s.Engines {
+		counts, err := s.versionCounts(eng.ID())
+		if err != nil {
+			s.Log.Warn("prune engines", "err", err)
+			return
+		}
+		newer := false
+		for _, r := range eng.Releases() { // newest first
+			if !eng.Status(ctx, r.Version).Installed {
+				continue
+			}
+			if newer && counts[r.Version] == 0 {
+				if err := eng.Remove(r.Version); err != nil {
+					s.Log.Warn("remove unused engine version", "engine", eng.ID(), "version", r.Version, "err", err)
+				} else {
+					s.Log.Info("unused engine version removed", "engine", eng.ID(), "version", r.Version)
+				}
+			}
+			newer = true
+		}
+	}
+}
+
 func findRelease(rels []engine.Release, version string) (engine.Release, bool) {
 	for _, r := range rels {
 		if r.Version == version {

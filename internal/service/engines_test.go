@@ -69,3 +69,27 @@ func TestRemoveEngineVersion(t *testing.T) {
 		t.Fatal("removed an unknown version")
 	}
 }
+
+func TestPruneEngines(t *testing.T) {
+	s, _ := newService(t)
+	eng := &shelfEngine{installed: map[string]bool{"0.3.5": true}}
+	s.Engines = map[string]engine.Engine{"fury": eng}
+	ctx := context.Background()
+	// The only version installed stays, used or not.
+	s.PruneEngines(ctx)
+	if len(eng.removed) != 0 {
+		t.Fatalf("removed %v", eng.removed)
+	}
+	// A profile in the trash still needs 0.4.0; 0.3.5 is unused once 0.4.5 is there.
+	eng.installed["0.4.0"], eng.installed["0.4.5"] = true, true
+	p, err := s.CreateProfile(ctx, NewProfile{Name: "Trashed"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	s.Store.SetEngineVersion(p.ID, "0.4.0")
+	s.Store.SoftDelete(p.ID)
+	s.PruneEngines(ctx)
+	if len(eng.removed) != 1 || eng.removed[0] != "0.3.5" || !eng.installed["0.4.0"] || !eng.installed["0.4.5"] {
+		t.Fatalf("removed %v, left %v", eng.removed, eng.installed)
+	}
+}
