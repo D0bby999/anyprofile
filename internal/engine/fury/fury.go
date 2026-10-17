@@ -37,13 +37,13 @@ func New(dirs paths.Dirs, configBin string) *Fury {
 func (f *Fury) ID() string { return "fury" }
 
 // PrepareProfile stages the Widevine CDM from the user's own Chrome, when
-// present. Missing Chrome is not fatal: DRM video simply will not play.
+// present. Missing Chrome is not fatal: DRM video simply will not play. It
+// also keeps the browser out of Google sign-in (engine.StayOutOfChromeSignIn).
 func (f *Fury) PrepareProfile(p store.Profile, rt engine.Runtime) error {
-	err := stageWidevine(f.chromeApps, rt.UserDataDir)
-	if errors.Is(err, errNoChrome) {
-		return nil
+	if err := stageWidevine(f.chromeApps, rt.UserDataDir); err != nil && !errors.Is(err, errNoChrome) {
+		return err
 	}
-	return err
+	return engine.EditPrefs(filepath.Join(rt.UserDataDir, "Default", "Preferences"), engine.StayOutOfChromeSignIn)
 }
 
 // BuildLaunch mirrors the switches the Fury agent passes its core

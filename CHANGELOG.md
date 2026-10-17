@@ -32,6 +32,11 @@ keeps them together.
   recording light, instead of an Agent chip in the Status column.
 - An agent's open_tab opens a tab in the profile's window instead of a
   window of its own, which looked like a second browser.
+- Google sign-ins last across restarts. The browser joined each Google
+  sign-in made on the web (Chrome sign-in, Dice), failed to get a token of
+  its own, and on the next launch signed the web out to match. "Allow Chrome
+  sign-in" is now off in every profile, so the browser leaves Google's
+  cookies alone.
 
 ## 0.1.0 (2026-10-17)
 

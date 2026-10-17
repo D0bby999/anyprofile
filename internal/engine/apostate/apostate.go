@@ -4,10 +4,8 @@ package apostate
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
 	"path/filepath"
 	"regexp"
 	"runtime"
@@ -68,49 +66,23 @@ func (a *Apostate) NewIdentity(ctx context.Context, roll uint64) (engine.Identit
 }
 
 // PrepareProfile blocks geolocation before the first launch: Apostate has no
-// flag to fake a position, so a site that asks would get the real one.
+// flag to fake a position, so a site that asks would get the real one. It
+// also keeps the browser out of Google sign-in (engine.StayOutOfChromeSignIn):
+// the Google keys set in BuildLaunch make Chromium act as Chrome there.
 func (a *Apostate) PrepareProfile(p store.Profile, rt engine.Runtime) error {
-	return blockGeolocation(filepath.Join(rt.UserDataDir, "Default", "Preferences"))
+	return engine.EditPrefs(filepath.Join(rt.UserDataDir, "Default", "Preferences"), func(m map[string]any) bool {
+		geo := blockGeolocation(m)
+		return engine.StayOutOfChromeSignIn(m) || geo
+	})
 }
 
-func blockGeolocation(prefs string) error {
-	m := map[string]any{}
-	b, err := os.ReadFile(prefs)
-	switch {
-	case errors.Is(err, os.ErrNotExist):
-		if err := os.MkdirAll(filepath.Dir(prefs), 0o700); err != nil {
-			return err
-		}
-	case err != nil:
-		return err
-	default:
-		if err := json.Unmarshal(b, &m); err != nil {
-			return fmt.Errorf("read %s: %w", prefs, err)
-		}
-	}
-	profile, _ := m["profile"].(map[string]any)
-	if profile == nil {
-		profile = map[string]any{}
-		m["profile"] = profile
-	}
-	values, _ := profile["default_content_setting_values"].(map[string]any)
-	if values == nil {
-		values = map[string]any{}
-		profile["default_content_setting_values"] = values
-	}
+func blockGeolocation(m map[string]any) bool {
+	values := engine.PrefsDict(engine.PrefsDict(m, "profile"), "default_content_setting_values")
 	if v, ok := values["geolocation"].(float64); ok && v == 2 {
-		return nil
+		return false
 	}
 	values["geolocation"] = 2
-	out, err := json.Marshal(m)
-	if err != nil {
-		return err
-	}
-	tmp := prefs + ".anyprofile-tmp"
-	if err := os.WriteFile(tmp, out, 0o600); err != nil {
-		return err
-	}
-	return os.Rename(tmp, prefs)
+	return true
 }
 
 var seedRe = regexp.MustCompile(`^[0-9a-f]{16}$`)

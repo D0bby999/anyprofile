@@ -12,6 +12,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -242,5 +243,27 @@ func TestCleanStale(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(f.dir(Version), "keep")); err != nil {
 		t.Fatal("installed version was removed")
+	}
+}
+
+func TestPrepareProfileStaysOutOfChromeSignIn(t *testing.T) {
+	f := New(paths.Dirs{Root: t.TempDir()}, configBinForTest(t))
+	f.chromeApps = []string{"/nope"} // no Chrome: Widevine is skipped, not an error
+	udd := t.TempDir()
+	if err := f.PrepareProfile(testProfile(), engine.Runtime{UserDataDir: udd}); err != nil {
+		t.Fatal(err)
+	}
+	b, err := os.ReadFile(filepath.Join(udd, "Default", "Preferences"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var m struct {
+		Signin map[string]any `json:"signin"`
+	}
+	if err := json.Unmarshal(b, &m); err != nil {
+		t.Fatal(err)
+	}
+	if m.Signin["allowed"] != false || m.Signin["allowed_on_next_startup"] != false {
+		t.Fatalf("signin prefs = %v", m.Signin)
 	}
 }

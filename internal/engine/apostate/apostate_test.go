@@ -168,8 +168,12 @@ func TestPrepareProfileGeolocation(t *testing.T) {
 	if g := geo(readPrefs(t, prefs)); g != float64(2) {
 		t.Fatalf("new prefs geolocation = %v", g)
 	}
+	// Out of Chrome sign-in, so the reconcilor never signs the web out.
+	if s := readPrefs(t, prefs)["signin"].(map[string]any); s["allowed"] != false || s["allowed_on_next_startup"] != false {
+		t.Fatalf("signin prefs = %v", s)
+	}
 
-	if err := os.WriteFile(prefs, []byte(`{"browser":{"x":1},"profile":{"name":"A"}}`), 0o600); err != nil {
+	if err := os.WriteFile(prefs, []byte(`{"browser":{"x":1},"profile":{"name":"A"},"signin":{"allowed":true,"allowed_on_next_startup":true}}`), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	if err := a.PrepareProfile(testProfile(), engine.Runtime{UserDataDir: udd}); err != nil {
@@ -178,6 +182,9 @@ func TestPrepareProfileGeolocation(t *testing.T) {
 	m := readPrefs(t, prefs)
 	if g := geo(m); g != float64(2) {
 		t.Fatalf("merged geolocation = %v", g)
+	}
+	if s := m["signin"].(map[string]any); s["allowed"] != false || s["allowed_on_next_startup"] != false {
+		t.Fatalf("Chrome sign-in turned back on: %v", s)
 	}
 	if m["browser"].(map[string]any)["x"] != float64(1) || m["profile"].(map[string]any)["name"] != "A" {
 		t.Fatalf("other keys lost: %v", m)
