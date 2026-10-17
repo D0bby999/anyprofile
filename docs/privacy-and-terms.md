@@ -19,8 +19,9 @@ There is no AnyProfile account and no AnyProfile server.
 
 - **Through each profile's proxy:** what the browser loads, and the exit checks (ipinfo.io, ipwho.is, ipify.org)
   that show the proxy's IP, country and timezone.
-- **Directly:** the browser engine download from GitHub Releases on first use, and, when updates are on, one
-  request a day to GitHub for `latest.json`. That request carries no identifier beyond what any web request
+- **Directly:** the browser engine download from GitHub Releases on first use or when you download another
+  version, and, when updates are on, one request a day to GitHub for `latest.json`, which also lists the engine
+  versions AnyProfile offers. That request carries no identifier beyond what any web request
   carries (your IP address and the app version in the User-Agent).
 - **When you click a partner link:** a provider under Proxies → Buy proxies, or an app on the Creator tools page,
   opens in your default browser, not in a profile. Some are referral links, so AnyProfile may earn a commission
@@ -59,8 +60,9 @@ Không có tài khoản AnyProfile, không có máy chủ AnyProfile.
 
 - **Qua proxy của từng profile:** những gì trình duyệt tải, và các lần kiểm IP ra (ipinfo.io, ipwho.is,
   ipify.org) để biết IP, nước và múi giờ của proxy.
-- **Đi thẳng:** tải engine trình duyệt từ GitHub Releases ở lần đầu, và khi bật tự kiểm tra cập nhật, mỗi ngày một
-  lần hỏi GitHub file `latest.json`. Yêu cầu này không mang định danh nào ngoài những gì mọi yêu cầu web đều có
+- **Đi thẳng:** tải engine trình duyệt từ GitHub Releases ở lần đầu hoặc khi bạn tải một phiên bản khác, và khi bật
+  tự kiểm tra cập nhật, mỗi ngày một lần hỏi GitHub file `latest.json`, file này cũng liệt kê các phiên bản engine
+  AnyProfile cung cấp. Yêu cầu này không mang định danh nào ngoài những gì mọi yêu cầu web đều có
   (địa chỉ IP của bạn và phiên bản app trong User-Agent).
 - **Khi bạn bấm link đối tác:** nhà cung cấp trong Proxy → Mua proxy, hoặc ứng dụng ở trang Công cụ cho creator,
   mở trong trình duyệt mặc định, không mở trong profile. Một số là link giới thiệu, nên AnyProfile có thể nhận hoa

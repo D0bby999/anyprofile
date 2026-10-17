@@ -5,6 +5,13 @@ keeps them together.
 
 ## Unreleased
 
+- Engine versions: Settings → Engines lists every version of Apostate and
+  Fury, to download or remove. New versions arrive in the signed latest.json,
+  without an app update; profiles move to a newer version on their own when it
+  keeps their machine.
+- Fury 0.4.5: its macOS core is rebuilt (0.3.8) so a profile closes when its
+  window does, from the second launch on too. Same Chrome 155.0.8059.39; the
+  machines of macOS profiles are unchanged.
 - Buy proxies: 14 providers suited to long-lived accounts, with their logos and
   proxy types, filtered by type; the button is green so it stands apart.
   Opened in your browser.

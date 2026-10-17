@@ -47,6 +47,40 @@ không tự cập nhật được: app báo người dùng chuyển `AnyProfile.
 
 App đọc `https://github.com/D0bby999/anyprofile/releases/latest/download/latest.json` (repo công khai).
 
+## Engine mới mà không ra app mới
+
+`latest.json` có thêm danh sách engine (`engines`) và chữ ký của nó (`enginesSig`, cùng khoá phát hành). App đọc
+danh sách này khi kiểm tra cập nhật, kiểm chữ ký, rồi hiện các phiên bản trong Settings → Engines. Không thêm
+request nào: đây vẫn là file `latest.json` app đã đọc.
+
+- **Biết khi có bản mới:** workflow `Engine watch` chạy mỗi ngày và mở issue "Engine: … is out" kèm SHA256SUMS và
+  ghi chú phát hành khi Apostate hoặc Fury có bản AnyProfile chưa biết.
+- **Thêm một bản:**
+  1. Tải file nén, so `shasum -a 256` với SHA256SUMS của bản đó. Giải nén, lấy hash các file cần kiểm (Apostate:
+     `Chromium` và `Chromium Framework`, hoặc `chrome.exe` và `chrome.dll`; Fury: `Fury.app/Contents/MacOS/Fury`,
+     khớp `core sha256` trong REPORT.md). macOS: `codesign -dv` phải ra đúng team.
+  2. Chạy integration test với bản đó (`ANYPROFILE_TEST_APOSTATE_APP` hoặc `ANYPROFILE_TEST_FURY_APP`).
+  3. Thêm một mục vào `engines.json` (cùng dạng `engine.Release` trong `internal/engine/release.go`).
+     `catalogue`: giữ giá trị của bản trước nếu cùng seed vẫn ra cùng máy giả lập (Apostate: digest của
+     `--fingerprint-explain` không đổi; Fury: `fury-config`, vì máy giả lập do app sinh). Khác thì đặt giá trị mới:
+     profile cũ khi đó giữ bản cũ. `minApp`: bản AnyProfile thấp nhất chạy được nó.
+  4. Commit `engines.json`, rồi ký vào `latest.json` của bản phát hành mới nhất và tải lên lại:
+
+     ```
+     gh release download -R D0bby999/anyprofile -p latest.json
+     go run ./tools/release engines -manifest latest.json engines.json
+     gh release upload "$(gh release view -R D0bby999/anyprofile --json tagName -q .tagName)" latest.json --clobber -R D0bby999/anyprofile
+     ```
+
+  Lần phát hành app sau, workflow tự ký `engines.json` vào `latest.json` mới. **Không bao giờ xoá một mục khỏi
+  `engines.json`:** người dùng có thể có profile trên bản đó, và app không mở được profile trên một bản nó không
+  còn biết.
+- **Cần ra app mới khi:** bản engine cần cờ mới, hoặc Fury đổi định dạng cấu hình (khi đó `fury-shared` trong
+  `tools/fury-config/Cargo.toml` phải đổi theo). Thêm bản đó vào `Builtin()` của engine thay vì `engines.json`.
+- **Profile chuyển phiên bản thế nào:** profile mới dùng bản mới nhất đã cài. Profile cũ tự chuyển sang bản mới hơn
+  đã cài khi mở, nếu cùng `catalogue`; khác `catalogue` thì giữ bản của nó. Chromium đổi thì baseline fingerprint
+  được đo lại. Xoá một bản: profile của nó chuyển sang bản mới nhất cùng `catalogue`; không có thì không cho xoá.
+
 ## Repo
 
 `D0bby999/anyprofile` (công khai) chứa mã nguồn, CI và các bản phát hành. Lịch sử đã viết lại ngày
