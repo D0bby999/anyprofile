@@ -8,6 +8,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -68,11 +69,26 @@ func TestLastWindowClosedQuits(t *testing.T) {
 				t.Fatalf("browser quit while a page was open: %+v %v", in, ok)
 			}
 
-			// Close every page, as the window's close button does.
+			// Close every page, as the window's close button does, while the
+			// browser is the app in front: it must wait for the user to leave
+			// it, or macOS jumps to the desktop of the app used before.
+			var front atomic.Bool
+			front.Store(true)
+			inFront = func(int) bool { return front.Load() }
+			defer func() { inFront = func(pid int) bool { return pid != 0 && frontPID() == pid } }()
 			ts, _ = pageTargets(ctx, c)
 			for _, tg := range ts {
 				c.Call(ctx, "", "Target.closeTarget", map[string]any{"targetId": tg.TargetID})
 			}
+			// Fury's core quits by itself with its last window (since 0.3.8);
+			// only Apostate is left to the launcher.
+			if name == "apostate" {
+				time.Sleep((emptyChecks + 2) * windowsEvery)
+				if in, ok := l.Info(p.ID); !ok || in.State != Running {
+					t.Fatalf("browser quit while it was the app in front: %+v %v", in, ok)
+				}
+			}
+			front.Store(false) // the user clicks another app
 			waitStopped(t, l, p.ID)
 		})
 	}
