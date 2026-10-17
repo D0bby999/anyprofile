@@ -7,6 +7,14 @@ keeps them together.
 
 - Buy proxies: every proxy provider in one list, opened in your browser.
   A Creator tools page, starting with PostClaw.
+- AI agents: Claude Code and other MCP clients open profiles and work in
+  their browsers (read, click, type, screenshots, network requests) through
+  the local API, without opening a DevTools port. See docs/mcp.md.
+- Agents can upload files, only from AnyProfile's uploads folder, including
+  through upload buttons that open a hidden file input (YouTube Studio).
+- Recipes: step-by-step instructions for agents, dropped into the recipes
+  folder, offered as MCP prompts. Starter scripts for Playwright, Puppeteer
+  and Python in examples/.
 
 ## 0.1.0 (2026-10-17)
 

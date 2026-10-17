@@ -26,6 +26,10 @@ There is no AnyProfile account and no AnyProfile server.
   opens in your default browser, not in a profile. Some are referral links, so AnyProfile may earn a commission
   and you pay the same price; PostClaw links carry `utm_source=anyprofile`. The list ships with the app, and
   AnyProfile itself sends nothing about the click.
+- **When you connect an AI agent (MCP):** the agent reads the pages you let it work on, and sends what it reads
+  to its own model provider (Anthropic for Claude Code, for example). AnyProfile sends nothing for it; the log
+  records which tool ran on which profile, never page content or typed text. An agent can upload only the files
+  you put in AnyProfile's uploads folder.
 - **Nothing else.** No analytics, no crash reports, no telemetry. Settings → Help → Copy diagnostics only fills
   your clipboard; you decide where to paste it.
 
@@ -62,6 +66,10 @@ Không có tài khoản AnyProfile, không có máy chủ AnyProfile.
   mở trong trình duyệt mặc định, không mở trong profile. Một số là link giới thiệu, nên AnyProfile có thể nhận hoa
   hồng, giá bạn trả không đổi; link PostClaw mang `utm_source=anyprofile`. Danh sách nằm sẵn trong app, và
   AnyProfile không tự gửi gì về lượt bấm.
+- **Khi bạn kết nối một AI agent (MCP):** agent đọc các trang bạn cho nó làm việc, và gửi những gì nó đọc lên nhà
+  cung cấp mô hình của chính nó (ví dụ Anthropic với Claude Code). AnyProfile không gửi gì cho việc này; log chỉ ghi
+  tool nào chạy trên profile nào, không bao giờ ghi nội dung trang hay chữ đã gõ. Agent chỉ upload được các file
+  bạn đặt vào thư mục uploads của AnyProfile.
 - **Ngoài ra không gì cả.** Không thống kê, không báo cáo lỗi tự động. Settings → Help → Copy diagnostics chỉ chép
   vào clipboard; bạn tự quyết dán ở đâu.
 

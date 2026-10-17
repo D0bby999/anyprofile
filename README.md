@@ -83,6 +83,13 @@ AnyProfile is built to be handed to other people, so:
   needs a token kept in the Keychain, and refuses requests carrying an `Origin`
   header or a foreign `Host`, so web pages cannot reach it. A DevTools port
   opens only for a launch a script asks for. See `docs/local-api.md`.
+- **AI agents over MCP.** With the local API on, Claude Code and other agents
+  connect to `127.0.0.1:<port>/mcp` with the same token, open profiles and work
+  in their browsers. They go through the app's own DevTools pipe, so no port
+  opens; pages are read in an isolated world and input events are real.
+  Agents upload only files from the app's uploads folder, and follow recipes
+  dropped into its recipes folder. See `docs/mcp.md`; starter scripts for
+  Playwright, Puppeteer and Python are in `examples/`.
 - **Extensions run only where you turn them on.** Each one is unpacked into
   the app's library and loaded with `--load-extension` in the profiles chosen.
 - **Pinned supply chain.** The Fury core is pinned by SHA-256 of the archive

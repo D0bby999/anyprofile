@@ -97,3 +97,8 @@ Puppeteer không mang cookie của profile. `defaultViewport: null` giữ kích 
 
 Không có Synchronizer (nhiều tài khoản làm cùng một thao tác cùng lúc là dấu hiệu bot), không đổi
 fingerprint qua API, không tạo hay xoá profile qua API.
+
+## AI agent
+
+Cho Claude Code hay agent khác làm việc trong profile thì dùng [MCP](mcp.md) ở `/mcp`, cùng cổng và token. MCP
+không mở cổng DevTools nào, nên an toàn hơn `start` kèm `"devtools": true`.

@@ -9,6 +9,7 @@ and are forbidden in the app (see Security in the top-level README).
 
 | Tool | What it does |
 |---|---|
+| `mcp-serve/` | Runs the real launcher and API with `/mcp` on a throwaway data folder with one profile and a test shop page, for trying an AI agent without touching real profiles. `ANYPROFILE_TOKEN` and `-app <Chromium.app>`. |
 | `launch-one/` | Opens one throwaway profile through AnyProfile's real launcher with the diagnostics port on and prints the port. Closing stdin stops it. |
 | `detect-sites.mjs` | Visits ipinfo, CreepJS, BrowserScan, deviceandbrowserinfo and Pixelscan, then prints their verdicts. With `CDP_PORT` it attaches to a running browser, for example one from `launch-one`. |
 | `chromium-bench.mjs` | Opens N profiles at once and reports memory per process type. |
