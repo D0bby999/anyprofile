@@ -1,5 +1,7 @@
 research/
 plans/
+# The paid recipe pack: kept beside the code, never pushed
+pro/
 .DS_Store
 build/bin
 frontend/node_modules
