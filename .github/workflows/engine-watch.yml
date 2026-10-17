@@ -1,0 +1,57 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Opens an issue when Apostate or Fury publishes a release AnyProfile does not
+# know yet (neither compiled in nor in engines.json), with its notes and
+# checksums, so it can be tested and offered (docs/releasing.md).
+name: Engine watch
+
+on:
+  schedule:
+    - cron: "17 2 * * *" # daily, 09:17 in Vietnam
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Look for new releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -eu
+          check() { # name repo known-versions...
+            name=$1 repo=$2; shift 2
+            tag=$(gh release view -R "$repo" --json tagName -q .tagName)
+            v=${tag#v}
+            for k in "$@"; do [ "$k" = "$v" ] && { echo "$name $v: known"; return; }; done
+            title="Engine: $name $v is out"
+            if [ -n "$(gh issue list --state all --search "in:title \"$title\"" --json number -q '.[].number')" ]; then
+              echo "$name $v: issue exists"; return
+            fi
+            {
+              echo "$name published [$tag](https://github.com/$repo/releases/tag/$tag). AnyProfile knows: $*."
+              echo
+              echo "To offer it: test it, add its release to \`engines.json\` (or compile it in), and follow docs/releasing.md."
+              echo
+              echo "### Checksums"
+              echo '```'
+              gh release download "$tag" -R "$repo" -p SHA256SUMS -O - 2>/dev/null || echo "(no SHA256SUMS)"
+              echo '```'
+              echo
+              echo "### Notes"
+              gh release view "$tag" -R "$repo" --json body -q .body | head -60
+            } > body.md
+            gh issue create --title "$title" --body-file body.md
+          }
+          listed() { jq -r --arg e "$1" '.[] | select(.engine == $e) | .version' engines.json; }
+          apostate=$(sed -n 's/^\tVersion  *= "\(.*\)"/\1/p' internal/engine/apostate/release.go)
+          fury=$(grep -o 'rel("[0-9.]*"' internal/engine/fury/release.go | grep -o '[0-9.]*' | tr '\n' ' ')
+          # The known versions are meant to split into arguments.
+          # shellcheck disable=SC2046,SC2086
+          check Apostate heretic-tech/apostate $apostate $(listed apostate)
+          # shellcheck disable=SC2046,SC2086
+          check Fury furyteamtop/fury-antidetect-browser $fury $(listed fury)
