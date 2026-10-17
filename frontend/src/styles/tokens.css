@@ -45,6 +45,8 @@
   --success-line: #bde9cf;
   --success-ink: #0d7a3d;
   --running-row: #f6fcf8;
+  --agent-row: #f5f1fe;
+  --agent-row-pulse: #e6dcfc;
 
   --danger: #dc3b32;
   --danger-fill: #dc3b32;
@@ -141,6 +143,8 @@ html.win { --titlebar-h: 12px; }
   --success-line: #24523a;
   --success-ink: #6fe0a4;
   --running-row: #141f19;
+  --agent-row: #1e1830;
+  --agent-row-pulse: #30244f;
   --danger: #f0584d;
   --danger-soft: #2a1615;
   --danger-line: #542825;

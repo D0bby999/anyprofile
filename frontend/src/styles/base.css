@@ -78,6 +78,7 @@ input, textarea { caret-color: var(--accent); }
 .iconbtn.sm { width: 28px; height: 28px; border-radius: var(--r-sm); }
 .btn.busy .icon, .iconbtn.busy .icon { animation: spin .8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
 /* Fields */
 .input, .select, .textarea {

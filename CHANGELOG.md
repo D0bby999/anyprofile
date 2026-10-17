@@ -28,6 +28,8 @@ keeps them together.
 - Profiles opened by the local API or an agent open behind the app you are
   in, and the agent works there without bringing the browser to the front;
   Focus on the profile's row shows it.
+- The row of a profile an AI agent is driving pulses violet, like a
+  recording light, instead of an Agent chip in the Status column.
 
 ## 0.1.0 (2026-10-17)
 

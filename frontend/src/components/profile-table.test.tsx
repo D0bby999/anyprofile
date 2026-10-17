@@ -60,12 +60,13 @@ describe('ProfileTable', () => {
 
   it('marks the profiles an AI agent is driving', () => {
     render(<ProfileTable {...props([row({ id: 'a', state: 'running' }), row({ id: 'b', name: 'Kênh B' })])} agents={new Set(['a'])} />)
-    const chips = screen.getAllByTitle(t.agent.title)
-    expect(chips).toHaveLength(1)
-    expect(chips[0].closest('tr')?.textContent).toContain('Kênh A')
-    // On the health pill's line: the status cell stays two lines.
-    expect(chips[0].parentElement?.className).toBe('statusline')
-    expect(chips[0].closest('.cellstatus')?.children).toHaveLength(2)
+    // The row is tinted and titled; no chip joins the status cell.
+    const rows = screen.getAllByTitle(t.agent.title)
+    expect(rows).toHaveLength(1)
+    expect(rows[0].tagName).toBe('TR')
+    expect(rows[0].className).toContain('agent')
+    expect(rows[0].textContent).toContain('Kênh A')
+    expect(rows[0].querySelector('.col-status .chip.accent')).toBeNull()
   })
 
   it('disables the action while a profile is starting', () => {

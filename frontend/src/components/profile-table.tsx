@@ -9,7 +9,6 @@ import { Icon } from './icons'
 import { SiteBadges } from './site-glyph'
 import { RowMenu } from './row-menu'
 import { HealthPill } from './health-pill'
-import { AgentChip } from './agent-chip'
 import type { Column, TablePrefs } from '../lib/table-prefs'
 
 export type SortKey = 'no' | 'name' | 'lastOpen'
@@ -102,9 +101,11 @@ export function ProfileTable(p: Props) {
         {p.rows.map((r, i) => {
           const running = r.state === 'running'
           const busy = r.state === 'starting' || r.state === 'stopping'
-          const cls = [p.selected.has(r.id) ? 'selected' : '', running ? 'running' : '', p.activeId === r.id ? 'active' : '', p.cursorId === r.id ? 'cursor' : ''].join(' ').trim()
+          const agent = !!p.agents?.has(r.id)
+          // An agent's row is tinted instead of a chip, so the status cell keeps only the health.
+          const cls = [p.selected.has(r.id) ? 'selected' : '', running ? 'running' : '', agent ? 'agent' : '', p.activeId === r.id ? 'active' : '', p.cursorId === r.id ? 'cursor' : ''].join(' ').trim()
           return (
-            <tr key={r.id} className={cls || undefined} aria-current={p.activeId === r.id ? 'true' : undefined}
+            <tr key={r.id} className={cls || undefined} aria-current={p.activeId === r.id ? 'true' : undefined} title={agent ? t.agent.title : undefined}
               onClick={(e) => { if (e.detail <= 1 && !(e.target as HTMLElement).closest(CONTROLS)) p.onSelectRow?.(r.id) }}
               onDoubleClick={(e) => { if (!(e.target as HTMLElement).closest(CONTROLS)) (running ? p.onFocus(r.id) : !busy && p.onStart(r.id)) }}>
               <td className="col-check"><input type="checkbox" checked={p.selected.has(r.id)}
@@ -126,8 +127,8 @@ export function ProfileTable(p: Props) {
               {shown('status') && (
                 <td className="col-status">
                   <span className="cellstatus">
-                    {/* The agent chip sits beside the health pill, so the cell keeps two lines. */}
-                    <span className="statusline"><HealthPill row={r} now={now} />{p.agents?.has(r.id) && <AgentChip />}</span>
+                    <HealthPill row={r} now={now} />
+                    {agent && <span className="sr-only">{t.agent.title}</span>}
                     <LastOpened row={r} now={now} />
                   </span>
                 </td>
