@@ -20,6 +20,8 @@ const (
 	ServiceSnapshotKey = "dev.anyprofile.snapshot-key"
 	// ServiceAPIToken holds the local API token; account "app".
 	ServiceAPIToken = "dev.anyprofile.api-token"
+	// ServiceVaultKey holds the key of the secrets file (Vault); account "app".
+	ServiceVaultKey = "dev.anyprofile.vault-key"
 )
 
 var ErrNotFound = errors.New("secret not found")

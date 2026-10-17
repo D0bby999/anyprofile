@@ -32,7 +32,10 @@ func Default() (Dirs, error) {
 	return Dirs{Root: filepath.Join(base, "AnyProfile")}, nil
 }
 
-func (d Dirs) DB() string                   { return filepath.Join(d.Root, "anyprofile.db") }
+func (d Dirs) DB() string { return filepath.Join(d.Root, "anyprofile.db") }
+
+// Vault is the encrypted file of secrets; its key is in the Keychain.
+func (d Dirs) Vault() string                { return filepath.Join(d.Root, "secrets.vault") }
 func (d Dirs) Engines() string              { return filepath.Join(d.Root, "engines") }
 func (d Dirs) Engine(id, ver string) string { return filepath.Join(d.Engines(), id, ver) }
 func (d Dirs) Profiles() string             { return filepath.Join(d.Root, "profiles") }

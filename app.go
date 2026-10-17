@@ -93,7 +93,14 @@ func (a *App) init() error {
 	if furyRuns {
 		a.engines["fury"] = a.fury
 	}
-	sec := secrets.Keychain{}
+	// One Keychain item for every secret, read now: on macOS a new build
+	// asks once, at launch, instead of per secret when a profile closes.
+	sec := secrets.NewVault(dirs.Vault(), secrets.Keychain{})
+	go func() {
+		if err := sec.Unlock(); err != nil {
+			log.Warn("unlock secrets", "err", err)
+		}
+	}()
 	l := launcher.New(st, sec, dirs, engineList(a.engines),
 		func(in launcher.Info) { runtime.EventsEmit(a.ctx, "launch:changed", in) }, log)
 	l.Capture = true

@@ -16,7 +16,9 @@ dev: fury-config
 	$(WAILS) dev
 
 # Signing identity: "AnyProfile Dev" from scripts/make-dev-cert.sh when it
-# exists, so Keychain "Always Allow" survives rebuilds; ad hoc otherwise.
+# exists; ad hoc otherwise. Without an Apple Team ID, macOS still keys
+# Keychain "Always Allow" to each build's cdhash, so a rebuild asks again,
+# once, at launch (secrets.Vault: one Keychain item for every secret).
 SIGN_ID ?= $(shell security find-identity -v -p codesigning 2>/dev/null | grep -q '"AnyProfile Dev"' && echo 'AnyProfile Dev' || echo -)
 
 # wails build signs the bundle ad hoc; adding the helper breaks that seal,

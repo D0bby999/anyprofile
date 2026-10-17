@@ -37,6 +37,11 @@ keeps them together.
   its own, and on the next launch signed the web out to match. "Allow Chrome
   sign-in" is now off in every profile, so the browser leaves Google's
   cookies alone.
+- Keychain asks at most once per new version, when the app starts. Every
+  secret now lives in one encrypted file (secrets.vault) whose key is the
+  only Keychain item; secrets saved before move in on first use. Before,
+  each secret was its own item and macOS asked again for each one after an
+  update, often when a profile was closed.
 
 ## 0.1.0 (2026-10-17)
 

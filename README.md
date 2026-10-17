@@ -69,8 +69,11 @@ AnyProfile is built to be handed to other people, so:
 
 - **No secret on a command line, in the environment, in a log or in the
   database.** The fingerprint config and the cookie key reach the browser on
-  inherited pipes. Proxy passwords and cookie keys live in the macOS Keychain
-  (never synchronized to iCloud) or Windows Credential Manager (never roamed).
+  inherited pipes. Proxy passwords, cookie keys and the other secrets are in
+  one file encrypted with AES-GCM (`secrets.vault`), whose key lives in the
+  macOS Keychain (never synchronized to iCloud) or Windows Credential Manager
+  (never roamed). One item, read at launch: a new version asks for Keychain
+  access once, not once per secret.
 - **Cookies are encrypted with a per-profile key**, not the fixed key that
   `--use-mock-keychain` uses. A fingerprint of the key is kept beside the
   profile. If the key goes missing, the launch is refused rather than

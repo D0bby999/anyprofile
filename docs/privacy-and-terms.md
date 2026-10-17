@@ -10,8 +10,8 @@ Everything stays on your computer:
 
 - the database (profiles, proxies without passwords, settings, launch history with exit IPs) and one browser
   folder per profile, under `~/Library/Application Support/AnyProfile` (macOS) or `%APPDATA%\AnyProfile` (Windows);
-- proxy passwords, account passwords, 2FA secrets, cookie keys and the local API token, in the macOS Keychain or
-  Windows Credential Manager.
+- proxy passwords, account passwords, 2FA secrets, cookie keys and the local API token, in an encrypted file
+  (`secrets.vault`) in the same folder; its key is in the macOS Keychain or Windows Credential Manager.
 
 There is no AnyProfile account and no AnyProfile server.
 
@@ -51,8 +51,8 @@ Mọi thứ nằm trên máy của bạn:
 
 - cơ sở dữ liệu (profile, proxy không kèm mật khẩu, cài đặt, lịch sử mở kèm IP ra) và một thư mục trình duyệt cho
   mỗi profile, trong `~/Library/Application Support/AnyProfile` (macOS) hoặc `%APPDATA%\AnyProfile` (Windows);
-- mật khẩu proxy, mật khẩu tài khoản, khoá 2FA, khoá cookie và token của API trên máy, trong Keychain của macOS
-  hoặc Windows Credential Manager.
+- mật khẩu proxy, mật khẩu tài khoản, khoá 2FA, khoá cookie và token của API trên máy, trong một file mã hoá
+  (`secrets.vault`) cùng thư mục; khoá của file nằm trong Keychain của macOS hoặc Windows Credential Manager.
 
 Không có tài khoản AnyProfile, không có máy chủ AnyProfile.
 
