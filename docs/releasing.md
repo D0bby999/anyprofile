@@ -47,12 +47,12 @@ không tự cập nhật được: app báo người dùng chuyển `AnyProfile.
 
 App đọc `https://github.com/D0bby999/anyprofile/releases/latest/download/latest.json` (repo công khai).
 
-## Hai repo
+## Repo
 
-- `D0bby999/anyprofile` (công khai): mã nguồn, CI, các bản phát hành. Lịch sử đã viết lại ngày 2026-10-17:
-  email tác giả là địa chỉ noreply của GitHub, không có `plans/` hay ảnh chụp màn hình.
-- `D0bby999/anyprofile-private` (riêng tư): lịch sử gốc trước khi công khai, cho bản mở rộng cá nhân.
-  Lịch sử của nó khác repo công khai; muốn dùng tiếp thì tạo nhánh mới từ `origin/master`.
+`D0bby999/anyprofile` (công khai) chứa mã nguồn, CI và các bản phát hành. Lịch sử đã viết lại ngày
+2026-10-17: email tác giả là địa chỉ noreply của GitHub, không có `plans/` hay ảnh chụp màn hình. Repo riêng
+tư cũ đã xoá; lịch sử gốc của nó nằm trong file sao lưu `anyprofile-private-final-261017.bundle` trên máy
+phát hành.
 
 Bản phát hành đầu: `v0.1.0`, 2026-10-17.
 
