@@ -63,6 +63,9 @@ describe('ProfileTable', () => {
     const chips = screen.getAllByTitle(t.agent.title)
     expect(chips).toHaveLength(1)
     expect(chips[0].closest('tr')?.textContent).toContain('Kênh A')
+    // On the health pill's line: the status cell stays two lines.
+    expect(chips[0].parentElement?.className).toBe('statusline')
+    expect(chips[0].closest('.cellstatus')?.children).toHaveLength(2)
   })
 
   it('disables the action while a profile is starting', () => {

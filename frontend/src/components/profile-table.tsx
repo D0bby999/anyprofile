@@ -125,7 +125,11 @@ export function ProfileTable(p: Props) {
               {shown('proxy') && <td className="col-proxy"><ProxyCell row={r} /></td>}
               {shown('status') && (
                 <td className="col-status">
-                  <span className="cellstatus"><HealthPill row={r} now={now} />{p.agents?.has(r.id) && <AgentChip />}<LastOpened row={r} now={now} /></span>
+                  <span className="cellstatus">
+                    {/* The agent chip sits beside the health pill, so the cell keeps two lines. */}
+                    <span className="statusline"><HealthPill row={r} now={now} />{p.agents?.has(r.id) && <AgentChip />}</span>
+                    <LastOpened row={r} now={now} />
+                  </span>
                 </td>
               )}
               <td className="col-actions">

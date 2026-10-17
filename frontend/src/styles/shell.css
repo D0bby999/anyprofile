@@ -395,6 +395,8 @@ kbd { display: inline-flex; align-items: center; min-width: 22px; height: 20px; 
 .table .col-status { width: 1%; white-space: nowrap; }
 .cellstatus { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; }
 .cellstatus .lastopen { font-size: var(--t-xs); }
+.statusline { display: inline-flex; align-items: center; gap: 6px; }
+.statusline:empty { display: none; }
 .table.compact .cellstatus { flex-direction: row; align-items: center; gap: 8px; }
 .cellname .sub { -webkit-mask-image: linear-gradient(to right, #000 88%, transparent); mask-image: linear-gradient(to right, #000 88%, transparent); }
 .ellipsis { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 260px; }
