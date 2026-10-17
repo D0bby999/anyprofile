@@ -71,7 +71,7 @@ func TestExtensionLoads(t *testing.T) {
 func marked(t *testing.T, l *Launcher, id, url string) string {
 	t.Helper()
 	ctx := context.Background()
-	if err := l.Start(ctx, id); err != nil {
+	if err := l.StartBehind(ctx, id); err != nil {
 		t.Fatal(err)
 	}
 	defer l.Stop(id)
@@ -153,7 +153,7 @@ func TestImportedBookmarksShowInChromium(t *testing.T) {
 		t.Fatal(err)
 	}
 	ctx := context.Background()
-	if err := l.Start(ctx, p.ID); err != nil {
+	if err := l.StartBehind(ctx, p.ID); err != nil {
 		t.Fatal(err)
 	}
 	defer l.Stop(p.ID)

@@ -191,12 +191,34 @@ func (b *Browser) attach(ctx context.Context, targetID string) (*tab, error) {
 	return t, nil
 }
 
-// activate brings the tab to the front, so input and screenshots reach it.
+// activate makes sure the tab is the one its window shows, so input and
+// screenshots reach it. A shown tab is left alone: activating it would pull
+// the browser in front of the app the user is working in. A covered window
+// still counts as shown (--disable-backgrounding-occluded-windows).
 func (b *Browser) activate(ctx context.Context, t *tab) error {
-	return b.call(ctx, "", "Target.activateTarget", map[string]any{"targetId": t.targetID}, nil)
+	var state string
+	if b.evalJSON(ctx, t, "document.visibilityState", &state) == nil && state == "visible" {
+		return nil
+	}
+	after := func() {}
+	if b.hub.Behind != nil {
+		after = b.hub.Behind(b.profileID)
+	}
+	err := b.call(ctx, "", "Target.activateTarget", map[string]any{"targetId": t.targetID}, nil)
+	after()
+	if err != nil {
+		return err
+	}
+	for end := time.Now().Add(2 * time.Second); time.Now().Before(end); time.Sleep(50 * time.Millisecond) {
+		if b.evalJSON(ctx, t, "document.visibilityState", &state) == nil && state == "visible" {
+			break
+		}
+	}
+	return nil
 }
 
-// OpenTab opens url in a new tab, which becomes the current one.
+// OpenTab opens url in a new tab, in a window of its own behind the user's
+// apps; it becomes the current tab.
 func (b *Browser) OpenTab(ctx context.Context, rawURL string) (Tab, error) {
 	b.touch()
 	if err := checkURL(rawURL); err != nil {
@@ -206,8 +228,9 @@ func (b *Browser) OpenTab(ctx context.Context, rawURL string) (Tab, error) {
 		TargetID string `json:"targetId"`
 	}
 	// Blank first, so the network log is on before the page's own request,
-	// and the wait follows that page rather than the blank one.
-	if err := b.call(ctx, "", "Target.createTarget", map[string]any{"url": "about:blank"}, &r); err != nil {
+	// and the wait follows that page rather than the blank one. A window of
+	// its own, opened behind: the user's tabs and focus stay as they are.
+	if err := b.call(ctx, "", "Target.createTarget", map[string]any{"url": "about:blank", "newWindow": true, "background": true}, &r); err != nil {
 		return Tab{}, err
 	}
 	t, err := b.attach(ctx, r.TargetID)

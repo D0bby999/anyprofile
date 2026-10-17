@@ -40,7 +40,7 @@ func TestApostateReopensTabsAfterWindowClosed(t *testing.T) {
 	ctx := context.Background()
 	launch := func() *cdppipe.Conn {
 		t.Helper()
-		if err := l.Start(ctx, id); err != nil {
+		if err := l.StartBehind(ctx, id); err != nil {
 			t.Fatal(err)
 		}
 		wctx, cancel := context.WithTimeout(ctx, 20*time.Second)

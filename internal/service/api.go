@@ -109,7 +109,7 @@ func (s *Service) StartProfile(ctx context.Context, id string, devtools bool) er
 			return err
 		}
 	}
-	return s.Launcher.Start(ctx, id)
+	return s.Launcher.StartBehind(ctx, id)
 }
 
 // ProfileState is the launch state of one profile.

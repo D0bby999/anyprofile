@@ -52,7 +52,7 @@ func TestSessionAndFingerprintSurviveRestart(t *testing.T) {
 		if err := r.st.UpdateProfile(p); err != nil {
 			t.Fatal(err)
 		}
-		if err := l.Start(context.Background(), id); err != nil {
+		if err := l.StartBehind(context.Background(), id); err != nil {
 			t.Fatal(err)
 		}
 		return dialPage(t, l.List()[0].CDPPort)

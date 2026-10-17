@@ -155,6 +155,7 @@ func run(app string, port int) error {
 		return err
 	}
 	hub := agent.NewHub(time.Minute)
+	hub.Behind = l.Behind
 	hub.OnActive = func(id string, on bool) { log.Info("agent", "profile", id, "driving", on) }
 	srv := api.New(backend{svc}, log, port, token)
 	srv.Agent = hub

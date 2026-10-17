@@ -29,7 +29,11 @@ type Hub struct {
 	// OnActive is told when a profile starts or stops being driven. It runs
 	// without the hub's lock held.
 	OnActive func(profileID string, active bool)
-	idle     time.Duration
+	// Behind is called before the agent has to bring a hidden tab forward,
+	// which also pulls the browser in front of the user's app; the func it
+	// returns, called after, puts the user's app back in front. Optional.
+	Behind func(profileID string) (after func())
+	idle   time.Duration
 
 	mu       sync.Mutex
 	browsers map[string]*Browser

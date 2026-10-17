@@ -2,6 +2,12 @@
 
 package launcher
 
+// frontPID is 0: Windows does not let a background process take the
+// foreground, so a browser started from the API stays behind on its own.
+func frontPID() int { return 0 }
+
+func setHidden(int, bool) bool { return false }
+
 // activate brings the browser's first window to the front, restoring it when
 // minimized. Windows lets the app do this because it is the foreground
 // process when the user clicks Open.

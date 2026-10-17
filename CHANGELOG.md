@@ -18,6 +18,9 @@ keeps them together.
 - Recipes: step-by-step instructions for agents, dropped into the recipes
   folder, offered as MCP prompts. Starter scripts for Playwright, Puppeteer
   and Python in examples/.
+- Profiles opened by the local API or an agent open behind the app you are
+  in, and the agent works there without bringing the browser to the front;
+  Focus on the profile's row shows it.
 
 ## 0.1.0 (2026-10-17)
 

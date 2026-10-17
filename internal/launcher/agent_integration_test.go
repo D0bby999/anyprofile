@@ -15,6 +15,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -81,7 +82,24 @@ func TestAgentDrivesApostateOverThePipe(t *testing.T) {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
-	if err := l.Start(ctx, id); err != nil {
+	// Opened for an agent, the browser must never come in front of the app
+	// the user is in, from its launch to the last tool.
+	front, inFront := frontPID(), atomic.Int32{}
+	watching := make(chan struct{})
+	defer close(watching)
+	go func() {
+		for {
+			select {
+			case <-watching:
+				return
+			case <-time.After(20 * time.Millisecond):
+			}
+			if in, ok := l.Info(id); ok && in.PID != 0 && front != 0 && frontPID() == in.PID {
+				inFront.Add(1)
+			}
+		}
+	}()
+	if err := l.StartBehind(ctx, id); err != nil {
 		t.Fatal(err)
 	}
 	defer l.Stop(id)
@@ -90,6 +108,7 @@ func TestAgentDrivesApostateOverThePipe(t *testing.T) {
 		t.Fatal(err)
 	}
 	hub := agent.NewHub(time.Minute)
+	hub.Behind = l.Behind
 	defer hub.Close()
 	b := hub.For(id, c)
 
@@ -219,6 +238,9 @@ func TestAgentDrivesApostateOverThePipe(t *testing.T) {
 	}
 	if err := b.CloseTab(ctx, opened.ID); err != nil {
 		t.Fatal(err)
+	}
+	if n := inFront.Load(); n > 2 { // a flicker at launch, before the focus is given back, at most
+		t.Errorf("the browser took the focus for %d samples of 20 ms", n)
 	}
 	if got := hub.Active(); len(got) != 1 || got[0] != id {
 		t.Fatalf("active = %v", got)

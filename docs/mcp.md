@@ -100,6 +100,10 @@ Mẫu miễn phí: `examples/recipes/check-login.md`. Template script Playwright
   Trang thấy `isTrusted: true`, như khi người dùng thao tác.
 - Không đổi kích thước cửa sổ, viewport hay thiết bị giả lập. Ảnh chụp được thu nhỏ trong AnyProfile, không thu
   nhỏ trên trang.
+- Agent làm việc **phía sau**: profile mở qua MCP hoặc API không giành focus của app bạn đang dùng, `open_tab` mở
+  trong một cửa sổ riêng nằm sau, và agent không kéo trình duyệt lên trước khi bấm, gõ hay chụp. Muốn xem, bấm nút
+  Focus ở dòng của profile. Nếu Chromium vẫn tự nhảy lên lúc khởi động, AnyProfile ẩn nó một nhịp để macOS trả focus
+  cho app trước đó; có thể thấy cửa sổ loé lên một chút.
 - Profile đang bị agent điều khiển có nhãn **Agent** ở bảng profile và ở ngăn chi tiết. Nhãn tắt sau một phút agent
   không gọi tool nào, hoặc khi profile đóng.
 - `logs/anyprofile.log` ghi mỗi lần gọi tool một dòng: tên tool, id profile, thời gian, thành công hay không.

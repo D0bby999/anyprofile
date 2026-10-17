@@ -43,7 +43,7 @@ func TestLastWindowClosedQuits(t *testing.T) {
 			l := r.launcher(t)
 			l.Capture = true // as in the app: the pipe is how the launcher sees the pages
 			ctx := context.Background()
-			if err := l.Start(ctx, p.ID); err != nil {
+			if err := l.StartBehind(ctx, p.ID); err != nil {
 				t.Fatal(err)
 			}
 			defer l.Stop(p.ID)

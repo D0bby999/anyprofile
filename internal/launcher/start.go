@@ -87,9 +87,13 @@ func (l *Launcher) start(ctx context.Context, p *proc) error {
 	if err != nil {
 		return err
 	}
+	front := frontPID()
 	pid, wait, conn, err := spawn(spec, udd, filepath.Join(l.dirs.Logs(), "browser-"+prof.ID+".log"))
 	if err != nil {
 		return err
+	}
+	if p.behind {
+		go l.keepBehind(pid, front, 6*time.Second)
 	}
 	p.cdp = conn
 	if err := l.waitReady(udd, pid, wait); err != nil {
@@ -190,5 +194,56 @@ func (l *Launcher) measureExit(profileID string, sessionID int64, up netproxy.Up
 	}
 	if l.OnData != nil {
 		l.OnData("profiles")
+	}
+}
+
+// keepBehind puts the app the user is in back in front if the new browser
+// takes the focus while starting up (Chromium activates itself once its
+// window shows). Once is enough; after that, a click on the browser is the
+// user's own.
+func (l *Launcher) keepBehind(pid, front int, d time.Duration) {
+	if front == 0 || front == pid {
+		return
+	}
+	if waitFront(pid, true, d) {
+		l.log.Info("browser took the focus", "pid", pid, "back", stepBack(pid))
+	}
+}
+
+// Behind is agent.Hub.Behind: when the browser comes in front of the app the
+// user is in during the call it wraps, that app is put back in front.
+func (l *Launcher) Behind(profileID string) func() {
+	in, ok := l.Info(profileID)
+	front := frontPID()
+	if !ok || in.PID == 0 || front == 0 || front == in.PID {
+		return func() {} // the user is looking at this browser, or we cannot tell
+	}
+	return func() {
+		if waitFront(in.PID, true, 400*time.Millisecond) {
+			l.log.Info("browser took the focus", "pid", in.PID, "back", stepBack(in.PID))
+		}
+	}
+}
+
+// stepBack moves the focus off the browser pid. Asking the other app to
+// activate is refused since macOS 14 unless we are active ourselves; hiding
+// the browser makes macOS activate the app that was below it, and showing it
+// again right away does not take the focus back.
+func stepBack(pid int) bool {
+	setHidden(pid, true)
+	ok := waitFront(pid, false, 500*time.Millisecond)
+	setHidden(pid, false)
+	return ok && waitFront(pid, false, 150*time.Millisecond)
+}
+
+// waitFront waits until pid is (or is no longer) the front app.
+func waitFront(pid int, is bool, d time.Duration) bool {
+	for end := time.Now().Add(d); ; time.Sleep(15 * time.Millisecond) {
+		if (frontPID() == pid) == is {
+			return true
+		}
+		if time.Now().After(end) {
+			return false
+		}
 	}
 }

@@ -108,7 +108,7 @@ func TestLifecycleFiveProfiles(t *testing.T) {
 		go func(i int, id string) {
 			defer wg.Done()
 			t0 := time.Now()
-			if err := l.Start(context.Background(), id); err != nil {
+			if err := l.StartBehind(context.Background(), id); err != nil {
 				t.Errorf("start %s: %v", id, err)
 			}
 			durations[i] = time.Since(t0)
@@ -123,7 +123,7 @@ func TestLifecycleFiveProfiles(t *testing.T) {
 
 	// Second Start on an open profile must not spawn another browser.
 	pid0 := infos[0].PID
-	if err := l.Start(context.Background(), infos[0].ProfileID); err != nil {
+	if err := l.StartBehind(context.Background(), infos[0].ProfileID); err != nil {
 		t.Fatal(err)
 	}
 	if n := len(l.List()); n != 5 {
@@ -184,7 +184,7 @@ func TestFingerprintCheck(t *testing.T) {
 	}
 
 	// Launch 1: baseline, no TCP listeners.
-	if err := l.Start(context.Background(), id); err != nil {
+	if err := l.StartBehind(context.Background(), id); err != nil {
 		t.Fatal(err)
 	}
 	waitVerdict("baseline", 20*time.Second)
@@ -200,7 +200,7 @@ func TestFingerprintCheck(t *testing.T) {
 	}
 
 	// Launch 2: match.
-	if err := l.Start(context.Background(), id); err != nil {
+	if err := l.StartBehind(context.Background(), id); err != nil {
 		t.Fatal(err)
 	}
 	waitVerdict("match", 20*time.Second)
@@ -217,7 +217,7 @@ func TestFingerprintCheck(t *testing.T) {
 		t.Fatal(err)
 	}
 	db.Close()
-	if err := l.Start(context.Background(), id); err != nil {
+	if err := l.StartBehind(context.Background(), id); err != nil {
 		t.Fatal(err)
 	}
 	waitVerdict("drift", 20*time.Second)
@@ -246,7 +246,7 @@ func TestFingerprintCheck(t *testing.T) {
 		t.Fatal(err)
 	}
 	db.Close()
-	if err := l.Start(context.Background(), id); err != nil {
+	if err := l.StartBehind(context.Background(), id); err != nil {
 		t.Fatal(err)
 	}
 	deadline := time.Now().Add(20 * time.Second)
@@ -284,7 +284,7 @@ func TestCookieKeyAndDiagnostics(t *testing.T) {
 	p.CDPNextLaunch = true
 	r.st.UpdateProfile(p)
 
-	if err := l.Start(context.Background(), id); err != nil {
+	if err := l.StartBehind(context.Background(), id); err != nil {
 		t.Fatal(err)
 	}
 	in := l.List()[0]
@@ -300,7 +300,7 @@ func TestCookieKeyAndDiagnostics(t *testing.T) {
 
 	// Key lost from the Keychain: refuse instead of discarding the cookie jar.
 	r.sec.Delete(secrets.ServiceCookieKey, id)
-	if err := l.Start(context.Background(), id); err != ErrCookieKeyLost {
+	if err := l.StartBehind(context.Background(), id); err != ErrCookieKeyLost {
 		t.Fatalf("lost key err = %v", err)
 	}
 }
@@ -367,7 +367,7 @@ func TestApostateLifecycle(t *testing.T) {
 	}
 
 	// Launch 1: baseline with the pinned values, no TCP listener.
-	if err := l.Start(ctx, id); err != nil {
+	if err := l.StartBehind(ctx, id); err != nil {
 		t.Fatal(err)
 	}
 	waitVerdict("baseline")
@@ -410,7 +410,7 @@ func TestApostateLifecycle(t *testing.T) {
 	}
 
 	// Launch 2: same fingerprint, cookie kept.
-	if err := l.Start(ctx, id); err != nil {
+	if err := l.StartBehind(ctx, id); err != nil {
 		t.Fatal(err)
 	}
 	waitVerdict("match")
@@ -470,7 +470,7 @@ func TestApostateCookiesInAndOut(t *testing.T) {
 		t.Fatal(err)
 	}
 	ctx := context.Background()
-	if err := l.Start(ctx, id); err != nil {
+	if err := l.StartBehind(ctx, id); err != nil {
 		t.Fatal(err)
 	}
 	defer l.Stop(id)

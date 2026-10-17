@@ -140,6 +140,9 @@ func (a *Apostate) BuildLaunch(ctx context.Context, p store.Profile, rt engine.R
 		"--safebrowsing-disable-auto-update",
 		"--disable-field-trial-config",
 		"--disk-cache-size=20971520",
+		// A covered window keeps painting, so an agent or script working
+		// behind the user's apps gets its clicks and screenshots through.
+		"--disable-backgrounding-occluded-windows",
 		"--window-name="+engine.WindowName(p),
 		// The seed fixes the machine; the platform keeps it the host's OS.
 		"--fingerprint="+p.SeedHex,

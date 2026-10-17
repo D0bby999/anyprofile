@@ -104,6 +104,7 @@ func (a *App) init() error {
 	l.BeforeStart, l.AfterExit = a.svc.BeforeLaunch, a.svc.AfterExit
 	l.Adopt()
 	a.agent = agent.NewHub(time.Minute)
+	a.agent.Behind = l.Behind
 	a.agent.OnActive = func(id string, on bool) {
 		log.Info("agent", "profile", id, "driving", on)
 		runtime.EventsEmit(a.ctx, "data:changed", "agent")

@@ -47,6 +47,8 @@ type proc struct {
 	sessionID int64
 	// started is when the browser came up (for an adopted one: its session start).
 	started time.Time
+	// behind: started for a script or an agent, so it must not take the focus.
+	behind bool
 }
 
 type Launcher struct {
@@ -122,17 +124,29 @@ func (l *Launcher) set(p *proc, s State, errMsg string) {
 // Start opens the profile's browser. A profile that is already open is only
 // brought to the front: there is never a second browser on one profile.
 func (l *Launcher) Start(ctx context.Context, profileID string) error {
+	return l.open(ctx, profileID, false)
+}
+
+// StartBehind opens the profile's browser for a script or an agent: the app
+// the user is in stays in front. An open profile is left where it is.
+func (l *Launcher) StartBehind(ctx context.Context, profileID string) error {
+	return l.open(ctx, profileID, true)
+}
+
+func (l *Launcher) open(ctx context.Context, profileID string, behind bool) error {
 	l.mu.Lock()
 	if p, ok := l.procs[profileID]; ok {
 		pid, state := p.info.PID, p.info.State
 		l.mu.Unlock()
 		if state == Running {
-			activate(pid)
+			if !behind {
+				activate(pid)
+			}
 			return nil
 		}
 		return fmt.Errorf("profile is %s", state)
 	}
-	p := &proc{info: Info{ProfileID: profileID, State: Starting}, done: make(chan struct{})}
+	p := &proc{info: Info{ProfileID: profileID, State: Starting}, done: make(chan struct{}), behind: behind}
 	l.procs[profileID] = p
 	l.mu.Unlock()
 	l.onChange(p.info)
