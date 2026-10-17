@@ -14,3 +14,7 @@ frontend/package.json.md5
 
 # macOS screenshots shared while testing; never committed
 Screenshot *.png
+
+examples/*/node_modules
+examples/*/package-lock.json
+examples/*/.venv

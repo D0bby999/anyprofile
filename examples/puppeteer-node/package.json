@@ -1,0 +1,8 @@
+{
+  "name": "anyprofile-puppeteer-starter",
+  "private": true,
+  "type": "module",
+  "license": "0BSD",
+  "scripts": { "start": "node run.mjs" },
+  "dependencies": { "puppeteer-core": "^25.14.0" }
+}

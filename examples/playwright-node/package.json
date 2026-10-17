@@ -1,0 +1,8 @@
+{
+  "name": "anyprofile-playwright-starter",
+  "private": true,
+  "type": "module",
+  "license": "0BSD",
+  "scripts": { "start": "node run.mjs" },
+  "dependencies": { "playwright-core": "^1.64.1" }
+}
