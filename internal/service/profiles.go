@@ -300,8 +300,9 @@ func (s *Service) Purge(id string) error {
 }
 
 // StartMany and StopMany run in parallel and report per-profile errors.
+// The browsers open behind the app, like a single Open.
 func (s *Service) StartMany(ctx context.Context, ids []string) map[string]string {
-	return parallel(ids, func(id string) error { return s.Launcher.Start(ctx, id) })
+	return parallel(ids, func(id string) error { return s.Launcher.StartBehind(ctx, id) })
 }
 
 func (s *Service) StopMany(ids []string) map[string]string {

@@ -197,16 +197,20 @@ func (l *Launcher) measureExit(profileID string, sessionID int64, up netproxy.Up
 	}
 }
 
-// keepBehind puts the app the user is in back in front if the new browser
-// takes the focus while starting up (Chromium activates itself once its
-// window shows). Once is enough; after that, a click on the browser is the
-// user's own.
+// keepBehind puts the app the user is in back in front whenever the new
+// browser takes the focus while starting up, for d. Chromium activates
+// itself more than once (at launch, then as its first window shows); after
+// d, a click on the browser is the user's own.
 func (l *Launcher) keepBehind(pid, front int, d time.Duration) {
 	if front == 0 || front == pid {
 		return
 	}
-	if waitFront(pid, true, d) {
-		l.log.Info("browser took the focus", "pid", pid, "back", stepBack(pid))
+	end := time.Now().Add(d)
+	for range 5 { // a browser that keeps the focus is not fought forever
+		if !waitFront(pid, true, time.Until(end)) {
+			return
+		}
+		l.log.Info("browser took the focus", "pid", pid, "back", stepBack(pid, front))
 	}
 }
 
@@ -220,16 +224,23 @@ func (l *Launcher) Behind(profileID string) func() {
 	}
 	return func() {
 		if waitFront(in.PID, true, 400*time.Millisecond) {
-			l.log.Info("browser took the focus", "pid", in.PID, "back", stepBack(in.PID))
+			l.log.Info("browser took the focus", "pid", in.PID, "back", stepBack(in.PID, front))
 		}
 	}
 }
 
-// stepBack moves the focus off the browser pid. Asking the other app to
-// activate is refused since macOS 14 unless we are active ourselves; hiding
-// the browser makes macOS activate the app that was below it, and showing it
-// again right away does not take the focus back.
-func stepBack(pid int) bool {
+// stepBack gives the focus back from the browser pid to front, the app the
+// user was in. When that is AnyProfile (Open clicked in the app), it simply
+// activates itself. Another app cannot be asked to activate since macOS 14
+// unless we are active ourselves; hiding the browser makes macOS activate
+// some other app, and showing it again right away does not take the focus
+// back. That app is not always front: it can be a full-screen app on
+// another desktop, which is why AnyProfile never hides for its own Open.
+func stepBack(pid, front int) bool {
+	if front == os.Getpid() {
+		activateSelf()
+		return waitFront(pid, false, 500*time.Millisecond)
+	}
 	setHidden(pid, true)
 	ok := waitFront(pid, false, 500*time.Millisecond)
 	setHidden(pid, false)

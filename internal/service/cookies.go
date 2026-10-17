@@ -99,7 +99,7 @@ func (s *Service) ImportCookies(ctx context.Context, profileID, path string) (Co
 		if _, err := s.TakeSnapshot(profileID, "before-import"); err != nil && !strings.Contains(err.Error(), "nothing_to_snapshot") {
 			return CookieImport{}, err
 		}
-		if err := s.Launcher.Start(ctx, profileID); err != nil {
+		if err := s.Launcher.StartBehind(ctx, profileID); err != nil {
 			return CookieImport{}, err
 		}
 		wctx, cancel := context.WithTimeout(ctx, 20*time.Second)

@@ -43,11 +43,16 @@ keeps them together.
   Keychain items are removed, as is a secret's item when it is deleted. Before,
   each secret was its own item and macOS asked again for each one after an
   update, often when a profile was closed.
-- Closing a profile's last window no longer pulls you to another desktop:
-  the browser quits once you have moved to another app, instead of while it
-  is still in front (macOS then jumps to the app used before it). Apostate
-  only: Fury quits by itself with its last window.
-
+- Closing a profile's last window brings you back to AnyProfile instead of
+  pulling you to another desktop: AnyProfile takes the focus, then the
+  browser quits behind it (a front app that quits lets macOS pick any app,
+  maybe a full-screen one elsewhere). Apostate only: Fury quits by itself
+  with its last window.
+- Quitting AnyProfile leaves you on the desktop you are on: it hands the
+  focus to the app whose window is on top there before it goes.
+- Open no longer brings the new browser to the front: it opens behind the
+  app, so several profiles can be opened in a row, and the screen stays on
+  the desktop you are on. Focus on the row shows it.
 ## 0.1.0 (2026-10-17)
 
 First beta.

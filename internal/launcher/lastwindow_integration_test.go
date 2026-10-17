@@ -74,8 +74,9 @@ func TestLastWindowClosedQuits(t *testing.T) {
 			// it, or macOS jumps to the desktop of the app used before.
 			var front atomic.Bool
 			front.Store(true)
-			inFront = func(int) bool { return front.Load() }
-			defer func() { inFront = func(pid int) bool { return pid != 0 && frontPID() == pid } }()
+			was := leaveBrowser
+			leaveBrowser = func(int) bool { return !front.Load() }
+			defer func() { leaveBrowser = was }()
 			ts, _ = pageTargets(ctx, c)
 			for _, tg := range ts {
 				c.Call(ctx, "", "Target.closeTarget", map[string]any{"targetId": tg.TargetID})

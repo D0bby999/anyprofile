@@ -159,7 +159,12 @@ var quitText = map[string]struct{ Title, Message, Confirm, Cancel string }{
 
 // beforeClose closes every browser before quitting: proxy relays live in this
 // process, so a browser left running would lose its network (it fails closed).
-func (a *App) beforeClose(ctx context.Context) bool {
+func (a *App) beforeClose(ctx context.Context) (prevent bool) {
+	defer func() {
+		if !prevent {
+			launcher.PassFocus() // stay on this desktop as the app quits
+		}
+	}()
 	if a.svc == nil {
 		return false
 	}
