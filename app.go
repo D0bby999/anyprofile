@@ -95,10 +95,13 @@ func (a *App) init() error {
 	}
 	// One Keychain item for every secret, read now: on macOS a new build
 	// asks once, at launch, instead of per secret when a profile closes.
+	// Secrets kept as their own items before move in now too.
 	sec := secrets.NewVault(dirs.Vault(), secrets.Keychain{})
 	go func() {
 		if err := sec.Unlock(); err != nil {
 			log.Warn("unlock secrets", "err", err)
+		} else if err := sec.MoveIn(); err != nil {
+			log.Warn("move secrets into the vault", "err", err)
 		}
 	}()
 	l := launcher.New(st, sec, dirs, engineList(a.engines),

@@ -47,6 +47,16 @@ func (Keychain) Set(service, account string, data []byte) error {
 	return keychain.UpdateItem(q, upd)
 }
 
+// Accounts lists the accounts stored under service. Only names are read, so
+// macOS does not ask for access.
+func (Keychain) Accounts(service string) ([]string, error) {
+	accts, err := keychain.GetGenericPasswordAccounts(service)
+	if errors.Is(err, keychain.ErrorItemNotFound) {
+		return nil, nil
+	}
+	return accts, err
+}
+
 func (Keychain) Delete(service, account string) error {
 	err := keychain.DeleteGenericPasswordItem(service, account)
 	if errors.Is(err, keychain.ErrorItemNotFound) {

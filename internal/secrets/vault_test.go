@@ -140,3 +140,78 @@ func TestVaultCopiesAreTheCallers(t *testing.T) {
 		t.Fatalf("wiping a copy changed the vault: %q", s)
 	}
 }
+
+// MoveIn asks for every legacy item at launch, then they are gone from the
+// system store: nothing is asked later (a profile closing reads the
+// snapshot key), and no old password is left behind.
+func TestVaultMoveIn(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "secrets.vault")
+	store := newCounting()
+	legacy := map[[2]string]string{
+		{ServiceAPIToken, "app"}: "tok", {ServiceSnapshotKey, "app"}: "snap",
+		{ServiceProxy, "p1"}: "pw1", {ServiceProxy, "p2"}: "pw2",
+		{ServiceCookieKey, "pr1"}: "ck1", {ServiceAccountPassword, "a1"}: "apw", {ServiceTOTP, "a1"}: "otp",
+	}
+	for k, s := range legacy {
+		store.Memory.Set(k[0], k[1], []byte(s))
+	}
+	v := NewVault(path, store)
+	// Already moved in on first use by the build before: only removed.
+	if s, _ := v.Get(ServiceProxy, "p2"); string(s) != "pw2" {
+		t.Fatalf("p2 = %q", s)
+	}
+	store.fail = errors.New("User canceled the operation")
+	if err := v.MoveIn(); err == nil {
+		t.Fatal("a cancelled answer must stop MoveIn")
+	}
+	store.fail = nil
+	if err := v.MoveIn(); err != nil {
+		t.Fatal(err)
+	}
+	for k := range legacy {
+		if _, err := store.Memory.Get(k[0], k[1]); !errors.Is(err, ErrNotFound) {
+			t.Fatalf("%v is still a system item", k)
+		}
+	}
+	if _, err := store.Memory.Get(ServiceVaultKey, "app"); err != nil {
+		t.Fatal("the vault key went too")
+	}
+	store.gets = map[string]int{}
+	v2 := NewVault(path, store)
+	if err := v2.MoveIn(); err != nil {
+		t.Fatal(err)
+	}
+	for k, want := range legacy {
+		if s, err := v2.Get(k[0], k[1]); err != nil || string(s) != want {
+			t.Fatalf("%v = %q, %v", k, s, err)
+		}
+	}
+	if store.reads() != 1 {
+		t.Fatalf("next launch read %v, want the vault key once", store.gets)
+	}
+}
+
+// A store that cannot list (none today) leaves legacy items to first use.
+func TestVaultMoveInWithoutAList(t *testing.T) {
+	store := struct{ Store }{NewMemory()}
+	store.Set(ServiceProxy, "p1", []byte("pw1"))
+	v := NewVault(filepath.Join(t.TempDir(), "secrets.vault"), store)
+	if err := v.MoveIn(); err != nil {
+		t.Fatal(err)
+	}
+	if s, _ := v.Get(ServiceProxy, "p1"); string(s) != "pw1" {
+		t.Fatalf("p1 = %q", s)
+	}
+}
+
+func TestVaultDeleteRemovesTheLegacyItem(t *testing.T) {
+	store := newCounting()
+	store.Memory.Set(ServiceProxy, "p1", []byte("pw1"))
+	v := NewVault(filepath.Join(t.TempDir(), "secrets.vault"), store)
+	if err := v.Delete(ServiceProxy, "p1"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.Memory.Get(ServiceProxy, "p1"); !errors.Is(err, ErrNotFound) {
+		t.Fatal("the old password is still in the system store")
+	}
+}

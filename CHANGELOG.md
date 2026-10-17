@@ -39,13 +39,14 @@ keeps them together.
   cookies alone.
 - Keychain asks at most once per new version, when the app starts. Every
   secret now lives in one encrypted file (secrets.vault) whose key is the
-  only Keychain item; secrets saved before move in on first use. Before,
+  only Keychain item. Secrets saved before move in at launch, and their old
+  Keychain items are removed, as is a secret's item when it is deleted. Before,
   each secret was its own item and macOS asked again for each one after an
   update, often when a profile was closed.
 - Closing a profile's last window no longer pulls you to another desktop:
   the browser quits once you have moved to another app, instead of while it
-  is still in front (macOS then jumps to the app used before it).
-
+  is still in front (macOS then jumps to the app used before it). Apostate
+  only: Fury quits by itself with its last window.
 
 ## 0.1.0 (2026-10-17)
 

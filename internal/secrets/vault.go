@@ -24,8 +24,9 @@ import (
 // With the vault there is one item, read when the app starts: at most one
 // question per build, at launch.
 //
-// Secrets stored as their own items before the vault existed are read once
-// more (legacy) and moved into the vault.
+// Secrets stored as their own items before the vault existed (legacy) are
+// moved in by MoveIn at launch, or on first use where the system store
+// cannot list its items.
 type Vault struct {
 	store Store // holds the vault key, and the legacy items
 	path  string
@@ -44,6 +45,59 @@ var ErrVaultKeyLost = errors.New("the key of the secrets file is missing from th
 const vaultAAD = "anyprofile-vault-v1"
 
 func NewVault(path string, store Store) *Vault { return &Vault{store: store, path: path} }
+
+// legacyServices were stored one item per secret before the vault.
+var legacyServices = []string{ServiceAPIToken, ServiceSnapshotKey, ServiceProxy,
+	ServiceCookieKey, ServiceAccountPassword, ServiceTOTP}
+
+// lister is a system store that can list its items by name.
+type lister interface {
+	Accounts(service string) ([]string, error)
+}
+
+// MoveIn moves every legacy item into the vault and removes it from the
+// system store. macOS asks about each one now, at launch, once; after that
+// the vault key is the only item. An answer cancelled stops here, and the
+// rest is tried again at the next launch.
+func (v *Vault) MoveIn() error {
+	ls, ok := v.store.(lister)
+	if !ok {
+		return nil // moved on first use instead
+	}
+	v.mu.Lock()
+	defer v.mu.Unlock()
+	if err := v.unlock(); err != nil {
+		return err
+	}
+	var left error // items moved in but not removed; the vault wins anyway
+	for _, svc := range legacyServices {
+		accts, err := ls.Accounts(svc)
+		if err != nil {
+			return err
+		}
+		for _, acct := range accts {
+			k := vaultKey(svc, acct)
+			if _, in := v.items[k]; !in && !v.gone[k] {
+				s, err := v.store.Get(svc, acct)
+				if errors.Is(err, ErrNotFound) {
+					continue
+				}
+				if err != nil {
+					return err
+				}
+				v.items[k] = s
+				if err := v.save(); err != nil {
+					delete(v.items, k)
+					return err
+				}
+			}
+			if err := v.store.Delete(svc, acct); err != nil {
+				left = errors.Join(left, fmt.Errorf("remove %s: %w", svc, err))
+			}
+		}
+	}
+	return left
+}
 
 type vaultFile struct {
 	Items map[string][]byte `json:"items"`
@@ -202,6 +256,7 @@ func (v *Vault) Delete(service, account string) error {
 	if err := v.unlock(); err != nil {
 		return err
 	}
+	v.store.Delete(service, account) // a legacy copy, if MoveIn has not run
 	k := vaultKey(service, account)
 	old, had := v.items[k]
 	wasGone := v.gone[k]

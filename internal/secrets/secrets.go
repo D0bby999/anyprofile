@@ -7,6 +7,7 @@ package secrets
 
 import (
 	"errors"
+	"strings"
 	"sync"
 )
 
@@ -63,6 +64,17 @@ func (s *Memory) Delete(service, account string) error {
 	defer s.mu.Unlock()
 	delete(s.m, service+"\x00"+account)
 	return nil
+}
+
+func (s *Memory) Accounts(service string) (accts []string, err error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for k := range s.m {
+		if svc, acct, _ := strings.Cut(k, "\x00"); svc == service {
+			accts = append(accts, acct)
+		}
+	}
+	return accts, nil
 }
 
 // Wipe zeroes a secret buffer once it has been handed off.
