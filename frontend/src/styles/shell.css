@@ -119,6 +119,13 @@ kbd { display: inline-flex; align-items: center; min-width: 22px; height: 20px; 
 .engine-head .grow { flex: 1; }
 .engine-facts { display: flex; flex-wrap: wrap; gap: 4px 16px; color: var(--ink-soft); font-size: var(--t-sm); font-variant-numeric: tabular-nums; }
 .engine-actions { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.engine-versions summary { width: fit-content; cursor: pointer; color: var(--ink-soft); font-size: var(--t-sm); }
+.engine-versions ul { list-style: none; margin: 8px 0 0; padding: 0; border: 1px solid var(--line); border-radius: var(--r-md); }
+.engine-versions li { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 12px; min-height: 44px; padding: 6px 12px; font-size: var(--t-sm); font-variant-numeric: tabular-nums; }
+.engine-versions li + li { border-top: 1px solid var(--line); }
+.engine-versions .ver { min-width: 44px; font-weight: 600; color: var(--ink); }
+.engine-versions .grow { flex: 1; }
+.engine-versions .field { min-width: 200px; }
 .radio { display: inline-flex; align-items: center; gap: 8px; font-size: var(--t-sm); color: var(--ink-soft); cursor: pointer; }
 .radio input { width: 15px; height: 15px; margin: 0; accent-color: var(--accent); cursor: pointer; }
 .radio:has(input:disabled) { opacity: .5; cursor: default; }

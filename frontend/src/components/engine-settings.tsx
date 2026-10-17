@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-import { useEffect, useState } from 'react'
-import { Api, main, onEngineProgress, service, type EngineProgress } from '../api'
+import { useCallback, useEffect, useState } from 'react'
+import { Api, main, onDataChanged, onEngineProgress, service, type EngineProgress } from '../api'
 import { t } from '../i18n'
 import { errorText } from '../lib/format'
+import { EngineVersions } from './engine-versions'
 import { Icon } from './icons'
 import { InstallProgress } from './install-progress'
 
@@ -20,18 +21,30 @@ type Props = {
 export function EngineSettings({ engines, counts, defaults, onChanged }: Props) {
   const [progress, setProgress] = useState<EngineProgress | null>(null)
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [releases, setReleases] = useState<Record<string, service.EngineRelease[]>>({})
   useEffect(() => onEngineProgress(setProgress), [])
 
-  const install = async (id: string) => {
+  const ids = engines.map((e) => e.engine).join(',')
+  const loadReleases = useCallback(() => {
+    for (const id of ids.split(',').filter(Boolean)) {
+      Api.EngineReleases(id).then((rs) => setReleases((x) => ({ ...x, [id]: rs ?? [] }))).catch(() => {})
+    }
+  }, [ids])
+  useEffect(() => { loadReleases() }, [loadReleases])
+  useEffect(() => onDataChanged(['engines', 'profiles'], loadReleases), [loadReleases])
+  const changed = () => { loadReleases(); onChanged() }
+
+  /** Installs a version, or the engine's newest without one. */
+  const install = async (id: string, version?: string) => {
     setErrors((e) => ({ ...e, [id]: '' }))
-    setProgress({ engine: id, done: 0, total: -1 })
+    setProgress({ engine: id, version, done: 0, total: -1 })
     try {
-      await Api.InstallEngine(id)
+      await (version ? Api.InstallEngineVersion(id, version) : Api.InstallEngine(id))
     } catch (e) {
       setErrors((x) => ({ ...x, [id]: errorText(e) }))
     } finally {
       setProgress(null)
-      onChanged()
+      changed()
     }
   }
 
@@ -48,7 +61,8 @@ export function EngineSettings({ engines, counts, defaults, onChanged }: Props) 
   return (
     <div className="engines">
       {engines.map((e) => {
-        const busy = progress?.engine === e.engine
+        // A version's own download shows in its row; the engine's newest shows here.
+        const busy = progress?.engine === e.engine && !progress.version
         return (
           <div key={e.engine} className="engine" aria-busy={busy}>
             <div className="engine-head">
@@ -68,6 +82,10 @@ export function EngineSettings({ engines, counts, defaults, onChanged }: Props) 
               <span>{t.engines.usedBy(counts[e.engine] ?? 0)}</span>
             </div>
             {e.problem && <div className="banner danger"><Icon name="alert" /><span className="grow">{e.problem}</span></div>}
+            <EngineVersions engine={e.engine} releases={releases[e.engine] ?? []}
+              progress={progress?.engine === e.engine ? progress : null} locked={!!progress}
+              onInstall={(v) => install(e.engine, v)} onChanged={changed}
+              onError={(msg) => setErrors((x) => ({ ...x, [e.engine]: msg }))} />
             {busy ? (
               <InstallProgress progress={progress} />
             ) : (

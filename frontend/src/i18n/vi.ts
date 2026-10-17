@@ -81,6 +81,15 @@ export const vi: Messages = {
     ready: (name: string, v: string) => `${name} ${v} sẵn sàng`, missing: (name: string) => `Chưa cài ${name}`,
     advanced: 'Nâng cao', engineLabel: 'Engine trình duyệt', engineHint: 'Mỗi profile giữ engine của nó suốt đời.',
     notInstalledSuffix: '(chưa cài)', machinePending: 'Máy giả lập hiện sau lần mở đầu',
+    versions: (n: number) => `Các phiên bản (${n})`,
+    newer: (v: string) => `Đã có phiên bản ${v}`,
+    newerHint: 'Cài xong, profile chuyển sang bản này ở lần mở kế tiếp nếu bản này giữ nguyên máy giả lập của nó. Profile khác giữ phiên bản đang dùng.',
+    download: 'Tải về', remove: 'Xoá', installedShort: 'Đã cài', notDownloaded: 'Chưa tải', damaged: 'Bị hỏng',
+    profilesOn: (n: number) => `${n} profile`,
+    removeTitle: (name: string, v: string) => `Xoá ${name} ${v}?`,
+    removeBody: (n: number) => (n > 0
+      ? `${n} profile đang dùng bản này. Chúng sẽ chuyển sang bản mới nhất đã cài mà vẫn giữ nguyên máy giả lập. File của bản này bị xoá; bạn tải lại được.`
+      : 'File của bản này bị xoá. Bạn tải lại được.'),
   },
   profiles: {
     title: 'Profile', total: (n: number) => `${n} profile`,

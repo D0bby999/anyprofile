@@ -80,6 +80,15 @@ export const en = {
     ready: (name: string, v: string) => `${name} ${v} ready`, missing: (name: string) => `${name} not installed`,
     advanced: 'Advanced', engineLabel: 'Browser engine', engineHint: 'A profile keeps its engine for life.',
     notInstalledSuffix: '(not installed)', machinePending: 'Machine shown after first open',
+    versions: (n: number) => `Versions (${n})`,
+    newer: (v: string) => `Version ${v} is available`,
+    newerHint: 'Once it is installed, profiles move to it when they next open, if it keeps their machine. The others stay on their version.',
+    download: 'Download', remove: 'Remove', installedShort: 'Installed', notDownloaded: 'Not downloaded', damaged: 'Damaged',
+    profilesOn: (n: number) => (n === 1 ? '1 profile' : `${n} profiles`),
+    removeTitle: (name: string, v: string) => `Remove ${name} ${v}?`,
+    removeBody: (n: number) => (n > 0
+      ? `${n === 1 ? '1 profile uses' : `${n} profiles use`} it. They move to the newest installed version that keeps their machine. Its files are deleted; you can download it again.`
+      : 'Its files are deleted. You can download it again.'),
   },
   profiles: {
     title: 'Profiles', total: (n: number) => `${n} profiles`,

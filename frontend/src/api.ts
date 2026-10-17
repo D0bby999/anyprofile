@@ -7,8 +7,8 @@ import { BrowserOpenURL, ClipboardSetText } from '../wailsjs/runtime/runtime'
 import { debounce } from './lib/debounce'
 
 export type LaunchInfo = { profileId: string; state: string; pid: number; cdpPort: number; error: string }
-export type EngineProgress = { engine: string; done: number; total: number }
-export type DataKind = 'profiles' | 'proxies' | 'sites' | 'settings' | 'snapshots' | 'extensions' | 'update' | 'agent'
+export type EngineProgress = { engine: string; version?: string; done: number; total: number }
+export type DataKind = 'profiles' | 'proxies' | 'sites' | 'settings' | 'snapshots' | 'extensions' | 'update' | 'agent' | 'engines'
 
 /** Write to the OS clipboard; navigator.clipboard may be blocked in the WebView. */
 export const copyText = (s: string) => ClipboardSetText(s)
