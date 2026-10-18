@@ -12,7 +12,7 @@ export function HealthPill({ row, now }: { row: service.ProfileRow; now?: Date }
   if (!h.label) return null
   return (
     <span className="health" tabIndex={0} aria-describedby={id}>
-      <span className={`chip ${chip[h.level]}`}><span className="dot" />{h.label}</span>
+      <span className={`chip ${chip[h.level]}`}><span className="dot" /><span className="label">{h.label}</span></span>
       <span className="healthpop" role="tooltip" id={id}>
         {h.reasons.map((x) => <span key={x}>{x}</span>)}
       </span>

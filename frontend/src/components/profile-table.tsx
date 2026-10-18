@@ -85,7 +85,7 @@ export function ProfileTable(p: Props) {
   )
   const shown = (c: Column) => !p.prefs?.hidden.includes(c)
   return (
-    <table className={`table${p.prefs?.density === 'compact' ? ' compact' : ''}`}>
+    <table className={`table profiles${p.prefs?.density === 'compact' ? ' compact' : ''}`}>
       <thead>
         <tr>
           <th className="col-check"><input type="checkbox" checked={allSelected} onChange={p.onToggleAll} aria-label={t.profiles.selected(p.rows.length)} /></th>
@@ -135,20 +135,20 @@ export function ProfileTable(p: Props) {
               )}
               <td className="col-actions">
                 <span className="row">
-                  {running && (
-                    <button className="iconbtn sm" onClick={() => p.onFocus(r.id)} aria-label={t.profiles.focus} title={t.profiles.focus}>
-                      <Icon name="focus" />
-                    </button>
-                  )}
+                  {/* Always there, hidden while closed: the column keeps its width when a profile opens. */}
+                  <button className={`iconbtn sm${running ? '' : ' slot'}`} onClick={() => p.onFocus(r.id)} aria-label={t.profiles.focus}
+                    title={running ? t.profiles.focus : undefined} disabled={!running} aria-hidden={!running || undefined} tabIndex={running ? undefined : -1}>
+                    <Icon name="focus" />
+                  </button>
                   <RowMenu row={r} sites={p.sites} onEdit={() => p.onEdit(r)} onDuplicate={() => p.onDuplicate(r)}
                     onTrash={() => p.onTrash(r)} onMessage={p.onMessage} onError={p.onError} />
                   {running || r.state === 'stopping' ? (
                     <button className="btn sm stop actbtn" disabled={busy} onClick={() => p.onStop(r.id)}>
-                      <Icon name="stop" className="icon sm" />{busy ? t.profiles.stopping : t.profiles.stop}
+                      <Icon name="stop" className="icon sm" /><ActLabel shown={busy ? t.profiles.stopping : t.profiles.stop} />
                     </button>
                   ) : (
                     <button className={`btn sm primary actbtn${busy ? ' busy' : ''}`} aria-busy={busy} disabled={busy} onClick={() => p.onStart(r.id)}>
-                      <Icon name={busy ? 'refresh' : 'play'} className="icon sm" />{busy ? t.profiles.opening : t.profiles.open}
+                      <Icon name={busy ? 'refresh' : 'play'} className="icon sm" /><ActLabel shown={busy ? t.profiles.opening : t.profiles.open} />
                     </button>
                   )}
                 </span>
@@ -158,5 +158,15 @@ export function ProfileTable(p: Props) {
         })}
       </tbody>
     </table>
+  )
+}
+
+/** The Open/Close button's label, as wide as its longest one in this language, so the button never resizes. */
+function ActLabel({ shown }: { shown: string }) {
+  const all = [t.profiles.open, t.profiles.opening, t.profiles.stop, t.profiles.stopping]
+  return (
+    <span className="actlabel">
+      {all.map((x) => <span key={x} aria-hidden={x === shown ? undefined : true} className={x === shown ? undefined : 'off'}>{x}</span>)}
+    </span>
   )
 }

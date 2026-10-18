@@ -94,6 +94,10 @@ keeps them together.
 - Closing a profile on macOS asks the browser over its DevTools pipe first,
   then with SIGHUP: a few browsers whose last window had just closed did not
   hear the signal and were killed, losing their newest cookies.
+- The profile table no longer grows when a profile opens or its status
+  changes: the row's buttons keep one width, a long status is cut (hover
+  shows it whole), and the buttons stay at the right edge when the table is
+  wider than the window.
 
 ## 0.1.0 (2026-10-17)
 

@@ -416,6 +416,19 @@ kbd { display: inline-flex; align-items: center; min-width: 22px; height: 20px; 
 .table td.stack > small { display: block; margin-top: 3px; font-size: var(--t-xs); }
 .field > .seg { align-self: flex-start; }
 .actbtn { min-width: 76px; }
+/* The row's controls keep one width whatever the state, and stay in reach
+   at the right edge when the table is wider than the window. */
+.actlabel { display: inline-grid; }
+.actlabel > span { grid-area: 1 / 1; text-align: left; }
+.actlabel > .off { visibility: hidden; }
+.iconbtn.slot { visibility: hidden; }
+.table.profiles th.col-actions, .table.profiles td.col-actions { position: sticky; right: 0; }
+.table.profiles th.col-actions { z-index: 2; }
+/* Opaque under what scrolls beneath; :where keeps the row's own tint (running, selected, hover) on top. */
+:where(.table.profiles tbody) td.col-actions { z-index: 1; background: var(--surface); }
+/* A long status (Proxy sắp hết hạn…) is cut; the pill's popover says it all. */
+.table .col-status .health .chip { max-width: 150px; }
+.table .col-status .health .chip .label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 @media (max-width: 1080px) {
   :root { --sidebar-w: 208px; }
   .pagehead, .pagebody { padding-left: 16px; padding-right: 16px; }

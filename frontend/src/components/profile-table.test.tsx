@@ -58,6 +58,21 @@ describe('ProfileTable', () => {
     expect(screen.getByText(t.profiles.runningFor(t.time.span(0, 12)))).toBeTruthy()
   })
 
+  it('keeps the row controls one size whatever the state', () => {
+    const { container } = render(<ProfileTable {...props([row({ id: 'a' }), row({ id: 'b', state: 'running' }), row({ id: 'c', state: 'starting' })])} />)
+    const cells = [...container.querySelectorAll('td.col-actions')]
+    // Same controls in every row: a closed one only hides its Focus slot.
+    expect(cells.map((td) => td.querySelectorAll('button').length)).toEqual([3, 3, 3])
+    const slot = cells[0].querySelector('button.slot') as HTMLButtonElement
+    expect(slot.disabled && slot.tabIndex === -1 && slot.getAttribute('aria-hidden') === 'true').toBe(true)
+    expect(cells[1].querySelector('button.slot')).toBeNull()
+    // Every label is laid out so the button is as wide as the longest; only one is shown.
+    for (const td of cells) expect(td.querySelectorAll('.actlabel > span').length).toBe(4)
+    expect(screen.getAllByRole('button', { name: t.profiles.open })).toHaveLength(1)
+    expect(screen.getByRole('button', { name: t.profiles.stop })).toBeTruthy()
+    expect(screen.getByRole('button', { name: t.profiles.opening })).toBeTruthy()
+  })
+
   it('marks the profiles an AI agent is driving', () => {
     render(<ProfileTable {...props([row({ id: 'a', state: 'running' }), row({ id: 'b', name: 'Kênh B' })])} agents={new Set(['a'])} />)
     // The row is tinted and titled; no chip joins the status cell.
