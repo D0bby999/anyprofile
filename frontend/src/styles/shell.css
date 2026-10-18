@@ -207,7 +207,7 @@ kbd { display: inline-flex; align-items: center; min-width: 22px; height: 20px; 
 .cellproxy .mono { color: var(--ink-soft); }
 .cellproxy .tzline { display: block; color: var(--faint); font-size: var(--t-xs); white-space: nowrap; }
 .cellproxy .tzline.warn { display: inline-flex; align-items: center; gap: 4px; color: var(--warn-ink); }
-.cellproxy small { display: block; color: var(--faint); font-size: var(--t-xs); max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cellproxy small { display: block; color: var(--faint); font-size: var(--t-xs); max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .statusbar { display: flex; align-items: center; gap: 16px; height: 46px; padding: 0 16px; border-top: 1px solid var(--line); color: var(--muted); font-size: var(--t-sm); }
 .statusbar b { color: var(--ink-soft); font-weight: 650; }
@@ -304,8 +304,10 @@ kbd { display: inline-flex; align-items: center; min-width: 22px; height: 20px; 
 .tablewrap { container-type: inline-size; }
 /* Columns leave in order of least use; the platform stays as its icon, which
    tells rows apart at a glance. Each width is what the columns before it need,
-   measured, plus room for a scrollbar and longer Vietnamese labels. */
-@container (max-width: 880px) {
+   measured with a running profile (its Focus button and the widest Open/Close
+   label are always laid out), plus room for a scrollbar and longer
+   Vietnamese labels. */
+@container (max-width: 930px) {
   .cellproxy small { display: none; }
   /* The hidden name is anchored in its cell; anchored anywhere else it would sit
      outside the table's scroll area and stretch the whole window. The header
@@ -319,8 +321,10 @@ kbd { display: inline-flex; align-items: center; min-width: 22px; height: 20px; 
     position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap;
   }
 }
-@container (max-width: 740px) { .table .col-proxy, .table .col-no { display: none; } }
-@container (max-width: 520px) { .table .col-status { display: none; } .table .cellname { min-width: 120px; } }
+@container (max-width: 830px) { .table .col-proxy, .table .col-no { display: none; } }
+@container (max-width: 600px) { .table .col-status { display: none; } .table .cellname { min-width: 120px; } }
+/* The smallest window with the drawer open: the sidebar still filters by platform. */
+@container (max-width: 420px) { .table .col-site { display: none; } .table .cellname { min-width: 100px; } }
 
 /* Profiles page with the detail drawer beside the table. */
 .profiles-split { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
@@ -427,7 +431,7 @@ kbd { display: inline-flex; align-items: center; min-width: 22px; height: 20px; 
 /* Opaque under what scrolls beneath; :where keeps the row's own tint (running, selected, hover) on top. */
 :where(.table.profiles tbody) td.col-actions { z-index: 1; background: var(--surface); }
 /* A long status (Proxy sắp hết hạn…) is cut; the pill's popover says it all. */
-.table .col-status .health .chip { max-width: 150px; }
+.table .col-status .health .chip { max-width: 124px; }
 /* The grip shows on the row under the pointer; the dragged row stands out. */
 .grip {
   display: inline-flex; align-items: center; justify-content: center; width: 14px; height: 22px; margin-left: -4px; padding: 0;

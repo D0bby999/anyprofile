@@ -117,7 +117,7 @@ export function ProfileTable(p: Props) {
     <table className={`table profiles${p.prefs?.density === 'compact' ? ' compact' : ''}${dragging ? ' reordering' : ''}`}>
       <thead>
         <tr>
-          <th className="col-check"><input type="checkbox" checked={allSelected} onChange={p.onToggleAll} aria-label={t.profiles.selected(p.rows.length)} /></th>
+          <th className="col-check"><input type="checkbox" checked={allSelected} onChange={p.onToggleAll} aria-label={t.profiles.selectAll(p.rows.length)} /></th>
           {head('no', t.profiles.colNo, 'col-no')}
           {head('name', t.profiles.colName)}
           {shown('site') && <th className="col-site"><span className="sitehead">{t.profiles.colSite}</span></th>}

@@ -106,8 +106,9 @@ keeps them together.
   (more would be too small to use; Arrange still does it).
 - The profile table no longer grows when a profile opens or its status
   changes: the row's buttons keep one width, a long status is cut (hover
-  shows it whole), and the buttons stay at the right edge when the table is
-  wider than the window.
+  shows it whole), and the buttons stay at the right edge. Columns fold
+  away by the room there is, measured with a profile running, so the table
+  fits from the smallest window with the details open to a wide screen.
 - Settings copies the MCP setup for the agent you pick: Claude Code, Codex
   CLI, Gemini CLI, OpenCode, Cursor, VS Code, Windsurf, or the plain JSON,
   and says where to paste it. The Claude Code command now adds AnyProfile for

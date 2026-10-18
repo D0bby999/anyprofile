@@ -10,7 +10,9 @@ import { useToast } from './toast'
 export const MCP_CLIENTS = ['claude', 'codex', 'gemini', 'opencode', 'cursor', 'vscode', 'windsurf', 'other'] as const
 export type MCPClient = (typeof MCP_CLIENTS)[number]
 const CLIENT_KEY = 'anyprofile.mcpClient'
-export const MCP_GUIDE = 'https://github.com/D0bby999/anyprofile/blob/master/docs/mcp.md'
+const DOCS = 'https://github.com/D0bby999/anyprofile/blob/master/docs/'
+export const API_GUIDE = DOCS + 'local-api.md'
+export const MCP_GUIDE = DOCS + 'mcp.md'
 
 /** The local API: off by default, loopback only, one token kept in Go. */
 export function APISettings() {
@@ -74,6 +76,7 @@ export function APISettings() {
           <Icon name="copy" className="icon sm" />{t.api.copyToken}
         </button>
         <button type="button" className="btn sm ghost" disabled={!st.enabled} onClick={newToken}>{t.api.newToken}</button>
+        <button type="button" className="btn sm ghost" onClick={() => openExternal(API_GUIDE)}>{t.api.guide}</button>
       </span>
       <span className="hint">{t.api.hint}</span>
       <div className="field">
@@ -87,7 +90,7 @@ export function APISettings() {
           <button type="button" className="btn sm" disabled={!st.enabled} onClick={() => run(() => Api.CopyMCPSetup(client), t.api.mcpCopied)}>
             <Icon name="copy" className="icon sm" />{t.api.clients[client].copy}
           </button>
-          <button type="button" className="btn sm ghost" onClick={() => openExternal(MCP_GUIDE)}>{t.api.mcpGuide}</button>
+          <button type="button" className="btn sm ghost" onClick={() => openExternal(MCP_GUIDE)}>{t.api.guide}</button>
         </span>
         <span className="hint">{st.enabled ? t.api.clients[client].where : t.api.turnOnFirst}</span>
         <span className="row">
