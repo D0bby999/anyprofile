@@ -7,8 +7,9 @@ import { useUpdate } from '../hooks/use-update'
 import { useConfirm } from './confirm'
 import { Icon } from './icons'
 
-/** Settings → Version: the running version, a check button and the installer. */
-export function UpdateSettings({ openProfiles }: { openProfiles: number }) {
+/** Settings → Version: the running version, a check button and the installer.
+ *  checkToken changes when the menu bar's Check for Updates is chosen. */
+export function UpdateSettings({ openProfiles, checkToken = 0 }: { openProfiles: number; checkToken?: number }) {
   const [st, setSt] = useUpdate()
   const [busy, setBusy] = useState<'' | 'check' | 'install'>('')
   const [progress, setProgress] = useState<[number, number] | null>(null)
@@ -16,9 +17,14 @@ export function UpdateSettings({ openProfiles }: { openProfiles: number }) {
   const [checked, setChecked] = useState(false)
   const confirm = useConfirm()
   useEffect(() => onUpdateProgress((done, total) => setProgress([done, total])), [])
+  useEffect(() => {
+    if (!checkToken) return
+    document.getElementById('settings-update')?.scrollIntoView({ block: 'center' })
+    check()
+  }, [checkToken])
   if (!st) return null
 
-  const check = async () => {
+  async function check() {
     setBusy('check'); setError('')
     try { setSt(await Api.CheckUpdate()); setChecked(true) } catch (e) { setError(errorText(e)) } finally { setBusy('') }
   }
@@ -39,7 +45,7 @@ export function UpdateSettings({ openProfiles }: { openProfiles: number }) {
         <div className="banner" role="status">
           <Icon name="download" />
           <span className="grow">
-            <b>{t.update.available(st.latest)}</b>
+            <b>{st.ready ? t.update.ready(st.latest) : t.update.available(st.latest)}</b>
             {st.notes && <span className="updnotes">{st.notes}</span>}
           </span>
         </div>
@@ -47,7 +53,7 @@ export function UpdateSettings({ openProfiles }: { openProfiles: number }) {
       <span className="row">
         {st.available && (
           <button type="button" className="btn sm primary" disabled={busy !== '' || openProfiles > 0} onClick={install}>
-            {busy === 'install' ? (pct === null ? t.update.installing : t.update.downloading(pct)) : t.update.install}
+            {busy === 'install' ? (pct === null ? t.update.installing : t.update.downloading(pct)) : st.ready ? t.update.restart : t.update.install}
           </button>
         )}
         <button type="button" className="btn sm" disabled={busy !== ''} onClick={check}>

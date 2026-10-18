@@ -169,6 +169,8 @@ export function TOTPCode(arg1:string,arg2:string):Promise<service.TOTPCode>;
 
 export function TakeSnapshot(arg1:string):Promise<store.Snapshot>;
 
+export function TakeWhatsNew():Promise<service.WhatsNew>;
+
 export function TrashProfile(arg1:string):Promise<void>;
 
 export function UpdateProfile(arg1:store.Profile):Promise<void>;

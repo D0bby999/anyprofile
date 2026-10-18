@@ -73,6 +73,11 @@ keeps them together.
   choose. Restoring adds only what the computer does not have; nothing there
   is changed. Until now the keys stayed in this Mac's Keychain, so a new or
   broken computer meant every profile signed out.
+- Updates: a newer version is downloaded and verified in the background, so
+  updating is only a restart ("Restart to update"). An app left open for
+  days still learns of a release (looked at every 6 hours, asked at most once
+  a day). After an update, "What's new" shows its notes once. On macOS the
+  AnyProfile menu has Check for Updates… and Settings… (⌘,).
 
 
 ## 0.1.0 (2026-10-17)

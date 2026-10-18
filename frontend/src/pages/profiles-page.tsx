@@ -254,7 +254,7 @@ export function ProfilesPage({ rows, sites, view, engineReady, fileVaultOn, erro
               )}
               {update?.available && (
                 <button type="button" className="statusbtn updbtn" onClick={onOpenSettings}>
-                  <Icon name="download" className="icon sm" />{t.update.available(update.latest)}
+                  <Icon name="download" className="icon sm" />{update.ready ? t.update.ready(update.latest) : t.update.available(update.latest)}
                 </button>
               )}
             </div>

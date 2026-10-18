@@ -202,6 +202,23 @@ func verifySig(pub ed25519.PublicKey, a Asset, version, platform string) error {
 	return nil
 }
 
+// VerifyFile checks a downloaded update against its signed checksum.
+func VerifyFile(path string, a Asset) error {
+	f, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	h := sha256.New()
+	if _, err := io.Copy(h, f); err != nil {
+		return err
+	}
+	if !strings.EqualFold(hex.EncodeToString(h.Sum(nil)), a.SHA256) {
+		return errors.New("the downloaded update does not match its signed checksum")
+	}
+	return nil
+}
+
 // Progress reports downloaded and total bytes (total is -1 when unknown).
 type Progress func(done, total int64)
 

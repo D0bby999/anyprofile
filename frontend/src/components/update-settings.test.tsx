@@ -37,6 +37,18 @@ describe('UpdateSettings', () => {
     await waitFor(() => expect(api.InstallUpdate).toHaveBeenCalledOnce())
   })
 
+  it('says a downloaded version only needs a restart', async () => {
+    api.UpdateStatus.mockResolvedValueOnce({ ...status, ready: true } as typeof status)
+    show()
+    expect(await screen.findByText(t.update.ready('0.2.0'))).toBeTruthy()
+    expect(screen.getByRole('button', { name: t.update.restart })).toBeTruthy()
+  })
+
+  it('checks when the menu bar asks', async () => {
+    render(<ConfirmProvider><UpdateSettings openProfiles={0} checkToken={1} /></ConfirmProvider>)
+    await waitFor(() => expect(api.CheckUpdate).toHaveBeenCalledOnce())
+  })
+
   it('waits for open profiles to close', async () => {
     show(2)
     const btn = await screen.findByRole('button', { name: t.update.install })

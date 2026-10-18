@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
 	"sync/atomic"
 	"testing"
 
@@ -75,5 +76,66 @@ func TestInstallUpdateWhenAlreadyNewest(t *testing.T) {
 	}
 	if _, err := os.Stat(s.updatesDir()); err == nil {
 		t.Fatal("downloaded anything for the running version")
+	}
+}
+
+func TestReadyUpdateAndCleanUp(t *testing.T) {
+	s, _ := newService(t)
+	s.Store.SetSetting("update_latest", `{"version":"99.0.0"}`)
+	pkg := filepath.Join(s.updatesDir(), "AnyProfile.zip")
+	os.MkdirAll(s.updatesDir(), 0o700)
+	os.WriteFile(pkg, []byte("x"), 0o600)
+	s.Store.SetSetting("update_ready", `{"version":"99.0.0","path":"`+pkg+`"}`)
+	if st := s.UpdateStatus(); !st.Available || !st.Ready {
+		t.Fatalf("status = %+v", st)
+	}
+	// A ready release newer than this one survives the clean-up at launch.
+	s.CleanUpdates()
+	if _, err := os.Stat(pkg); err != nil {
+		t.Fatal("the ready update was removed")
+	}
+	// Once it is the running version (or older), it goes.
+	s.Store.SetSetting("update_ready", `{"version":"`+update.Current+`","path":"`+pkg+`"}`)
+	s.CleanUpdates()
+	if _, err := os.Stat(pkg); !os.IsNotExist(err) {
+		t.Fatal("an installed update was kept")
+	}
+	if st := s.UpdateStatus(); st.Ready {
+		t.Fatalf("ready without a file: %+v", st)
+	}
+}
+
+func TestPrefetchUpdateKeepsNothingUnverified(t *testing.T) {
+	s, _ := newService(t)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		json.NewEncoder(w).Encode(update.Manifest{Version: "99.0.0"}) // no package for this computer
+	}))
+	defer srv.Close()
+	t.Setenv(update.EnvManifestURL, srv.URL)
+	if _, err := s.CheckUpdate(context.Background(), true); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.PrefetchUpdate(context.Background()); err == nil {
+		t.Fatal("want an error for a release without a package")
+	}
+	if st := s.UpdateStatus(); !st.Available || st.Ready {
+		t.Fatalf("status = %+v", st)
+	}
+}
+
+func TestWhatsNewOnceAfterAnUpdate(t *testing.T) {
+	s, _ := newService(t)
+	// First install: nothing to show, the version is remembered.
+	if w := s.TakeWhatsNew(); w.Version != "" {
+		t.Fatalf("first run = %+v", w)
+	}
+	// An update to the release whose notes were fetched before.
+	s.Store.SetSetting("last_version", "0.0.1")
+	s.Store.SetSetting("update_latest", `{"version":"`+update.Current+`","notes":"Backups."}`)
+	if w := s.TakeWhatsNew(); w.Version != update.Current || w.Notes != "Backups." {
+		t.Fatalf("after update = %+v", w)
+	}
+	if w := s.TakeWhatsNew(); w.Version != "" {
+		t.Fatalf("shown twice: %+v", w)
 	}
 }

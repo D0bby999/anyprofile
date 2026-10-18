@@ -133,10 +133,20 @@ func (a *App) init() error {
 	}
 	a.restartAPI()
 	a.svc.CleanUpdates()
+	a.setMenuLanguage(a.svc.Language())
 	go func() {
-		// Once a day at most, and only when automatic checks are on.
-		if st, _ := a.svc.CheckUpdate(context.Background(), false); st.Available {
-			runtime.EventsEmit(a.ctx, "data:changed", "update")
+		// Looked at every few hours, so an app left open for days still
+		// learns of a release; CheckUpdate asks the server once a day at
+		// most, and only when automatic checks are on. A release found is
+		// downloaded and verified, so updating is only a restart.
+		for {
+			if st, _ := a.svc.CheckUpdate(context.Background(), false); st.Available {
+				if st.Auto && !st.Ready {
+					a.prefetchUpdate()
+				}
+				runtime.EventsEmit(a.ctx, "data:changed", "update")
+			}
+			time.Sleep(6 * time.Hour)
 		}
 	}()
 	return nil

@@ -376,8 +376,10 @@ export const en = {
     install: 'Update and restart', installing: 'Installing…', downloading: (pct: number) => `Downloading… ${pct}%`,
     closeFirst: (n: number) => `Close the ${n === 1 ? 'open profile' : `${n} open profiles`} first: the update restarts AnyProfile.`,
     confirm: (v: string) => ({ title: `Update to ${v}?`, body: 'AnyProfile downloads the new version, checks its signature, then closes and opens again. Profiles, logins and passwords stay as they are.', confirm: 'Update and restart' }),
+    ready: (v: string) => `Version ${v} is ready: restart to update`, restart: 'Restart to update',
     autoLabel: 'Check automatically', autoOff: 'Check by hand', autoOn: 'Check once a day',
-    hint: 'A check only asks for the newest version number and sends nothing about you or your profiles. Updates are signed; one that is not is refused.',
+    hint: 'A check only asks for the newest version number and sends nothing about you or your profiles. A new version is downloaded in the background and checked, so updating is only a restart. Updates are signed; one that is not is refused.',
+    whatsNew: (v: string) => `What\u2019s new in AnyProfile ${v}`, gotIt: 'Got it',
   },
   api: {
     title: 'Local API', off: 'Off', on: 'On', port: 'Port',

@@ -35,6 +35,11 @@ export function onEngineProgress(fn: (p: EngineProgress) => void): () => void {
 }
 
 /** Download progress of an update, in bytes; total is -1 when unknown. */
+/** A choice in the macOS menu bar: "settings" or "check-update". */
+export function onMenu(fn: (what: string) => void): () => void {
+  return EventsOn('menu', fn)
+}
+
 export function onUpdateProgress(fn: (done: number, total: number) => void): () => void {
   return EventsOn('update:progress', fn)
 }

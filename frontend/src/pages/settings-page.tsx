@@ -28,9 +28,11 @@ type Props = {
   fileVaultOn: boolean
   lang: Language
   onLanguage: (l: Language) => void
+  /** Bumped by the menu bar's Check for Updates. */
+  checkUpdate?: number
 }
 
-export function SettingsPage({ engines, engineCounts, defaults, onEnginesChanged, theme, onTheme, fileVaultOn, lang, onLanguage, openProfiles }: Props) {
+export function SettingsPage({ engines, engineCounts, defaults, onEnginesChanged, theme, onTheme, fileVaultOn, lang, onLanguage, openProfiles, checkUpdate }: Props) {
   const { sites, reload: reloadSites } = useSites()
   const themes: [ThemeChoice, string, IconName][] = [['system', t.settings.themeSystem, 'monitor'], ['light', t.settings.themeLight, 'sun'], ['dark', t.settings.themeDark, 'moon']]
 
@@ -83,7 +85,7 @@ export function SettingsPage({ engines, engineCounts, defaults, onEnginesChanged
 
         <section className="card pad" id="settings-update">
           <h2>{t.update.title}</h2>
-          <UpdateSettings openProfiles={openProfiles} />
+          <UpdateSettings openProfiles={openProfiles} checkToken={checkUpdate} />
         </section>
 
         <section className="card pad">

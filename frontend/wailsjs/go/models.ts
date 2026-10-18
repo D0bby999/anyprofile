@@ -673,6 +673,7 @@ export namespace service {
 	    available: boolean;
 	    checkedAt: string;
 	    auto: boolean;
+	    ready: boolean;
 	
 	    static createFrom(source: any = {}) {
 	        return new UpdateStatus(source);
@@ -687,6 +688,21 @@ export namespace service {
 	        this.available = source["available"];
 	        this.checkedAt = source["checkedAt"];
 	        this.auto = source["auto"];
+	        this.ready = source["ready"];
+	    }
+	}
+	export class WhatsNew {
+	    version: string;
+	    notes: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new WhatsNew(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.version = source["version"];
+	        this.notes = source["notes"];
 	    }
 	}
 

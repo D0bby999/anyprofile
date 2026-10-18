@@ -23,6 +23,19 @@ type UpdateStatus struct {
 	Available bool   `json:"available"`
 	CheckedAt string `json:"checkedAt"` // RFC 3339, "" when never checked
 	Auto      bool   `json:"auto"`      // check once a day on its own
+	Ready     bool   `json:"ready"`     // Latest is downloaded and verified: installing is a restart
+}
+
+// WhatsNew is the release notes of the version just installed, shown once.
+type WhatsNew struct {
+	Version string `json:"version"`
+	Notes   string `json:"notes"`
+}
+
+// readyUpdate is a downloaded, verified update waiting to be installed.
+type readyUpdate struct {
+	Version string `json:"version"`
+	Path    string `json:"path"`
 }
 
 // updateEvery is how often an automatic check runs.
@@ -45,7 +58,88 @@ func (s *Service) UpdateStatus() UpdateStatus {
 		st.Latest, st.Date, st.Notes = k.Version, k.Date, k.Notes
 		st.Available = update.Newer(k.Version, update.Current)
 	}
+	if r, ok := s.readyUpdate(); ok && st.Available && r.Version == st.Latest {
+		st.Ready = true
+	}
 	return st
+}
+
+func (s *Service) readyUpdate() (readyUpdate, bool) {
+	var r readyUpdate
+	v, _ := s.Store.GetSetting("update_ready")
+	if json.Unmarshal([]byte(v), &r) != nil || r.Path == "" || !fileExists(r.Path) {
+		return r, false
+	}
+	return r, true
+}
+
+// PrefetchUpdate downloads and verifies a newer release in the background,
+// so that installing it later is only a restart. It does nothing when one
+// is ready already or none is newer.
+func (s *Service) PrefetchUpdate(ctx context.Context) error {
+	s.updMu.Lock()
+	defer s.updMu.Unlock()
+	st := s.UpdateStatus()
+	if !st.Available || st.Ready {
+		return nil
+	}
+	_, err := s.download(ctx, nil)
+	return err
+}
+
+// download fetches latest.json and the newest release's package, verified,
+// and records it as ready. Callers hold updMu.
+func (s *Service) download(ctx context.Context, progress update.Progress) (string, error) {
+	fctx, cancel := context.WithTimeout(ctx, 20*time.Second)
+	m, err := update.Fetch(fctx, http.DefaultClient)
+	cancel()
+	if err != nil {
+		return "", apperr.Newf("update_check", "could not check for updates: %v", err)
+	}
+	if !update.Newer(m.Version, update.Current) {
+		return "", apperr.Newf("up_to_date", "AnyProfile %s is the newest version", update.Current)
+	}
+	a, err := m.AssetFor(update.Platform())
+	if err != nil {
+		return "", apperr.Newf("update_bad", "%v", err)
+	}
+	if r, ok := s.readyUpdate(); ok && r.Version == m.Version && update.VerifyFile(r.Path, a) == nil {
+		return r.Path, nil
+	}
+	dctx, cancel := context.WithTimeout(ctx, 15*time.Minute)
+	defer cancel()
+	dir := s.updatesDir()
+	os.RemoveAll(dir)
+	pkg, err := update.Download(dctx, http.DefaultClient, a, dir, progress)
+	if err != nil {
+		return "", apperr.Newf("update_download", "%v", err)
+	}
+	b, _ := json.Marshal(readyUpdate{Version: m.Version, Path: pkg})
+	if err := s.Store.SetSetting("update_ready", string(b)); err != nil {
+		return "", err
+	}
+	s.Log.Info("update downloaded", "version", m.Version)
+	s.notify("update")
+	return pkg, nil
+}
+
+// TakeWhatsNew returns the notes of the version that runs now, the first
+// time it runs after an update; otherwise an empty WhatsNew. A first install
+// shows nothing.
+func (s *Service) TakeWhatsNew() WhatsNew {
+	last, _ := s.Store.GetSetting("last_version")
+	if last == update.Current {
+		return WhatsNew{}
+	}
+	if err := s.Store.SetSetting("last_version", update.Current); err != nil {
+		return WhatsNew{}
+	}
+	var k knownRelease
+	v, _ := s.Store.GetSetting("update_latest")
+	if last == "" || json.Unmarshal([]byte(v), &k) != nil || k.Version != update.Current || k.Notes == "" {
+		return WhatsNew{}
+	}
+	return WhatsNew{Version: k.Version, Notes: k.Notes}
 }
 
 func (s *Service) SetUpdateAuto(on bool) error {
@@ -96,28 +190,13 @@ func (s *Service) InstallUpdate(ctx context.Context, progress update.Progress) e
 	if n := len(s.Launcher.List()); n > 0 {
 		return apperr.Newf("profiles_open", "close the %d open profiles before updating", n)
 	}
-	fctx, cancel := context.WithTimeout(ctx, 20*time.Second)
-	m, err := update.Fetch(fctx, http.DefaultClient)
-	cancel()
+	s.updMu.Lock() // waits for a download in the background, then uses it
+	defer s.updMu.Unlock()
+	pkg, err := s.download(ctx, progress)
 	if err != nil {
-		return apperr.Newf("update_check", "could not check for updates: %v", err)
+		return err
 	}
-	if !update.Newer(m.Version, update.Current) {
-		return apperr.Newf("up_to_date", "AnyProfile %s is the newest version", update.Current)
-	}
-	a, err := m.AssetFor(update.Platform())
-	if err != nil {
-		return apperr.Newf("update_bad", "%v", err)
-	}
-	dctx, cancel := context.WithTimeout(ctx, 15*time.Minute)
-	defer cancel()
-	dir := s.updatesDir()
-	os.RemoveAll(dir)
-	pkg, err := update.Download(dctx, http.DefaultClient, a, dir, progress)
-	if err != nil {
-		return apperr.Newf("update_download", "%v", err)
-	}
-	s.Log.Info("installing update", "from", update.Current, "to", m.Version)
+	s.Log.Info("installing update", "from", update.Current)
 	if err := update.Apply(pkg, os.Getpid()); err != nil {
 		return apperr.Newf("update_install", "%v", err)
 	}
@@ -127,9 +206,12 @@ func (s *Service) InstallUpdate(ctx context.Context, progress update.Progress) e
 func (s *Service) updatesDir() string { return filepath.Join(s.Dirs.Root, "updates") }
 
 // CleanUpdates removes downloads and swapped-out copies an earlier update
-// left behind.
+// left behind. A downloaded release newer than this one stays, ready.
 func (s *Service) CleanUpdates() {
-	os.RemoveAll(s.updatesDir())
+	if r, ok := s.readyUpdate(); !ok || !update.Newer(r.Version, update.Current) {
+		os.RemoveAll(s.updatesDir())
+		s.Store.SetSetting("update_ready", "")
+	}
 	update.CleanStale()
 }
 

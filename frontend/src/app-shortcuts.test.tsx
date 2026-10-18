@@ -24,6 +24,7 @@ const api: Record<string, (...a: unknown[]) => Promise<unknown>> = {
 vi.mock('./api', async (orig) => ({
   ...(await orig<typeof import('./api')>()),
   onDataChanged: () => () => {},
+  onMenu: () => () => {},
   onLaunchChanged: () => () => {},
   onEngineProgress: () => () => {},
   Api: new Proxy({}, { get: (_, name: string) => api[name] ?? (() => Promise.resolve([])) }),

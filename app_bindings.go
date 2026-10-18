@@ -3,6 +3,7 @@
 package main
 
 import (
+	"context"
 	"path/filepath"
 
 	"github.com/D0bby999/anyprofile/internal/apperr"
@@ -593,7 +594,13 @@ func (a *App) Language() string {
 }
 
 func (a *App) SetLanguage(lang string) error {
-	return a.must(func() error { return a.svc.SetLanguage(lang) })
+	return a.must(func() error {
+		if err := a.svc.SetLanguage(lang); err != nil {
+			return err
+		}
+		a.setMenuLanguage(lang)
+		return nil
+	})
 }
 
 func (a *App) must(fn func() error) error {
@@ -620,7 +627,25 @@ func (a *App) CheckUpdate() (service.UpdateStatus, error) {
 	if err := a.ready(); err != nil {
 		return service.UpdateStatus{}, err
 	}
-	return a.svc.CheckUpdate(a.ctx, true)
+	st, err := a.svc.CheckUpdate(a.ctx, true)
+	if err == nil && st.Available && !st.Ready {
+		go a.prefetchUpdate() // asked for: have it ready by the time Update is clicked
+	}
+	return st, err
+}
+
+func (a *App) prefetchUpdate() {
+	if err := a.svc.PrefetchUpdate(context.Background()); err != nil {
+		a.svc.Log.Warn("download update", "err", err)
+	}
+}
+
+// TakeWhatsNew is the notes of the version just installed, once.
+func (a *App) TakeWhatsNew() (service.WhatsNew, error) {
+	if err := a.ready(); err != nil {
+		return service.WhatsNew{}, err
+	}
+	return a.svc.TakeWhatsNew(), nil
 }
 
 // InstallUpdate downloads, verifies and installs the newest release, then

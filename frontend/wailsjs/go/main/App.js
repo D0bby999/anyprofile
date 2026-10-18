@@ -326,6 +326,10 @@ export function TakeSnapshot(arg1) {
   return window['go']['main']['App']['TakeSnapshot'](arg1);
 }
 
+export function TakeWhatsNew() {
+  return window['go']['main']['App']['TakeWhatsNew']();
+}
+
 export function TrashProfile(arg1) {
   return window['go']['main']['App']['TrashProfile'](arg1);
 }

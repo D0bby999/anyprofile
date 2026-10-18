@@ -28,6 +28,7 @@ func main() {
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 		},
+		Menu:          appMenu(app, "en"),
 		OnStartup:     app.startup,
 		OnBeforeClose: app.beforeClose,
 		// Two instances would each try to manage the same browsers.

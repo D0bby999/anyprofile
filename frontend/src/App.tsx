@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Api, main, onDataChanged, service } from './api'
+import { Api, main, onDataChanged, onMenu, service } from './api'
 import { language, setLanguage, t, type Language } from './i18n'
 import { applyTheme, readTheme, type ThemeChoice } from './lib/theme'
 import { useProfiles } from './hooks/use-profiles'
@@ -19,6 +19,7 @@ import { WelcomePage } from './pages/welcome-page'
 import { CommandPalette, type Command } from './components/command-palette'
 import { ShortcutSheet } from './components/shortcut-sheet'
 import { useToast } from './components/toast'
+import { Dialog } from './components/dialog'
 import { registerShortcuts } from './lib/shortcuts'
 import { errorText } from './lib/format'
 
@@ -30,6 +31,8 @@ export default function App() {
   const [onboarded, setOnboarded] = useState<boolean | null>(null)
   const [palette, setPalette] = useState(false)
   const [sheet, setSheet] = useState(false)
+  const [whatsNew, setWhatsNew] = useState<service.WhatsNew | null>(null)
+  const [checkUpdate, setCheckUpdate] = useState(0) // bumped by the menu bar's Check for Updates
   const toast = useToast()
   const [startupError, setStartupError] = useState('')
   const [fileVaultOn, setFileVaultOn] = useState(true)
@@ -63,6 +66,12 @@ export default function App() {
     setPage('profiles')
     setTimeout(() => document.getElementById('profile-search')?.focus(), 0)
   }
+  // Once, the first time a new version runs.
+  useEffect(() => { Api.TakeWhatsNew().then((w) => { if (w.version) setWhatsNew(w) }).catch(() => {}) }, [])
+  useEffect(() => onMenu((what) => {
+    setPage('settings')
+    if (what === 'check-update') setCheckUpdate((n) => n + 1)
+  }), [])
   // App-wide shortcuts; the profiles page adds its own for the table.
   useEffect(() => registerShortcuts([
     { combo: 'mod+k', global: true, run: () => setPalette(true) },
@@ -167,9 +176,15 @@ export default function App() {
         {page === 'tools' && <ToolsPage />}
         {page === 'settings' && (
           <SettingsPage engines={engines ?? []} engineCounts={engineCounts} defaults={defaults} onEnginesChanged={refreshEngines} theme={theme} onTheme={setTheme} fileVaultOn={fileVaultOn}
-            lang={lang} onLanguage={changeLanguage} openProfiles={profiles.rows.filter((r) => r.state === 'running').length} />
+            lang={lang} onLanguage={changeLanguage} openProfiles={profiles.rows.filter((r) => r.state === 'running').length} checkUpdate={checkUpdate} />
         )}
       </main>
+      {whatsNew && (
+        <Dialog title={t.update.whatsNew(whatsNew.version)} icon="spark" onClose={() => setWhatsNew(null)}
+          footer={<button type="button" className="btn primary" autoFocus onClick={() => setWhatsNew(null)}>{t.update.gotIt}</button>}>
+          <p className="updnotes selectable">{whatsNew.notes}</p>
+        </Dialog>
+      )}
       {palette && (
         <CommandPalette profiles={profiles.rows} actions={actions} places={places} onOpenProfile={openProfile}
           onLaunchProfile={launchProfile} onClose={() => setPalette(false)} />

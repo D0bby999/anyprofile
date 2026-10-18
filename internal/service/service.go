@@ -50,6 +50,7 @@ type Service struct {
 	CheckProxy func(ctx context.Context, up netproxy.Upstream) (netproxy.Exit, error)
 
 	snapMu    sync.Mutex
+	updMu     sync.Mutex             // one update download at a time
 	snapLocks map[string]profileLock // one per profile: snapshots and launches take turns
 }
 
