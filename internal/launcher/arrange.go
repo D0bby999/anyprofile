@@ -93,9 +93,13 @@ func (l *Launcher) Arrange(ctx context.Context, order []string, raise bool) (int
 	return placed, nil
 }
 
+// windowWait is how long a browser just started gets to show its window;
+// several starting at once on a slow computer take seconds.
+const windowWait = 10 * time.Second
+
 // placeWindow moves the window of the browser's first page to r.
 func placeWindow(ctx context.Context, c *cdppipe.Conn, r Rect) error {
-	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, windowWait)
 	defer cancel()
 	// A browser just started may not show its window yet.
 	ts, err := pageTargets(ctx, c)

@@ -8,6 +8,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"sync"
 	"testing"
 
@@ -21,7 +22,8 @@ import (
 func TestArrangeFollowsTheListOrder(t *testing.T) {
 	r := newApostateRig(t)
 	l := r.launcher(t)
-	l.Capture = true // the pipe, as in the app
+	l.Capture = true                                       // the pipe, as in the app
+	l.log = slog.New(slog.NewTextHandler(testLog{t}, nil)) // why a window was not placed
 	ids := make([]string, 4)
 	for i := range ids {
 		ids[i] = fmt.Sprintf("arr%d", i)
@@ -78,4 +80,12 @@ func TestArrangeFollowsTheListOrder(t *testing.T) {
 			t.Errorf("window %d (%s) at %d,%d; want cell %d at %d,%d", i, id, w.Bounds.Left, w.Bounds.Top, i, cells[i].X, cells[i].Y)
 		}
 	}
+}
+
+// testLog writes the launcher's log into the test's.
+type testLog struct{ t *testing.T }
+
+func (w testLog) Write(b []byte) (int, error) {
+	w.t.Log(string(b))
+	return len(b), nil
 }
