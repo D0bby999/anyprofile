@@ -84,6 +84,9 @@ keeps them together.
   puts their windows side by side on the screen AnyProfile is on. Windows on
   another desktop are moved but not brought up, so the screen never jumps.
   Scripts and agents cannot resize windows.
+- Closing a profile on macOS asks the browser over its DevTools pipe first,
+  then with SIGHUP: a few browsers whose last window had just closed did not
+  hear the signal and were killed, losing their newest cookies.
 
 ## 0.1.0 (2026-10-17)
 

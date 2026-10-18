@@ -59,11 +59,17 @@ func sameProcess(pid int, startTime string) bool {
 }
 
 // askQuit asks the browser to quit the way a menu Quit does, saving its
-// session and cookie jar. SIGHUP, not SIGTERM: from Chromium 155 a SIGTERM on
-// macOS means "the login session is ending" and exits without writing the
-// cookie jar (measured by the Fury authors and again here). Main process
-// only; it shuts its helpers down.
-func askQuit(pid int, _ *cdppipe.Conn) { unix.Kill(pid, unix.SIGHUP) }
+// session and cookie jar: Browser.close on the DevTools pipe, then SIGHUP.
+// The signal alone was not always heard: a few browsers whose last window
+// had just closed were still there after the grace period and were killed,
+// their newest cookies lost. SIGHUP, not SIGTERM: from Chromium 155 a
+// SIGTERM on macOS means "the login session is ending" and exits without
+// writing the cookie jar (measured by the Fury authors and again here). Main
+// process only; it shuts its helpers down. An adopted browser has no pipe.
+func askQuit(pid int, cdp *cdppipe.Conn) {
+	closeOverPipe(cdp)
+	unix.Kill(pid, unix.SIGHUP)
+}
 
 // killTree ends the browser and its helpers at once; unsaved data is lost.
 func killTree(pid int) { signalGroup(pid, unix.SIGKILL) }

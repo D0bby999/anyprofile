@@ -3,10 +3,13 @@
 package launcher
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"sync"
 	"time"
+
+	"github.com/D0bby999/anyprofile/internal/cdppipe"
 )
 
 // watch waits for exit (wait is nil for an adopted process) and cleans up.
@@ -71,6 +74,18 @@ func (l *Launcher) Stop(profileID string) error {
 	case <-time.After(5 * time.Second):
 		return errors.New("browser did not exit")
 	}
+}
+
+// closeOverPipe sends Browser.close: the browser saves its session and
+// cookie jar and quits. It reports whether the browser took the request.
+func closeOverPipe(cdp *cdppipe.Conn) bool {
+	if cdp == nil {
+		return false
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	_, err := cdp.Call(ctx, "", "Browser.close", nil)
+	return err == nil
 }
 
 // Focus brings a running profile's windows to the front.

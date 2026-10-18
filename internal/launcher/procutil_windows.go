@@ -3,11 +3,9 @@
 package launcher
 
 import (
-	"context"
 	"errors"
 	"path/filepath"
 	"strconv"
-	"time"
 	"unsafe"
 
 	"github.com/D0bby999/anyprofile/internal/cdppipe"
@@ -94,12 +92,8 @@ func sameProcess(pid int, startTime string) bool {
 // pipe the browser gets Browser.close, otherwise (adopted after the app
 // restarted) each of its windows gets WM_CLOSE.
 func askQuit(pid int, cdp *cdppipe.Conn) {
-	if cdp != nil {
-		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-		defer cancel()
-		if _, err := cdp.Call(ctx, "", "Browser.close", nil); err == nil {
-			return
-		}
+	if closeOverPipe(cdp) {
+		return
 	}
 	for _, hwnd := range browserWindows(pid) {
 		procPostMessageW.Call(hwnd, wmClose, 0, 0)
