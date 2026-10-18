@@ -270,6 +270,10 @@ export function SetPinnedMany(arg1, arg2) {
   return window['go']['main']['App']['SetPinnedMany'](arg1, arg2);
 }
 
+export function SetProfileOrder(arg1) {
+  return window['go']['main']['App']['SetProfileOrder'](arg1);
+}
+
 export function SetSitesMany(arg1, arg2) {
   return window['go']['main']['App']['SetSitesMany'](arg1, arg2);
 }

@@ -8,6 +8,7 @@ import { siteById, type Site } from '../lib/sites'
 import { EmptyState } from '../components/empty-state'
 import { Icon } from '../components/icons'
 import { ProfileDrawer } from '../components/profile-drawer'
+import { mergeOrder, rank } from '../lib/profile-order'
 import { ProfileTable, type Sort, type SortKey } from '../components/profile-table'
 import { DuplicateDialog } from '../components/duplicate-dialog'
 import { BulkExtensionDialog, BulkProxyDialog, BulkSiteDialog, BulkTagDialog } from '../components/bulk-dialogs'
@@ -59,6 +60,8 @@ export function ProfilesPage({ rows, sites, view, engineReady, fileVaultOn, erro
   const [prefs, setPrefs] = useState<TablePrefs>(readTablePrefs)
   const changePrefs = (p: TablePrefs) => { setPrefs(p); writeTablePrefs(p) }
   const [sort, setSort] = useState<Sort>({ key: 'no', desc: false })
+  // The order just dragged, until the list loads it back (it also wins after).
+  const [order, setOrder] = useState<Map<string, number> | null>(null)
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [duplicating, setDuplicating] = useState<service.ProfileRow | null>(null)
   const [bulkDialog, setBulkDialog] = useState<'site' | 'tag' | 'proxy' | 'extension' | null>(null)
@@ -83,12 +86,20 @@ export function ProfilesPage({ rows, sites, view, engineReady, fileVaultOn, erro
     const matches = (r: service.ProfileRow) => serial ? String(r.serial) === serial
       : [r.name, ...(r.accounts ?? []).map((a) => a.login), r.notes, r.proxyExitIp, ...r.sites.map((id) => siteById(sites, id).name), ...r.tags].some((x) => fold(x ?? '').includes(q))
     const out = rows.filter((r) => inView(r, view) && (!q || matches(r)))
+    // # is the order the user dragged the rows into; rows never dragged follow, by serial.
     const key = (r: service.ProfileRow) =>
-      sort.key === 'name' ? r.name.toLowerCase() : sort.key === 'lastOpen' ? r.lastOpenAt || '' : String(r.serial).padStart(6, '0')
+      sort.key === 'name' ? r.name.toLowerCase() : sort.key === 'lastOpen' ? r.lastOpenAt || '' : String(rank(r, order)).padStart(12, '0')
     // Pinned profiles stay on top whatever the sort.
     out.sort((a, b) => Number(b.pinned) - Number(a.pinned) || key(a).localeCompare(key(b), language) * (sort.desc ? -1 : 1))
     return out
-  }, [rows, sites, view, query, sort])
+  }, [rows, sites, view, query, sort, order])
+  // Rows are dragged in the # order only: in another, where they land would not stay.
+  const reorder = sort.key === 'no' && !sort.desc ? (shown: string[]) => {
+    const whole = [...rows].sort((a, b) => rank(a, order) - rank(b, order)).map((r) => r.id)
+    const next = mergeOrder(whole, shown)
+    setOrder(new Map(next.map((id, i) => [id, i + 1])))
+    Api.SetProfileOrder(next).catch(showError)
+  } : undefined
 
   const run = async (fn: () => Promise<unknown>) => {
     setBusy(true)
@@ -234,7 +245,7 @@ export function ProfilesPage({ rows, sites, view, engineReady, fileVaultOn, erro
                   <button className="btn" onClick={() => { setQuery(''); onClearView() }}>{t.profiles.clearFilters}</button>
                 </EmptyState>
               ) : (
-                <ProfileTable rows={visible} sites={sites} selected={selected} sort={sort} onSort={onSort} agents={agents}
+                <ProfileTable rows={visible} sites={sites} selected={selected} sort={sort} onSort={onSort} agents={agents} onReorder={reorder}
                   onToggle={toggle} onToggleAll={toggleAll}
                   onStart={(id) => run(() => Api.StartProfile(id))} onStop={(id) => run(() => Api.StopProfile(id))}
                   onFocus={(id) => { Api.FocusProfile(id) }} onEdit={(row) => setActiveId(row.id)}

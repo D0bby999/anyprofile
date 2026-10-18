@@ -451,6 +451,7 @@ export namespace service {
 	    lastExit?: ExitSummary;
 	    flags: Flag[];
 	    checks: fingerprint.Check[];
+	    position: number;
 	
 	    static createFrom(source: any = {}) {
 	        return new ProfileRow(source);
@@ -499,6 +500,7 @@ export namespace service {
 	        this.lastExit = this.convertValues(source["lastExit"], ExitSummary);
 	        this.flags = this.convertValues(source["flags"], Flag);
 	        this.checks = this.convertValues(source["checks"], fingerprint.Check);
+	        this.position = source["position"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {

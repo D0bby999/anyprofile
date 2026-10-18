@@ -9,6 +9,10 @@ import "database/sql"
 // time).
 const SettingOnOpen = "on_open"
 
+// SettingProfileOrder is the order the user dragged the profiles into: a
+// JSON array of profile IDs.
+const SettingProfileOrder = "profile_order"
+
 // GetSetting returns the stored value for key, or "" and nil when unset.
 func (s *Store) GetSetting(key string) (string, error) {
 	var v string

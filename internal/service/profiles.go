@@ -32,6 +32,9 @@ type ProfileRow struct {
 	Flags        []Flag         `json:"flags"`
 	// Checks are the consistency checks of the newest measured launch.
 	Checks []fingerprint.Check `json:"checks"`
+	// Position is the row's place in the order the user dragged the list
+	// into, from 1; 0 for a profile not placed yet (after the placed ones).
+	Position int `json:"position"`
 }
 
 // AutoProxy as NewProfile.ProxyID picks the next free sticky proxy (none if
@@ -78,9 +81,13 @@ func (s *Service) ListProfiles(f store.ProfileFilter) ([]ProfileRow, error) {
 	if err != nil {
 		return nil, err
 	}
+	place := map[string]int{}
+	for i, id := range s.profileOrder() {
+		place[id] = i + 1
+	}
 	out := make([]ProfileRow, 0, len(ps))
 	for _, p := range ps {
-		row := ProfileRow{Profile: p, State: launcher.Stopped}
+		row := ProfileRow{Profile: p, State: launcher.Stopped, Position: place[p.ID]}
 		pair := exits[p.ID]
 		row.Flags = exitFlags(p, &pair[0], &pair[1])
 		row.Checks = []fingerprint.Check{}
@@ -100,6 +107,52 @@ func (s *Service) ListProfiles(f store.ProfileFilter) ([]ProfileRow, error) {
 		out = append(out, row)
 	}
 	return out, nil
+}
+
+// maxOrder bounds the stored order; far more profiles than anyone keeps.
+const maxOrder = 100000
+
+// profileOrder is the order the user dragged the profiles into; empty when
+// never dragged, or unreadable.
+func (s *Service) profileOrder() []string {
+	v, _ := s.Store.GetSetting(store.SettingProfileOrder)
+	var ids []string
+	if v != "" {
+		_ = json.Unmarshal([]byte(v), &ids)
+	}
+	return ids
+}
+
+// SetProfileOrder keeps the order the user dragged the profiles into. IDs
+// of profiles gone since are dropped; a repeated ID keeps its first place.
+func (s *Service) SetProfileOrder(ids []string) error {
+	if len(ids) > maxOrder {
+		return apperr.New("order_too_long", "too many profiles in the order")
+	}
+	ps, err := s.Store.ListProfiles(store.ProfileFilter{})
+	if err != nil {
+		return err
+	}
+	known := make(map[string]bool, len(ps))
+	for _, p := range ps {
+		known[p.ID] = true
+	}
+	keep := make([]string, 0, len(ids))
+	for _, id := range ids {
+		if known[id] {
+			keep = append(keep, id)
+			known[id] = false
+		}
+	}
+	b, err := json.Marshal(keep)
+	if err != nil {
+		return err
+	}
+	if err := s.Store.SetSetting(store.SettingProfileOrder, string(b)); err != nil {
+		return err
+	}
+	s.notify("profiles")
+	return nil
 }
 
 // QuickCreate makes a profile from a name alone, on the next free proxy.

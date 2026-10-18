@@ -73,6 +73,33 @@ describe('ProfileTable', () => {
     expect(screen.getByRole('button', { name: t.profiles.opening })).toBeTruthy()
   })
 
+  it('drags a row into a new place, but not among the pinned ones', () => {
+    const onReorder = vi.fn()
+    const rows = [row({ id: 'p', name: 'P', pinned: true }), row({ id: 'a', name: 'A' }), row({ id: 'b', name: 'B' }), row({ id: 'c', name: 'C' })]
+    const { container } = render(<ProfileTable {...props(rows)} onReorder={onReorder} />)
+    // Rows 54 px tall from the top, in their current order on the screen.
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
+      const i = [...container.querySelectorAll('tr[data-id]')].indexOf(this)
+      return { top: i * 54, height: 54, bottom: i * 54 + 54, left: 0, right: 0, width: 0, x: 0, y: i * 54, toJSON() {} } as DOMRect
+    })
+    const grip = screen.getByRole('button', { name: t.profiles.dragRow('C') })
+    const names = () => [...container.querySelectorAll('td.cellname b')].map((b) => b.textContent)
+    fireEvent.pointerDown(grip, { button: 0, pointerId: 1 })
+    fireEvent.pointerMove(grip, { clientY: 0, pointerId: 1 }) // above P: stops below it
+    expect(names()).toEqual(['P', 'C', 'A', 'B'])
+    expect(container.querySelector('tr.dragging')?.getAttribute('data-id')).toBe('c')
+    fireEvent.pointerUp(grip, { pointerId: 1 })
+    expect(onReorder).toHaveBeenCalledWith(['p', 'c', 'a', 'b'])
+    // Escape while dragging puts it back.
+    onReorder.mockClear()
+    fireEvent.pointerDown(grip, { button: 0, pointerId: 1 })
+    fireEvent.pointerMove(grip, { clientY: 200, pointerId: 1 })
+    fireEvent.keyDown(window, { key: 'Escape' })
+    fireEvent.pointerUp(grip, { pointerId: 1 })
+    expect(onReorder).not.toHaveBeenCalled()
+    vi.restoreAllMocks()
+  })
+
   it('marks the profiles an AI agent is driving', () => {
     render(<ProfileTable {...props([row({ id: 'a', state: 'running' }), row({ id: 'b', name: 'Kênh B' })])} agents={new Set(['a'])} />)
     // The row is tinted and titled; no chip joins the status cell.

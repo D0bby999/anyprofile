@@ -141,6 +141,8 @@ export function SetLanguage(arg1:string):Promise<void>;
 
 export function SetPinnedMany(arg1:Array<string>,arg2:boolean):Promise<void>;
 
+export function SetProfileOrder(arg1:Array<string>):Promise<void>;
+
 export function SetSitesMany(arg1:Array<string>,arg2:Array<string>):Promise<void>;
 
 export function SetSnapshotSettings(arg1:service.SnapshotSettings):Promise<void>;

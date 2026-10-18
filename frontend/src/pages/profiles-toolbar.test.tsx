@@ -7,10 +7,11 @@ import { service, site } from '../api'
 import type { View } from '../components/sidebar'
 
 const arrangeWindows = vi.fn(() => Promise.resolve(2))
+const setProfileOrder = vi.fn((_: string[]) => Promise.resolve())
 vi.mock('../api', async (orig) => ({
   ...(await orig<typeof import('../api')>()),
   onDataChanged: () => () => {},
-  Api: { ListProxies: () => Promise.resolve([]), UpdateStatus: () => Promise.resolve(null), ArrangeWindows: () => arrangeWindows() },
+  Api: { ListProxies: () => Promise.resolve([]), UpdateStatus: () => Promise.resolve(null), ArrangeWindows: () => arrangeWindows(), SetProfileOrder: (ids: string[]) => setProfileOrder(ids) },
 }))
 const { ProfilesPage } = await import('./profiles-page')
 
@@ -35,6 +36,20 @@ describe('profiles toolbar', () => {
     page('all', vi.fn(), [open('a'), open('b')])
     fireEvent.click(screen.getByRole('button', { name: t.profiles.arrange }))
     expect(arrangeWindows).toHaveBeenCalledOnce()
+  })
+
+  it('moves a row with the keyboard and keeps the order, also for rows a filter hides', () => {
+    const mk = (id: string, serial: number, tags: string[] = ['shop-us']) => service.ProfileRow.createFrom({ ...rows[0], id, name: id, serial, tags })
+    page('tag:shop-us', vi.fn(), [mk('a', 1), mk('h', 2, []), mk('b', 3), mk('c', 4)])
+    const names = () => [...document.querySelectorAll('td.cellname b')].map((b) => b.textContent)
+    expect(names()).toEqual(['a', 'b', 'c'])
+    fireEvent.keyDown(screen.getByRole('button', { name: t.profiles.dragRow('c') }), { key: 'ArrowUp' })
+    expect(names()).toEqual(['a', 'c', 'b'])
+    // h, hidden by the filter, keeps its place between a and the rest.
+    expect(setProfileOrder).toHaveBeenLastCalledWith(['a', 'h', 'c', 'b'])
+    // Sorted by name, rows cannot be dragged: where they land would not stay.
+    fireEvent.click(screen.getByRole('columnheader', { name: t.profiles.colName }))
+    expect(screen.queryByRole('button', { name: t.profiles.dragRow('c') })).toBeNull()
   })
 
   it('hides a column and switches density, and remembers both', () => {

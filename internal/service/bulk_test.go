@@ -244,3 +244,41 @@ func TestStartPageFollowsProxyCountry(t *testing.T) {
 		t.Fatalf("after moving to a VN proxy: %q", got.StartURL)
 	}
 }
+
+func TestProfileOrderKeepsWhatWasDragged(t *testing.T) {
+	s, _ := newService(t)
+	ctx := context.Background()
+	var ids []string
+	for _, n := range []string{"Alpha", "Beta", "Gamma"} {
+		p, err := s.CreateProfile(ctx, NewProfile{Name: n, Sites: []string{"other"}})
+		if err != nil {
+			t.Fatal(err)
+		}
+		ids = append(ids, p.ID)
+	}
+	place := func() map[string]int {
+		rows, err := s.ListProfiles(store.ProfileFilter{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		m := map[string]int{}
+		for _, r := range rows {
+			m[r.ID] = r.Position
+		}
+		return m
+	}
+	if p := place(); p[ids[0]] != 0 || p[ids[1]] != 0 || p[ids[2]] != 0 {
+		t.Fatalf("never dragged, yet placed: %v", p)
+	}
+	// Gamma dragged to the top; Beta left out (filtered away while dragging);
+	// an unknown ID and a repeat are dropped.
+	if err := s.SetProfileOrder([]string{ids[2], "gone", ids[0], ids[2]}); err != nil {
+		t.Fatal(err)
+	}
+	if p := place(); p[ids[2]] != 1 || p[ids[0]] != 2 || p[ids[1]] != 0 {
+		t.Fatalf("order = %v", p)
+	}
+	if err := s.SetProfileOrder(make([]string, maxOrder+1)); err == nil {
+		t.Fatal("an endless order was kept")
+	}
+}

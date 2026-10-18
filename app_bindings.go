@@ -362,6 +362,11 @@ func (a *App) FinishOnboarding() error {
 	return a.must(func() error { return a.svc.FinishOnboarding() })
 }
 
+// SetProfileOrder keeps the order the user dragged the profiles into.
+func (a *App) SetProfileOrder(ids []string) error {
+	return a.must(func() error { return a.svc.SetProfileOrder(ids) })
+}
+
 func (a *App) SetPinnedMany(ids []string, pinned bool) error {
 	return a.must(func() error { return a.svc.SetPinnedMany(ids, pinned) })
 }
