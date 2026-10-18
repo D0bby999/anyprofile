@@ -82,11 +82,11 @@ Không có tài khoản AnyProfile, không có máy chủ AnyProfile.
   trình duyệt mặc định, và dịch vụ đó xử lý thanh toán theo chính sách riêng của họ. Ủng hộ bằng thẻ chuyển đến
   Cassau, LLC, công ty đứng sau AnyProfile và PostClaw. AnyProfile không gửi gì về việc này.
 - **Khi bạn kết nối một AI agent (MCP):** agent đọc các trang bạn cho nó làm việc, và gửi những gì nó đọc lên nhà
-  cung cấp mô hình của chính nó (ví dụ Anthropic với Claude Code). AnyProfile không gửi gì cho việc này; log chỉ ghi
+  cung cấp mô hình của chính nó (ví dụ Anthropic với Claude Code, OpenAI với Codex). AnyProfile không gửi gì cho việc này; log chỉ ghi
   tool nào chạy trên profile nào, không bao giờ ghi nội dung trang hay chữ đã gõ. Agent chỉ upload được các file
   bạn đặt vào thư mục uploads của AnyProfile.
-- **Ngoài ra không gì cả.** Không thống kê, không báo cáo lỗi tự động. Settings → Help → Copy diagnostics chỉ chép
-  vào clipboard; bạn tự quyết dán ở đâu.
+- **Ngoài ra không gì cả.** Không thống kê, không báo cáo lỗi tự động. Cài đặt → Trợ giúp → Sao chép thông tin chẩn đoán chỉ
+  chép vào bộ nhớ tạm; bạn tự quyết dán ở đâu.
 
 ### Điều khoản
 

@@ -9,7 +9,7 @@ MCP nằm trong [API trên máy](local-api.md), dùng chung công tắc và toke
 
 ## Kết nối agent của bạn
 
-1. Mở AnyProfile → **Settings** → **Local API** → bấm **Bật**.
+1. Mở AnyProfile → **Cài đặt** → **API trên máy** → bấm **Bật**. (Giao diện tiếng Anh: Settings → Local API → On.)
 2. Ở mục **AI agent (MCP)**, chọn agent bạn dùng trong ô **Agent bạn dùng**, rồi bấm **Chép lệnh** hoặc **Chép cấu
    hình**. Nội dung chép đã có sẵn địa chỉ và token của máy bạn.
 3. Dán vào đúng chỗ, theo dòng hướng dẫn hiện ngay dưới nút (chi tiết từng agent ở dưới).
@@ -160,13 +160,13 @@ dán khối `[mcp_servers.anyprofile]` xuống cuối file là đủ.
 
 | Hiện tượng | Nguyên nhân | Cách sửa |
 |---|---|---|
-| Không kết nối được, `connection refused`, `fetch failed` | AnyProfile chưa mở, API đang Tắt, hoặc đã đổi cổng | Mở AnyProfile, bật Local API, kiểm tra cổng, chép lại cấu hình |
+| Không kết nối được, `connection refused`, `fetch failed` | AnyProfile chưa mở, API đang Tắt, hoặc đã đổi cổng | Mở AnyProfile, bật API trên máy, kiểm tra cổng, chép lại cấu hình |
 | `401` hoặc `Unauthorized` | Token đã đổi (bấm Token mới), hoặc dán thiếu | Chép lại cấu hình rồi dán đè phần cũ |
 | Claude Code chỉ thấy `anyprofile` ở một thư mục | Lệnh cũ không có `--scope user` | `claude mcp remove anyprofile`, rồi chép lệnh mới trong app |
 | Gemini báo `Disabled` | Thư mục chưa được tin cậy | Mở `gemini` trong thư mục đó và chọn tin cậy |
 | OpenCode báo `No MCP servers configured` | Đã thêm bằng `opencode mcp add` | Xoá phần đó, dán khối JSON ở trên |
 | Agent báo `agent_no_pipe` | Profile mở từ trước khi AnyProfile khởi động lại | Đóng profile rồi mở lại |
-| Agent không thấy file để upload | File nằm ngoài thư mục uploads | Settings → Local API → Mở thư mục uploads, chép file vào đó |
+| Agent không thấy file để upload | File nằm ngoài thư mục uploads | Cài đặt → API trên máy → Mở thư mục uploads, chép file vào đó |
 
 `logs/anyprofile.log` ghi mỗi lần agent gọi tool một dòng, kèm lỗi nếu có.
 
@@ -196,7 +196,7 @@ Giới hạn: `snapshot` và `read_page` trả tối đa 40.000 ký tự, `respo
 
 ## Upload file
 
-Agent chỉ upload được file nằm trong **thư mục uploads** (Settings → Local API → Mở thư mục uploads; trên đĩa là
+Agent chỉ upload được file nằm trong **thư mục uploads** (Cài đặt → API trên máy → Mở thư mục uploads; trên đĩa là
 `uploads` trong thư mục dữ liệu của app). Đường dẫn tuyệt đối, `..` và symlink trỏ ra ngoài đều bị từ chối, vì một
 trang độc có thể lừa agent tải file riêng tư của bạn lên. Thư mục con được phép (`clips/a.mp4`).
 
@@ -207,7 +207,7 @@ bằng chuột thật, rồi đặt file vào ô mà trang vừa mở.
 ## Recipe
 
 Recipe là các bước làm một việc trên một nền tảng, viết cho agent: một file `.md` trong **thư mục recipes**
-(Settings → Local API → Mở thư mục recipe).
+(Cài đặt → API trên máy → Mở thư mục recipe).
 
 ```markdown
 ---

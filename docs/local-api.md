@@ -5,8 +5,9 @@ n8n chạy cục bộ… API **tắt mặc định**.
 
 ## Bật
 
-1. Settings → **Local API** → **On**. Cổng mặc định là `51525`; đổi được.
-2. Bấm **Copy token**. Token chỉ đi qua bộ nhớ tạm và tự xoá sau 90 giây; app không hiện token ra màn
+1. **Cài đặt** → **API trên máy** → **Bật** (giao diện tiếng Anh: Settings → Local API → On). Cổng mặc định là
+   `51525`; đổi được.
+2. Bấm **Chép token** (Copy token). Token chỉ đi qua bộ nhớ tạm và tự xoá sau 90 giây; app không hiện token ra màn
    hình. Lưu token vào nơi script đọc được, ví dụ biến môi trường `ANYPROFILE_TOKEN`.
 3. **New token** thay token cũ; script dùng token cũ sẽ bị từ chối.
 
