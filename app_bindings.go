@@ -452,7 +452,7 @@ func (a *App) ArrangeWindows() (int, error) {
 	if err := a.ready(); err != nil {
 		return 0, err
 	}
-	n, err := a.svc.Launcher.Arrange(a.ctx)
+	n, err := a.svc.ArrangeWindows(a.ctx, true)
 	if errors.Is(err, launcher.ErrNoScreen) {
 		return 0, apperr.New("no_screen", "could not read the size of the screen")
 	}
@@ -464,7 +464,18 @@ func (a *App) StartProfiles(ids []string) map[string]string {
 	if a.svc == nil {
 		return nil
 	}
-	return a.svc.StartMany(a.ctx, ids)
+	errs := a.svc.StartMany(a.ctx, ids)
+	// Several opened at once are laid out side by side, in the list's order,
+	// and stay behind AnyProfile as each one opening does. Past a 3×3 grid
+	// the windows get too small to use; the Arrange button still does it.
+	if len(ids)-len(errs) >= 2 && len(a.svc.Launcher.List()) <= 9 {
+		go func() {
+			if _, err := a.svc.ArrangeWindows(a.ctx, false); err != nil {
+				a.svc.Log.Warn("arrange after opening", "err", err)
+			}
+		}()
+	}
+	return errs
 }
 
 func (a *App) StopProfiles(ids []string) map[string]string {

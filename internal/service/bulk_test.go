@@ -282,3 +282,30 @@ func TestProfileOrderKeepsWhatWasDragged(t *testing.T) {
 		t.Fatal("an endless order was kept")
 	}
 }
+
+func TestWindowsArrangeInTheListOrder(t *testing.T) {
+	s, _ := newService(t)
+	ctx := context.Background()
+	var ids []string
+	for _, n := range []string{"A", "B", "C", "D"} {
+		p, err := s.CreateProfile(ctx, NewProfile{Name: n, Sites: []string{"other"}})
+		if err != nil {
+			t.Fatal(err)
+		}
+		ids = append(ids, p.ID)
+	}
+	// D pinned; C dragged above A; B never placed.
+	if err := s.SetPinnedMany([]string{ids[3]}, true); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.SetProfileOrder([]string{ids[2], ids[0]}); err != nil {
+		t.Fatal(err)
+	}
+	got, err := s.listOrder()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := []string{ids[3], ids[2], ids[0], ids[1]}; !slices.Equal(got, want) {
+		t.Fatalf("order = %v, want %v (D C A B)", got, want)
+	}
+}

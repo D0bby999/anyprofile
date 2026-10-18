@@ -100,6 +100,10 @@ keeps them together.
   profiles stay on top, and new ones come last. Works when the list is
   sorted by #; dragging in another order says so, with a button to sort
   by #.
+- Arrange windows lays them out in the list's order, not in the order the
+  browsers happened to start. Opening several profiles at once arranges
+  their windows side by side, behind AnyProfile, while 9 or fewer are open
+  (more would be too small to use; Arrange still does it).
 - The profile table no longer grows when a profile opens or its status
   changes: the row's buttons keep one width, a long status is cut (hover
   shows it whole), and the buttons stay at the right edge when the table is

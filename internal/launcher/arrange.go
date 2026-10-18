@@ -17,6 +17,10 @@ import (
 // main screen, as Chromium's window bounds are.
 type Rect struct{ X, Y, W, H int }
 
+// screenArea is workArea; tests set their own, as reading the screen waits
+// for the app's main thread, which a test does not run.
+var screenArea = workArea
+
 // ErrNoScreen: the area of the screen could not be read.
 var ErrNoScreen = errors.New("could not read the size of the screen")
 
@@ -36,11 +40,12 @@ func grid(area Rect, n int) []Rect {
 }
 
 // Arrange puts the window of every open profile in a grid over the screen
-// AnyProfile is on, oldest first, and brings those on the current desktop
-// to the front. Only the user asks for it: a script or an agent never
-// resizes a window. It returns how many windows were placed.
-func (l *Launcher) Arrange(ctx context.Context) (int, error) {
-	area, ok := workArea()
+// AnyProfile is on, in the order of the profile IDs in order (as the list
+// shows them; others after, oldest first). With raise, those on the current
+// desktop come to the front. Only the user asks for it: a script or an agent
+// never resizes a window. It returns how many windows were placed.
+func (l *Launcher) Arrange(ctx context.Context, order []string, raise bool) (int, error) {
+	area, ok := screenArea()
 	if !ok {
 		return 0, ErrNoScreen
 	}
@@ -48,16 +53,30 @@ func (l *Launcher) Arrange(ctx context.Context) (int, error) {
 		pid     int
 		cdp     *cdppipe.Conn
 		started time.Time
+		place   int
+	}
+	at := make(map[string]int, len(order))
+	for i, id := range order {
+		at[id] = i
 	}
 	var ps []open
 	l.mu.Lock()
-	for _, p := range l.procs {
+	for id, p := range l.procs {
 		if p.info.State == Running && p.cdp != nil {
-			ps = append(ps, open{p.info.PID, p.cdp, p.started})
+			place, ok := at[id]
+			if !ok {
+				place = len(order)
+			}
+			ps = append(ps, open{p.info.PID, p.cdp, p.started, place})
 		}
 	}
 	l.mu.Unlock()
-	sort.Slice(ps, func(i, j int) bool { return ps[i].started.Before(ps[j].started) })
+	sort.Slice(ps, func(i, j int) bool {
+		if ps[i].place != ps[j].place {
+			return ps[i].place < ps[j].place
+		}
+		return ps[i].started.Before(ps[j].started)
+	})
 	placed := 0
 	for i, r := range grid(area, len(ps)) {
 		if err := placeWindow(ctx, ps[i].cdp, r); err != nil {
@@ -67,7 +86,7 @@ func (l *Launcher) Arrange(ctx context.Context) (int, error) {
 		placed++
 	}
 	for _, p := range ps {
-		if onCurrentDesktop(p.pid) { // another desktop's window stays there: no jump
+		if raise && onCurrentDesktop(p.pid) { // another desktop's window stays there: no jump
 			activate(p.pid)
 		}
 	}
@@ -78,12 +97,18 @@ func (l *Launcher) Arrange(ctx context.Context) (int, error) {
 func placeWindow(ctx context.Context, c *cdppipe.Conn, r Rect) error {
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
+	// A browser just started may not show its window yet.
 	ts, err := pageTargets(ctx, c)
+	for err == nil && len(ts) == 0 {
+		select {
+		case <-ctx.Done():
+			return errors.New("no window")
+		case <-time.After(200 * time.Millisecond):
+		}
+		ts, err = pageTargets(ctx, c)
+	}
 	if err != nil {
 		return err
-	}
-	if len(ts) == 0 {
-		return errors.New("no window")
 	}
 	raw, err := c.Call(ctx, "", "Browser.getWindowForTarget", map[string]any{"targetId": ts[0].TargetID})
 	if err != nil {

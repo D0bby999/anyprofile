@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/D0bby999/anyprofile/internal/apperr"
@@ -350,6 +351,46 @@ func (s *Service) Purge(id string) error {
 	}
 	s.notify("profiles")
 	return nil
+}
+
+// ArrangeWindows puts the open profiles' windows side by side in the order
+// of the list: pinned first, then as dragged, then by serial. With raise,
+// they come to the front.
+func (s *Service) ArrangeWindows(ctx context.Context, raise bool) (int, error) {
+	order, err := s.listOrder()
+	if err != nil {
+		return 0, err
+	}
+	return s.Launcher.Arrange(ctx, order, raise)
+}
+
+// listOrder is the profile IDs in the list's own order (sorted by #).
+func (s *Service) listOrder() ([]string, error) {
+	ps, err := s.Store.ListProfiles(store.ProfileFilter{})
+	if err != nil {
+		return nil, err
+	}
+	place := map[string]int{}
+	for i, id := range s.profileOrder() {
+		place[id] = i + 1
+	}
+	rank := func(p store.Profile) int {
+		if n, ok := place[p.ID]; ok {
+			return n
+		}
+		return maxOrder + 1 + p.Serial
+	}
+	sort.SliceStable(ps, func(i, j int) bool {
+		if ps[i].Pinned != ps[j].Pinned {
+			return ps[i].Pinned
+		}
+		return rank(ps[i]) < rank(ps[j])
+	})
+	ids := make([]string, len(ps))
+	for i, p := range ps {
+		ids[i] = p.ID
+	}
+	return ids, nil
 }
 
 // StartMany and StopMany run in parallel and report per-profile errors.
