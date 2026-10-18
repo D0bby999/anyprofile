@@ -12,6 +12,8 @@ Everything stays on your computer:
   folder per profile, under `~/Library/Application Support/AnyProfile` (macOS) or `%APPDATA%\AnyProfile` (Windows);
 - proxy passwords, account passwords, 2FA secrets, cookie keys and the local API token, in an encrypted file
   (`secrets.vault`) in the same folder; its key is in the macOS Keychain or Windows Credential Manager.
+- a backup you make (Settings → Backup) is a file where you save it, holding all of the above, encrypted with the
+  password you choose (Argon2id, AES-256-GCM). We cannot open it or recover a forgotten password.
 
 There is no AnyProfile account and no AnyProfile server.
 
@@ -41,7 +43,8 @@ There is no AnyProfile account and no AnyProfile server.
 - You are responsible for following the terms of every site and platform you use with it, and the law where you
   live. Many platforms limit how many accounts one person may run; AnyProfile does not change those rules.
 - Do not use AnyProfile for fraud, spam, ban evasion, or to access accounts that are not yours.
-- Keep backups of what matters. A lost Keychain or Credential Manager entry can sign a profile out of every site.
+- Keep backups of what matters (Settings → Backup). A lost Keychain or Credential Manager entry can sign a profile
+  out of every site, and so can a lost backup password.
 
 ## Tiếng Việt
 
@@ -53,6 +56,8 @@ Mọi thứ nằm trên máy của bạn:
   mỗi profile, trong `~/Library/Application Support/AnyProfile` (macOS) hoặc `%APPDATA%\AnyProfile` (Windows);
 - mật khẩu proxy, mật khẩu tài khoản, khoá 2FA, khoá cookie và token của API trên máy, trong một file mã hoá
   (`secrets.vault`) cùng thư mục; khoá của file nằm trong Keychain của macOS hoặc Windows Credential Manager.
+- bản sao lưu bạn tạo (Cài đặt → Sao lưu) là một file nằm nơi bạn chọn, chứa tất cả những thứ trên, mã hoá bằng mật
+  khẩu bạn đặt (Argon2id, AES-256-GCM). Chúng tôi không mở được file đó và không lấy lại được mật khẩu đã quên.
 
 Không có tài khoản AnyProfile, không có máy chủ AnyProfile.
 
@@ -82,5 +87,5 @@ Không có tài khoản AnyProfile, không có máy chủ AnyProfile.
 - Bạn tự chịu trách nhiệm tuân thủ điều khoản của mọi trang và nền tảng bạn dùng cùng app, và pháp luật nơi bạn
   sống. Nhiều nền tảng giới hạn số tài khoản một người được dùng; AnyProfile không thay đổi các quy định đó.
 - Không dùng AnyProfile để lừa đảo, spam, lách lệnh cấm, hay truy cập tài khoản không phải của bạn.
-- Hãy sao lưu những gì quan trọng. Mất một mục trong Keychain hoặc Credential Manager có thể làm profile bị đăng
+- Hãy sao lưu những gì quan trọng (Cài đặt → Sao lưu). Mất một mục trong Keychain hoặc Credential Manager có thể làm profile bị đăng
   xuất khỏi mọi trang.

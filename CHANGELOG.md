@@ -67,6 +67,13 @@ keeps them together.
 - New profile: with Auto as the default and no proxy free (or, for several
   profiles, not enough free), the dialog starts on No proxy instead of
   blocking Create until a proxy is chosen. The real-IP note says so.
+- Backup and moving to another computer (Settings, and the first-run page):
+  one file with every profile and its logins, the proxies, accounts,
+  passwords, keys, extensions and recipes, encrypted with a password you
+  choose. Restoring adds only what the computer does not have; nothing there
+  is changed. Until now the keys stayed in this Mac's Keychain, so a new or
+  broken computer meant every profile signed out.
+
 
 ## 0.1.0 (2026-10-17)
 

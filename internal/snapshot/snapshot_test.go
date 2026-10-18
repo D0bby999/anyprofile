@@ -175,3 +175,38 @@ func TestRejectsEscapes(t *testing.T) {
 		}
 	}
 }
+
+// An archive of folders under prefixes and files from memory; kept files
+// come back in memory and are not written.
+func TestArchiveKeeping(t *testing.T) {
+	src, k := makeTree(t), key(t)
+	var buf bytes.Buffer
+	a, err := NewArchive(&buf, k)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := a.AddFile("secrets.json", []byte(`{"x":1}`)); err != nil {
+		t.Fatal(err)
+	}
+	if err := a.AddDir(src, "profiles/p1", nil); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := a.Close(); err != nil {
+		t.Fatal(err)
+	}
+	dst := t.TempDir()
+	kept, err := ReadKeeping(bytes.NewReader(buf.Bytes()), k, dst, func(n string) bool { return n == "secrets.json" })
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(kept["secrets.json"]) != `{"x":1}` {
+		t.Fatalf("kept = %q", kept)
+	}
+	if _, err := os.Stat(filepath.Join(dst, "secrets.json")); !os.IsNotExist(err) {
+		t.Fatal("a kept file was written to disk")
+	}
+	a2, b := sums(t, src), sums(t, filepath.Join(dst, "profiles", "p1"))
+	if len(a2) != len(b) {
+		t.Fatalf("entries %d vs %d", len(a2), len(b))
+	}
+}

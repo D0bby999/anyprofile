@@ -3,6 +3,8 @@
 package main
 
 import (
+	"path/filepath"
+
 	"github.com/D0bby999/anyprofile/internal/apperr"
 	"github.com/D0bby999/anyprofile/internal/engine"
 	"github.com/D0bby999/anyprofile/internal/engine/fury"
@@ -240,6 +242,66 @@ func (a *App) ExportCookies(profileID string) (int, error) {
 		return 0, err
 	}
 	return a.svc.ExportCookies(a.ctx, profileID, path)
+}
+
+// Backup of everything. The file is chosen here, in Go, like a cookie file.
+
+var backupDialogTitle = map[string][2]string{
+	"en": {"Save a backup of AnyProfile", "Restore from a backup"},
+	"vi": {"Lưu bản sao lưu AnyProfile", "Khôi phục từ bản sao lưu"},
+}
+
+var backupFilter = []runtime.FileFilter{{DisplayName: "AnyProfile backup (*.apbackup)", Pattern: "*.apbackup"}}
+
+// ExportBackup asks where to save, then writes the backup. A cancelled
+// dialog returns an empty result.
+func (a *App) ExportBackup(password string) (service.BackupResult, error) {
+	if err := a.ready(); err != nil {
+		return service.BackupResult{}, err
+	}
+	path, err := runtime.SaveFileDialog(a.ctx, runtime.SaveDialogOptions{
+		Title:           backupDialogTitle[a.svc.Language()][0],
+		DefaultFilename: "AnyProfile-" + time.Now().Format("2006-01-02") + ".apbackup",
+		Filters:         backupFilter,
+	})
+	if err != nil || path == "" {
+		return service.BackupResult{}, err
+	}
+	if filepath.Ext(path) == "" {
+		path += ".apbackup"
+	}
+	return a.svc.ExportBackup(path, password)
+}
+
+// PickBackup asks for the backup to restore and returns its file name, ""
+// when cancelled. ImportBackup then reads it with the password.
+func (a *App) PickBackup() (string, error) {
+	if err := a.ready(); err != nil {
+		return "", err
+	}
+	path, err := runtime.OpenFileDialog(a.ctx, runtime.OpenDialogOptions{
+		Title: backupDialogTitle[a.svc.Language()][1], Filters: backupFilter,
+	})
+	if err != nil || path == "" {
+		return "", err
+	}
+	a.backupMu.Lock()
+	a.backupFile = path
+	a.backupMu.Unlock()
+	return filepath.Base(path), nil
+}
+
+func (a *App) ImportBackup(password string) (service.BackupResult, error) {
+	if err := a.ready(); err != nil {
+		return service.BackupResult{}, err
+	}
+	a.backupMu.Lock()
+	path := a.backupFile
+	a.backupMu.Unlock()
+	if path == "" {
+		return service.BackupResult{}, apperr.New("backup_none", "choose a backup file first")
+	}
+	return a.svc.ImportBackup(a.ctx, path, password)
 }
 
 // Snapshots

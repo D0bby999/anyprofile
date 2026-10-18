@@ -6,6 +6,7 @@ import { useSites } from '../hooks/use-sites'
 import { Icon, type IconName } from '../components/icons'
 import { SiteSettings } from '../components/site-settings'
 import { StorageSettings } from '../components/storage-settings'
+import { BackupSettings } from '../components/backup-settings'
 import { DefaultsSettings, OnOpenSettings } from '../components/defaults-settings'
 import { UpdateSettings } from '../components/update-settings'
 import { SupportSettings } from '../components/support-settings'
@@ -88,6 +89,11 @@ export function SettingsPage({ engines, engineCounts, defaults, onEnginesChanged
         <section className="card pad">
           <h2>{t.api.title}</h2>
           <APISettings />
+        </section>
+
+        <section className="card pad" id="settings-backup">
+          <h2>{t.backup.title}</h2>
+          <BackupSettings />
         </section>
 
         <section className="card pad">

@@ -133,13 +133,37 @@ func (s *sealer) Close() error { return s.emit(s.buf, true) }
 // Write archives srcDir, skipping what skip selects, and encrypts it to w.
 // It returns the number of bytes written.
 func Write(w io.Writer, srcDir string, key []byte, skip func(rel string, d fs.DirEntry) bool) (int64, error) {
-	s, err := newSealer(w, key)
+	a, err := NewArchive(w, key)
 	if err != nil {
 		return 0, err
 	}
+	if err := a.AddDir(srcDir, "", skip); err != nil {
+		return a.s.n, err
+	}
+	return a.Close()
+}
+
+// Archive is an encrypted archive built from folders and in-memory files,
+// in the snapshot format.
+type Archive struct {
+	s  *sealer
+	zw *gzip.Writer
+	tw *tar.Writer
+}
+
+func NewArchive(w io.Writer, key []byte) (*Archive, error) {
+	s, err := newSealer(w, key)
+	if err != nil {
+		return nil, err
+	}
 	zw := gzip.NewWriter(s)
-	tw := tar.NewWriter(zw)
-	err = filepath.WalkDir(srcDir, func(path string, d fs.DirEntry, err error) error {
+	return &Archive{s: s, zw: zw, tw: tar.NewWriter(zw)}, nil
+}
+
+// AddDir adds srcDir under prefix ("" for the top), skipping what skip
+// selects; skip sees paths relative to srcDir.
+func (a *Archive) AddDir(srcDir, prefix string, skip func(rel string, d fs.DirEntry) bool) error {
+	return filepath.WalkDir(srcDir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -154,18 +178,32 @@ func Write(w io.Writer, srcDir string, key []byte, skip func(rel string, d fs.Di
 			}
 			return nil
 		}
-		return addEntry(tw, path, rel, d)
+		if prefix != "" {
+			rel = prefix + "/" + rel
+		}
+		return addEntry(a.tw, path, rel, d)
 	})
+}
+
+// AddFile adds a file held in memory, so a secret never touches the disk.
+func (a *Archive) AddFile(name string, data []byte) error {
+	if err := a.tw.WriteHeader(&tar.Header{Name: name, Mode: 0o600, Size: int64(len(data)), Typeflag: tar.TypeReg}); err != nil {
+		return err
+	}
+	_, err := a.tw.Write(data)
+	return err
+}
+
+// Close ends the archive and returns the number of bytes written.
+func (a *Archive) Close() (int64, error) {
+	err := a.tw.Close()
 	if err == nil {
-		err = tw.Close()
+		err = a.zw.Close()
 	}
 	if err == nil {
-		err = zw.Close()
+		err = a.s.Close()
 	}
-	if err == nil {
-		err = s.Close()
-	}
-	return s.n, err
+	return a.s.n, err
 }
 
 func addEntry(tw *tar.Writer, path, rel string, d fs.DirEntry) error {
@@ -279,25 +317,36 @@ func newOpener(r io.Reader, key []byte) (*opener, error) {
 // Read decrypts a snapshot into dstDir. Nothing outside dstDir is written,
 // links may only point inside it, and at most MaxUnpacked bytes are written.
 func Read(r io.Reader, key []byte, dstDir string) error {
+	_, err := ReadKeeping(r, key, dstDir, nil)
+	return err
+}
+
+// maxKept caps the files ReadKeeping holds in memory.
+const maxKept = 64 << 20
+
+// ReadKeeping is Read, except the files keep selects are returned in memory
+// instead of written, so a secret in the archive never touches the disk.
+func ReadKeeping(r io.Reader, key []byte, dstDir string, keep func(name string) bool) (map[string][]byte, error) {
 	o, err := newOpener(r, key)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	zr, err := gzip.NewReader(o)
 	if err != nil {
-		return ErrCorrupt
+		return nil, ErrCorrupt
 	}
-	if err := untar(tar.NewReader(zr), dstDir); err != nil {
-		return err
+	kept := map[string][]byte{}
+	if err := untar(tar.NewReader(zr), dstDir, keep, kept); err != nil {
+		return nil, err
 	}
 	// gzip can stop before the last chunk; read on so a missing one is caught.
 	if _, err := io.Copy(io.Discard, o); err != nil {
-		return err
+		return nil, err
 	}
 	if !o.done {
-		return ErrCorrupt
+		return nil, ErrCorrupt
 	}
-	return nil
+	return kept, nil
 }
 
 func within(root, p string) bool {
@@ -305,12 +354,12 @@ func within(root, p string) bool {
 	return err == nil && rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator))
 }
 
-func untar(tr *tar.Reader, dst string) error {
+func untar(tr *tar.Reader, dst string, keep func(string) bool, kept map[string][]byte) error {
 	root, err := filepath.Abs(dst)
 	if err != nil {
 		return err
 	}
-	var total int64
+	var total, inMemory int64
 	for {
 		h, err := tr.Next()
 		if errors.Is(err, io.EOF) {
@@ -339,6 +388,17 @@ func untar(tr *tar.Reader, dst string) error {
 				return err
 			}
 		case tar.TypeReg:
+			if keep != nil && keep(h.Name) {
+				if inMemory += h.Size; inMemory > maxKept {
+					return fmt.Errorf("snapshot entry %s is too large", h.Name)
+				}
+				b, err := io.ReadAll(io.LimitReader(tr, h.Size))
+				if err != nil {
+					return err
+				}
+				kept[h.Name] = b
+				continue
+			}
 			if total += h.Size; total > MaxUnpacked {
 				return fmt.Errorf("snapshot is larger than %d GiB", MaxUnpacked>>30)
 			}

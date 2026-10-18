@@ -65,6 +65,8 @@ export function EngineStatus(arg1:string):Promise<engine.Status>;
 
 export function Engines():Promise<Array<main.EngineInfo>>;
 
+export function ExportBackup(arg1:string):Promise<service.BackupResult>;
+
 export function ExportCookies(arg1:string):Promise<number>;
 
 export function FileVaultOn():Promise<boolean>;
@@ -74,6 +76,8 @@ export function FinishOnboarding():Promise<void>;
 export function FocusProfile(arg1:string):Promise<boolean>;
 
 export function ForgetAccount(arg1:string,arg2:string):Promise<void>;
+
+export function ImportBackup(arg1:string):Promise<service.BackupResult>;
 
 export function ImportBookmarks(arg1:string,arg2:string):Promise<number>;
 
@@ -104,6 +108,8 @@ export function Onboarded():Promise<boolean>;
 export function OpenAgentFolder(arg1:string):Promise<void>;
 
 export function Personas():Promise<Array<fury.Persona>>;
+
+export function PickBackup():Promise<string>;
 
 export function PurgeProfile(arg1:string):Promise<void>;
 

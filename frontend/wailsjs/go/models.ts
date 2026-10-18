@@ -173,6 +173,30 @@ export namespace service {
 	        this.port = source["port"];
 	    }
 	}
+	export class BackupResult {
+	    profiles: number;
+	    proxies: number;
+	    accounts: number;
+	    extensions: number;
+	    bytes: number;
+	    profilesHere: number;
+	    proxiesHere: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new BackupResult(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.profiles = source["profiles"];
+	        this.proxies = source["proxies"];
+	        this.accounts = source["accounts"];
+	        this.extensions = source["extensions"];
+	        this.bytes = source["bytes"];
+	        this.profilesHere = source["profilesHere"];
+	        this.proxiesHere = source["proxiesHere"];
+	    }
+	}
 	export class BulkCreate {
 	    engine: string;
 	    baseName: string;

@@ -118,6 +118,10 @@ export function Engines() {
   return window['go']['main']['App']['Engines']();
 }
 
+export function ExportBackup(arg1) {
+  return window['go']['main']['App']['ExportBackup'](arg1);
+}
+
 export function ExportCookies(arg1) {
   return window['go']['main']['App']['ExportCookies'](arg1);
 }
@@ -136,6 +140,10 @@ export function FocusProfile(arg1) {
 
 export function ForgetAccount(arg1, arg2) {
   return window['go']['main']['App']['ForgetAccount'](arg1, arg2);
+}
+
+export function ImportBackup(arg1) {
+  return window['go']['main']['App']['ImportBackup'](arg1);
 }
 
 export function ImportBookmarks(arg1, arg2) {
@@ -196,6 +204,10 @@ export function OpenAgentFolder(arg1) {
 
 export function Personas() {
   return window['go']['main']['App']['Personas']();
+}
+
+export function PickBackup() {
+  return window['go']['main']['App']['PickBackup']();
 }
 
 export function PurgeProfile(arg1) {

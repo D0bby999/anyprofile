@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"sync"
 	"time"
 
 	"github.com/D0bby999/anyprofile/internal/agent"
@@ -41,6 +42,9 @@ type App struct {
 	// agent is what the MCP endpoint knows of each browser; it lives as long
 	// as the app, across restarts of the API server.
 	agent *agent.Hub
+	// backupFile is the backup chosen for a restore; the path stays in Go.
+	backupMu   sync.Mutex
+	backupFile string
 }
 
 func NewApp() *App { return &App{} }

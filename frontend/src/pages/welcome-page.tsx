@@ -8,6 +8,7 @@ import { Icon, LogoMark } from '../components/icons'
 import { InstallProgress } from '../components/install-progress'
 import { SitePicker } from '../components/site-picker'
 import { useToast } from '../components/toast'
+import { BackupRestore } from '../components/backup-settings'
 
 type Props = {
   sites: Site[]
@@ -188,6 +189,13 @@ export function WelcomePage({ sites, fileVaultOn, lang, onLanguage, onDone }: Pr
             {busy === 'create' ? t.welcome.creating : t.welcome.create}
           </button>
         </Step>
+
+        {state(1) === 'done' && (
+          <details className="wrestore">
+            <summary>{t.backup.welcome}</summary>
+            <BackupRestore onRestored={(r) => { if (r.profiles > 0) onDone(null) }} />
+          </details>
+        )}
 
         <button type="button" className="welcome-skip" onClick={skip}>{t.welcome.skip}</button>
       </div>
