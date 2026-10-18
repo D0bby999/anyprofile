@@ -4,6 +4,7 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -177,10 +178,42 @@ func add[In whoer](s *Server, srv *mcp.Server, name, desc string, readOnly bool,
 	})
 }
 
-// ClaudeCommand is the command that connects Claude Code to /mcp. The token
-// is hex, so the quotes work in zsh, bash, PowerShell and cmd alike.
-func ClaudeCommand(port int, token string) string {
-	return fmt.Sprintf(`claude mcp add --transport http anyprofile http://127.0.0.1:%d/mcp --header "Authorization: Bearer %s"`, port, token)
+// MCPClients are the agents Settings writes a setup for; "other" is the
+// address and header in the JSON most clients read.
+var MCPClients = []string{"claude", "codex", "gemini", "opencode", "cursor", "vscode", "windsurf", "other"}
+
+// MCPSetup is what connects client to /mcp: a command for a terminal, or the
+// lines for its config file. The token is hex, so the quoted commands work in
+// zsh, bash, PowerShell and cmd alike.
+func MCPSetup(client string, port int, token string) (string, error) {
+	url := fmt.Sprintf("http://127.0.0.1:%d/mcp", port)
+	auth := "Bearer " + token
+	headers := map[string]string{"Authorization": auth}
+	server := func(top string, s map[string]any) string {
+		b, _ := json.MarshalIndent(map[string]any{top: map[string]any{"anyprofile": s}}, "", "  ")
+		return string(b) + "\n"
+	}
+	switch client {
+	case "claude":
+		return fmt.Sprintf(`claude mcp add --scope user --transport http anyprofile %s --header "Authorization: %s"`, url, auth), nil
+	case "gemini":
+		return fmt.Sprintf(`gemini mcp add -s user --transport http anyprofile %s --header "Authorization: %s"`, url, auth), nil
+	case "codex": // ~/.codex/config.toml
+		return fmt.Sprintf("[mcp_servers.anyprofile]\nurl = %q\nhttp_headers = { \"Authorization\" = %q }\n", url, auth), nil
+	case "opencode": // `opencode mcp add` writes a form its own `mcp list` does not read (2.0.12)
+		b, _ := json.MarshalIndent(map[string]any{"$schema": "https://opencode.ai/config.json",
+			"mcp": map[string]any{"anyprofile": map[string]any{"type": "remote", "url": url, "headers": headers}}}, "", "  ")
+		return string(b) + "\n", nil
+	case "cursor":
+		return server("mcpServers", map[string]any{"url": url, "headers": headers}), nil
+	case "vscode":
+		return server("servers", map[string]any{"type": "http", "url": url, "headers": headers}), nil
+	case "windsurf":
+		return server("mcpServers", map[string]any{"serverUrl": url, "headers": headers}), nil
+	case "other":
+		return server("mcpServers", map[string]any{"type": "http", "url": url, "headers": headers}), nil
+	}
+	return "", apperr.Newf("mcp_client_unknown", "no setup for %q", client)
 }
 
 func text(s string) *mcp.CallToolResult {

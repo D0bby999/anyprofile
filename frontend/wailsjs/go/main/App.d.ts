@@ -37,7 +37,7 @@ export function CopyAccountPassword(arg1:string,arg2:string):Promise<void>;
 
 export function CopyDiagnostics():Promise<void>;
 
-export function CopyMCPCommand():Promise<void>;
+export function CopyMCPSetup(arg1:string):Promise<void>;
 
 export function CreateProfile(arg1:service.NewProfile):Promise<store.Profile>;
 

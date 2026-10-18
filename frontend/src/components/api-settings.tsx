@@ -1,17 +1,27 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { useEffect, useState } from 'react'
-import { Api, main, service } from '../api'
+import { Api, main, openExternal, service } from '../api'
 import { t } from '../i18n'
 import { errorText } from '../lib/format'
 import { useConfirm } from './confirm'
 import { Icon } from './icons'
 import { useToast } from './toast'
 
+export const MCP_CLIENTS = ['claude', 'codex', 'gemini', 'opencode', 'cursor', 'vscode', 'windsurf', 'other'] as const
+export type MCPClient = (typeof MCP_CLIENTS)[number]
+const CLIENT_KEY = 'anyprofile.mcpClient'
+export const MCP_GUIDE = 'https://github.com/D0bby999/anyprofile/blob/master/docs/mcp.md'
+
 /** The local API: off by default, loopback only, one token kept in Go. */
 export function APISettings() {
   const [st, setSt] = useState<main.APIStatus | null>(null)
   const [port, setPort] = useState('')
   const [error, setError] = useState('')
+  const [client, setClient] = useState<MCPClient>(() => {
+    const v = localStorage.getItem(CLIENT_KEY)
+    return (MCP_CLIENTS as readonly string[]).includes(v ?? '') ? (v as MCPClient) : 'claude'
+  })
+  const pick = (c: MCPClient) => { setClient(c); localStorage.setItem(CLIENT_KEY, c) }
   const confirm = useConfirm()
   const toast = useToast()
   useEffect(() => { Api.APIStatus().then((s) => { setSt(s); setPort(String(s.port)) }).catch((e) => setError(errorText(e))) }, [])
@@ -69,10 +79,18 @@ export function APISettings() {
       <div className="field">
         <span className="label">{t.api.mcpTitle}</span>
         <code className="mono selectable">http://127.0.0.1:{st.port}/mcp</code>
+        {/* Each agent is connected its own way: a command, or lines for its config file. */}
         <span className="row">
-          <button type="button" className="btn sm" disabled={!st.enabled} onClick={() => run(() => Api.CopyMCPCommand(), t.api.mcpCopied)}>
-            <Icon name="copy" className="icon sm" />{t.api.mcpCopy}
+          <select className="select" value={client} onChange={(e) => pick(e.target.value as MCPClient)} aria-label={t.api.mcpClient} style={{ maxWidth: 200 }}>
+            {MCP_CLIENTS.map((c) => <option key={c} value={c}>{t.api.clients[c].name}</option>)}
+          </select>
+          <button type="button" className="btn sm" disabled={!st.enabled} onClick={() => run(() => Api.CopyMCPSetup(client), t.api.mcpCopied)}>
+            <Icon name="copy" className="icon sm" />{t.api.clients[client].copy}
           </button>
+          <button type="button" className="btn sm ghost" onClick={() => openExternal(MCP_GUIDE)}>{t.api.mcpGuide}</button>
+        </span>
+        <span className="hint">{st.enabled ? t.api.clients[client].where : t.api.turnOnFirst}</span>
+        <span className="row">
           <button type="button" className="btn sm ghost" onClick={() => Api.OpenAgentFolder('uploads').catch((e) => setError(errorText(e)))}>{t.api.openUploads}</button>
           <button type="button" className="btn sm ghost" onClick={() => Api.OpenAgentFolder('recipes').catch((e) => setError(errorText(e)))}>{t.api.openRecipes}</button>
         </span>

@@ -108,6 +108,11 @@ keeps them together.
   changes: the row's buttons keep one width, a long status is cut (hover
   shows it whole), and the buttons stay at the right edge when the table is
   wider than the window.
+- Settings copies the MCP setup for the agent you pick: Claude Code, Codex
+  CLI, Gemini CLI, OpenCode, Cursor, VS Code, Windsurf, or the plain JSON,
+  and says where to paste it. The Claude Code command now adds AnyProfile for
+  every folder (--scope user), not only the one it ran in. docs/mcp.md walks
+  through each agent and what to do when one does not connect.
 
 ## 0.1.0 (2026-10-17)
 

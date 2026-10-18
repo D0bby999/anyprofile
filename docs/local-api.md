@@ -100,5 +100,5 @@ fingerprint qua API, không tạo hay xoá profile qua API.
 
 ## AI agent
 
-Cho Claude Code hay agent khác làm việc trong profile thì dùng [MCP](mcp.md) ở `/mcp`, cùng cổng và token. MCP
+Cho Claude Code, Codex, Gemini CLI hay agent khác làm việc trong profile thì dùng [MCP](mcp.md) ở `/mcp`, cùng cổng và token. MCP
 không mở cổng DevTools nào, nên an toàn hơn `start` kèm `"devtools": true`.

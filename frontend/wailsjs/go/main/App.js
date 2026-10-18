@@ -62,8 +62,8 @@ export function CopyDiagnostics() {
   return window['go']['main']['App']['CopyDiagnostics']();
 }
 
-export function CopyMCPCommand() {
-  return window['go']['main']['App']['CopyMCPCommand']();
+export function CopyMCPSetup(arg1) {
+  return window['go']['main']['App']['CopyMCPSetup'](arg1);
 }
 
 export function CreateProfile(arg1) {

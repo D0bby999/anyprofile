@@ -144,15 +144,20 @@ func (a *App) CopyAPIToken() error {
 	})
 }
 
-// CopyMCPCommand copies the command that connects Claude Code to the MCP
-// endpoint, token included; the clipboard is cleared after 90 s like the token.
-func (a *App) CopyMCPCommand() error {
+// CopyMCPSetup copies what connects client (an AI agent: claude, codex,
+// gemini…) to the MCP endpoint, token included; the clipboard is cleared
+// after 90 s like the token.
+func (a *App) CopyMCPSetup(client string) error {
 	return a.must(func() error {
 		tok, err := a.svc.APIToken()
 		if err != nil {
 			return err
 		}
-		return copySecret(a.ctx, api.ClaudeCommand(a.svc.APISettings().Port, tok))
+		setup, err := api.MCPSetup(client, a.svc.APISettings().Port, tok)
+		if err != nil {
+			return err
+		}
+		return copySecret(a.ctx, setup)
 	})
 }
 

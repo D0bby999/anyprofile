@@ -247,11 +247,54 @@ func TestMCPProfileLookup(t *testing.T) {
 	}
 }
 
-func TestClaudeCommand(t *testing.T) {
-	got := ClaudeCommand(51525, "ab12")
-	want := `claude mcp add --transport http anyprofile http://127.0.0.1:51525/mcp --header "Authorization: Bearer ab12"`
-	if got != want {
-		t.Fatalf("command = %s", got)
+// Each client's setup, checked against the client itself (Claude Code,
+// Codex, Gemini CLI, OpenCode) or its documentation (Cursor, VS Code,
+// Windsurf), October 2026.
+func TestMCPSetup(t *testing.T) {
+	want := map[string]string{
+		"claude": `claude mcp add --scope user --transport http anyprofile http://127.0.0.1:51525/mcp --header "Authorization: Bearer ab12"`,
+		"gemini": `gemini mcp add -s user --transport http anyprofile http://127.0.0.1:51525/mcp --header "Authorization: Bearer ab12"`,
+		"codex":  "[mcp_servers.anyprofile]\nurl = \"http://127.0.0.1:51525/mcp\"\nhttp_headers = { \"Authorization\" = \"Bearer ab12\" }\n",
+	}
+	for _, c := range MCPClients {
+		got, err := MCPSetup(c, 51525, "ab12")
+		if err != nil {
+			t.Fatal(c, err)
+		}
+		if w, ok := want[c]; ok {
+			if got != w {
+				t.Errorf("%s:\n%s\nwant\n%s", c, got, w)
+			}
+			continue
+		}
+		// The JSON ones: valid, with the address and the header.
+		var v map[string]map[string]map[string]any
+		var top string
+		switch c {
+		case "opencode":
+			top = "mcp"
+		case "vscode":
+			top = "servers"
+		default:
+			top = "mcpServers"
+		}
+		var raw map[string]json.RawMessage
+		if err := json.Unmarshal([]byte(got), &raw); err != nil {
+			t.Fatalf("%s: %v\n%s", c, err, got)
+		}
+		json.Unmarshal([]byte(got), &v)
+		s := v[top]["anyprofile"]
+		addr := s["url"]
+		if c == "windsurf" {
+			addr = s["serverUrl"]
+		}
+		h, _ := s["headers"].(map[string]any)
+		if addr != "http://127.0.0.1:51525/mcp" || h["Authorization"] != "Bearer ab12" {
+			t.Errorf("%s: %s", c, got)
+		}
+	}
+	if _, err := MCPSetup("emacs", 1, "x"); err == nil {
+		t.Fatal("an unknown client got a setup")
 	}
 }
 
