@@ -140,6 +140,7 @@ export default function App() {
     { id: 'proxies', label: t.palette.addProxies, icon: 'proxy', run: () => { setPage('proxies'); setTimeout(() => document.getElementById('proxy-paste')?.focus(), 0) } },
     { id: 'check', label: t.palette.checkProxies, icon: 'refresh', run: () => { toast.info(t.palette.checking); Api.CheckAllProxies().catch((e) => toast.error(errorText(e))) } },
     { id: 'settings', label: t.palette.openSettings, icon: 'settings', run: () => setPage('settings') },
+    { id: 'arrange', label: t.palette.arrange, icon: 'monitor', run: () => { Api.ArrangeWindows().then((n) => toast.success(t.profiles.arranged(n))).catch((e) => toast.error(errorText(e))) } },
     { id: 'theme', label: t.palette.switchTheme, icon: 'moon', run: cycleTheme },
     { id: 'language', label: t.palette.switchLanguage, icon: 'settings', run: () => changeLanguage(lang === 'en' ? 'vi' : 'en') },
     { id: 'keys', label: t.palette.shortcuts, icon: 'settings', run: () => setSheet(true) },

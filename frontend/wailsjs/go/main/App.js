@@ -18,6 +18,10 @@ export function AgentProfiles() {
   return window['go']['main']['App']['AgentProfiles']();
 }
 
+export function ArrangeWindows() {
+  return window['go']['main']['App']['ArrangeWindows']();
+}
+
 export function AssignProxiesMany(arg1, arg2) {
   return window['go']['main']['App']['AssignProxiesMany'](arg1, arg2);
 }

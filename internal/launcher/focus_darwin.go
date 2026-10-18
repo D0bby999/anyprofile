@@ -51,6 +51,40 @@ static int passFocus(void) {
 	}
 }
 
+// workArea is the visible frame (no menu bar, no Dock) of the screen with
+// the key window, in points from the top left of the main screen.
+static int workArea(int *x, int *y, int *w, int *h) {
+	__block int ok = 0;
+	void (^read)(void) = ^{
+		NSScreen *s = [NSScreen mainScreen];
+		NSArray *all = [NSScreen screens];
+		if (s == nil || all.count == 0) return;
+		NSRect v = s.visibleFrame;
+		CGFloat top = ((NSScreen *)all[0]).frame.size.height;
+		*x = (int)v.origin.x;
+		*y = (int)(top - (v.origin.y + v.size.height));
+		*w = (int)v.size.width;
+		*h = (int)v.size.height;
+		ok = 1;
+	};
+	if ([NSThread isMainThread]) read(); else dispatch_sync(dispatch_get_main_queue(), read);
+	return ok;
+}
+
+// onScreen: pid has a normal window on the current desktop.
+static int onScreen(int pid) {
+	@autoreleasepool {
+		CFArrayRef list = CGWindowListCopyWindowInfo(
+			kCGWindowListOptionOnScreenOnly | kCGWindowListExcludeDesktopElements, kCGNullWindowID);
+		if (list == NULL) return 0;
+		NSArray *wins = CFBridgingRelease(list);
+		for (NSDictionary *w in wins) {
+			if ([w[(id)kCGWindowOwnerPID] intValue] == pid && [w[(id)kCGWindowLayer] intValue] == 0) return 1;
+		}
+		return 0;
+	}
+}
+
 static int frontPID(void) {
 	@autoreleasepool {
 		NSRunningApplication *app = [[NSWorkspace sharedWorkspace] frontmostApplication];
@@ -80,6 +114,16 @@ func activateSelf() { C.activateSelf() }
 // quits: a front app that quits lets macOS pick the next app itself, maybe
 // a full-screen one on another desktop, and the screen jumped there.
 func PassFocus() int { return int(C.passFocus()) }
+
+func workArea() (Rect, bool) {
+	var x, y, w, h C.int
+	if C.workArea(&x, &y, &w, &h) == 0 || w <= 0 || h <= 0 {
+		return Rect{}, false
+	}
+	return Rect{X: int(x), Y: int(y), W: int(w), H: int(h)}, true
+}
+
+func onCurrentDesktop(pid int) bool { return C.onScreen(C.int(pid)) == 1 }
 
 // frontPID is the process of the app in front, 0 when unknown.
 func frontPID() int { return int(C.frontPID()) }

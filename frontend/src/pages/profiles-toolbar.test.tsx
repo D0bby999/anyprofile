@@ -6,10 +6,11 @@ import { t } from '../i18n'
 import { service, site } from '../api'
 import type { View } from '../components/sidebar'
 
+const arrangeWindows = vi.fn(() => Promise.resolve(2))
 vi.mock('../api', async (orig) => ({
   ...(await orig<typeof import('../api')>()),
   onDataChanged: () => () => {},
-  Api: { ListProxies: () => Promise.resolve([]), UpdateStatus: () => Promise.resolve(null) },
+  Api: { ListProxies: () => Promise.resolve([]), UpdateStatus: () => Promise.resolve(null), ArrangeWindows: () => arrangeWindows() },
 }))
 const { ProfilesPage } = await import('./profiles-page')
 
@@ -18,14 +19,24 @@ const rows = [service.ProfileRow.createFrom({
   id: 'a', name: 'Kênh A', sites: ['other'], serial: 1, engine: 'apostate', personaId: 'apostate-macos', machine: '', proxyId: '',
   state: 'stopped', cdpPort: 0, tags: ['shop-us'], notes: '', login: '', lastOpenAt: '', fpVerdict: '', fpDiff: [], pinned: false,
 })]
-const page = (view: View = 'all', onClearView = vi.fn()) => render(
-  <ProfilesPage rows={rows} sites={sites} view={view} engineReady fileVaultOn error="" setError={vi.fn()}
+const page = (view: View = 'all', onClearView = vi.fn(), list = rows) => render(
+  <ProfilesPage rows={list} sites={sites} view={view} engineReady fileVaultOn error="" setError={vi.fn()}
     reload={vi.fn()} onNew={vi.fn()} onNeedEngine={vi.fn()} onClearView={onClearView} onView={vi.fn()} onOpenSettings={vi.fn()} activeId={null} setActiveId={vi.fn()} />,
 )
 
 afterEach(() => { cleanup(); localStorage.clear() })
 
 describe('profiles toolbar', () => {
+  it('offers to arrange windows once two profiles are open', () => {
+    page()
+    expect(screen.queryByRole('button', { name: t.profiles.arrange })).toBeNull()
+    cleanup()
+    const open = (id: string) => service.ProfileRow.createFrom({ ...rows[0], id, name: id, state: 'running' })
+    page('all', vi.fn(), [open('a'), open('b')])
+    fireEvent.click(screen.getByRole('button', { name: t.profiles.arrange }))
+    expect(arrangeWindows).toHaveBeenCalledOnce()
+  })
+
   it('hides a column and switches density, and remembers both', () => {
     page()
     expect(screen.getByRole('columnheader', { name: t.profiles.colProxy })).toBeTruthy()

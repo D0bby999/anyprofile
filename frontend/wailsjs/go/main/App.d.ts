@@ -15,6 +15,8 @@ export function AddTagMany(arg1:Array<string>,arg2:string):Promise<void>;
 
 export function AgentProfiles():Promise<Array<string>>;
 
+export function ArrangeWindows():Promise<number>;
+
 export function AssignProxiesMany(arg1:Array<string>,arg2:string):Promise<Record<string, string>>;
 
 export function CheckAllProxies():Promise<void>;

@@ -25,13 +25,16 @@ var (
 	procPostMessageW             = user32.NewProc("PostMessageW")
 	procGetClassNameW            = user32.NewProc("GetClassNameW")
 	procGetWindowThreadProcessId = user32.NewProc("GetWindowThreadProcessId")
+	procSystemParametersInfoW    = user32.NewProc("SystemParametersInfoW")
+	procGetDpiForSystem          = user32.NewProc("GetDpiForSystem")
 )
 
 const (
-	stillActive = 259         // GetExitCodeProcess of a running process
-	hwndMessage = ^uintptr(2) // HWND_MESSAGE, (HWND)-3
-	wmClose     = 0x0010
-	swRestore   = 9
+	stillActive    = 259         // GetExitCodeProcess of a running process
+	hwndMessage    = ^uintptr(2) // HWND_MESSAGE, (HWND)-3
+	wmClose        = 0x0010
+	swRestore      = 9
+	spiGetWorkArea = 0x30
 	// Chromium's browser windows; its hidden message windows use other classes.
 	browserWindowClass = "Chrome_WidgetWin_1"
 )

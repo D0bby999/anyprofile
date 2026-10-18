@@ -4,11 +4,13 @@ package main
 
 import (
 	"context"
+	"errors"
 	"path/filepath"
 
 	"github.com/D0bby999/anyprofile/internal/apperr"
 	"github.com/D0bby999/anyprofile/internal/engine"
 	"github.com/D0bby999/anyprofile/internal/engine/fury"
+	"github.com/D0bby999/anyprofile/internal/launcher"
 	"github.com/D0bby999/anyprofile/internal/secrets"
 	"github.com/D0bby999/anyprofile/internal/service"
 	"github.com/D0bby999/anyprofile/internal/site"
@@ -438,6 +440,19 @@ func (a *App) StopProfile(id string) error {
 }
 
 func (a *App) FocusProfile(id string) bool { return a.svc != nil && a.svc.Launcher.Focus(id) }
+
+// ArrangeWindows puts the open profiles' windows side by side on the screen
+// AnyProfile is on. Only the UI offers it: the API and agents never resize.
+func (a *App) ArrangeWindows() (int, error) {
+	if err := a.ready(); err != nil {
+		return 0, err
+	}
+	n, err := a.svc.Launcher.Arrange(a.ctx)
+	if errors.Is(err, launcher.ErrNoScreen) {
+		return 0, apperr.New("no_screen", "could not read the size of the screen")
+	}
+	return n, err
+}
 
 // StartProfiles and StopProfiles return per-profile error messages.
 func (a *App) StartProfiles(ids []string) map[string]string {

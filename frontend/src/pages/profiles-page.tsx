@@ -165,6 +165,7 @@ export function ProfilesPage({ rows, sites, view, engineReady, fileVaultOn, erro
   }
 
   const runningCount = rows.filter((r) => r.state === 'running').length
+  const arrange = () => { Api.ArrangeWindows().then((n) => toast.success(t.profiles.arranged(n))).catch(showError) }
   const attentionCount = rows.filter(needsAttention).length
   const [update] = useUpdate()
   // The status bar filters by state; a second click shows everything again.
@@ -250,6 +251,11 @@ export function ProfilesPage({ rows, sites, view, engineReady, fileVaultOn, erro
               {attentionCount > 0 && (
                 <button type="button" className="statusbtn" aria-pressed={view === 'attention'} onClick={statusFilter('attention')}>
                   <Icon name="alert" className="icon sm warnicon" /><b>{attentionCount}</b> {t.profiles.statusAttention(attentionCount)}
+                </button>
+              )}
+              {runningCount >= 2 && (
+                <button type="button" className="statusbtn" title={t.profiles.arrangeHint} onClick={arrange}>
+                  <Icon name="monitor" className="icon sm" />{t.profiles.arrange}
                 </button>
               )}
               {update?.available && (

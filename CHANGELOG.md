@@ -78,7 +78,10 @@ keeps them together.
   days still learns of a release (looked at every 6 hours, asked at most once
   a day). After an update, "What's new" shows its notes once. On macOS the
   AnyProfile menu has Check for Updates… and Settings… (⌘,).
-
+- Arrange windows: with two profiles or more open, the status bar (and ⌘K)
+  puts their windows side by side on the screen AnyProfile is on. Windows on
+  another desktop are moved but not brought up, so the screen never jumps.
+  Scripts and agents cannot resize windows.
 
 ## 0.1.0 (2026-10-17)
 
