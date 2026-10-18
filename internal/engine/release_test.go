@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 func sum(b []byte) string { s := sha256.Sum256(b); return hex.EncodeToString(s[:]) }
@@ -139,8 +140,13 @@ func TestInstallReleaseAndCheck(t *testing.T) {
 	if left, _ := filepath.Glob(filepath.Join(filepath.Dir(dir), ".staging-*")); len(left) != 0 {
 		t.Fatalf("staging left: %v", left)
 	}
-	// Any file changed is caught, not only the binary.
-	os.WriteFile(filepath.Join(dir, "App", "lib"), []byte("librarY"), 0o644)
+	// Any file changed is caught, not only the binary. Changed later: Windows
+	// file times move in ~15 ms steps, and an unchanged size and time is what
+	// lets a launch skip the hash.
+	lib := filepath.Join(dir, "App", "lib")
+	os.WriteFile(lib, []byte("librarY"), 0o644)
+	later := time.Now().Add(time.Minute)
+	os.Chtimes(lib, later, later)
 	if st := CheckInstalled(r, dir, nil); st.Installed || st.Problem == "" {
 		t.Fatalf("changed library reported as %+v", st)
 	}

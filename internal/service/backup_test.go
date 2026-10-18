@@ -7,6 +7,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -65,7 +66,8 @@ func TestBackupToANewComputer(t *testing.T) {
 			t.Fatalf("the backup shows %q in the clear", s)
 		}
 	}
-	if fi, _ := os.Stat(file); fi.Mode().Perm() != 0o600 {
+	// Windows has no Unix modes: the file is the user's by its folder's ACL.
+	if fi, _ := os.Stat(file); runtime.GOOS != "windows" && fi.Mode().Perm() != 0o600 {
 		t.Fatalf("mode %v", fi.Mode().Perm())
 	}
 

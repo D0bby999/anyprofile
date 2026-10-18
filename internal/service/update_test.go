@@ -85,7 +85,8 @@ func TestReadyUpdateAndCleanUp(t *testing.T) {
 	pkg := filepath.Join(s.updatesDir(), "AnyProfile.zip")
 	os.MkdirAll(s.updatesDir(), 0o700)
 	os.WriteFile(pkg, []byte("x"), 0o600)
-	s.Store.SetSetting("update_ready", `{"version":"99.0.0","path":"`+pkg+`"}`)
+	ready, _ := json.Marshal(readyUpdate{Version: "99.0.0", Path: pkg}) // JSON-escaped: a Windows path has backslashes
+	s.Store.SetSetting("update_ready", string(ready))
 	if st := s.UpdateStatus(); !st.Available || !st.Ready {
 		t.Fatalf("status = %+v", st)
 	}

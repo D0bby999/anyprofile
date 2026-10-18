@@ -7,6 +7,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 )
 
@@ -79,7 +80,8 @@ func TestVaultOneSystemReadPerRun(t *testing.T) {
 			t.Fatalf("file shows %q in the clear", s)
 		}
 	}
-	if fi, _ := os.Stat(path); fi.Mode().Perm() != 0o600 {
+	// Windows has no Unix modes: the file is the user's by its folder's ACL.
+	if fi, _ := os.Stat(path); runtime.GOOS != "windows" && fi.Mode().Perm() != 0o600 {
 		t.Fatalf("file mode %v", fi.Mode().Perm())
 	}
 }
