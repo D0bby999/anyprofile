@@ -73,31 +73,41 @@ describe('ProfileTable', () => {
     expect(screen.getByRole('button', { name: t.profiles.opening })).toBeTruthy()
   })
 
-  it('drags a row into a new place, but not among the pinned ones', () => {
+  it('drags a row into a new place, but not among the pinned ones', async () => {
     const onReorder = vi.fn()
     const rows = [row({ id: 'p', name: 'P', pinned: true }), row({ id: 'a', name: 'A' }), row({ id: 'b', name: 'B' }), row({ id: 'c', name: 'C' })]
     const { container } = render(<ProfileTable {...props(rows)} onReorder={onReorder} />)
-    // Rows 54 px tall from the top, in their current order on the screen.
-    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
-      const i = [...container.querySelectorAll('tr[data-id]')].indexOf(this)
-      return { top: i * 54, height: 54, bottom: i * 54 + 54, left: 0, right: 0, width: 0, x: 0, y: i * 54, toJSON() {} } as DOMRect
-    })
-    const grip = screen.getByRole('button', { name: t.profiles.dragRow('C') })
-    const names = () => [...container.querySelectorAll('td.cellname b')].map((b) => b.textContent)
-    fireEvent.pointerDown(grip, { button: 0, pointerId: 1 })
-    fireEvent.pointerMove(grip, { clientY: 0, pointerId: 1 }) // above P: stops below it
-    expect(names()).toEqual(['P', 'C', 'A', 'B'])
-    expect(container.querySelector('tr.dragging')?.getAttribute('data-id')).toBe('c')
-    fireEvent.pointerUp(grip, { pointerId: 1 })
+    // Rows 54 px tall, in their order in the DOM.
+    const place = (el: HTMLElement) => [...container.querySelectorAll('tr[data-id]')].indexOf(el)
+    vi.spyOn(HTMLElement.prototype, 'offsetTop', 'get').mockImplementation(function (this: HTMLElement) { return place(this) * 54 })
+    vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockImplementation(() => 54)
+    const tr = (id: string) => container.querySelector<HTMLElement>(`tr[data-id="${id}"]`)!
+    const name = container.querySelectorAll('td.cellname b')[3] as HTMLElement // C's name: not a control
+    // A press that moves sideways is selecting text, not dragging.
+    fireEvent.pointerDown(name, { button: 0, clientX: 10, clientY: 180 })
+    fireEvent.pointerMove(window, { clientX: 60, clientY: 182 })
+    expect(container.querySelector('tr.dragging')).toBeNull()
+    fireEvent.pointerUp(window)
+    // Up from C's name, past A and B and beyond P: it stops below P.
+    fireEvent.pointerDown(name, { button: 0, clientX: 10, clientY: 180 })
+    fireEvent.pointerMove(window, { clientX: 10, clientY: 170 })
+    expect(tr('c').className).toContain('dragging')
+    fireEvent.pointerMove(window, { clientX: 10, clientY: 0 })
+    expect(tr('c').style.transform).toBe('translateY(-108px)') // held at the top of its group
+    expect([tr('a').style.transform, tr('b').style.transform, tr('p').style.transform]).toEqual(['translateY(54px)', 'translateY(54px)', ''])
+    fireEvent.pointerUp(window)
     expect(onReorder).toHaveBeenCalledWith(['p', 'c', 'a', 'b'])
-    // Escape while dragging puts it back.
+    // Escape while dragging slides it back and keeps the order.
     onReorder.mockClear()
-    fireEvent.pointerDown(grip, { button: 0, pointerId: 1 })
-    fireEvent.pointerMove(grip, { clientY: 200, pointerId: 1 })
+    fireEvent.pointerDown(screen.getByRole('button', { name: t.profiles.dragRow('A') }), { button: 0, clientX: 10, clientY: 70 })
+    fireEvent.pointerMove(window, { clientX: 10, clientY: 200 })
+    expect(tr('a').className).toContain('dragging')
     fireEvent.keyDown(window, { key: 'Escape' })
-    fireEvent.pointerUp(grip, { pointerId: 1 })
+    fireEvent.pointerUp(window)
     expect(onReorder).not.toHaveBeenCalled()
+    expect(tr('a').style.transform).toBe('')
     vi.restoreAllMocks()
+    await new Promise((r) => setTimeout(r)) // the drop's click guard lifts
   })
 
   it('marks the profiles an AI agent is driving', () => {

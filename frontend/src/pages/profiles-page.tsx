@@ -246,6 +246,7 @@ export function ProfilesPage({ rows, sites, view, engineReady, fileVaultOn, erro
                 </EmptyState>
               ) : (
                 <ProfileTable rows={visible} sites={sites} selected={selected} sort={sort} onSort={onSort} agents={agents} onReorder={reorder}
+                  onDragBlocked={() => toast.info(t.profiles.dragNeedsNo, { label: t.profiles.sortByNo, run: () => setSort({ key: 'no', desc: false }) })}
                   onToggle={toggle} onToggleAll={toggleAll}
                   onStart={(id) => run(() => Api.StartProfile(id))} onStop={(id) => run(() => Api.StopProfile(id))}
                   onFocus={(id) => { Api.FocusProfile(id) }} onEdit={(row) => setActiveId(row.id)}

@@ -5,6 +5,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { t } from '../i18n'
 import { service, site } from '../api'
 import type { View } from '../components/sidebar'
+import { ToastProvider } from '../components/toast'
 
 const arrangeWindows = vi.fn(() => Promise.resolve(2))
 const setProfileOrder = vi.fn((_: string[]) => Promise.resolve())
@@ -20,10 +21,10 @@ const rows = [service.ProfileRow.createFrom({
   id: 'a', name: 'Kênh A', sites: ['other'], serial: 1, engine: 'apostate', personaId: 'apostate-macos', machine: '', proxyId: '',
   state: 'stopped', cdpPort: 0, tags: ['shop-us'], notes: '', login: '', lastOpenAt: '', fpVerdict: '', fpDiff: [], pinned: false,
 })]
-const page = (view: View = 'all', onClearView = vi.fn(), list = rows) => render(
+const page = (view: View = 'all', onClearView = vi.fn(), list = rows) => render(<ToastProvider>
   <ProfilesPage rows={list} sites={sites} view={view} engineReady fileVaultOn error="" setError={vi.fn()}
-    reload={vi.fn()} onNew={vi.fn()} onNeedEngine={vi.fn()} onClearView={onClearView} onView={vi.fn()} onOpenSettings={vi.fn()} activeId={null} setActiveId={vi.fn()} />,
-)
+    reload={vi.fn()} onNew={vi.fn()} onNeedEngine={vi.fn()} onClearView={onClearView} onView={vi.fn()} onOpenSettings={vi.fn()} activeId={null} setActiveId={vi.fn()} />
+</ToastProvider>)
 
 afterEach(() => { cleanup(); localStorage.clear() })
 
@@ -48,8 +49,16 @@ describe('profiles toolbar', () => {
     // h, hidden by the filter, keeps its place between a and the rest.
     expect(setProfileOrder).toHaveBeenLastCalledWith(['a', 'h', 'c', 'b'])
     // Sorted by name, rows cannot be dragged: where they land would not stay.
+    // Trying says so, and offers the # order back.
     fireEvent.click(screen.getByRole('columnheader', { name: t.profiles.colName }))
     expect(screen.queryByRole('button', { name: t.profiles.dragRow('c') })).toBeNull()
+    const cName = [...document.querySelectorAll<HTMLElement>('td.cellname b')].find((b) => b.textContent === 'c')!
+    fireEvent.pointerDown(cName, { button: 0, clientX: 10, clientY: 100 })
+    fireEvent.pointerMove(window, { clientX: 10, clientY: 140 })
+    fireEvent.pointerUp(window)
+    expect(screen.getByText(t.profiles.dragNeedsNo)).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: t.profiles.sortByNo }))
+    expect(screen.getByRole('button', { name: t.profiles.dragRow('c') })).toBeTruthy()
   })
 
   it('hides a column and switches density, and remembers both', () => {

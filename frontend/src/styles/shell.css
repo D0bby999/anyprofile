@@ -436,8 +436,13 @@ kbd { display: inline-flex; align-items: center; min-width: 22px; height: 20px; 
 .grip .icon { stroke-width: 3.2; }
 .grip:hover { color: var(--ink); }
 .table tbody tr:hover .grip, .grip:focus-visible, .table tbody tr.dragging .grip { visibility: visible; }
-.table.reordering, .table.reordering .grip { cursor: grabbing; user-select: none; }
-.table tbody tr.dragging td { background: var(--accent-soft); }
+.table.reordering, .table.reordering * { cursor: grabbing !important; user-select: none; }
+/* While dragging, the rows passed slide aside; the dragged one is lifted above them. */
+.table.reordering tbody tr:not(.dragging) { transition: transform .16s cubic-bezier(.2, .8, .2, 1); }
+.table tbody tr.dragging { position: relative; z-index: 5; filter: drop-shadow(0 8px 18px rgb(0 0 0 / .16)); }
+.table.reordering tbody tr.dragging td { background: var(--raised); }
+.table tbody tr.dragging .grip { color: var(--ink); }
+@media (prefers-reduced-motion: reduce) { .table.reordering tbody tr:not(.dragging) { transition: none; } }
 .table .col-status .health .chip .label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 @media (max-width: 1080px) {
   :root { --sidebar-w: 208px; }

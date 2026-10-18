@@ -100,6 +100,7 @@ export const en = {
     pinSelected: 'Pin', unpinSelected: 'Unpin',
     colNo: '#', colName: 'Name', colSite: 'Platform', colProxy: 'Proxy', colStatus: 'Status', sortLastOpen: 'Sort by last opened',
     dragRow: (name: string) => `Move ${name}`, dragHint: 'Drag to reorder, or press ↑ ↓',
+    dragNeedsNo: 'Rows can be dragged into a new order only when the list is sorted by #.', sortByNo: 'Sort by #',
     runningFor: (d: string) => `Running · ${d}`,
     emptyTitle: 'No profiles yet',
     emptyText: 'Each profile is its own browser with separate cookies, proxy and fingerprint. Create the first profile for one of your channels.',

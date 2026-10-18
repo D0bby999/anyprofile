@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react'
+import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { service } from '../api'
 import { t } from '../i18n'
 import { relativeTime, sinceSpan } from '../lib/format'
@@ -11,6 +11,7 @@ import { RowMenu } from './row-menu'
 import { HealthPill } from './health-pill'
 import type { Column, TablePrefs } from '../lib/table-prefs'
 import { groupOf, moveTo } from '../lib/profile-order'
+import { useRowDrag } from './use-row-drag'
 
 export type SortKey = 'no' | 'name' | 'lastOpen'
 export type Sort = { key: SortKey; desc: boolean }
@@ -41,6 +42,8 @@ type Props = {
   prefs?: TablePrefs
   /** Set when rows can be dragged into a new order: gets the shown rows' IDs in that order. */
   onReorder?: (ids: string[]) => void
+  /** A row was dragged while the rows cannot be. */
+  onDragBlocked?: () => void
 }
 
 const CONTROLS = 'input, button, a, select, textarea, label, [role="menu"]'
@@ -81,52 +84,15 @@ export function ProfileTable(p: Props) {
   }, [])
   const allSelected = p.rows.length > 0 && p.rows.every((r) => p.selected.has(r.id))
 
-  // Dragging a row by its grip: the rows show the new order as the pointer
-  // moves; letting go keeps it, Escape puts it back. Pinned rows stay among
-  // the pinned, the others among themselves.
-  const [drag, setDrag] = useState<{ id: string; ids: string[] } | null>(null)
+  // Rows are dragged by the grip or anywhere on the row (see useRowDrag).
   const body = useRef<HTMLTableSectionElement>(null)
-  const byId = new Map(p.rows.map((r) => [r.id, r]))
-  const rows = drag ? drag.ids.map((id) => byId.get(id)).filter((r): r is service.ProfileRow => !!r) : p.rows
+  const { dragging, press } = useRowDrag(body, p.rows, p.onReorder, p.onDragBlocked)
   const regrip = useRef<string | null>(null)
   useEffect(() => {
     if (!regrip.current) return
     body.current?.querySelector<HTMLElement>(`[data-grip="${regrip.current}"]`)?.focus()
     regrip.current = null
   })
-  const startDrag = (e: PointerEvent, id: string) => {
-    if (e.button !== 0 || !p.onReorder) return
-    e.preventDefault()
-    e.currentTarget.setPointerCapture?.(e.pointerId)
-    setDrag({ id, ids: p.rows.map((r) => r.id) })
-  }
-  const moveDrag = (e: PointerEvent) => {
-    if (!drag || !body.current) return
-    const trs = [...body.current.querySelectorAll<HTMLElement>('tr[data-id]')]
-    const others = trs.filter((tr) => tr.dataset.id !== drag.id)
-    const to = others.filter((tr) => { const b = tr.getBoundingClientRect(); return b.top + b.height / 2 < e.clientY }).length
-    const [lo, hi] = groupOf(rows, drag.ids.indexOf(drag.id))
-    const ids = moveTo(drag.ids, drag.id, to, lo, hi)
-    if (ids.some((x, i) => x !== drag.ids[i])) setDrag({ ...drag, ids })
-    // Near the edge of the list, it scrolls on.
-    const wrap = body.current.closest('.tablewrap')
-    const box = wrap?.getBoundingClientRect()
-    if (wrap && box) {
-      if (e.clientY < box.top + 48) wrap.scrollTop -= 14
-      else if (e.clientY > box.bottom - 40) wrap.scrollTop += 14
-    }
-  }
-  const endDrag = (keep: boolean) => {
-    if (!drag) return
-    if (keep && drag.ids.some((x, i) => x !== p.rows[i]?.id)) p.onReorder?.(drag.ids)
-    setDrag(null)
-  }
-  useEffect(() => {
-    if (!drag) return
-    const esc = (e: globalThis.KeyboardEvent) => { if (e.key === 'Escape') { e.stopPropagation(); setDrag(null) } }
-    window.addEventListener('keydown', esc, true)
-    return () => window.removeEventListener('keydown', esc, true)
-  }, [drag])
   // With the grip focused, the arrow keys move the row one place.
   const keyMove = (e: KeyboardEvent, id: string) => {
     const step = e.key === 'ArrowUp' ? -1 : e.key === 'ArrowDown' ? 1 : 0
@@ -148,7 +114,7 @@ export function ProfileTable(p: Props) {
   )
   const shown = (c: Column) => !p.prefs?.hidden.includes(c)
   return (
-    <table className={`table profiles${p.prefs?.density === 'compact' ? ' compact' : ''}${drag ? ' reordering' : ''}`}>
+    <table className={`table profiles${p.prefs?.density === 'compact' ? ' compact' : ''}${dragging ? ' reordering' : ''}`}>
       <thead>
         <tr>
           <th className="col-check"><input type="checkbox" checked={allSelected} onChange={p.onToggleAll} aria-label={t.profiles.selected(p.rows.length)} /></th>
@@ -161,14 +127,15 @@ export function ProfileTable(p: Props) {
         </tr>
       </thead>
       <tbody ref={body}>
-        {rows.map((r, i) => {
+        {p.rows.map((r, i) => {
           const running = r.state === 'running'
           const busy = r.state === 'starting' || r.state === 'stopping'
           const agent = !!p.agents?.has(r.id)
           // An agent's row is tinted instead of a chip, so the status cell keeps only the health.
-          const cls = [p.selected.has(r.id) ? 'selected' : '', running ? 'running' : '', agent ? 'agent' : '', p.activeId === r.id ? 'active' : '', p.cursorId === r.id ? 'cursor' : '', drag?.id === r.id ? 'dragging' : ''].join(' ').trim()
+          const cls = [p.selected.has(r.id) ? 'selected' : '', running ? 'running' : '', agent ? 'agent' : '', p.activeId === r.id ? 'active' : '', p.cursorId === r.id ? 'cursor' : '', dragging === r.id ? 'dragging' : ''].join(' ').trim()
           return (
-            <tr key={r.id} data-id={r.id} className={cls || undefined} aria-current={p.activeId === r.id ? 'true' : undefined} title={agent ? t.agent.title : undefined}
+            <tr key={r.id} data-id={r.id} className={cls || undefined}
+              onPointerDown={(e) => { if (!(e.target as HTMLElement).closest(CONTROLS) || (e.target as HTMLElement).closest('.grip')) press(e, r.id) }} aria-current={p.activeId === r.id ? 'true' : undefined} title={agent ? t.agent.title : undefined}
               onClick={(e) => { if (e.detail <= 1 && !(e.target as HTMLElement).closest(CONTROLS)) p.onSelectRow?.(r.id) }}
               onDoubleClick={(e) => { if (!(e.target as HTMLElement).closest(CONTROLS)) (running ? p.onFocus(r.id) : !busy && p.onStart(r.id)) }}>
               <td className="col-check"><input type="checkbox" checked={p.selected.has(r.id)}
@@ -178,8 +145,7 @@ export function ProfileTable(p: Props) {
                 <span className="serialcell">
                   {p.onReorder && (
                     <button className="grip" data-grip={r.id} aria-label={t.profiles.dragRow(r.name)} title={t.profiles.dragHint}
-                      onPointerDown={(e) => startDrag(e, r.id)} onPointerMove={moveDrag} onPointerUp={() => endDrag(true)}
-                      onPointerCancel={() => endDrag(false)} onKeyDown={(e) => keyMove(e, r.id)}>
+                      onKeyDown={(e) => keyMove(e, r.id)}>
                       <Icon name="grip" className="icon xs" />
                     </button>
                   )}

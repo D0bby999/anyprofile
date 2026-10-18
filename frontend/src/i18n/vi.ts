@@ -101,6 +101,7 @@ export const vi: Messages = {
     pinSelected: 'Ghim', unpinSelected: 'Bỏ ghim',
     colNo: 'STT', colName: 'Tên', colSite: 'Nền tảng', colProxy: 'Proxy', colStatus: 'Trạng thái', sortLastOpen: 'Sắp xếp theo lần mở cuối',
     dragRow: (name: string) => `Di chuyển ${name}`, dragHint: 'Kéo để đổi thứ tự, hoặc bấm ↑ ↓',
+    dragNeedsNo: 'Chỉ kéo đổi thứ tự được khi bảng sắp theo cột STT.', sortByNo: 'Sắp theo STT',
     runningFor: (d: string) => `Đang chạy · ${d}`,
     emptyTitle: 'Chưa có profile nào',
     emptyText: 'Mỗi profile là một trình duyệt riêng với cookie, proxy và dấu vân tay riêng. Tạo profile đầu tiên cho một kênh của bạn.',
