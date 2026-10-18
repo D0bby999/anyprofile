@@ -61,6 +61,12 @@ keeps them together.
   (component_crx_cache), about 60 MB a profile.
 - An engine version no profile uses is removed at launch once a newer one is
   installed (~330 MB each). The newest installed version always stays.
+- One proxy for several profiles is a normal choice: the new-profile dialog
+  no longer warns about it. The proxy picker still names the profiles that
+  use each proxy, and Auto still picks a free one.
+- New profile: with Auto as the default and no proxy free (or, for several
+  profiles, not enough free), the dialog starts on No proxy instead of
+  blocking Create until a proxy is chosen. The real-IP note says so.
 
 ## 0.1.0 (2026-10-17)
 

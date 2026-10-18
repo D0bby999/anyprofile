@@ -155,12 +155,32 @@ describe('NewProfileDialog', () => {
     expect(createProfile.mock.calls[0][0]).toMatchObject({ engine: '' })
   })
 
-  it('blocks Create when Auto is the default but no proxy is free', async () => {
-    proxyList = []
-    dialog()
-    fireEvent.change(screen.getByPlaceholderText(t.create.namePlaceholder), { target: { value: 'Shop' } })
-    await waitFor(() => expect(screen.getByRole('option', { name: t.create.proxyChoose })).toBeTruthy())
-    expect((screen.getByRole('button', { name: t.create.submit }) as HTMLButtonElement).disabled).toBe(true)
+  it('starts on No proxy when Auto is the default but no proxy is free, and keeps Auto remembered', async () => {
+    proxyList = [{ ...freeProxy('10001'), usedBy: ['One'] }]
+    localStorage.setItem('anyprofile.lastProxy', 'auto')
+    const onCreated = vi.fn()
+    dialog({ onCreated })
+    const name = screen.getByPlaceholderText(t.create.namePlaceholder)
+    fireEvent.change(name, { target: { value: 'Shop' } })
+    await waitFor(() => expect((screen.getByRole('combobox', { name: t.create.proxy }) as HTMLSelectElement).value).toBe(''))
+    expect(screen.getByText(t.create.realIpWarning)).toBeTruthy()
+    expect((screen.getByRole('button', { name: t.create.submit }) as HTMLButtonElement).disabled).toBe(false)
+    fireEvent.submit(name.closest('form')!)
+    await waitFor(() => expect(onCreated).toHaveBeenCalled())
+    expect(createProfile.mock.calls[0][0]).toMatchObject({ proxyId: '' })
+    expect(localStorage.getItem('anyprofile.lastProxy')).toBe('auto')
+  })
+
+  it('creates several on No proxy when too few proxies are free', async () => {
+    proxyList = [freeProxy('10001')]
+    const onCreated = vi.fn()
+    dialog({ onCreated, initialCount: 3 })
+    const name = screen.getByPlaceholderText(t.create.namePlaceholder)
+    fireEvent.change(name, { target: { value: 'Shop' } })
+    await waitFor(() => expect(screen.getByRole('button', { name: t.duplicate.proxyNone }).getAttribute('aria-pressed')).toBe('true'))
+    fireEvent.submit(name.closest('form')!)
+    await waitFor(() => expect(onCreated).toHaveBeenCalled())
+    expect(createProfiles.mock.calls[0][0]).toMatchObject({ count: 3, proxy: 'none' })
   })
 
   it('warns about the real IP when No proxy is chosen', async () => {
@@ -192,8 +212,11 @@ describe('NewProfileDialog', () => {
 
     proxyList = [freeProxy('10001'), { ...freeProxy('10002'), usedBy: ['One'] }]
     dialog()
-    await screen.findByText(t.create.proxyShared('One'))
+    // Sharing a proxy is a choice the user may make: no warning, the picker
+    // only names the other profile.
+    await screen.findByRole('option', { name: /gw.example:10002.*\(One\)/ })
     expect((screen.getByRole('combobox', { name: t.create.proxy }) as HTMLSelectElement).value).toBe('10002')
+    expect(document.querySelector('.realip')).toBeNull()
   })
 
   it('falls back to the default when the remembered proxy is gone, and never remembers No proxy', async () => {

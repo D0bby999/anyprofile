@@ -6,7 +6,7 @@ import { errorText, nameSeries, parseTags } from '../lib/format'
 import { readLastProxy, usableLastProxy, writeLastProxy } from '../lib/last-proxy'
 import { guessSite, regionStartUrls, syncStartUrls, type Site } from '../lib/sites'
 import { Dialog } from './dialog'
-import { CHOOSE_PROXY, freeProxies, ProxySelect, RealIpWarning, SharedProxyWarning } from './proxy-select'
+import { freeProxies, ProxySelect, RealIpWarning } from './proxy-select'
 import { SitesPicker } from './site-picker'
 import { EngineAdvanced } from './engine-advanced'
 
@@ -29,7 +29,8 @@ export function NewProfileDialog({ defaultSite, defaults, sites, onClose, onCrea
   // null until the user picks in this dialog: the last profile's choice is offered first.
   const [proxyId, setProxyId] = useState<string | null>(null)
   const [lastProxy] = useState(() => readLastProxy())
-  const [bulkProxy, setBulkProxy] = useState<'auto' | 'none'>(defaults.proxy === 'auto' ? 'auto' : 'none')
+  // null until the user picks in this dialog: see bulkProxy below.
+  const [bulkPick, setBulkPick] = useState<'auto' | 'none' | null>(null)
   const [startUrl, setStartUrl] = useState(() => syncStartUrls('', [], platforms, sites))
   const [tags, setTags] = useState('')
   const [engine, setEngine] = useState('')
@@ -39,9 +40,10 @@ export function NewProfileDialog({ defaultSite, defaults, sites, onClose, onCrea
 
   useEffect(() => { Api.ListProxies().then((p) => setProxies(p ?? [])).catch(() => setProxies([])) }, [])
   const chosen = proxyId ?? usableLastProxy(lastProxy, proxies, defaults.proxy === 'auto' ? 'auto' : '')
-  // Auto with nothing free must not quietly become "no proxy": ask instead.
-  const pick = chosen === 'auto' && proxies !== null && freeProxies(proxies) === 0 ? CHOOSE_PROXY : chosen
-  const sharedWith = proxies?.find((p) => p.id === pick)?.usedBy ?? []
+  // Auto with nothing free starts on No proxy, so Create works at once; the
+  // real-IP note below says so.
+  const free = proxies === null ? null : freeProxies(proxies)
+  const pick = chosen === 'auto' && free === 0 ? '' : chosen
   // Platforms that differ by country (TikTok Shop) open the proxy country's
   // page; only a change of country rewrites the lines, picks go through pickSites.
   const country = proxies?.find((p) => p.id === pick)?.country ?? ''
@@ -60,11 +62,12 @@ export function NewProfileDialog({ defaultSite, defaults, sites, onClose, onCrea
   }
 
   const bulk = count > 1
-  const blocked = !bulk && pick === CHOOSE_PROXY
+  // Auto when enough proxies are free for every profile, No proxy otherwise.
+  const bulkProxy = bulkPick ?? (defaults.proxy === 'auto' && (free === null || free >= count) ? 'auto' : 'none')
   const direct = bulk ? bulkProxy === 'none' : pick === ''
 
   const submit = async () => {
-    if (!name.trim() || busy || blocked) return
+    if (!name.trim() || busy) return
     setBusy(true)
     setError('')
     try {
@@ -76,7 +79,7 @@ export function NewProfileDialog({ defaultSite, defaults, sites, onClose, onCrea
         await Api.CreateProfile(service.NewProfile.createFrom({
           engine, name: name.trim(), proxyId: pick, sites: platforms, startUrl: startUrl.trim(), notes: '', tags: parseTags(tags),
         }))
-        writeLastProxy(pick)
+        writeLastProxy(chosen) // Auto stays remembered when it fell back to No proxy
       }
       onCreated()
     } catch (e) {
@@ -91,7 +94,7 @@ export function NewProfileDialog({ defaultSite, defaults, sites, onClose, onCrea
     <Dialog title={several ? t.palette.createSeveral : t.create.title} icon="plus" onClose={onClose} onSubmit={submit}
       footer={<>
         <button type="button" className="btn ghost" onClick={onClose}>{t.common.cancel}</button>
-        <button type="submit" className="btn primary" disabled={!name.trim() || busy || blocked}>{busy ? t.create.creating : t.create.submit}</button>
+        <button type="submit" className="btn primary" disabled={!name.trim() || busy}>{busy ? t.create.creating : t.create.submit}</button>
       </>}>
       <div className={several ? 'grid2' : undefined}>
         <label className="field">
@@ -113,8 +116,8 @@ export function NewProfileDialog({ defaultSite, defaults, sites, onClose, onCrea
         <div className="field">
           <span className="label">{t.create.proxy}</span>
           <div className="seg" role="group" aria-label={t.create.proxy}>
-            <button type="button" aria-pressed={bulkProxy === 'auto'} onClick={() => setBulkProxy('auto')}>{t.duplicate.proxyAuto}</button>
-            <button type="button" aria-pressed={bulkProxy === 'none'} onClick={() => setBulkProxy('none')}>{t.duplicate.proxyNone}</button>
+            <button type="button" aria-pressed={bulkProxy === 'auto'} onClick={() => setBulkPick('auto')}>{t.duplicate.proxyAuto}</button>
+            <button type="button" aria-pressed={bulkProxy === 'none'} onClick={() => setBulkPick('none')}>{t.duplicate.proxyNone}</button>
           </div>
         </div>
       ) : (
@@ -125,7 +128,6 @@ export function NewProfileDialog({ defaultSite, defaults, sites, onClose, onCrea
         </label>
       )}
       {direct && <RealIpWarning />}
-      {!bulk && sharedWith.length > 0 && <SharedProxyWarning usedBy={sharedWith} />}
       <label className="field">
         <span className="label">{t.create.startUrl}</span>
         <textarea className="textarea" rows={Math.min(5, Math.max(2, startUrl.split('\n').length))} value={startUrl} placeholder={t.create.startUrlHint}
