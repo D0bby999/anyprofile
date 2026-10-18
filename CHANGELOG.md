@@ -3,7 +3,7 @@
 The notes of each release tag are shown in the app's update prompt; this file
 keeps them together.
 
-## Unreleased
+## 0.1.1 (2026-10-18)
 
 - Engine versions: Settings → Engines lists every version of Apostate and
   Fury, to download or remove. New versions arrive in the signed latest.json,
