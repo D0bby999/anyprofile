@@ -63,6 +63,10 @@ type Launcher struct {
 	procs map[string]*proc
 
 	readyTimeout, termGrace time.Duration
+	// TestArgs are added to every launch. Only integration tests set them,
+	// to run the browsers headless: no window shows on the screen of
+	// someone at work while they run.
+	TestArgs []string
 
 	// Capture measures the fingerprint at each launch; the app turns it on.
 	Capture bool

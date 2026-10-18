@@ -94,6 +94,9 @@ func TestAPIDrivesARealBrowser(t *testing.T) {
 	sec := secrets.NewMemory()
 	l := launcher.New(st, sec, dirs, []engine.Engine{eng}, nil, log)
 	l.Capture = true
+	if os.Getenv("ANYPROFILE_TEST_HEADLESS") != "" {
+		l.TestArgs = []string{"--headless=new"} // no window on the screen
+	}
 	s := &Service{Dirs: dirs, Store: st, Secrets: sec, Log: log, Launcher: l,
 		Engines: map[string]engine.Engine{"apostate": eng}, Preferred: "apostate"}
 	if err := st.CreateProfile(&store.Profile{ID: "api1", Name: "API", Engine: "apostate",

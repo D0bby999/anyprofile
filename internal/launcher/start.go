@@ -87,6 +87,7 @@ func (l *Launcher) start(ctx context.Context, p *proc) error {
 	if err != nil {
 		return err
 	}
+	spec.Args = append(spec.Args, l.TestArgs...)
 	front := frontPID()
 	pid, wait, conn, err := spawn(spec, udd, filepath.Join(l.dirs.Logs(), "browser-"+prof.ID+".log"))
 	if err != nil {

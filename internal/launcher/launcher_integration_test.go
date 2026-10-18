@@ -75,7 +75,18 @@ func newRig(t *testing.T) *rig {
 }
 
 func (r *rig) launcher(t *testing.T) *Launcher {
-	return New(r.st, r.sec, r.dirs, []engine.Engine{r.eng}, nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	l := New(r.st, r.sec, r.dirs, []engine.Engine{r.eng}, nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	l.TestArgs = headlessArgs()
+	return l
+}
+
+// headlessArgs runs the browsers without a window when
+// ANYPROFILE_TEST_HEADLESS is set: tests then leave the screen alone.
+func headlessArgs() []string {
+	if os.Getenv("ANYPROFILE_TEST_HEADLESS") == "" {
+		return nil
+	}
+	return []string{"--headless=new"}
 }
 
 func (r *rig) profile(t *testing.T, i int) string {
