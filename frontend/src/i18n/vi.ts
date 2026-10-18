@@ -20,7 +20,7 @@ export const vi: Messages = {
   },
   common: {
     save: 'Lưu', cancel: 'Huỷ', close: 'Đóng', delete: 'Xoá', loading: 'Đang tải…', refresh: 'Làm mới',
-    direct: 'Không proxy',
+    direct: 'Không proxy', undo: 'Hoàn tác',
   },
   health: {
     drift: 'Fingerprint đã đổi', driftText: (fields: string) => `Các giá trị này đã khác so với lần mở đầu: ${fields}.`,
@@ -60,7 +60,6 @@ export const vi: Messages = {
     restore: (when: string) => ({ title: `Khôi phục phiên lúc ${when}?`, body: 'Phiên hiện tại được lưu trước, nên bạn hoàn tác được.', confirm: 'Khôi phục' }),
     deleteSnapshots: { title: 'Xoá mọi ảnh chụp?', body: 'Bạn sẽ không khôi phục được profile nào về phiên trước đó nữa.', confirm: 'Xoá tất cả' },
     exportCookies: { title: 'Xuất cookie?', body: 'File này cho phép bất kỳ ai đăng nhập vào các tài khoản này. Hãy giữ kín và xoá sau khi dùng.', confirm: 'Xuất' },
-    trash: (name: string) => ({ title: `Bỏ "${name}" vào thùng rác?`, body: 'Profile sẽ không hiện trong danh sách nữa. Bạn khôi phục được từ Thùng rác cho tới khi xoá hẳn.', confirm: 'Bỏ vào thùng rác' }),
     purge: (name: string) => ({ title: `Xoá hẳn "${name}"?`, body: 'Cookie, đăng nhập và dữ liệu của profile sẽ mất. Không khôi phục được.', confirm: 'Xoá hẳn' }),
     forgetAccount: (site: string) => ({ title: `Quên tài khoản ${site}?`, body: 'Tên đăng nhập, mật khẩu và secret 2FA sẽ bị xoá khỏi máy này. Bản thân tài khoản không bị ảnh hưởng.', confirm: 'Quên tài khoản' }),
     deleteExtension: (name: string, n: number) => ({ title: `Xoá ${name}?`, body: n ? `Extension sẽ bị tắt ở ${n} profile và xoá khỏi máy này.` : 'Extension sẽ bị xoá khỏi máy này.', confirm: 'Xoá extension' }),
@@ -98,6 +97,7 @@ export const vi: Messages = {
     edit: 'Sửa profile', focus: 'Đưa cửa sổ lên trước', trash: 'Bỏ vào thùng rác',
     selected: (n: number) => `Đã chọn ${n}`,
     openSelected: 'Mở', stopSelected: 'Đóng', trashSelected: 'Bỏ vào thùng rác', clearSelection: 'Bỏ chọn',
+    trashedOne: (name: string) => `Đã bỏ "${name}" vào thùng rác.`, trashed: (n: number) => `Đã bỏ ${n} profile vào thùng rác.`,
     pinSelected: 'Ghim', unpinSelected: 'Bỏ ghim',
     colNo: 'STT', colName: 'Tên', colSite: 'Nền tảng', colProxy: 'Proxy', colStatus: 'Trạng thái', sortLastOpen: 'Sắp xếp theo lần mở cuối',
     dragRow: (name: string) => `Di chuyển ${name}`, dragHint: 'Kéo để đổi thứ tự, hoặc bấm ↑ ↓',

@@ -8,6 +8,7 @@ import { siteById, type Site } from '../lib/sites'
 import { EmptyState } from '../components/empty-state'
 import { Icon } from '../components/icons'
 import { ProfileDrawer } from '../components/profile-drawer'
+import { trashWithUndo } from '../components/trash-undo'
 import { mergeOrder, rank } from '../lib/profile-order'
 import { ProfileTable, type Sort, type SortKey } from '../components/profile-table'
 import { DuplicateDialog } from '../components/duplicate-dialog'
@@ -204,7 +205,7 @@ export function ProfilesPage({ rows, sites, view, engineReady, fileVaultOn, erro
                 <button className="btn sm primary" disabled={busy} onClick={() => bulk(Api.StartProfiles)}><Icon name="play" className="icon sm" />{t.profiles.openSelected}</button>
                 <button className="btn sm" disabled={busy} onClick={() => bulk(Api.StopProfiles)}><Icon name="stop" className="icon sm" />{t.profiles.stopSelected}</button>
                 <button className="btn sm danger" disabled={busy}
-                  onClick={() => run(async () => { for (const id of selected) await Api.TrashProfile(id); setSelected(new Set()); reload() })}>
+                  onClick={() => run(() => trashWithUndo([...selected], toast, '', () => { setSelected(new Set()); reload() }))}>
                   <Icon name="trash" className="icon sm" />{t.profiles.trashSelected}
                 </button>
                 <button className="btn sm" disabled={busy} onClick={() => setBulkDialog('site')}><Icon name="pencil" className="icon sm" />{t.bulk.site}</button>
@@ -252,7 +253,7 @@ export function ProfilesPage({ rows, sites, view, engineReady, fileVaultOn, erro
                   onFocus={(id) => { Api.FocusProfile(id) }} onEdit={(row) => setActiveId(row.id)}
                 activeId={activeId} cursorId={cursor} onSelectRow={(id) => { setCursorId(id); select(id) }} prefs={prefs}
                   onDuplicate={setDuplicating} onMessage={toast.success} onError={showError}
-                  onTrash={(row) => run(async () => { await Api.TrashProfile(row.id); reload() })} />
+                  onTrash={(row) => run(() => trashWithUndo([row.id], toast, row.name, reload))} />
               )}
             </div>
             <div className="statusbar">

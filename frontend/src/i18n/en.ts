@@ -19,7 +19,7 @@ export const en = {
   },
   common: {
     save: 'Save', cancel: 'Cancel', close: 'Close', delete: 'Delete', loading: 'Loading…', refresh: 'Refresh',
-    direct: 'No proxy',
+    direct: 'No proxy', undo: 'Undo',
   },
   health: {
     drift: 'Fingerprint changed', driftText: (fields: string) => `These values changed since the first launch: ${fields}.`,
@@ -59,7 +59,6 @@ export const en = {
     restore: (when: string) => ({ title: `Restore the session from ${when}?`, body: 'The current session is saved first, so you can undo this.', confirm: 'Restore' }),
     deleteSnapshots: { title: 'Delete every snapshot?', body: 'You will not be able to restore any profile to an earlier session.', confirm: 'Delete all' },
     exportCookies: { title: 'Export the cookies?', body: 'This file lets anyone sign in to these accounts. Keep it private and delete it after use.', confirm: 'Export' },
-    trash: (name: string) => ({ title: `Move "${name}" to the trash?`, body: 'It stops showing in your lists. You can restore it from Trash until you delete it for good.', confirm: 'Move to trash' }),
     purge: (name: string) => ({ title: `Delete "${name}" for good?`, body: 'Its cookies, logins and data are gone. This cannot be undone.', confirm: 'Delete for good' }),
     forgetAccount: (site: string) => ({ title: `Forget the ${site} account?`, body: 'Its login, password and 2FA secret are deleted from this computer. The account itself is not touched.', confirm: 'Forget account' }),
     deleteExtension: (name: string, n: number) => ({ title: `Delete ${name}?`, body: n ? `It is turned off in ${n === 1 ? '1 profile' : `${n} profiles`} and removed from this computer.` : 'It is removed from this computer.', confirm: 'Delete extension' }),
@@ -97,6 +96,7 @@ export const en = {
     edit: 'Edit profile', focus: 'Bring window to front', trash: 'Move to trash',
     selected: (n: number) => `${n} selected`,
     openSelected: 'Open', stopSelected: 'Close', trashSelected: 'Move to trash', clearSelection: 'Clear selection',
+    trashedOne: (name: string) => `Moved "${name}" to the trash.`, trashed: (n: number) => `Moved ${n} profile${n === 1 ? '' : 's'} to the trash.`,
     pinSelected: 'Pin', unpinSelected: 'Unpin',
     colNo: '#', colName: 'Name', colSite: 'Platform', colProxy: 'Proxy', colStatus: 'Status', sortLastOpen: 'Sort by last opened',
     dragRow: (name: string) => `Move ${name}`, dragHint: 'Drag to reorder, or press ↑ ↓',

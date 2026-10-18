@@ -8,6 +8,7 @@ import { siteById, type Site } from '../lib/sites'
 import { AccountsPanel } from './account-panel'
 import { ProfileExtensions } from './extension-settings'
 import { useConfirm } from './confirm'
+import { trashWithUndo } from './trash-undo'
 import { HealthPill } from './health-pill'
 import { AgentChip } from './agent-chip'
 import { Icon } from './icons'
@@ -80,9 +81,8 @@ export function ProfileDrawer({ row, sites, knownTags, onClose, onStart, onStop,
   }
 
   const trash = async () => {
-    if (!(await confirm({ ...t.confirm.trash(row.name), danger: true }))) return
     try {
-      await Api.TrashProfile(row.id)
+      await trashWithUndo([row.id], toast, row.name)
       onClose()
     } catch (e) {
       toast.error(errorText(e))

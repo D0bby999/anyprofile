@@ -7,7 +7,7 @@ export type ToastKind = 'success' | 'info' | 'error'
 export type ToastAction = { label: string; run: () => void }
 type Toast = { id: number; kind: ToastKind; message: string; action?: ToastAction }
 
-type ToastApi = {
+export type ToastApi = {
   success: (message: string, action?: ToastAction) => void
   info: (message: string, action?: ToastAction) => void
   error: (message: string, action?: ToastAction) => void

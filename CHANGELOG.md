@@ -113,6 +113,9 @@ keeps them together.
   and says where to paste it. The Claude Code command now adds AnyProfile for
   every folder (--scope user), not only the one it ran in. docs/mcp.md walks
   through each agent and what to do when one does not connect.
+- Moving profiles to the trash works the same from the row menu, the
+  selection bar and the details drawer: at once, with an Undo in the notice
+  (the drawer asked first; the others said nothing).
 
 ## 0.1.0 (2026-10-17)
 

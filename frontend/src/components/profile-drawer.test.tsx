@@ -8,6 +8,7 @@ import { service, site } from '../api'
 
 const updateProfile = vi.fn().mockResolvedValue(undefined)
 const trashProfile = vi.fn().mockResolvedValue(undefined)
+const restoreProfile = vi.fn().mockResolvedValue(undefined)
 const setExtensionMany = vi.fn().mockResolvedValue(undefined)
 vi.mock('../api', async (orig) => ({
   ...(await orig<typeof import('../api')>()),
@@ -22,6 +23,7 @@ vi.mock('../api', async (orig) => ({
     ]),
     UpdateProfile: (...a: unknown[]) => updateProfile(...a),
     TrashProfile: (...a: unknown[]) => trashProfile(...a),
+    RestoreProfile: (...a: unknown[]) => restoreProfile(...a),
     StartProfile: () => Promise.resolve(),
     StopProfile: () => Promise.resolve(),
     TOTPCode: () => Promise.resolve({ code: '000000', secondsLeft: 30 }),
@@ -30,6 +32,7 @@ vi.mock('../api', async (orig) => ({
 const { ProfilesPage } = await import('../pages/profiles-page')
 type View = import('../components/sidebar').View
 const { ConfirmProvider } = await import('./confirm')
+const { ToastProvider } = await import('./toast')
 
 const sites = [
   site.Site.createFrom({ id: 'tiktok', name: 'TikTok', group: 'video', domains: ['tiktok.com'], startUrl: '', icon: 'tiktok', color: '#000000', custom: false }),
@@ -52,7 +55,7 @@ function Harness() {
       activeId={activeId} setActiveId={setActiveId} />
   )
 }
-const page = () => render(<ConfirmProvider><Harness /></ConfirmProvider>)
+const page = () => render(<ConfirmProvider><ToastProvider><Harness /></ToastProvider></ConfirmProvider>)
 const drawer = () => screen.queryByRole('complementary', { name: /^Details of/ })
 const openRow = (name: string) => fireEvent.click(screen.getByText(name), { detail: 1 })
 
@@ -115,15 +118,16 @@ describe('profile drawer', () => {
     expect(updateProfile.mock.calls[0][0]).toMatchObject({ id: 'a', proxyId: 'py' })
   })
 
-  it('moves the profile to the trash after confirming', async () => {
+  it('moves the profile to the trash at once, and offers Undo', async () => {
     page()
     openRow('Kênh A')
     const d = within(drawer()!)
     fireEvent.click(d.getByRole('button', { name: t.drawer.advanced }))
     fireEvent.click(d.getByRole('button', { name: t.drawer.moveToTrash }))
-    const dialog = await screen.findByRole('dialog')
-    fireEvent.click(within(dialog).getByRole('button', { name: t.confirm.trash('Kênh A').confirm }))
     await waitFor(() => expect(trashProfile).toHaveBeenCalledWith('a'))
+    expect(await screen.findByText(t.profiles.trashedOne('Kênh A'))).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: t.common.undo }))
+    await waitFor(() => expect(restoreProfile).toHaveBeenCalledWith('a'))
   })
 
   it('turns an extension on for this profile', async () => {
