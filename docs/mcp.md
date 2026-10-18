@@ -40,8 +40,9 @@ tool dùng tab agent dùng gần nhất, nếu chưa có thì dùng tab đang hi
 | `open_profile` / `close_profile` | mở profile (có proxy, như bấm Open) và đợi sẵn sàng; đóng profile |
 | `list_tabs`, `open_tab`, `close_tab` | các tab; mở tab mới tới một địa chỉ; đóng một tab |
 | `navigate` | đi tới địa chỉ, hoặc lùi, tiến, tải lại; đợi trang tải xong |
-| `snapshot` | trang dưới dạng dàn ý vai trò và tên; phần tử bấm được có `[ref=eN]` |
+| `snapshot` | trang dưới dạng dàn ý vai trò và tên, gồm cả nội dung iframe; phần tử bấm được có `[ref=eN]` (trong iframe: `eNfK`) |
 | `click`, `type`, `press_key`, `scroll` | thao tác theo `ref` |
+| `select_option` | chọn một mục của ô thả xuống gốc (`<select>`); bấm vào ô đó sẽ mở danh sách của hệ điều hành, agent không với tới |
 | `wait_for` | đợi chữ hiện ra hoặc mất đi, hay địa chỉ khớp |
 | `read_page` | chữ đang hiện trên trang hoặc của một phần tử, kèm link nếu muốn |
 | `screenshot` | ảnh phần đang hiện, rộng tối đa 1280 px |
@@ -113,12 +114,23 @@ Mẫu miễn phí: `examples/recipes/check-login.md`. Template script Playwright
 `deviceandbrowserinfo.com/are_you_a_bot` báo "You are human!" (`isAutomatedWithCDP: false`, 22/22 mục `false`).
 Bẫy `Runtime.enable` trong test tích hợp không bị kích hoạt. Trang đó không đo hành vi (nhịp chuột, tốc độ gõ).
 
+## Hộp thoại của trình duyệt
+
+Hộp thoại `alert`, `confirm`, `prompt` và "Rời trang?" chặn trang cho tới khi có người trả lời. AnyProfile trả lời
+thay và ghi lại trong kết quả công cụ (dòng `Dialog:`):
+
+- `alert`, `confirm`: OK. Hộp thoại xác nhận đi sau chính cú bấm của agent (Xoá, Gửi…), nên agent muốn vậy.
+- `prompt`: Huỷ; agent gõ vào trang thay vì vào hộp thoại.
+- "Rời trang?": lần đầu ở lại, vì những gì chưa lưu sẽ mất. Agent lưu trước, hoặc đi tiếp lần nữa trong 2 phút thì rời.
+
+Để nhận hộp thoại, agent bật miền `Page` của DevTools; script của trang không thấy được việc này. Miền `Runtime`,
+thứ trang có thể nhận ra, vẫn không bao giờ bật.
+
 ## Không có
 
 - Chạy JavaScript tuỳ ý trên trang, xuất cookie, đổi fingerprint hay viewport, tạo hoặc xoá profile, gán proxy.
 - Upload file nằm ngoài thư mục uploads.
 - Request trước lần đầu agent dùng tab: tải lại trang (`navigate` với `reload`) để thấy chúng.
-- Nội dung trong iframe không có trong `snapshot`. Dùng `read_page`, hoặc mở địa chỉ của iframe trong tab riêng.
 - Profile đã mở từ trước khi AnyProfile khởi động lại không điều khiển được (`agent_no_pipe`): đóng rồi mở lại.
 
 ## An toàn

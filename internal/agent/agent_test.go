@@ -37,6 +37,7 @@ func newFake() *fakeConn {
 	}})
 	f.on("Target.attachToTarget", map[string]any{"sessionId": "S1"})
 	f.on("Network.enable", map[string]any{})
+	f.on("Page.enable", map[string]any{})
 	f.on("Target.activateTarget", map[string]any{})
 	f.on("Page.getFrameTree", map[string]any{"frameTree": map[string]any{"frame": map[string]any{"id": "F", "loaderId": "L1"}}})
 	f.on("Page.createIsolatedWorld", map[string]any{"executionContextId": 7})
@@ -119,7 +120,9 @@ func TestTabIDsArePrefixes(t *testing.T) {
 	}
 }
 
-func TestNeverEnablesRuntimeOrPage(t *testing.T) {
+// Runtime is never enabled: a page can notice it (console serialisation).
+// Page is, for browser dialogs; a page script cannot see that.
+func TestNeverEnablesRuntime(t *testing.T) {
 	f := newFake()
 	h := NewHub(time.Minute)
 	defer h.Close()
@@ -128,7 +131,7 @@ func TestNeverEnablesRuntimeOrPage(t *testing.T) {
 	b.Tabs(ctx)
 	b.ReadPage(ctx, "", "", 0, false)
 	b.WaitFor(ctx, "", "", false, "shop", time.Second)
-	for _, m := range []string{"Runtime.enable", "Page.enable", "Emulation.setDeviceMetricsOverride"} {
+	for _, m := range []string{"Runtime.enable", "Emulation.setDeviceMetricsOverride"} {
 		if f.called(m) > 0 {
 			t.Fatalf("%s was called", m)
 		}
@@ -225,7 +228,7 @@ func props(name string, val any) []struct {
 }
 
 func TestOutline(t *testing.T) {
-	got := outline(tree, "1", MaxText)
+	got := outline(tree, "1", MaxText, nil, nil)
 	want := `- heading "Sale" [level=2]
 - textbox "Search items" [ref=e41] [focused] [value="shoes"]
 - checkbox "In stock" [ref=e42] [checked]
@@ -235,19 +238,31 @@ func TestOutline(t *testing.T) {
 	if got != want {
 		t.Fatalf("outline:\n%s\nwant:\n%s", got, want)
 	}
-	if cut := outline(tree, "1", 10); !strings.Contains(cut, "cut at 10 characters") {
+	if cut := outline(tree, "1", 10, nil, nil); !strings.Contains(cut, "cut at 10 characters") {
 		t.Fatalf("cut outline:\n%s", cut)
 	}
 }
 
-func TestParseRef(t *testing.T) {
-	if n, err := parseRef("e42"); n != 42 || err != nil {
-		t.Fatal(n, err)
+func TestResolveRef(t *testing.T) {
+	b := &Browser{}
+	f1, f2 := &frameSess{id: "F1"}, &frameSess{id: "F2", oopif: true}
+	tb := &tab{frames: []*frameSess{f1, f2}}
+	if n, f, err := b.resolve(tb, "e42"); n != 42 || f != nil || err != nil {
+		t.Fatal(n, f, err)
 	}
-	for _, bad := range []string{"42", "e", "e-1", "x42", ""} {
-		if _, err := parseRef(bad); err == nil {
-			t.Fatalf("parseRef(%q) passed", bad)
+	if n, f, err := b.resolve(tb, "e7f2"); n != 7 || f != f2 || err != nil {
+		t.Fatal(n, f, err)
+	}
+	if tb.refFor(7, f2) != "e7f2" || tb.refFor(9, nil) != "e9" {
+		t.Fatal(tb.refFor(7, f2), tb.refFor(9, nil))
+	}
+	for _, bad := range []string{"42", "e", "e-1", "x42", "", "e7f", "e7f0", "e7fx"} {
+		if _, _, err := b.resolve(tb, bad); err == nil {
+			t.Fatalf("resolve(%q) passed", bad)
 		}
+	}
+	if _, _, err := b.resolve(tb, "e7f3"); err == nil || !strings.Contains(err.Error(), "agent_") {
+		t.Fatalf("a frame not reached: %v", err)
 	}
 }
 

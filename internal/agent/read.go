@@ -59,11 +59,12 @@ func (b *Browser) ReadPage(ctx context.Context, id, ref string, offset int, link
 
 // callOn runs fn with this set to the element of ref, in the isolated world.
 func (b *Browser) callOn(ctx context.Context, t *tab, ref, fn string, args []any, out any) error {
-	node, err := parseRef(ref)
+	node, f, err := b.resolve(t, ref)
 	if err != nil {
 		return err
 	}
-	world, err := b.world(ctx, t)
+	session := sessionOf(t, f)
+	world, err := b.frameWorld(ctx, t, f)
 	if err != nil {
 		return err
 	}
@@ -72,16 +73,21 @@ func (b *Browser) callOn(ctx context.Context, t *tab, ref, fn string, args []any
 			ObjectID string `json:"objectId"`
 		} `json:"object"`
 	}
-	if err := b.call(ctx, t.session, "DOM.resolveNode", map[string]any{"backendNodeId": node, "executionContextId": world}, &obj); err != nil {
+	if err := b.call(ctx, session, "DOM.resolveNode", map[string]any{"backendNodeId": node, "executionContextId": world}, &obj); err != nil {
+		if f != nil { // the frame's document changed: a new world next time
+			b.mu.Lock()
+			f.worldID = 0
+			b.mu.Unlock()
+		}
 		return errGone(ref)
 	}
-	defer b.call(context.Background(), t.session, "Runtime.releaseObject", map[string]any{"objectId": obj.Object.ObjectID}, nil)
+	defer b.call(context.Background(), session, "Runtime.releaseObject", map[string]any{"objectId": obj.Object.ObjectID}, nil)
 	callArgs := make([]map[string]any, len(args))
 	for i, a := range args {
 		callArgs[i] = map[string]any{"value": a}
 	}
 	var r evalReply
-	if err := b.call(ctx, t.session, "Runtime.callFunctionOn", map[string]any{
+	if err := b.call(ctx, session, "Runtime.callFunctionOn", map[string]any{
 		"functionDeclaration": fn, "objectId": obj.Object.ObjectID, "arguments": callArgs, "returnByValue": true,
 	}, &r); err != nil {
 		return err

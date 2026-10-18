@@ -178,7 +178,7 @@ func TestMCPTools(t *testing.T) {
 	}
 	slices.Sort(names)
 	want := []string{"click", "close_profile", "close_tab", "list_profiles", "list_tabs", "list_uploads", "navigate", "network_requests",
-		"open_profile", "open_tab", "press_key", "read_page", "recipe", "response_body", "screenshot", "scroll", "snapshot", "type",
+		"open_profile", "open_tab", "press_key", "read_page", "recipe", "response_body", "screenshot", "scroll", "select_option", "snapshot", "type",
 		"upload_file", "wait_for"}
 	if !slices.Equal(names, want) {
 		t.Fatalf("tools = %v", names)

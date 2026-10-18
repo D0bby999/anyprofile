@@ -20,6 +20,9 @@ type Tab struct {
 	URL     string `json:"url"`
 	Title   string `json:"title"`
 	Current bool   `json:"current"`
+	// Dialog says what a browser dialog (alert, confirm, "Leave site?") of
+	// this tab showed during the call, and what was answered.
+	Dialog string `json:"dialog,omitempty"`
 }
 
 type targetInfo struct {
@@ -183,9 +186,14 @@ func (b *Browser) attach(ctx context.Context, targetID string) (*tab, error) {
 	b.mu.Lock()
 	b.tabs[targetID] = t
 	b.mu.Unlock()
-	// Network events start the log; Page and Runtime stay off, which the
-	// page could notice.
+	// Network events start the log. Page reports browser dialogs, which
+	// otherwise block the page and every call after them; like Network it
+	// leaves nothing a page script can see. Runtime stays off: a page can
+	// notice that one.
 	if err := b.call(ctx, t.session, "Network.enable", map[string]any{}, nil); err != nil {
+		return nil, err
+	}
+	if err := b.call(ctx, t.session, "Page.enable", map[string]any{}, nil); err != nil {
 		return nil, err
 	}
 	return t, nil
@@ -328,8 +336,17 @@ func (b *Browser) goTo(ctx context.Context, t *tab, rawURL string) (Tab, error) 
 		LoaderID  string `json:"loaderId"`
 		ErrorText string `json:"errorText"`
 	}
+	b.mu.Lock()
+	t.stayed = false
+	b.mu.Unlock()
 	if err := b.call(ctx, t.session, "Page.navigate", map[string]any{"url": rawURL}, &r); err != nil {
 		return Tab{}, err
+	}
+	b.mu.Lock()
+	stayed := t.stayed
+	b.mu.Unlock()
+	if stayed { // "Leave site?" answered Stay: describe says so
+		return b.describe(ctx, t), nil
 	}
 	if r.ErrorText != "" {
 		return Tab{}, apperr.Newf("agent_navigate", "the page did not load: %s", r.ErrorText)
@@ -381,7 +398,11 @@ func (b *Browser) describe(ctx context.Context, t *tab) Tab {
 		Title string `json:"title"`
 	}
 	b.evalJSON(ctx, t, "({url: location.href, title: document.title})", &v)
-	return Tab{ID: short(t.targetID), URL: v.URL, Title: v.Title, Current: true}
+	b.mu.Lock()
+	note := t.dialog
+	t.dialog = ""
+	b.mu.Unlock()
+	return Tab{ID: short(t.targetID), URL: v.URL, Title: v.Title, Current: true, Dialog: note}
 }
 
 // world returns the isolated world of the tab's current document, making one

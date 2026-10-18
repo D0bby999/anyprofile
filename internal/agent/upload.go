@@ -105,13 +105,13 @@ func (b *Browser) UploadFile(ctx context.Context, id, ref string, files []string
 	if err := b.callOn(ctx, t, ref, `function() { return this.tagName === 'INPUT' && this.type === 'file' }`, nil, &isInput); err != nil {
 		return Tab{}, err
 	}
-	node, _ := parseRef(ref)
+	node, f, _ := b.resolve(t, ref)
 	if !isInput {
 		if node, err = b.chooserInput(ctx, t, ref, len(files)); err != nil {
 			return Tab{}, err
 		}
 	}
-	if err := b.call(ctx, t.session, "DOM.setFileInputFiles", map[string]any{"files": files, "backendNodeId": node}, nil); err != nil {
+	if err := b.call(ctx, sessionOf(t, f), "DOM.setFileInputFiles", map[string]any{"files": files, "backendNodeId": node}, nil); err != nil {
 		return Tab{}, err
 	}
 	pause(500*time.Millisecond, 900*time.Millisecond) // let the page take the files
@@ -119,15 +119,11 @@ func (b *Browser) UploadFile(ctx context.Context, id, ref string, files []string
 }
 
 // chooserInput clicks ref with the file chooser intercepted and returns the
-// input the page opened it for. The chooser event needs the Page domain, on
-// only for this; unlike Runtime, it leaves nothing a page script can see.
+// input the page opened it for. The chooser event needs the Page domain,
+// which attach turns on.
 func (b *Browser) chooserInput(ctx context.Context, t *tab, ref string, count int) (int64, error) {
 	events, cancel := b.conn.Subscribe(64)
 	defer cancel()
-	if err := b.call(ctx, t.session, "Page.enable", map[string]any{}, nil); err != nil {
-		return 0, err
-	}
-	defer b.call(context.Background(), t.session, "Page.disable", nil, nil)
 	if err := b.call(ctx, t.session, "Page.setInterceptFileChooserDialog", map[string]any{"enabled": true}, nil); err != nil {
 		return 0, err
 	}

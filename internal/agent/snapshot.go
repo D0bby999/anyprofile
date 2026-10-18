@@ -8,8 +8,6 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-
-	"github.com/D0bby999/anyprofile/internal/apperr"
 )
 
 // MaxText caps what one snapshot or read returns, in characters.
@@ -67,24 +65,28 @@ func (b *Browser) Snapshot(ctx context.Context, id, ref string) (string, error) 
 	if err != nil {
 		return "", err
 	}
+	var f *frameSess
+	var want int64
+	if ref != "" {
+		if want, f, err = b.resolve(t, ref); err != nil {
+			return "", err
+		}
+	}
+	params := map[string]any{}
+	if f != nil && !f.oopif {
+		params["frameId"] = f.id
+	}
 	var r struct {
 		Nodes []axNode `json:"nodes"`
 	}
-	if err := b.call(ctx, t.session, "Accessibility.getFullAXTree", map[string]any{}, &r); err != nil {
+	if err := b.call(ctx, sessionOf(t, f), "Accessibility.getFullAXTree", params, &r); err != nil {
+		if ref != "" {
+			return "", errGone(ref)
+		}
 		return "", err
 	}
-	page := b.describe(ctx, t)
-	head := fmt.Sprintf("Tab %s: %s\nURL: %s\n\n", page.ID, page.Title, page.URL)
 	root := ""
-	if len(r.Nodes) > 0 {
-		root = r.Nodes[0].NodeID
-	}
 	if ref != "" {
-		want, err := parseRef(ref)
-		if err != nil {
-			return "", err
-		}
-		root = ""
 		for _, n := range r.Nodes {
 			if n.BackendDOMNodeID == want {
 				root = n.NodeID
@@ -95,12 +97,23 @@ func (b *Browser) Snapshot(ctx context.Context, id, ref string) (string, error) 
 			return "", errGone(ref)
 		}
 	}
-	return head + outline(r.Nodes, root, MaxText), nil
+	body := b.subtree(ctx, t, f, r.Nodes, root, MaxText)
+	page := b.describe(ctx, t)
+	head := fmt.Sprintf("Tab %s: %s\nURL: %s\n", page.ID, page.Title, page.URL)
+	if page.Dialog != "" {
+		head += "Dialog: " + page.Dialog + "\n"
+	}
+	return head + "\n" + body, nil
 }
 
 // outline renders the tree under root as indented lines, at most limit
 // characters.
-func outline(nodes []axNode, root string, limit int) string {
+// ref writes an element's ref; frame, when not nil, renders the frame an
+// <iframe> element shows, at depth.
+func outline(nodes []axNode, root string, limit int, ref func(int64) string, frame func(owner int64, depth int) string) string {
+	if ref == nil {
+		ref = func(n int64) string { return "e" + strconv.FormatInt(n, 10) }
+	}
 	byID := make(map[string]*axNode, len(nodes))
 	for i := range nodes {
 		byID[nodes[i].NodeID] = &nodes[i]
@@ -141,7 +154,7 @@ func outline(nodes []axNode, root string, limit int) string {
 					sb.WriteString(" " + strconv.Quote(name))
 				}
 				if hasRef {
-					fmt.Fprintf(&sb, " [ref=e%d]", n.BackendDOMNodeID)
+					sb.WriteString(" [ref=" + ref(n.BackendDOMNodeID) + "]")
 				}
 				for _, s := range states {
 					for _, p := range n.Properties {
@@ -167,6 +180,9 @@ func outline(nodes []axNode, root string, limit int) string {
 		for _, c := range n.ChildIDs {
 			walk(c, parentName, next)
 		}
+		if role == "Iframe" && frame != nil && n.BackendDOMNodeID != 0 && sb.Len() <= limit {
+			sb.WriteString(frame(n.BackendDOMNodeID, next))
+		}
 	}
 	walk(root, "", 0)
 	out := sb.String()
@@ -183,12 +199,4 @@ func clean(s string) string {
 		s = string(r[:200]) + "…"
 	}
 	return s
-}
-
-func parseRef(ref string) (int64, error) {
-	n, err := strconv.ParseInt(strings.TrimPrefix(ref, "e"), 10, 64)
-	if err != nil || !strings.HasPrefix(ref, "e") || n <= 0 {
-		return 0, apperr.Newf("agent_bad_ref", "%q is not a ref from snapshot (like e123)", ref)
-	}
-	return n, nil
 }

@@ -75,6 +75,13 @@ type tab struct {
 	worldID     int
 	mouseX      float64
 	mouseY      float64
+	frames      []*frameSess // iframes snapshots reached; a ref's f<k> is frames[k-1]
+	// dialog says what browser dialogs did since the last tool result.
+	dialog string
+	// leaveWarned is when a "Leave site?" was answered Stay; asked again
+	// soon after, the agent leaves. stayed: that happened in this call.
+	leaveWarned time.Time
+	stayed      bool
 }
 
 // For returns the browser of a running profile, starting over when the
@@ -178,6 +185,23 @@ func (b *Browser) listen(events <-chan cdppipe.Event, cancel func()) {
 				}
 			}
 			b.mu.Unlock()
+		case ev.Method == "Page.javascriptDialogOpening":
+			b.mu.Lock()
+			var t *tab
+			for _, x := range b.tabs {
+				if x.session == ev.SessionID {
+					t = x
+				}
+				for _, f := range x.frames {
+					if f.session == ev.SessionID && f.oopif {
+						t = x
+					}
+				}
+			}
+			b.mu.Unlock()
+			if t != nil {
+				go b.answerDialog(t, ev.SessionID, ev.Params)
+			}
 		case len(ev.Method) > 8 && ev.Method[:8] == "Network.":
 			b.mu.Lock()
 			for _, t := range b.tabs {

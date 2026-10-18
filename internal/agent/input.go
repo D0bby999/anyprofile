@@ -22,17 +22,28 @@ var pause = func(lo, hi time.Duration) {
 // point scrolls the element into view and returns its centre, in CSS pixels
 // of the viewport, which is what Input.dispatchMouseEvent takes.
 func (b *Browser) point(ctx context.Context, t *tab, ref string) (float64, float64, error) {
-	node, err := parseRef(ref)
+	node, f, err := b.resolve(t, ref)
 	if err != nil {
 		return 0, 0, err
 	}
-	if err := b.call(ctx, t.session, "DOM.scrollIntoViewIfNeeded", map[string]any{"backendNodeId": node}, nil); err != nil {
+	// An iframe of another process first shows its <iframe>, then the node.
+	for g := f; g != nil; g = g.parent {
+		if g.oopif {
+			b.call(ctx, g.parentSession(t), "DOM.scrollIntoViewIfNeeded", map[string]any{"backendNodeId": g.owner}, nil)
+		}
+	}
+	session := sessionOf(t, f)
+	if err := b.call(ctx, session, "DOM.scrollIntoViewIfNeeded", map[string]any{"backendNodeId": node}, nil); err != nil {
 		return 0, 0, errGone(ref)
 	}
 	var r struct {
 		Quads [][]float64 `json:"quads"`
 	}
-	if err := b.call(ctx, t.session, "DOM.getContentQuads", map[string]any{"backendNodeId": node}, &r); err != nil {
+	if err := b.call(ctx, session, "DOM.getContentQuads", map[string]any{"backendNodeId": node}, &r); err != nil {
+		return 0, 0, errGone(ref)
+	}
+	ox, oy, err := b.frameOffset(ctx, t, f)
+	if err != nil {
 		return 0, 0, errGone(ref)
 	}
 	for _, q := range r.Quads {
@@ -45,7 +56,7 @@ func (b *Browser) point(ctx context.Context, t *tab, ref string) (float64, float
 			minY, maxY = min(minY, q[i+1]), max(maxY, q[i+1])
 		}
 		if maxX-minX >= 1 && maxY-minY >= 1 {
-			return (minX + maxX) / 2, (minY + maxY) / 2, nil
+			return ox + (minX+maxX)/2, oy + (minY+maxY)/2, nil
 		}
 	}
 	return 0, 0, apperr.Newf("agent_not_visible", "%s has no size on screen; it may be hidden", ref)

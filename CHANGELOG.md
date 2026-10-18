@@ -84,6 +84,13 @@ keeps them together.
   puts their windows side by side on the screen AnyProfile is on. Windows on
   another desktop are moved but not brought up, so the screen never jumps.
   Scripts and agents cannot resize windows.
+- Agents get through browser dialogs: alert and confirm are answered OK,
+  prompt is cancelled, and "Leave site?" keeps the page the first time (asked
+  again, it leaves); each is reported in the tool result. Before, a dialog
+  froze the tab and every tool after it.
+- Agents reach iframes: snapshot shows their content with refs (e12f1),
+  same-site and cross-site ones (sign-in boxes, captchas), and click and type
+  work there. New tool select_option for native drop-downs.
 - Closing a profile on macOS asks the browser over its DevTools pipe first,
   then with SIGHUP: a few browsers whose last window had just closed did not
   hear the signal and were killed, losing their newest cookies.
