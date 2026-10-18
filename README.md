@@ -7,6 +7,9 @@ can be worked on side by side without their sessions mixing.
 
 Status: beta. macOS 13+ on Apple Silicon, and Windows 10/11 x64.
 
+Website: [anytools.world/anyprofile](https://anytools.world/en/anyprofile)
+([Tiếng Việt](https://anytools.world/vi/anyprofile)).
+
 ## How it works
 
 - **Engines:** [Apostate](https://github.com/heretic-tech/apostate) (default,
@@ -32,8 +35,8 @@ Status: beta. macOS 13+ on Apple Silicon, and Windows 10/11 x64.
 
 ## Install
 
-Download the newest release from
-[Releases](https://github.com/D0bby999/anyprofile/releases/latest): `AnyProfile-macos-arm64.zip` (unzip, move
+Download the newest release from [the website](https://anytools.world/en/anyprofile)
+or [Releases](https://github.com/D0bby999/anyprofile/releases/latest): `AnyProfile-macos-arm64.zip` (unzip, move
 `AnyProfile.app` to Applications) or `AnyProfile-amd64-installer.exe`.
 Builds are not signed by Apple or Microsoft yet: on macOS, open it once from
 System Settings → Privacy & Security → Open Anyway; on Windows, choose More
