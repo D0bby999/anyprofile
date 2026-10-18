@@ -363,6 +363,13 @@ export const vi: Messages = {
     import: 'Nhập bookmark\u2026', folder: 'Imported', closeFirst: 'Đóng profile trước',
     imported: (n: number) => `Đã nhập ${n} bookmark vào thư mục "Imported" trên thanh bookmark.`,
   },
+  donate: {
+    title: 'Ủng hộ AnyProfile',
+    desc: 'AnyProfile miễn phí và mã nguồn mở. Nếu app giúp bạn đỡ việc, bạn có thể ủng hộ để dự án tiếp tục. GitHub hoặc Stripe xử lý thanh toán; AnyProfile không thấy gì.',
+    github: 'Tài trợ qua GitHub',
+    stripe: 'Ủng hộ bằng thẻ',
+    stripeNote: 'Ủng hộ bằng thẻ chuyển đến Cassau, LLC, công ty đứng sau AnyProfile và PostClaw, nên sao kê của bạn ghi CASSAU, LLC.',
+  },
   support: {
     title: 'Trợ giúp',
     copy: 'Sao chép thông tin chẩn đoán',

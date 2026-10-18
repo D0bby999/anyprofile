@@ -362,6 +362,13 @@ export const en = {
     import: 'Import bookmarks\u2026', folder: 'Imported', closeFirst: 'Close the profile first',
     imported: (n: number) => `Imported ${n} bookmarks into the "Imported" folder on the bookmarks bar.`,
   },
+  donate: {
+    title: 'Support AnyProfile',
+    desc: 'AnyProfile is free and open source. If it saves you time, you can chip in to keep it going. GitHub or Stripe takes the payment; AnyProfile sees none of it.',
+    github: 'Sponsor on GitHub',
+    stripe: 'Donate by card',
+    stripeNote: 'Card donations go to Cassau, LLC, the company behind AnyProfile and PostClaw, so your statement shows CASSAU, LLC.',
+  },
   support: {
     title: 'Help',
     copy: 'Copy diagnostics',

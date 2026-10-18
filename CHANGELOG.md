@@ -15,6 +15,8 @@ keeps them together.
 - Buy proxies: 14 providers suited to long-lived accounts, with their logos and
   proxy types, filtered by type; the button is green so it stands apart.
   Opened in your browser.
+- Settings → Support AnyProfile: donate through GitHub Sponsors or by card
+  (Stripe).
 - Creator tools: PostClaw, plus free open-source apps to edit video, record the
   screen, caption, clean up audio and upscale images.
 - AI agents: Claude Code and other MCP clients open profiles and work in

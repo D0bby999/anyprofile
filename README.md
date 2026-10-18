@@ -63,6 +63,12 @@ proxy user names and secrets removed. Paste it into a GitHub issue.
 
 What the app stores and sends, and the terms of use: `docs/privacy-and-terms.md`.
 
+## Support the project
+
+AnyProfile is free. If it saves you time, sponsor it on
+[GitHub Sponsors](https://github.com/sponsors/D0bby999), donate by card through
+[Stripe](https://donate.stripe.com/5kQaEW4es59c0Ey9reejK00), or use Settings → Support AnyProfile in the app.
+
 ## Security
 
 AnyProfile is built to be handed to other people, so:

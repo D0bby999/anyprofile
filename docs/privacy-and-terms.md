@@ -30,6 +30,9 @@ There is no AnyProfile account and no AnyProfile server.
   opens in your default browser, not in a profile. Some are referral links, so AnyProfile may earn a commission
   and you pay the same price; PostClaw links carry `utm_source=anyprofile`. The list and the logos ship with
   the app, and AnyProfile itself sends nothing about the click.
+- **When you click a donate button** (Settings → Support AnyProfile): GitHub Sponsors or a Stripe payment page
+  opens in your default browser, and that service takes the payment under its own privacy policy. Card
+  donations go to Cassau, LLC, the company behind AnyProfile and PostClaw. AnyProfile sends nothing about it.
 - **When you connect an AI agent (MCP):** the agent reads the pages you let it work on, and sends what it reads
   to its own model provider (Anthropic for Claude Code, for example). AnyProfile sends nothing for it; the log
   records which tool ran on which profile, never page content or typed text. An agent can upload only the files
@@ -75,6 +78,9 @@ Không có tài khoản AnyProfile, không có máy chủ AnyProfile.
   mở trong trình duyệt mặc định, không mở trong profile. Một số là link giới thiệu, nên AnyProfile có thể nhận hoa
   hồng, giá bạn trả không đổi; link PostClaw mang `utm_source=anyprofile`. Danh sách và logo nằm sẵn trong app,
   và AnyProfile không tự gửi gì về lượt bấm.
+- **Khi bạn bấm nút ủng hộ** (Cài đặt → Ủng hộ AnyProfile): GitHub Sponsors hoặc trang thanh toán Stripe mở trong
+  trình duyệt mặc định, và dịch vụ đó xử lý thanh toán theo chính sách riêng của họ. Ủng hộ bằng thẻ chuyển đến
+  Cassau, LLC, công ty đứng sau AnyProfile và PostClaw. AnyProfile không gửi gì về việc này.
 - **Khi bạn kết nối một AI agent (MCP):** agent đọc các trang bạn cho nó làm việc, và gửi những gì nó đọc lên nhà
   cung cấp mô hình của chính nó (ví dụ Anthropic với Claude Code). AnyProfile không gửi gì cho việc này; log chỉ ghi
   tool nào chạy trên profile nào, không bao giờ ghi nội dung trang hay chữ đã gõ. Agent chỉ upload được các file

@@ -10,6 +10,8 @@ import { BackupSettings } from '../components/backup-settings'
 import { DefaultsSettings, OnOpenSettings } from '../components/defaults-settings'
 import { UpdateSettings } from '../components/update-settings'
 import { SupportSettings } from '../components/support-settings'
+import { DonateSettings } from '../components/donate-settings'
+import { shownDonateLinks } from '../lib/donate'
 import { APISettings } from '../components/api-settings'
 import { ExtensionSettings } from '../components/extension-settings'
 import { PageHead } from '../components/page-head'
@@ -109,6 +111,14 @@ export function SettingsPage({ engines, engineCounts, defaults, onEnginesChanged
             <span className="grow">{fileVaultOn ? t.settings.fileVaultOn : t.settings.fileVaultOff}</span></div>
           <p className="desc" style={{ margin: 0 }}>{t.settings.secretsNote}</p>
         </section>
+
+        {shownDonateLinks().length > 0 && (
+          <section className="card pad">
+            <h2>{t.donate.title}</h2>
+            <p className="desc">{t.donate.desc}</p>
+            <DonateSettings />
+          </section>
+        )}
 
         <section className="card pad">
           <h2>{t.support.title}</h2>
