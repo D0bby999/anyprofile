@@ -20,14 +20,21 @@ dev: fury-config
 # Keychain "Always Allow" to each build's cdhash, so a rebuild asks again,
 # once, at launch (secrets.Vault: one Keychain item for every secret).
 SIGN_ID ?= $(shell security find-identity -v -p codesigning 2>/dev/null | grep -q '"AnyProfile Dev"' && echo 'AnyProfile Dev' || echo -)
+# A release signed with a Developer ID adds the hardened runtime and a secure
+# timestamp, which notarization requires (release.yml sets both).
+SIGN_FLAGS ?=
 
 # wails build signs the bundle ad hoc; adding the helper breaks that seal,
 # so the bundle is re-signed after the copy.
 build: fury-config
 	$(WAILS) build -clean -platform darwin/arm64 -ldflags "$(LDFLAGS)"
 	cp $(FURY_CONFIG) $(APP)/Contents/Resources/fury-config
-	codesign --force --deep --sign "$(SIGN_ID)" $(APP)
+	codesign --force --deep $(SIGN_FLAGS) --sign "$(SIGN_ID)" $(APP)
 	codesign --verify --deep --strict $(APP)
+
+# The disk image people download (open it, drag AnyProfile to Applications).
+dmg: build
+	scripts/make-dmg.sh $(APP) build/bin/AnyProfile-macos-arm64.dmg
 
 # Windows x64 app and installer. Runs on Windows (Git Bash): fury-config needs
 # the MSVC Rust toolchain and the installer NSIS. CI runs the same steps in

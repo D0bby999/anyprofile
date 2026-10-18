@@ -30,6 +30,16 @@ jobs:
   macos:
     needs: version
     runs-on: macos-14
+    # A Developer ID and an App Store Connect API key make the build signed and
+    # notarized, so macOS opens the downloaded app without "Apple could not
+    # verify". Without these secrets the steps below skip and the build is
+    # signed ad hoc, as before (docs/releasing.md: Apple signing).
+    env:
+      MACOS_CERT_P12: ${{ secrets.MACOS_CERT_P12 }}
+      MACOS_CERT_PASSWORD: ${{ secrets.MACOS_CERT_PASSWORD }}
+      APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+      APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+      APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -39,14 +49,50 @@ jobs:
         with:
           node-version: 22
       - run: go install github.com/wailsapp/wails/v2/cmd/wails@v2.14.0
+      - name: Import the Developer ID certificate
+        if: env.MACOS_CERT_P12 != ''
+        run: |
+          kc="$RUNNER_TEMP/sign.keychain-db"
+          pw=$(openssl rand -hex 16)
+          security create-keychain -p "$pw" "$kc"
+          security set-keychain-settings -lut 21600 "$kc"
+          security unlock-keychain -p "$pw" "$kc"
+          printf '%s' "$MACOS_CERT_P12" | base64 --decode > "$RUNNER_TEMP/cert.p12"
+          security import "$RUNNER_TEMP/cert.p12" -k "$kc" -P "$MACOS_CERT_PASSWORD" -T /usr/bin/codesign
+          rm "$RUNNER_TEMP/cert.p12"
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$pw" "$kc" >/dev/null
+          # shellcheck disable=SC2046 # one argument per keychain already listed
+          security list-keychains -d user -s "$kc" $(security list-keychains -d user | tr -d '"')
+          id=$(security find-identity -v -p codesigning "$kc" | awk -F'"' '/Developer ID Application/ {print $2; exit}')
+          test -n "$id" || { echo "no Developer ID Application identity in MACOS_CERT_P12" >&2; exit 1; }
+          echo "MACOS_SIGN_ID=$id" >> "$GITHUB_ENV"
       - name: Build
-        run: make build VERSION=${{ needs.version.outputs.version }} WAILS=$(go env GOPATH)/bin/wails
+        run: |
+          if [ -n "${MACOS_SIGN_ID:-}" ]; then
+            set -- SIGN_ID="$MACOS_SIGN_ID" SIGN_FLAGS="--options runtime --timestamp"
+          fi
+          make build VERSION=${{ needs.version.outputs.version }} WAILS="$(go env GOPATH)/bin/wails" "$@"
+      # The in-app updater downloads the .zip (0.1.0 and 0.1.1 unpack only
+      # that); people download the disk image.
       - name: Zip the app
         run: ditto -c -k --keepParent build/bin/AnyProfile.app AnyProfile-macos-arm64.zip
+      - name: Make the disk image
+        run: scripts/make-dmg.sh build/bin/AnyProfile.app AnyProfile-macos-arm64.dmg
+      - name: Notarize the disk image
+        if: env.MACOS_SIGN_ID != '' && env.APPLE_API_KEY != ''
+        run: |
+          printf '%s' "$APPLE_API_KEY" | base64 --decode > "$RUNNER_TEMP/api-key.p8"
+          xcrun notarytool submit AnyProfile-macos-arm64.dmg --key "$RUNNER_TEMP/api-key.p8" \
+            --key-id "$APPLE_API_KEY_ID" --issuer "$APPLE_API_ISSUER" --wait --timeout 30m
+          rm "$RUNNER_TEMP/api-key.p8"
+          xcrun stapler staple AnyProfile-macos-arm64.dmg
+          spctl -a -vv -t open --context context:primary-signature AnyProfile-macos-arm64.dmg
       - uses: actions/upload-artifact@v4
         with:
           name: macos
-          path: AnyProfile-macos-arm64.zip
+          path: |
+            AnyProfile-macos-arm64.zip
+            AnyProfile-macos-arm64.dmg
 
   windows:
     needs: version
@@ -100,7 +146,8 @@ jobs:
           git tag -l --format='%(contents)' "$GITHUB_REF_NAME" > notes.txt
           go run ./tools/release manifest -version "$V" -notes-file notes.txt -engines engines.json -o dist/latest.json \
             -base-url "https://github.com/$GITHUB_REPOSITORY/releases/download/$GITHUB_REF_NAME" \
-            darwin-arm64=dist/AnyProfile-macos-arm64.zip windows-amd64=dist/AnyProfile-amd64-installer.exe
+            darwin-arm64=dist/AnyProfile-macos-arm64.zip windows-amd64=dist/AnyProfile-amd64-installer.exe \
+            darwin-arm64-dmg=dist/AnyProfile-macos-arm64.dmg
       - name: Publish the release
         env:
           GH_TOKEN: ${{ github.token }}

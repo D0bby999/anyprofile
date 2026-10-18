@@ -3,6 +3,14 @@
 The notes of each release tag are shown in the app's update prompt; this file
 keeps them together.
 
+## Unreleased
+
+- macOS downloads as a disk image: open it and drag AnyProfile onto
+  Applications. The in-app updater keeps using the .zip. The release
+  workflow can sign with a Developer ID and notarize the image, which lets
+  macOS open it without "Apple could not verify"; it does so once the Apple
+  secrets exist (docs/releasing.md).
+
 ## 0.1.1 (2026-10-18)
 
 - Engine versions: Settings → Engines lists every version of Apostate and

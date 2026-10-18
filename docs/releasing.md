@@ -43,9 +43,46 @@ không tự cập nhật được: app báo người dùng chuyển `AnyProfile.
    ```
 
 3. Workflow `.github/workflows/release.yml` build bản macOS và Windows, ký, rồi tạo release có
-   `AnyProfile-macos-arm64.zip`, `AnyProfile-amd64-installer.exe` và `latest.json`.
+   `AnyProfile-macos-arm64.dmg` (người dùng tải để cài), `AnyProfile-macos-arm64.zip` (trình cập nhật trong app
+   tải; bản 0.1.0 và 0.1.1 chỉ biết giải nén `.zip`), `AnyProfile-amd64-installer.exe` và `latest.json`.
+   `latest.json` ghi DMG dưới khoá `darwin-arm64-dmg`, để trang tải trên anytools.world có link và SHA-256 của nó.
+
+Dựng DMG trên máy: `make dmg` (cần `python3`; `scripts/make-dmg.sh` cài `dmgbuild` vào một venv tạm). Hình nền
+cửa sổ DMG nằm trong `build/darwin/dmg/`.
 
 App đọc `https://github.com/D0bby999/anyprofile/releases/latest/download/latest.json` (repo công khai).
+
+## Ký và công chứng bản macOS (Apple Developer)
+
+Chưa có Developer ID thì app được ký ad hoc, và lần đầu mở bản tải về macOS hiện "Apple could not verify
+AnyProfile…": người dùng phải vào System Settings → Privacy & Security → Open Anyway. Chỉ app ký bằng Developer ID
+và được Apple công chứng (notarize) mới mở thẳng; đóng gói `.dmg` hay `.pkg` không thay được bước này (đã thử với
+`spctl`: app kéo ra từ DMG chưa công chứng vẫn bị `rejected`).
+
+Workflow đã có sẵn các bước ký và công chứng; chúng tự bỏ qua cho tới khi có đủ secret. Khi có tài khoản:
+
+1. Đăng ký [Apple Developer Program](https://developer.apple.com/programs/) (99 USD/năm).
+2. Tạo chứng chỉ **Developer ID Application**: Xcode → Settings → Accounts → Manage Certificates → + → Developer
+   ID Application. Trong Keychain Access, xuất chứng chỉ kèm khoá riêng thành file `.p12`, đặt mật khẩu.
+3. Tạo khoá API công chứng: App Store Connect → Users and Access → Integrations → App Store Connect API → Team
+   Keys → +, quyền Developer. Tải file `AuthKey_<ID>.p8` (chỉ tải được một lần), ghi lại Key ID và Issuer ID.
+4. Đưa lên GitHub, không in ra màn hình:
+
+   ```
+   base64 -i DeveloperID.p12 | gh secret set MACOS_CERT_P12 -R D0bby999/anyprofile
+   gh secret set MACOS_CERT_PASSWORD -R D0bby999/anyprofile        # gõ mật khẩu của .p12
+   base64 -i AuthKey_XXXX.p8 | gh secret set APPLE_API_KEY -R D0bby999/anyprofile
+   gh secret set APPLE_API_KEY_ID -R D0bby999/anyprofile
+   gh secret set APPLE_API_ISSUER -R D0bby999/anyprofile
+   ```
+
+5. Ra phiên bản tiếp theo như thường. Bước macOS ký app bằng Developer ID (hardened runtime, secure timestamp),
+   ký DMG, gửi Apple công chứng, đóng dấu (staple) vào DMG, rồi kiểm bằng `spctl`.
+
+Sau đó Keychain cũng thôi hỏi lại ở mỗi bản cập nhật: macOS nhận app theo Team ID thay vì theo từng bản build.
+Bản cập nhật đầu tiên từ bản ad hoc sang bản có Developer ID vẫn hỏi một lần.
+
+Các bước này chưa chạy thật lần nào (chưa có tài khoản): lần phát hành đầu có secret, xem kỹ log bước macOS.
 
 ## Engine mới mà không ra app mới
 

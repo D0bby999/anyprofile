@@ -4,7 +4,7 @@
 set -eu
 cd "$(dirname "$0")/.."
 missing=$(git ls-files --cached --others --exclude-standard -- \
-  '*.go' '*.ts' '*.tsx' '*.mjs' '*.rs' '*.sql' '*.sh' '*.css' \
+  '*.go' '*.ts' '*.tsx' '*.mjs' '*.rs' '*.sql' '*.sh' '*.css' '*.py' \
   ':!frontend/wailsjs/**' ':!*.d.ts' ':!examples/**' |
   while read -r f; do head -n 3 "$f" | grep -q 'SPDX-License-Identifier: AGPL-3.0-or-later' || echo "$f"; done)
 if [ -n "$missing" ]; then

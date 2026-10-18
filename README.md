@@ -36,8 +36,8 @@ Website: [anytools.world/anyprofile](https://anytools.world/en/anyprofile)
 ## Install
 
 Download the newest release from [the website](https://anytools.world/en/anyprofile)
-or [Releases](https://github.com/D0bby999/anyprofile/releases/latest): `AnyProfile-macos-arm64.zip` (unzip, move
-`AnyProfile.app` to Applications) or `AnyProfile-amd64-installer.exe`.
+or [Releases](https://github.com/D0bby999/anyprofile/releases/latest): `AnyProfile-macos-arm64.dmg` (open it,
+drag AnyProfile onto Applications) or `AnyProfile-amd64-installer.exe`.
 Builds are not signed by Apple or Microsoft yet: on macOS, open it once from
 System Settings → Privacy & Security → Open Anyway; on Windows, choose More
 info → Run anyway. Windows details: `docs/windows.md`.
