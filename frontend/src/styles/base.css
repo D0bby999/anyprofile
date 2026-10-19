@@ -61,9 +61,9 @@ input, textarea { caret-color: var(--accent); }
 .btn.primary .icon { color: currentColor; }
 .btn.primary:hover:not(:disabled) { color: var(--on-fill); background: var(--accent-fill-hover); border-color: var(--accent-fill-hover); box-shadow: var(--glow-strong); }
 .btn.primary:active:not(:disabled) { background: var(--accent-fill-press); box-shadow: none; }
-.btn.stop { color: var(--on-fill); background: var(--danger-fill); border-color: var(--danger-fill); box-shadow: 0 1px 2px rgba(220, 59, 50, .26); }
-.btn.stop .icon { color: currentColor; }
-.btn.stop:hover:not(:disabled) { color: var(--on-fill); background: var(--danger-fill-hover); border-color: var(--danger-fill-hover); }
+/* Close a running browser: an ordinary button with a red square, since closing loses nothing. */
+.btn.stop .icon { color: var(--danger); }
+.btn.stop:hover:not(:disabled) .icon { color: var(--danger); }
 /* Buy: green, so it never reads as the page's blue primary action or a plain tool button. */
 .btn.buy { color: var(--success-ink); background: var(--success-soft); border-color: var(--success-line); }
 .btn.buy .icon { color: currentColor; }

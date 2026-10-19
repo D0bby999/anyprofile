@@ -17,3 +17,6 @@ export function machineLabel(row: { engine: string; personaId: string; machine: 
   if (row.engine === 'fury') return personaLabel(row.personaId)
   return row.machine || t.engines.machinePending
 }
+
+/** Whether the machine is known yet; lists leave an unknown one out instead of repeating the placeholder. */
+export const machineKnown = (row: { engine: string; machine: string }) => row.engine === 'fury' || !!row.machine

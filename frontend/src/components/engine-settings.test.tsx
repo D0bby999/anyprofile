@@ -47,6 +47,14 @@ describe('EngineSettings', () => {
     expect(screen.getByText(t.engines.usedBy(2))).toBeTruthy()
   })
 
+  it('folds away an engine that is not installed, not chosen and not used', () => {
+    const fresh = [engines[0], main.EngineInfo.createFrom({ ...engines[1], installed: false })]
+    const { container } = render(<EngineSettings engines={fresh} counts={{}} defaults={defaults} onChanged={vi.fn()} />)
+    const older = container.querySelector('details.engine-older')!
+    expect(older.querySelector('summary')!.textContent).toBe(`${t.engines.older}: Fury`)
+    expect(older.querySelector('.btn.primary')).toBeNull()
+  })
+
   it('locks the default choice for an engine that is not installed', () => {
     render(<EngineSettings engines={engines} counts={{}} defaults={defaults} onChanged={vi.fn()} />)
     const radios = screen.getAllByRole('radio') as HTMLInputElement[]

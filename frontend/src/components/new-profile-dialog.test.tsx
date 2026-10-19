@@ -2,7 +2,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { t } from '../i18n'
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { service, site } from '../api'
 
 const sites = [
@@ -164,6 +164,11 @@ describe('NewProfileDialog', () => {
     fireEvent.change(name, { target: { value: 'Shop' } })
     await waitFor(() => expect((screen.getByRole('combobox', { name: t.create.proxy }) as HTMLSelectElement).value).toBe(''))
     expect(screen.getByText(t.create.realIpWarning)).toBeTruthy()
+    // The warning leads to buying one, in a dialog over this one.
+    fireEvent.click(screen.getByRole('button', { name: t.proxies.buy }))
+    const buy = screen.getByRole('dialog', { name: t.proxies.buy })
+    fireEvent.click(within(buy).getAllByRole('button', { name: t.common.close })[0])
+    expect(screen.queryByRole('dialog', { name: t.proxies.buy })).toBeNull()
     expect((screen.getByRole('button', { name: t.create.submit }) as HTMLButtonElement).disabled).toBe(false)
     fireEvent.submit(name.closest('form')!)
     await waitFor(() => expect(onCreated).toHaveBeenCalled())

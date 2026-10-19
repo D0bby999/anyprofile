@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Api, onDataChanged, service } from '../api'
 import { language, t } from '../i18n'
 import { errorText, relativeTime } from '../lib/format'
@@ -7,7 +7,7 @@ import { EmptyState } from '../components/empty-state'
 import { Icon } from '../components/icons'
 import { PageHead } from '../components/page-head'
 import { ProxyEditDialog } from '../components/proxy-edit-dialog'
-import { BuyProxyDialog } from '../components/partner-grid'
+import { BuyProxiesButton } from '../components/partner-grid'
 import { useToast } from '../components/toast'
 import { useConfirm } from '../components/confirm'
 
@@ -27,8 +27,6 @@ export function ProxiesPage({ onChanged }: { onChanged: () => void }) {
   const confirm = useConfirm()
   const [editing, setEditing] = useState<service.ProxyRow | null>(null)
   const [expiresOn, setExpiresOn] = useState('')
-  const [buying, setBuying] = useState(false)
-  const paste = useRef<HTMLTextAreaElement>(null)
 
   const load = useCallback(() => { Api.ListProxies().then((r) => setRows(r ?? [])).catch((e) => toast.error(errorText(e))) }, [toast])
   useEffect(load, [load])
@@ -63,14 +61,15 @@ export function ProxiesPage({ onChanged }: { onChanged: () => void }) {
           onClick={() => run('all', () => Api.CheckAllProxies())}>
           <Icon name="refresh" />{t.proxies.checkAll}
         </button>
-        <button className="btn buy nodrag" onClick={() => setBuying(true)}><Icon name="cart" />{t.proxies.buy}</button>
+        <BuyProxiesButton className="btn buy nodrag" />
       </PageHead>
       <div className="pagebody">
         <section className="card pad">
           <h2>{t.proxies.addTitle}</h2>
           <p className="desc">{t.proxies.addDesc}</p>
-          <textarea id="proxy-paste" ref={paste} className="textarea code" rows={4} value={text} placeholder={t.proxies.pastePlaceholder}
-            spellCheck={false} autoComplete="off" onChange={(e) => setText(e.target.value)} aria-label={t.proxies.addTitle} />          <div className="row">
+          <textarea id="proxy-paste" className="textarea code" rows={4} value={text} placeholder={t.proxies.pastePlaceholder}
+            spellCheck={false} autoComplete="off" onChange={(e) => setText(e.target.value)} aria-label={t.proxies.addTitle} />
+          <div className="row">
             <button className={`btn primary${busy === 'import' ? ' busy' : ''}`} aria-busy={busy === 'import'} disabled={!!busy || !text.trim()} onClick={importList}>
               <Icon name={busy === 'import' ? 'refresh' : 'plus'} />{busy === 'import' ? t.proxies.importing : t.proxies.import}
             </button>
@@ -86,11 +85,9 @@ export function ProxiesPage({ onChanged }: { onChanged: () => void }) {
         <section className="card fill" style={{ minHeight: 220 }}>
           <div className="tablewrap">
             {rows.length === 0 ? (
+              // The paste box sits right above, so the empty state only points to buying.
               <EmptyState icon="proxy" title={t.proxies.emptyTitle}>
-                <span className="row">
-                  <button className="btn" onClick={() => paste.current?.focus()}>{t.proxies.emptyAction}</button>
-                  <button className="btn buy" onClick={() => setBuying(true)}><Icon name="cart" />{t.proxies.buy}</button>
-                </span>
+                <BuyProxiesButton />
               </EmptyState>
             ) : (
               <table className="table">
@@ -135,7 +132,6 @@ export function ProxiesPage({ onChanged }: { onChanged: () => void }) {
           </div>
         </section>
       </div>
-      {buying && <BuyProxyDialog onClose={() => setBuying(false)} />}
       {editing && <ProxyEditDialog row={editing} onClose={() => setEditing(null)} onSaved={() => { setEditing(null); load(); onChanged() }} />}
     </>
   )

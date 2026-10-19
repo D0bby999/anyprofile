@@ -4,8 +4,9 @@ import { t } from '../i18n'
 import { flagText, type Flag } from './flags'
 
 export type HealthLevel = 'danger' | 'warn' | 'info' | 'ok' | 'none'
-export type Health = { level: HealthLevel; label: string; reasons: string[] }
-type Reason = { level: HealthLevel; label: string; text: string }
+/** tone, when set, is the pill's colour instead of the level's: a real IP is only info, yet reads as a risk. */
+export type Health = { level: HealthLevel; label: string; reasons: string[]; tone?: HealthLevel }
+type Reason = { level: HealthLevel; label: string; text: string; tone?: HealthLevel }
 
 const rank: Record<HealthLevel, number> = { danger: 4, warn: 3, info: 2, ok: 1, none: 0 }
 
@@ -23,7 +24,7 @@ export function health(row: Row, now: Date = new Date()): Health {
   }
   for (const f of row.flags ?? []) {
     const { label, text } = flagText(f)
-    r.push({ level: (f.level as HealthLevel) || 'info', label, text })
+    r.push({ level: (f.level as HealthLevel) || 'info', label, text, tone: f.id === 'direct' ? 'warn' : undefined })
   }
   for (const c of row.checks ?? []) {
     if (!c.ok) r.push({ level: (c.level as HealthLevel) || 'warn', label: t.checks.name[c.id] ?? c.id, text: t.checks.text[c.id] ?? c.id })
@@ -37,7 +38,7 @@ export function health(row: Row, now: Date = new Date()): Health {
   if (!row.fpVerdict && !row.lastOpenAt) r.push({ level: 'none', label: h.new, text: h.newText })
   if (r.length === 0) return { level: 'none', label: '', reasons: [] }
   const top = r.reduce((a, b) => (rank[b.level] > rank[a.level] ? b : a))
-  return { level: top.level, label: top.label, reasons: r.map((x) => x.text) }
+  return { level: top.level, label: top.label, reasons: r.map((x) => x.text), tone: top.tone }
 }
 
 /** Counted under Needs attention: a warning or a danger in the profile's health. */

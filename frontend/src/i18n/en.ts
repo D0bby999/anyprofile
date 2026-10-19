@@ -68,8 +68,9 @@ export const en = {
   engines: {
     title: 'Browser engines', recommended: 'Recommended',
     names: { apostate: 'Apostate', fury: 'Fury' } as Record<string, string>,
-    apostateDesc: 'Patched Chromium that passes BrowserScan without canvas or WebGL flags. Used for new profiles.',
-    furyDesc: 'Patched Chromium used by profiles created before October 2026. Kept so their fingerprint never changes.',
+    apostateDesc: 'A Chromium browser that looks to websites like an ordinary computer. Used for new profiles.',
+    furyDesc: 'The older engine, for profiles created before October 2026. Kept so their fingerprint never changes.',
+    older: 'Older engine',
     version: (v: string) => `Version ${v}`, chromium: (v: string) => `Chromium ${v}`,
     usedBy: (n: number) => `Profiles using it: ${n}`,
     useForNew: 'Use for new profiles',
@@ -78,7 +79,7 @@ export const en = {
     installing: (pct: number, mb: string) => `Downloading ${pct}%${mb ? `, ${mb}` : ''}`,
     ready: (name: string, v: string) => `${name} ${v} ready`, missing: (name: string) => `${name} not installed`,
     advanced: 'Advanced', engineLabel: 'Browser engine', engineHint: 'A profile keeps its engine for life.',
-    notInstalledSuffix: '(not installed)', machinePending: 'Machine shown after first open',
+    notInstalledSuffix: '(not installed)', machinePending: 'Device picked on first open',
     versions: (n: number) => `Versions (${n})`,
     newer: (v: string) => `Version ${v} is available`,
     newerHint: 'Once it is installed, profiles move to it when they next open, if it keeps their machine. The others stay on their version.',
@@ -159,7 +160,7 @@ export const en = {
     engineText: 'AnyProfile runs each profile in Apostate, a patched Chromium. It is checked against the publisher\u2019s signature before first use.',
     engineDone: (v: string) => `Apostate ${v} installed`,
     install: 'Install', fileVault: `Turn on ${disk} so saved logins stay encrypted on disk.`,
-    proxyTitle: 'Add a proxy', proxyText: 'Each profile needs its own sticky proxy, so every account has its own IP.',
+    proxyTitle: 'Add a proxy', proxyText: 'Give every account its own IP with a sticky proxy: one that keeps the same IP for hours or days.',
     proxyPlaceholder: 'host:port:user:password\nhttp://user:password@host:port',
     checkAdd: 'Check and add', checking: 'Checking…', continue: 'Continue',
     proxyDone: (n: number) => (n === 1 ? '1 proxy added' : `${n} proxies added`), noProxyDone: 'Continuing without a proxy',
@@ -242,7 +243,7 @@ export const en = {
   proxies: {
     title: 'Proxies', total: (n: number) => `${n} proxies`,
     addTitle: 'Add proxies',
-    addDesc: 'Paste one proxy per line. Only sticky-port proxies work with profiles.',
+    addDesc: 'Paste one proxy per line. Use sticky proxies, which keep one IP for hours or days; rotating ones change IP on every connection.',
     pastePlaceholder: 'http://user:pass@host:port\nhost:port:user:pass\nsocks5://user:pass@host:port',
     import: 'Add and check', importing: 'Adding and checking…',
     added: (n: number) => `Added ${n} proxies.`,
@@ -256,7 +257,7 @@ export const en = {
     expires: 'Expires', expiresOn: 'Expires on (optional)', expiringSoon: 'Expires soon', expired: 'Expired',
     note: 'Note', editTitle: 'Edit proxy',
     unused: 'Unused',
-    emptyTitle: 'Add a sticky proxy to give each profile its own IP.', emptyAction: 'Paste proxies',
+    emptyTitle: 'No proxies yet. Paste yours above, or buy some.',
     buy: 'Buy proxies',
   },
   tools: {
@@ -309,6 +310,8 @@ export const en = {
     themeTitle: 'Appearance', themeSystem: 'System', themeLight: 'Light', themeDark: 'Dark',
     languageTitle: 'Language', languageEn: 'English', languageVi: 'Tiếng Việt',
     securityTitle: 'Security',
+    sections: 'Sections',
+    groups: { general: 'General', profiles: 'Profiles', automation: 'Automation', data: 'Data and backup', engines: 'Browser engines', about: 'About and help' },
     fileVaultOn: `${disk} is on. Profile data on disk is encrypted.`,
     fileVaultOff: `${disk} is off. Profiles\u2019 history and site data sit unencrypted on disk. ` + (isWindows
       ? 'Turn on Device encryption or BitLocker in Windows Settings, under Privacy & security.'

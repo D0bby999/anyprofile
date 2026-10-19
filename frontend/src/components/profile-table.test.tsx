@@ -47,6 +47,11 @@ describe('ProfileTable', () => {
     expect(p.onStart).toHaveBeenCalledTimes(2)
   })
 
+  it('leaves out a machine that is not known yet', () => {
+    render(<ProfileTable {...props([row({ engine: 'apostate', personaId: '', machine: '' })])} />)
+    expect(screen.queryByText(t.engines.machinePending)).toBeNull()
+  })
+
   it('offers Close and Focus for a running profile, shows how long it runs and the open port', () => {
     const p = props([row({ state: 'running', cdpPort: 9333, lastOpenAt: new Date(Date.now() - 12 * 60000).toISOString() })])
     render(<ProfileTable {...p} />)

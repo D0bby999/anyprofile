@@ -3,7 +3,7 @@ import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { service } from '../api'
 import { t } from '../i18n'
 import { relativeTime, sinceSpan } from '../lib/format'
-import { machineLabel } from '../lib/persona'
+import { machineKnown, machineLabel } from '../lib/persona'
 import type { Site } from '../lib/sites'
 import { Icon } from './icons'
 import { SiteBadges } from './site-glyph'
@@ -154,7 +154,7 @@ export function ProfileTable(p: Props) {
               <td className="cellname">
                 <b className="selectable">{r.name}</b>
                 <span className="sub">
-                  <span>{machineLabel(r)}</span>
+                  {machineKnown(r) && <span>{machineLabel(r)}</span>}
                   {r.engine === 'fury' && <span className="chip engine-tag">{t.engines.names.fury}</span>}
                   {r.tags.map((x) => <span key={x} className="tag">{x}</span>)}
                 </span>
@@ -184,7 +184,8 @@ export function ProfileTable(p: Props) {
                       <Icon name="stop" className="icon sm" /><ActLabel shown={busy ? t.profiles.stopping : t.profiles.stop} />
                     </button>
                   ) : (
-                    <button className={`btn sm primary actbtn${busy ? ' busy' : ''}`} aria-busy={busy} disabled={busy} onClick={() => p.onStart(r.id)}>
+                    // Outlined until the row is hovered, picked or focused: one blue button at a time, not one per row.
+                    <button className={`btn sm open actbtn${busy ? ' busy' : ''}`} aria-busy={busy} disabled={busy} onClick={() => p.onStart(r.id)}>
                       <Icon name={busy ? 'refresh' : 'play'} className="icon sm" /><ActLabel shown={busy ? t.profiles.opening : t.profiles.open} />
                     </button>
                   )}

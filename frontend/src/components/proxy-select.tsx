@@ -2,6 +2,7 @@
 import { service } from '../api'
 import { t } from '../i18n'
 import { Icon } from './icons'
+import { BuyProxiesButton } from './partner-grid'
 
 type Props = { value: string; onChange: (v: string) => void; proxies: service.ProxyRow[]; allowAuto?: boolean; currentProfile?: string }
 
@@ -29,7 +30,12 @@ export function ProxySelect({ value, onChange, proxies, allowAuto, currentProfil
   )
 }
 
-/** Said wherever a choice leads to a profile without proxy. */
+/** Said wherever a choice leads to a profile without proxy, with the way to get one. */
 export function RealIpWarning() {
-  return <div className="realip" role="note"><Icon name="alert" className="icon sm" /><span>{t.create.realIpWarning}</span></div>
+  return (
+    <div className="realip" role="note">
+      <Icon name="alert" className="icon sm" /><span className="grow">{t.create.realIpWarning}</span>
+      <BuyProxiesButton className="btn sm buy" />
+    </div>
+  )
 }

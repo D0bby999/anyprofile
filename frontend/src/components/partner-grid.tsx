@@ -38,6 +38,17 @@ export function PartnerGrid({ items }: { items: Partner[] }) {
   )
 }
 
+/** "Buy proxies" with its own dialog, for the places a user finds out they need a proxy. */
+export function BuyProxiesButton({ className = 'btn buy' }: { className?: string }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <>
+      <button type="button" className={className} onClick={() => setOpen(true)}><Icon name="cart" />{t.proxies.buy}</button>
+      {open && <BuyProxyDialog onClose={() => setOpen(false)} />}
+    </>
+  )
+}
+
 export function BuyProxyDialog({ onClose }: { onClose: () => void }) {
   const [type, setType] = useState<ProxyType | ''>('')
   const shown = partnersOf('proxy').filter((p) => !type || p.types?.includes(type))

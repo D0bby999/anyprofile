@@ -63,7 +63,9 @@ export function EngineSettings({ engines, counts, defaults, onChanged }: Props) 
       {engines.map((e) => {
         // A version's own download shows in its row; the engine's newest shows here.
         const busy = progress?.engine === e.engine && !progress.version
-        return (
+        // An engine no profile needs and nobody chose stays folded away, so a new user is not led to download it.
+        const older = !e.default && !e.installed && !(counts[e.engine] ?? 0) && !busy
+        const block = (
           <div key={e.engine} className="engine" aria-busy={busy}>
             <div className="engine-head">
               <b>{engineName(e.engine)}</b>
@@ -90,7 +92,7 @@ export function EngineSettings({ engines, counts, defaults, onChanged }: Props) 
               <InstallProgress progress={progress} />
             ) : (
               <div className="engine-actions">
-                <button type="button" className={`btn${e.installed ? '' : ' primary'}`} disabled={!!progress} onClick={() => install(e.engine)}>
+                <button type="button" className={`btn${e.installed || !e.default ? '' : ' primary'}`} disabled={!!progress} onClick={() => install(e.engine)}>
                   <Icon name="download" />{e.installed ? t.engines.reinstall : t.engines.install}
                 </button>
                 <label className="radio">
@@ -103,6 +105,12 @@ export function EngineSettings({ engines, counts, defaults, onChanged }: Props) 
             {errors[e.engine] && <div className="banner danger" role="alert"><Icon name="alert" /><span className="grow">{errors[e.engine]}</span></div>}
           </div>
         )
+        return older ? (
+          <details key={e.engine} className="engine-older" open={!!errors[e.engine]}>
+            <summary>{t.engines.older}: {engineName(e.engine)}</summary>
+            {block}
+          </details>
+        ) : block
       })}
     </div>
   )

@@ -9,6 +9,7 @@ import { InstallProgress } from '../components/install-progress'
 import { SitePicker } from '../components/site-picker'
 import { useToast } from '../components/toast'
 import { BackupRestore } from '../components/backup-settings'
+import { BuyProxiesButton } from '../components/partner-grid'
 
 type Props = {
   sites: Site[]
@@ -166,6 +167,7 @@ export function WelcomePage({ sites, fileVaultOn, lang, onLanguage, onDone }: Pr
               disabled={!text.trim() || !!busy} onClick={addProxies}>
               <Icon name={busy === 'proxy' ? 'refresh' : 'plus'} />{busy === 'proxy' ? t.welcome.checking : t.welcome.checkAdd}
             </button>
+            {!proxies?.length && <BuyProxiesButton />}
             {!askNoProxy && <button type="button" className="btn ghost" onClick={() => setAskNoProxy(true)}>{t.welcome.skipProxy}</button>}
           </div>
           {askNoProxy && (

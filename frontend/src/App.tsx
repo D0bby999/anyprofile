@@ -14,7 +14,7 @@ import { ProfilesPage } from './pages/profiles-page'
 import { ProxiesPage } from './pages/proxies-page'
 import { TrashPage } from './pages/trash-page'
 import { ToolsPage } from './pages/tools-page'
-import { SettingsPage } from './pages/settings-page'
+import { SettingsPage, scrollSettingsTo } from './pages/settings-page'
 import { WelcomePage } from './pages/welcome-page'
 import { CommandPalette, type Command } from './components/command-palette'
 import { ShortcutSheet } from './components/shortcut-sheet'
@@ -174,7 +174,7 @@ export default function App() {
         )}
         {page === 'proxies' && <ProxiesPage onChanged={() => { refreshProxies(); profiles.reload() }} />}
         {page === 'trash' && <TrashPage onChanged={profiles.reload} />}
-        {page === 'tools' && <ToolsPage onOpenPro={() => { setPage('settings'); setTimeout(() => document.getElementById('settings-pro')?.scrollIntoView({ block: 'start' }), 50) }} />}
+        {page === 'tools' && <ToolsPage onOpenPro={() => { setPage('settings'); setTimeout(() => scrollSettingsTo('settings-pro'), 50) }} />}
         {page === 'settings' && (
           <SettingsPage engines={engines ?? []} engineCounts={engineCounts} defaults={defaults} onEnginesChanged={refreshEngines} theme={theme} onTheme={setTheme} fileVaultOn={fileVaultOn}
             lang={lang} onLanguage={changeLanguage} openProfiles={profiles.rows.filter((r) => r.state === 'running').length} checkUpdate={checkUpdate} />

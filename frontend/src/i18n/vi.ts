@@ -69,8 +69,9 @@ export const vi: Messages = {
   engines: {
     title: 'Engine trình duyệt', recommended: 'Khuyên dùng',
     names: { apostate: 'Apostate', fury: 'Fury' } as Record<string, string>,
-    apostateDesc: 'Chromium đã vá, qua BrowserScan mà không bị đánh dấu canvas hay WebGL. Dùng cho profile mới.',
-    furyDesc: 'Chromium đã vá, dùng cho các profile tạo trước tháng 10/2026. Giữ lại để fingerprint của chúng không bao giờ đổi.',
+    apostateDesc: 'Trình duyệt nhân Chromium, trang web nhìn vào thấy như một máy tính bình thường. Dùng cho profile mới.',
+    furyDesc: 'Engine cũ, cho các profile tạo trước tháng 10/2026. Giữ lại để fingerprint của chúng không bao giờ đổi.',
+    older: 'Engine cũ',
     version: (v: string) => `Phiên bản ${v}`, chromium: (v: string) => `Chromium ${v}`,
     usedBy: (n: number) => `Số profile đang dùng: ${n}`,
     useForNew: 'Dùng cho profile mới',
@@ -79,7 +80,7 @@ export const vi: Messages = {
     installing: (pct: number, mb: string) => `Đang tải ${pct}%${mb ? `, ${mb}` : ''}`,
     ready: (name: string, v: string) => `${name} ${v} sẵn sàng`, missing: (name: string) => `Chưa cài ${name}`,
     advanced: 'Nâng cao', engineLabel: 'Engine trình duyệt', engineHint: 'Mỗi profile giữ engine của nó suốt đời.',
-    notInstalledSuffix: '(chưa cài)', machinePending: 'Máy giả lập hiện sau lần mở đầu',
+    notInstalledSuffix: '(chưa cài)', machinePending: 'Thiết bị được chọn ở lần mở đầu',
     versions: (n: number) => `Các phiên bản (${n})`,
     newer: (v: string) => `Đã có phiên bản ${v}`,
     newerHint: 'Cài xong, profile chuyển sang bản này ở lần mở kế tiếp nếu bản này giữ nguyên máy giả lập của nó. Profile khác giữ phiên bản đang dùng.',
@@ -160,7 +161,7 @@ export const vi: Messages = {
     engineText: 'AnyProfile chạy mỗi profile trong Apostate, một bản Chromium đã vá. Nó được kiểm chữ ký của nhà phát hành trước lần dùng đầu.',
     engineDone: (v: string) => `Đã cài Apostate ${v}`,
     install: 'Cài đặt', fileVault: `Bật ${disk} để đăng nhập đã lưu được mã hoá trên ổ đĩa.`,
-    proxyTitle: 'Thêm proxy', proxyText: 'Mỗi profile cần một proxy sticky riêng, để mỗi tài khoản có IP riêng.',
+    proxyTitle: 'Thêm proxy', proxyText: 'Cho mỗi tài khoản một IP riêng bằng proxy sticky: loại proxy giữ nguyên một IP trong nhiều giờ hoặc nhiều ngày.',
     proxyPlaceholder: 'host:port:user:password\nhttp://user:password@host:port',
     checkAdd: 'Kiểm và thêm', checking: 'Đang kiểm…', continue: 'Tiếp tục',
     proxyDone: (n: number) => `Đã thêm ${n} proxy`, noProxyDone: 'Tiếp tục không có proxy',
@@ -243,7 +244,7 @@ export const vi: Messages = {
   proxies: {
     title: 'Proxy', total: (n: number) => `${n} proxy`,
     addTitle: 'Thêm proxy',
-    addDesc: 'Dán mỗi dòng một proxy. Proxy cổng cố định (sticky) mới dùng được cho profile.',
+    addDesc: 'Dán mỗi dòng một proxy. Dùng proxy sticky, giữ một IP trong nhiều giờ hoặc nhiều ngày; proxy xoay (rotating) đổi IP sau mỗi kết nối.',
     pastePlaceholder: 'http://user:pass@host:port\nhost:port:user:pass\nsocks5://user:pass@host:port',
     import: 'Thêm và kiểm tra', importing: 'Đang thêm và kiểm tra…',
     added: (n: number) => `Đã thêm ${n} proxy.`,
@@ -257,7 +258,7 @@ export const vi: Messages = {
     expires: 'Hết hạn', expiresOn: 'Ngày hết hạn (tuỳ chọn)', expiringSoon: 'Sắp hết hạn', expired: 'Đã hết hạn',
     note: 'Ghi chú', editTitle: 'Sửa proxy',
     unused: 'Chưa dùng',
-    emptyTitle: 'Thêm proxy sticky để mỗi profile có IP riêng.', emptyAction: 'Dán proxy',
+    emptyTitle: 'Chưa có proxy nào. Dán proxy của bạn ở trên, hoặc mua thêm.',
     buy: 'Mua proxy',
   },
   tools: {
@@ -310,6 +311,8 @@ export const vi: Messages = {
     themeTitle: 'Giao diện', themeSystem: 'Theo hệ thống', themeLight: 'Sáng', themeDark: 'Tối',
     languageTitle: 'Ngôn ngữ', languageEn: 'English', languageVi: 'Tiếng Việt',
     securityTitle: 'Bảo mật',
+    sections: 'Các mục',
+    groups: { general: 'Chung', profiles: 'Profile', automation: 'Tự động hoá', data: 'Dữ liệu và sao lưu', engines: 'Engine trình duyệt', about: 'Thông tin và trợ giúp' },
     fileVaultOn: `${disk} đang bật. Dữ liệu profile trên ổ đĩa được mã hoá.`,
     fileVaultOff: `${disk} đang tắt. Lịch sử và dữ liệu trang của các profile nằm trên ổ đĩa không mã hoá. ` + (isWindows
       ? 'Nên bật Device encryption hoặc BitLocker trong Windows Settings, mục Privacy & security.'

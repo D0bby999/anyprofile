@@ -14,6 +14,13 @@ keeps them together.
   installer names Cassau, LLC as publisher, offers to run AnyProfile when it
   finishes, and asks to close a running AnyProfile instead of failing to
   replace it.
+- Easier to read and to start with: wherever a profile would use your real IP
+  (first-run setup, New profile, the profile panel), Buy proxies is one click
+  away. Settings has a list of sections, starts with everyday options and
+  folds away the older Fury engine until a profile needs it. A row's Open
+  button turns blue only on the row you point at, Close no longer looks like
+  deleting, and "Real IP" shows in amber. Plainer words for sticky proxies
+  and for a profile's device before its first open.
 
 ## 0.1.1 (2026-10-18)
 

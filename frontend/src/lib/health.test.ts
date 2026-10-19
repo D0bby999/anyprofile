@@ -21,6 +21,12 @@ describe('health', () => {
     expect(h.reasons).toHaveLength(1)
   })
 
+  it('colours a real IP as a warning without counting it as one', () => {
+    const row = { ...base, flags: [{ id: 'direct', level: 'info', params: {} }] }
+    expect(health(row)).toMatchObject({ level: 'info', tone: 'warn' })
+    expect(needsAttention(row)).toBe(false)
+  })
+
   it('names the changed values in words', () => {
     expect(health({ ...base, fpVerdict: 'drift', fpDiff: ['canvas', 'screen'] }).reasons[0])
       .toBe(t.health.driftText('canvas, screen'))
