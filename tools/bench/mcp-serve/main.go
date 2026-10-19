@@ -88,14 +88,25 @@ func main() {
 	port := flag.Int("port", 51626, "API port")
 	headless := flag.Bool("headless", false, "run the browsers without a window")
 	profiles := flag.Int("profiles", 1, "how many test profiles to make")
+	extra := flag.String("browser-args", "", "more browser switches, separated by ; (a switch may hold spaces, e.g. --host-resolver-rules=MAP *:443 127.0.0.1:51630)")
 	flag.Parse()
-	if err := run(*app, *port, *headless, *profiles); err != nil {
+	if err := run(*app, *port, *headless, *profiles, switches(*extra)); err != nil {
 		fmt.Fprintln(os.Stderr, "mcp-serve:", err)
 		os.Exit(1)
 	}
 }
 
-func run(app string, port int, headless bool, profiles int) error {
+func switches(s string) []string {
+	var out []string
+	for _, a := range strings.Split(s, ";") {
+		if a = strings.TrimSpace(a); a != "" {
+			out = append(out, a)
+		}
+	}
+	return out
+}
+
+func run(app string, port int, headless bool, profiles int, extra []string) error {
 	token := os.Getenv("ANYPROFILE_TOKEN")
 	if token == "" {
 		return fmt.Errorf("set ANYPROFILE_TOKEN")
@@ -151,6 +162,7 @@ func run(app string, port int, headless bool, profiles int) error {
 	if headless {
 		l.TestArgs = []string{"--headless=new"}
 	}
+	l.TestArgs = append(l.TestArgs, extra...)
 	svc := &service.Service{Dirs: dirs, Store: st, Secrets: sec, Launcher: l, Log: log,
 		Engines: map[string]engine.Engine{"apostate": eng}, Preferred: "apostate",
 		Locale: func(context.Context, string) (string, []string, error) { return "en-US", []string{"en-US", "en"}, nil }}
