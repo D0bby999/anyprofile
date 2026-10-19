@@ -10,6 +10,10 @@ keeps them together.
   workflow can sign with a Developer ID and notarize the image, which lets
   macOS open it without "Apple could not verify"; it does so once the Apple
   secrets exist (docs/releasing.md).
+- Installers are English only, the disk image included. The Windows
+  installer names Cassau, LLC as publisher, offers to run AnyProfile when it
+  finishes, and asks to close a running AnyProfile instead of failing to
+  replace it.
 
 ## 0.1.1 (2026-10-18)
 

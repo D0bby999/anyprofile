@@ -34,6 +34,9 @@ Unicode true
 ## rights, into %LOCALAPPDATA%\Programs\AnyProfile.
 !define REQUEST_EXECUTION_LEVEL "user"
 !define WAILS_INSTALL_SCOPE "user"
+## The uninstall key keeps the name 0.1.x installed under, before the company
+## name was set, so an update replaces that entry instead of adding a second.
+!define UNINST_KEY_NAME "AnyProfileAnyProfile"
 ####
 ## Include the wails tools
 ####
@@ -58,7 +61,7 @@ ManifestDPIAware true
 !define MUI_ICON "..\icon.ico"
 !define MUI_UNICON "..\icon.ico"
 # !define MUI_WELCOMEFINISHPAGE_BITMAP "resources\leftimage.bmp" #Include this to add a bitmap on the left side of the Welcome Page. Must be a size of 164x314
-!define MUI_FINISHPAGE_NOAUTOCLOSE # Wait on the INSTFILES page so the user can take a look into the details of the installation steps
+!define MUI_FINISHPAGE_RUN "$INSTDIR\${PRODUCT_EXECUTABLE}" # A "Run AnyProfile" box on the finish page.
 !define MUI_ABORTWARNING # This will warn the user if they exit from the installer.
 
 !insertmacro MUI_PAGE_WELCOME # Welcome to the installer page.
@@ -86,7 +89,36 @@ OutFile "..\..\bin\${INFO_PROJECTNAME}-${ARCH}-installer.exe" # Name of the inst
 !else
   InstallDir "$PROGRAMFILES64\${INFO_COMPANYNAME}\${INFO_PRODUCTNAME}"
 !endif # Default installing folder ($PROGRAMFILES is Program Files folder).
-ShowInstDetails show # This will always show the installation details.
+
+# A running AnyProfile holds its exe open, so copying over it or deleting it
+# would fail halfway. Wait a few seconds (the in-app updater starts the
+# installer as the app quits), then ask the user to close it.
+!macro ENSURE_CLOSED un
+Function ${un}ensureClosed
+    IfFileExists "$INSTDIR\${PRODUCT_EXECUTABLE}" 0 done
+    StrCpy $1 0
+  retry:
+    ClearErrors
+    FileOpen $0 "$INSTDIR\${PRODUCT_EXECUTABLE}" a
+    IfErrors locked
+    FileClose $0
+    Goto done
+  locked:
+    IntOp $1 $1 + 1
+    IntCmp $1 10 ask
+    Sleep 500
+    Goto retry
+  ask:
+    MessageBox MB_RETRYCANCEL|MB_ICONEXCLAMATION "${INFO_PRODUCTNAME} is running. Close it, then click Retry." /SD IDCANCEL IDRETRY again
+    Abort
+  again:
+    StrCpy $1 0
+    Goto retry
+  done:
+FunctionEnd
+!macroend
+!insertmacro ENSURE_CLOSED ""
+!insertmacro ENSURE_CLOSED "un."
 
 Function .onInit
    !insertmacro wails.checkArchitecture
@@ -94,6 +126,7 @@ FunctionEnd
 
 Section
     !insertmacro wails.setShellContext
+    Call ensureClosed
 
     !insertmacro wails.webview2runtime
 
@@ -114,6 +147,7 @@ SectionEnd
 
 Section "uninstall"
     !insertmacro wails.setShellContext
+    Call un.ensureClosed
 
     RMDir /r "$AppData\${PRODUCT_EXECUTABLE}" # Remove the WebView2 DataPath
     # Profiles, the database and the engines stay in %APPDATA%\AnyProfile, so
