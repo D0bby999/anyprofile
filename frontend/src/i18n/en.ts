@@ -157,7 +157,7 @@ export const en = {
   welcome: {
     title: 'Set up AnyProfile', sub: 'Three steps, about two minutes.', skip: 'Skip setup', step: (n: number) => `Step ${n}`,
     engineTitle: 'Install the browser',
-    engineText: 'AnyProfile runs each profile in Apostate, a patched Chromium. It is checked against the publisher\u2019s signature before first use.',
+    engineText: 'AnyProfile runs each profile in Apostate, a patched Chromium. The download is under 200 MB and is checked against the publisher\u2019s signature before first use.',
     engineDone: (v: string) => `Apostate ${v} installed`,
     install: 'Install', fileVault: `Turn on ${disk} so saved logins stay encrypted on disk.`,
     proxyTitle: 'Add a proxy', proxyText: 'Give every account its own IP with a sticky proxy: one that keeps the same IP for hours or days.',

@@ -190,8 +190,7 @@ export function ProfilesPage({ rows, sites, view, engineReady, fileVaultOn, erro
   return (
     <>
       <PageHead title={viewTitle(view, sites)} sub={t.profiles.total(visible.length)}>
-        <button className="iconbtn nodrag" onClick={reload} aria-label={t.common.refresh} title={t.common.refresh}><Icon name="refresh" /></button>
-      </PageHead>
+              </PageHead>
       <div className="pagebody">
         {!engineReady && (
           <div className="banner warn"><Icon name="engine" /><span className="grow">{t.profiles.engineMissing}</span>
