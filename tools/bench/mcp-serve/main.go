@@ -86,14 +86,16 @@ func (b backend) Pipe(id string) (agent.Conn, bool) {
 func main() {
 	app := flag.String("app", "", "Chromium.app of Apostate")
 	port := flag.Int("port", 51626, "API port")
+	headless := flag.Bool("headless", false, "run the browsers without a window")
+	profiles := flag.Int("profiles", 1, "how many test profiles to make")
 	flag.Parse()
-	if err := run(*app, *port); err != nil {
+	if err := run(*app, *port, *headless, *profiles); err != nil {
 		fmt.Fprintln(os.Stderr, "mcp-serve:", err)
 		os.Exit(1)
 	}
 }
 
-func run(app string, port int) error {
+func run(app string, port int, headless bool, profiles int) error {
 	token := os.Getenv("ANYPROFILE_TOKEN")
 	if token == "" {
 		return fmt.Errorf("set ANYPROFILE_TOKEN")
@@ -146,6 +148,9 @@ func run(app string, port int) error {
 	log := slog.New(slog.NewTextHandler(os.Stderr, nil))
 	l := launcher.New(st, sec, dirs, []engine.Engine{eng}, nil, log)
 	l.Capture = true
+	if headless {
+		l.TestArgs = []string{"--headless=new"}
+	}
 	svc := &service.Service{Dirs: dirs, Store: st, Secrets: sec, Launcher: l, Log: log,
 		Engines: map[string]engine.Engine{"apostate": eng}, Preferred: "apostate",
 		Locale: func(context.Context, string) (string, []string, error) { return "en-US", []string{"en-US", "en"}, nil }}
@@ -153,6 +158,11 @@ func run(app string, port int) error {
 	ctx := context.Background()
 	if _, err := svc.CreateProfile(ctx, service.NewProfile{Name: "Shop test", StartURL: "http://127.0.0.1:51627/", Tags: []string{"test"}}); err != nil {
 		return err
+	}
+	for i := 2; i <= profiles; i++ {
+		if _, err := svc.CreateProfile(ctx, service.NewProfile{Name: fmt.Sprintf("Test %d", i), StartURL: "http://127.0.0.1:51627/", Tags: []string{"test"}}); err != nil {
+			return err
+		}
 	}
 	hub := agent.NewHub(time.Minute)
 	hub.Behind = l.Behind
