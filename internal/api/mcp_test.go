@@ -358,6 +358,19 @@ func TestMCPRecipes(t *testing.T) {
 	if _, err := cs.GetPrompt(ctx, &mcp.GetPromptParams{Name: "youtube-upload"}); err == nil {
 		t.Fatal("a prompt without its required argument must fail")
 	}
+	// The Pro pack's recipes join them, marked; one of the user's own with the same name wins.
+	s.ProRecipes = t.TempDir()
+	os.WriteFile(filepath.Join(s.ProRecipes, "tt.md"), []byte("---\nname: tiktok-upload\ndescription: Post on TikTok\n---\nPost it.\n"), 0o600)
+	os.WriteFile(filepath.Join(s.ProRecipes, "yt.md"), []byte("---\nname: youtube-upload\ndescription: Pro upload\n---\nPro body.\n"), 0o600)
+	out, _ = call(t, cs, "recipe", nil)
+	if !strings.Contains(out, "- tiktok-upload (Pro): Post on TikTok") || !strings.Contains(out, "- youtube-upload: Upload a video") || strings.Contains(out, "Pro upload") {
+		t.Fatalf("with a Pro pack = %q", out)
+	}
+	if ps, _ := cs.ListPrompts(ctx, nil); len(ps.Prompts) != 2 {
+		t.Fatalf("prompts with a Pro pack = %+v", ps.Prompts)
+	}
+	s.ProRecipes = ""
+
 	// Removed from the folder: withdrawn.
 	os.Remove(filepath.Join(s.Recipes, "yt.md"))
 	if ps, _ := cs.ListPrompts(ctx, nil); len(ps.Prompts) != 0 {

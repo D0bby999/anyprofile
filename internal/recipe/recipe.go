@@ -32,6 +32,7 @@ type Recipe struct {
 	Args        []Arg  `yaml:"arguments"`
 	Body        string `yaml:"-"`
 	File        string `yaml:"-"` // base name, for error messages
+	Pro         bool   `yaml:"-"` // from the AnyProfile Pro pack
 }
 
 const maxSize = 256 << 10

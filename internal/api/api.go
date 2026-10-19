@@ -66,7 +66,11 @@ type Server struct {
 	// Uploads is the only folder upload_file takes files from; Recipes holds
 	// the recipes /mcp offers. Both are read again on every request.
 	Uploads, Recipes string
-	prompts          promptSet
+	// ProRecipes is the Pro pack's recipes folder, "" without a pack. A
+	// recipe of the user's own with the same name wins: they can change a
+	// Pro recipe by copying it into Recipes.
+	ProRecipes string
+	prompts    promptSet
 }
 
 func New(b Backend, log *slog.Logger, port int, token string) *Server {

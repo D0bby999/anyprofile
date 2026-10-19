@@ -15,7 +15,6 @@ import (
 
 	"github.com/D0bby999/anyprofile/internal/agent"
 	"github.com/D0bby999/anyprofile/internal/apperr"
-	"github.com/D0bby999/anyprofile/internal/recipe"
 	"github.com/D0bby999/anyprofile/internal/update"
 )
 
@@ -512,7 +511,7 @@ func (s *Server) mcpHandler() http.Handler {
 
 	add(s, srv, "recipe", "Step-by-step instructions for a task on a platform (like uploading a video), written for you. Without a name, lists them.", true,
 		func(_ context.Context, in recipeIn) (*mcp.CallToolResult, error) {
-			rs, errs := recipe.Load(s.Recipes)
+			rs, errs := s.recipes()
 			if in.Name == "" {
 				return text(recipeList(rs, errs)), nil
 			}
