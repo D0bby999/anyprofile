@@ -21,6 +21,10 @@ keeps them together.
   button turns blue only on the row you point at, Close no longer looks like
   deleting, and "Real IP" shows in amber. Plainer words for sticky proxies
   and for a profile's device before its first open.
+- Setup says how big the browser download is before it starts. "Add
+  extensions in Settings" is a link to that section. The Platform column
+  keeps its header in a narrow window, and the profile list loses its refresh
+  button: it updates by itself.
 
 ## 0.1.1 (2026-10-18)
 
