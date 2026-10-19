@@ -102,7 +102,8 @@ input[type="checkbox"] { width: 15px; height: 15px; margin: 0; accent-color: var
 
 .field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .field > .label { font-size: var(--t-sm); font-weight: 600; color: var(--ink-soft); }
-.field > .hint { font-size: var(--t-xs); color: var(--muted); }
+/* A hint is small print wherever it sits: under a field, in the drawer, in a card. */
+.hint { font-size: var(--t-xs); color: var(--muted); }
 .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 
 /* Segmented control */
