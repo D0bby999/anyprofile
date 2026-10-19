@@ -338,9 +338,12 @@ kbd { display: inline-flex; align-items: center; min-width: 22px; height: 20px; 
      room of # and Proxy); a fixed share would hand it to the checkbox. */
   .table .cellname { width: auto; }
   .table td.col-site { position: relative; }
-  .table .col-site .plabel, .table .col-site .sitehead {
+  .table .col-site .plabel {
     position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap;
   }
+  /* The header stays readable without widening the icon column: it reaches
+     left into the empty end of the Name header. */
+  .table th.col-site .sitehead { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); }
 }
 @container (max-width: 830px) { .table .col-proxy, .table .col-no { display: none; } }
 @container (max-width: 600px) { .table .col-status { display: none; } .table .cellname { min-width: 120px; } }
