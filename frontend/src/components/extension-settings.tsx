@@ -63,8 +63,18 @@ export function ExtensionSettings() {
   )
 }
 
+/** An empty extension library, with the way to the settings that fill it. */
+export function NoExtensions({ onOpenSettings }: { onOpenSettings?: () => void }) {
+  return (
+    <span className="hint muted">
+      {t.extensions.empty}
+      {onOpenSettings && <> <button type="button" className="linkbtn" onClick={onOpenSettings}>{t.extensions.addInSettings}</button></>}
+    </span>
+  )
+}
+
 /** One profile's extensions, switched on and off from the drawer. */
-export function ProfileExtensions({ profileId, on, running, onError }: { profileId: string; on: string[]; running: boolean; onError: (msg: string) => void }) {
+export function ProfileExtensions({ profileId, on, running, onError, onOpenSettings }: { profileId: string; on: string[]; running: boolean; onError: (msg: string) => void; onOpenSettings?: () => void }) {
   const { exts } = useExtensions()
   const toggle = async (id: string, value: boolean) => {
     try {
@@ -76,7 +86,7 @@ export function ProfileExtensions({ profileId, on, running, onError }: { profile
   return (
     <section className="dgroup" aria-label={t.extensions.title}>
       <h3>{t.extensions.title}</h3>
-      {exts.length === 0 ? <span className="hint muted">{t.extensions.noneInLibrary}</span> : exts.map((e) => (
+      {exts.length === 0 ? <NoExtensions onOpenSettings={onOpenSettings} /> : exts.map((e) => (
         <label key={e.id} className="row checkrow">
           <input type="checkbox" checked={on.includes(e.id)} onChange={(ev) => toggle(e.id, ev.target.checked)} />
           <span>{e.name} <span className="muted">{e.version}</span></span>

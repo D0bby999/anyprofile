@@ -360,7 +360,7 @@ export const en = {
     forget: 'Forget',
   },
   extensions: {
-    title: 'Extensions', empty: 'No extensions yet.', noneInLibrary: 'No extensions yet. Add them in Settings \u2192 Extensions.',
+    title: 'Extensions', empty: 'No extensions yet.', addInSettings: 'Add extensions in Settings',
     addFile: 'Add .zip or .crx\u2026', addFolder: 'Add folder\u2026',
     added: (name: string) => `Added ${name}. Turn it on for profiles in their drawer or with bulk actions.`,
     usedBy: (n: number) => n === 1 ? '1 profile' : `${n} profiles`,

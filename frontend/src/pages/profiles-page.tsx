@@ -37,7 +37,8 @@ type Props = {
   onClearView: () => void
   onView: (v: View) => void
   /** Opens Settings, where an available update is installed. */
-  onOpenSettings: () => void
+  /** Opens Settings, at a block when given its element id. */
+  onOpenSettings: (id?: string) => void
   /** The profile whose details drawer is open; App owns it so ⌘K can open one. */
   activeId: string | null
   setActiveId: (id: string | null | ((cur: string | null) => string | null)) => void
@@ -272,7 +273,7 @@ export function ProfilesPage({ rows, sites, view, engineReady, fileVaultOn, erro
                 </button>
               )}
               {update?.available && (
-                <button type="button" className="statusbtn updbtn" onClick={onOpenSettings}>
+                <button type="button" className="statusbtn updbtn" onClick={() => onOpenSettings('settings-update')}>
                   <Icon name="download" className="icon sm" />{update.ready ? t.update.ready(update.latest) : t.update.available(update.latest)}
                 </button>
               )}
@@ -280,7 +281,8 @@ export function ProfilesPage({ rows, sites, view, engineReady, fileVaultOn, erro
           </section>
           {active && (
             <ProfileDrawer key={active.id} row={active} sites={sites} knownTags={allTags(rows)} agent={agents.has(active.id)}
-              onClose={() => setActiveId(null)} onStart={(id) => run(() => Api.StartProfile(id))} onStop={(id) => run(() => Api.StopProfile(id))} />
+              onClose={() => setActiveId(null)} onStart={(id) => run(() => Api.StartProfile(id))} onStop={(id) => run(() => Api.StopProfile(id))}
+              onOpenSettings={onOpenSettings} />
           )}
         </div>
       </div>
@@ -293,7 +295,7 @@ export function ProfilesPage({ rows, sites, view, engineReady, fileVaultOn, erro
           onDone={() => { setBulkDialog(null); setSelected(new Set()); reload() }} />
       )}
       {bulkDialog === 'extension' && (
-        <BulkExtensionDialog ids={[...selected]} onClose={() => setBulkDialog(null)}
+        <BulkExtensionDialog ids={[...selected]} onClose={() => setBulkDialog(null)} onOpenSettings={() => onOpenSettings('settings-extensions')}
           onDone={() => { setBulkDialog(null); setSelected(new Set()); reload() }} />
       )}
       {bulkDialog === 'tag' && (

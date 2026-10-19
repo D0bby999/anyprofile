@@ -37,10 +37,12 @@ type Props = {
   onStop: (id: string) => void
   /** An AI agent is driving this profile now. */
   agent?: boolean
+  /** Opens Settings at a block, by its element id. */
+  onOpenSettings?: (id?: string) => void
 }
 
 /** Everything about one profile, edited in place next to the table. */
-export function ProfileDrawer({ row, sites, knownTags, onClose, onStart, onStop, agent }: Props) {
+export function ProfileDrawer({ row, sites, knownTags, onClose, onStart, onStop, agent, onOpenSettings }: Props) {
   const toast = useToast()
   const confirm = useConfirm()
   const [tab, setTab] = useState<Tab>('overview')
@@ -139,7 +141,8 @@ export function ProfileDrawer({ row, sites, knownTags, onClose, onStart, onStop,
             <NetworkGroup row={row} proxies={proxies} running={running} onApply={(proxyId) => update({ proxyId })} onMatchIp={matchIp} />
             <PlatformGroup value={row.sites} startUrl={row.startUrl} sites={sites} country={row.proxyCountry} running={running}
               onSites={(ids, startUrl) => update({ sites: ids, startUrl })} onStartUrl={(startUrl) => update({ startUrl })} />
-            <ProfileExtensions profileId={row.id} on={row.extensions ?? []} running={running} onError={toast.error} />
+            <ProfileExtensions profileId={row.id} on={row.extensions ?? []} running={running} onError={toast.error}
+              onOpenSettings={onOpenSettings && (() => onOpenSettings('settings-extensions'))} />
             <TagsGroup tags={row.tags} known={knownTags} onChange={(tags) => update({ tags })} />
             <NotesGroup value={row.notes} onSave={(notes) => update({ notes })} />
             <ChecksPanel checks={row.checks ?? []} />

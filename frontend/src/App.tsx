@@ -155,6 +155,7 @@ export default function App() {
     { id: 'settings', label: t.nav.settings, icon: 'settings', run: () => setPage('settings') },
   ]
   const openProfile = (id: string) => { setPage('profiles'); setActiveId(id) }
+  const openSettings = (id?: string) => { setPage('settings'); if (id) setTimeout(() => scrollSettingsTo(id), 50) }
   const launchProfile = (row: service.ProfileRow) => {
     const go = row.state === 'running' ? Api.FocusProfile(row.id) : Api.StartProfile(row.id)
     Promise.resolve(go).catch((e: unknown) => toast.error(errorText(e)))
@@ -169,12 +170,12 @@ export default function App() {
         {page === 'profiles' && (
           <ProfilesPage rows={profiles.rows} sites={sites} view={view} engineReady={engines === null || engineReady}
             fileVaultOn={fileVaultOn} error={profiles.error} setError={profiles.setError} reload={profiles.reload}
-            onNew={newProfile} onNeedEngine={() => setPage('settings')} onOpenSettings={() => setPage('settings')} onClearView={() => setView('all')} onView={setView}
+            onNew={newProfile} onNeedEngine={() => setPage('settings')} onOpenSettings={openSettings} onClearView={() => setView('all')} onView={setView}
             activeId={activeId} setActiveId={setActiveId} />
         )}
         {page === 'proxies' && <ProxiesPage onChanged={() => { refreshProxies(); profiles.reload() }} />}
         {page === 'trash' && <TrashPage onChanged={profiles.reload} />}
-        {page === 'tools' && <ToolsPage onOpenPro={() => { setPage('settings'); setTimeout(() => scrollSettingsTo('settings-pro'), 50) }} />}
+        {page === 'tools' && <ToolsPage onOpenPro={() => openSettings('settings-pro')} />}
         {page === 'settings' && (
           <SettingsPage engines={engines ?? []} engineCounts={engineCounts} defaults={defaults} onEnginesChanged={refreshEngines} theme={theme} onTheme={setTheme} fileVaultOn={fileVaultOn}
             lang={lang} onLanguage={changeLanguage} openProfiles={profiles.rows.filter((r) => r.state === 'running').length} checkUpdate={checkUpdate} />

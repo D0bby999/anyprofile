@@ -8,6 +8,7 @@ import { Dialog } from './dialog'
 import { RealIpWarning } from './proxy-select'
 import { SitesPicker } from './site-picker'
 import { useExtensions } from '../hooks/use-extensions'
+import { NoExtensions } from './extension-settings'
 
 type BulkProps = { ids: string[]; sites: Site[]; onClose: () => void; onDone: () => void }
 
@@ -97,7 +98,7 @@ export function BulkProxyDialog({ ids, onClose, onDone }: { ids: string[]; onClo
   )
 }
 
-export function BulkExtensionDialog({ ids, onClose, onDone }: { ids: string[]; onClose: () => void; onDone: () => void }) {
+export function BulkExtensionDialog({ ids, onClose, onDone, onOpenSettings }: { ids: string[]; onClose: () => void; onDone: () => void; onOpenSettings?: () => void }) {
   const { exts } = useExtensions()
   const [ext, setExt] = useState('')
   const [on, setOn] = useState(true)
@@ -122,7 +123,7 @@ export function BulkExtensionDialog({ ids, onClose, onDone }: { ids: string[]; o
         <button type="button" className="btn ghost" onClick={onClose}>{t.common.cancel}</button>
         <button type="submit" className="btn primary" disabled={busy || !chosen}>{t.bulk.apply}</button>
       </>}>
-      {exts.length === 0 ? <span className="hint muted">{t.extensions.noneInLibrary}</span> : (
+      {exts.length === 0 ? <NoExtensions onOpenSettings={onOpenSettings && (() => { onClose(); onOpenSettings() })} /> : (
         <>
           <select className="select" value={chosen} onChange={(e) => setExt(e.target.value)} aria-label={t.extensions.title}>
             {exts.map((e) => <option key={e.id} value={e.id}>{e.name} {e.version}</option>)}

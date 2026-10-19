@@ -124,7 +124,7 @@ export function SettingsPage({ engines, engineCounts, defaults, onEnginesChanged
                 <p className="desc">{t.sites.customDesc}</p>
                 <SiteSettings sites={sites} reload={reloadSites} />
               </section>
-              <section className="card pad">
+              <section className="card pad" id="settings-extensions">
                 <h3>{t.extensions.title}</h3>
                 <ExtensionSettings />
               </section>

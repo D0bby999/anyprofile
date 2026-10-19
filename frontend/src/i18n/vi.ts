@@ -361,7 +361,7 @@ export const vi: Messages = {
     forget: 'Quên',
   },
   extensions: {
-    title: 'Extension', empty: 'Chưa có extension nào.', noneInLibrary: 'Chưa có extension nào. Thêm trong Cài đặt \u2192 Extension.',
+    title: 'Extension', empty: 'Chưa có extension nào.', addInSettings: 'Thêm extension trong Cài đặt',
     addFile: 'Thêm .zip hoặc .crx\u2026', addFolder: 'Thêm thư mục\u2026',
     added: (name: string) => `Đã thêm ${name}. Bật cho profile trong ngăn chi tiết hoặc bằng thao tác hàng loạt.`,
     usedBy: (n: number) => `${n} profile`,
