@@ -180,13 +180,15 @@ export function ProfileTable(p: Props) {
                   <RowMenu row={r} sites={p.sites} onEdit={() => p.onEdit(r)} onDuplicate={() => p.onDuplicate(r)}
                     onTrash={() => p.onTrash(r)} onMessage={p.onMessage} onError={p.onError} />
                   {running || r.state === 'stopping' ? (
-                    <button className="btn sm stop actbtn" disabled={busy} onClick={() => p.onStop(r.id)}>
-                      <Icon name="stop" className="icon sm" /><ActLabel shown={busy ? t.profiles.stopping : t.profiles.stop} />
+                    <button className={`btn sm stop actbtn${busy ? ' busy' : ''}`} aria-busy={busy} disabled={busy} onClick={() => p.onStop(r.id)}
+                      aria-label={busy ? t.profiles.stopping : undefined} title={busy ? t.profiles.stopping : undefined}>
+                      <Icon name={busy ? 'refresh' : 'stop'} className="icon sm" /><ActLabel shown={t.profiles.stop} />
                     </button>
                   ) : (
                     // Outlined until the row is hovered, picked or focused: one blue button at a time, not one per row.
-                    <button className={`btn sm open actbtn${busy ? ' busy' : ''}`} aria-busy={busy} disabled={busy} onClick={() => p.onStart(r.id)}>
-                      <Icon name={busy ? 'refresh' : 'play'} className="icon sm" /><ActLabel shown={busy ? t.profiles.opening : t.profiles.open} />
+                    <button className={`btn sm open actbtn${busy ? ' busy' : ''}`} aria-busy={busy} disabled={busy} onClick={() => p.onStart(r.id)}
+                      aria-label={busy ? t.profiles.opening : undefined} title={busy ? t.profiles.opening : undefined}>
+                      <Icon name={busy ? 'refresh' : 'play'} className="icon sm" /><ActLabel shown={t.profiles.open} />
                     </button>
                   )}
                 </span>
@@ -199,9 +201,10 @@ export function ProfileTable(p: Props) {
   )
 }
 
-/** The Open/Close button's label, as wide as its longest one in this language, so the button never resizes. */
+/** The Open/Close button's label, as wide as the longer of the two, so the button never resizes.
+    While it works, the icon spins and the status cell says Opening…/Closing…; the label stays the action. */
 function ActLabel({ shown }: { shown: string }) {
-  const all = [t.profiles.open, t.profiles.opening, t.profiles.stop, t.profiles.stopping]
+  const all = [t.profiles.open, t.profiles.stop]
   return (
     <span className="actlabel">
       {all.map((x) => <span key={x} aria-hidden={x === shown ? undefined : true} className={x === shown ? undefined : 'off'}>{x}</span>)}

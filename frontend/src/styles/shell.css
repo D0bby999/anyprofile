@@ -440,7 +440,6 @@ kbd { display: inline-flex; align-items: center; min-width: 22px; height: 20px; 
 .ellipsis { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 260px; }
 .table td.stack > small { display: block; margin-top: 3px; font-size: var(--t-xs); }
 .field > .seg { align-self: flex-start; }
-.actbtn { min-width: 76px; }
 /* A row's Open turns blue only on the row being pointed at, picked or focused. */
 .btn.open .icon { color: var(--accent); }
 .table tbody tr:hover .btn.open:not(:disabled), .table tbody tr.active .btn.open:not(:disabled),
@@ -482,7 +481,6 @@ kbd { display: inline-flex; align-items: center; min-width: 22px; height: 20px; 
   :root { --sidebar-w: 208px; }
   .pagehead, .pagebody { padding-left: 16px; padding-right: 16px; }
   .table td, .table th { padding-left: 8px; padding-right: 8px; }
-  .actbtn { min-width: 0; }
   .cellname { width: 28%; }
 }
 

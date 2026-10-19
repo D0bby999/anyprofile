@@ -71,8 +71,8 @@ describe('ProfileTable', () => {
     const slot = cells[0].querySelector('button.slot') as HTMLButtonElement
     expect(slot.disabled && slot.tabIndex === -1 && slot.getAttribute('aria-hidden') === 'true').toBe(true)
     expect(cells[1].querySelector('button.slot')).toBeNull()
-    // Every label is laid out so the button is as wide as the longest; only one is shown.
-    for (const td of cells) expect(td.querySelectorAll('.actlabel > span').length).toBe(4)
+    // Open and Close are both laid out so the button is as wide as the longer; only one is shown.
+    for (const td of cells) expect(td.querySelectorAll('.actlabel > span').length).toBe(2)
     expect(screen.getAllByRole('button', { name: t.profiles.open })).toHaveLength(1)
     expect(screen.getByRole('button', { name: t.profiles.stop })).toBeTruthy()
     expect(screen.getByRole('button', { name: t.profiles.opening })).toBeTruthy()
