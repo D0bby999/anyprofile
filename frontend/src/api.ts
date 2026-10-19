@@ -8,7 +8,7 @@ import { debounce } from './lib/debounce'
 
 export type LaunchInfo = { profileId: string; state: string; pid: number; cdpPort: number; error: string }
 export type EngineProgress = { engine: string; version?: string; done: number; total: number }
-export type DataKind = 'profiles' | 'proxies' | 'sites' | 'settings' | 'snapshots' | 'extensions' | 'update' | 'agent' | 'engines'
+export type DataKind = 'profiles' | 'proxies' | 'sites' | 'settings' | 'snapshots' | 'extensions' | 'update' | 'agent' | 'engines' | 'pro'
 
 /** Write to the OS clipboard; navigator.clipboard may be blocked in the WebView. */
 export const copyText = (s: string) => ClipboardSetText(s)
@@ -24,6 +24,13 @@ export function onDataChanged(kinds: DataKind[], fn: () => void): () => void {
   const run = debounce(fn, 150)
   const off = EventsOn('data:changed', (kind: DataKind) => { if (kinds.includes(kind)) run() })
   return () => { run.cancel(); off() }
+}
+
+/** The Pro pack was activated after a purchase, or updated by the daily check. */
+export function onProEvent(fn: (what: 'activated' | 'updated', version: string) => void): () => void {
+  const a = EventsOn('pro:activated', (v: string) => fn('activated', v))
+  const b = EventsOn('pro:updated', (v: string) => fn('updated', v))
+  return () => { a(); b() }
 }
 
 export function onLaunchChanged(fn: (info: LaunchInfo) => void): () => void {

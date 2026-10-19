@@ -214,6 +214,38 @@ export function PickBackup() {
   return window['go']['main']['App']['PickBackup']();
 }
 
+export function ProActivate(arg1) {
+  return window['go']['main']['App']['ProActivate'](arg1);
+}
+
+export function ProBuy(arg1) {
+  return window['go']['main']['App']['ProBuy'](arg1);
+}
+
+export function ProCancelBuy() {
+  return window['go']['main']['App']['ProCancelBuy']();
+}
+
+export function ProCheck() {
+  return window['go']['main']['App']['ProCheck']();
+}
+
+export function ProDeactivate() {
+  return window['go']['main']['App']['ProDeactivate']();
+}
+
+export function ProOpenPortal() {
+  return window['go']['main']['App']['ProOpenPortal']();
+}
+
+export function ProOpenScripts() {
+  return window['go']['main']['App']['ProOpenScripts']();
+}
+
+export function ProStatus() {
+  return window['go']['main']['App']['ProStatus']();
+}
+
 export function PurgeProfile(arg1) {
   return window['go']['main']['App']['PurgeProfile'](arg1);
 }

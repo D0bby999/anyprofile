@@ -409,6 +409,34 @@ export namespace service {
 	        this.bytes = source["bytes"];
 	    }
 	}
+	export class ProStatus {
+	    active: boolean;
+	    key: string;
+	    state: string;
+	    paidThrough: string;
+	    version: string;
+	    notes: string;
+	    checkedAt: string;
+	    error: string;
+	    waiting: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new ProStatus(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.active = source["active"];
+	        this.key = source["key"];
+	        this.state = source["state"];
+	        this.paidThrough = source["paidThrough"];
+	        this.version = source["version"];
+	        this.notes = source["notes"];
+	        this.checkedAt = source["checkedAt"];
+	        this.error = source["error"];
+	        this.waiting = source["waiting"];
+	    }
+	}
 	export class ProfileRow {
 	    id: string;
 	    name: string;

@@ -9,6 +9,7 @@ import { StorageSettings } from '../components/storage-settings'
 import { BackupSettings } from '../components/backup-settings'
 import { DefaultsSettings, OnOpenSettings } from '../components/defaults-settings'
 import { UpdateSettings } from '../components/update-settings'
+import { ProSettings } from '../components/pro-settings'
 import { SupportSettings } from '../components/support-settings'
 import { DonateSettings } from '../components/donate-settings'
 import { shownDonateLinks } from '../lib/donate'
@@ -88,6 +89,11 @@ export function SettingsPage({ engines, engineCounts, defaults, onEnginesChanged
         <section className="card pad" id="settings-update">
           <h2>{t.update.title}</h2>
           <UpdateSettings openProfiles={openProfiles} checkToken={checkUpdate} />
+        </section>
+
+        <section className="card pad" id="settings-pro">
+          <h2>{t.pro.title}</h2>
+          <ProSettings />
         </section>
 
         <section className="card pad">

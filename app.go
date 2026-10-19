@@ -45,6 +45,9 @@ type App struct {
 	// backupFile is the backup chosen for a restore; the path stays in Go.
 	backupMu   sync.Mutex
 	backupFile string
+	// proWait stops the wait for a purchase started in Settings → Pro.
+	proMu   sync.Mutex
+	proWait *purchaseWait
 }
 
 func NewApp() *App { return &App{} }
@@ -138,8 +141,10 @@ func (a *App) init() error {
 		// Looked at every few hours, so an app left open for days still
 		// learns of a release; CheckUpdate asks the server once a day at
 		// most, and only when automatic checks are on. A release found is
-		// downloaded and verified, so updating is only a restart.
+		// downloaded and verified, so updating is only a restart. The Pro
+		// pack is checked the same way, and only when a key is entered.
 		for {
+			a.checkPro()
 			if st, _ := a.svc.CheckUpdate(context.Background(), false); st.Available {
 				if st.Auto && !st.Ready {
 					a.prefetchUpdate()

@@ -33,6 +33,13 @@ There is no AnyProfile account and no AnyProfile server.
 - **When you click a donate button** (Settings → Support AnyProfile): GitHub Sponsors or a Stripe payment page
   opens in your default browser, and that service takes the payment under its own privacy policy. Card
   donations go to Cassau, LLC, the company behind AnyProfile and PostClaw. AnyProfile sends nothing about it.
+- **AnyProfile Pro, only if you buy it or enter a key** (Settings → AnyProfile Pro): Buy opens the payment
+  page of pro.anytools.world in your default browser; Stripe takes the payment under its own privacy policy.
+  While that page is open, the app asks the server every 5 seconds (for up to 30 minutes) whether the purchase it
+  started is paid, with a random one-time code. With a key, once a day the app sends the key, a random install
+  id made on this computer (nothing from its hardware), the Pro pack's and the app's version and the operating
+  system, and downloads a newer signed pack when there is one. Nothing about profiles, proxies, cookies or
+  sites. Without a key the app sends none of this.
 - **When you connect an AI agent (MCP):** the agent reads the pages you let it work on, and sends what it reads
   to its own model provider (Anthropic for Claude Code, for example). AnyProfile sends nothing for it; the log
   records which tool ran on which profile, never page content or typed text. An agent can upload only the files
@@ -81,6 +88,12 @@ Không có tài khoản AnyProfile, không có máy chủ AnyProfile.
 - **Khi bạn bấm nút ủng hộ** (Cài đặt → Ủng hộ AnyProfile): GitHub Sponsors hoặc trang thanh toán Stripe mở trong
   trình duyệt mặc định, và dịch vụ đó xử lý thanh toán theo chính sách riêng của họ. Ủng hộ bằng thẻ chuyển đến
   Cassau, LLC, công ty đứng sau AnyProfile và PostClaw. AnyProfile không gửi gì về việc này.
+- **AnyProfile Pro, chỉ khi bạn mua hoặc nhập key** (Cài đặt → AnyProfile Pro): nút Mua mở trang thanh toán
+  của pro.anytools.world trong trình duyệt mặc định; Stripe xử lý thanh toán theo chính sách riêng của họ. Trong
+  lúc chờ, app hỏi máy chủ mỗi 5 giây (tối đa 30 phút) xem lần mua do app bắt đầu đã trả chưa, kèm một mã dùng
+  một lần ngẫu nhiên. Khi có key, mỗi ngày một lần app gửi key, một mã máy ngẫu nhiên tạo trên máy này (không lấy
+  từ phần cứng), phiên bản gói Pro và phiên bản app, hệ điều hành, và tải gói mới có chữ ký khi có. Không gửi gì
+  về profile, proxy, cookie hay trang web. Không có key thì app không gửi gì trong số này.
 - **Khi bạn kết nối một AI agent (MCP):** agent đọc các trang bạn cho nó làm việc, và gửi những gì nó đọc lên nhà
   cung cấp mô hình của chính nó (ví dụ Anthropic với Claude Code, OpenAI với Codex). AnyProfile không gửi gì cho việc này; log chỉ ghi
   tool nào chạy trên profile nào, không bao giờ ghi nội dung trang hay chữ đã gõ. Agent chỉ upload được các file

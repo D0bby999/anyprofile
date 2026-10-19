@@ -14,6 +14,7 @@ import (
 
 	"github.com/D0bby999/anyprofile/internal/agent"
 	"github.com/D0bby999/anyprofile/internal/api"
+	"github.com/D0bby999/anyprofile/internal/pro"
 	"github.com/D0bby999/anyprofile/internal/service"
 )
 
@@ -86,6 +87,7 @@ func (a *App) restartAPI() {
 	srv := api.New(apiBackend{a.svc}, a.svc.Log, set.Port, tok)
 	srv.Agent = a.agent
 	srv.Uploads, srv.Recipes = a.svc.Dirs.Uploads(), a.svc.Dirs.Recipes()
+	srv.ProRecipes = pro.Recipes(a.svc.Dirs.Pro())
 	if err := srv.Start(); err != nil {
 		a.api.err = err.Error()
 		a.svc.Log.Warn("api start", "err", err)

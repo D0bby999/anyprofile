@@ -113,6 +113,22 @@ export function Personas():Promise<Array<fury.Persona>>;
 
 export function PickBackup():Promise<string>;
 
+export function ProActivate(arg1:string):Promise<service.ProStatus>;
+
+export function ProBuy(arg1:string):Promise<void>;
+
+export function ProCancelBuy():Promise<void>;
+
+export function ProCheck():Promise<service.ProStatus>;
+
+export function ProDeactivate():Promise<void>;
+
+export function ProOpenPortal():Promise<void>;
+
+export function ProOpenScripts():Promise<void>;
+
+export function ProStatus():Promise<service.ProStatus>;
+
 export function PurgeProfile(arg1:string):Promise<void>;
 
 export function QuickCreate(arg1:string):Promise<store.Profile>;

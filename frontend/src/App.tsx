@@ -174,7 +174,7 @@ export default function App() {
         )}
         {page === 'proxies' && <ProxiesPage onChanged={() => { refreshProxies(); profiles.reload() }} />}
         {page === 'trash' && <TrashPage onChanged={profiles.reload} />}
-        {page === 'tools' && <ToolsPage />}
+        {page === 'tools' && <ToolsPage onOpenPro={() => { setPage('settings'); setTimeout(() => document.getElementById('settings-pro')?.scrollIntoView({ block: 'start' }), 50) }} />}
         {page === 'settings' && (
           <SettingsPage engines={engines ?? []} engineCounts={engineCounts} defaults={defaults} onEnginesChanged={refreshEngines} theme={theme} onTheme={setTheme} fileVaultOn={fileVaultOn}
             lang={lang} onLanguage={changeLanguage} openProfiles={profiles.rows.filter((r) => r.state === 'running').length} checkUpdate={checkUpdate} />

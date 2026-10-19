@@ -458,5 +458,8 @@ kbd { display: inline-flex; align-items: center; min-width: 22px; height: 20px; 
 
 /* Settings → Version and the status bar's update button. */
 .updnotes { display: block; margin-top: 4px; white-space: pre-line; color: var(--ink-soft); }
+.pro-list { margin: 0; padding-left: 18px; color: var(--ink-soft); font-size: var(--t-sm); }
+.pro-list li { margin: 2px 0; }
+.pro-banner { align-items: center; margin-bottom: 20px; }
 .statusbtn.updbtn { margin-left: auto; color: var(--accent-ink, var(--ink)); }
 

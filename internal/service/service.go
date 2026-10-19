@@ -20,6 +20,7 @@ import (
 	"github.com/D0bby999/anyprofile/internal/launcher"
 	"github.com/D0bby999/anyprofile/internal/netproxy"
 	"github.com/D0bby999/anyprofile/internal/paths"
+	"github.com/D0bby999/anyprofile/internal/pro"
 	"github.com/D0bby999/anyprofile/internal/secrets"
 	"github.com/D0bby999/anyprofile/internal/store"
 )
@@ -48,9 +49,12 @@ type Service struct {
 	OnChange func(kind string)
 	// CheckProxy measures a proxy's exit; netproxy.Check outside tests.
 	CheckProxy func(ctx context.Context, up netproxy.Upstream) (netproxy.Exit, error)
+	// Pro reaches the AnyProfile Pro server; the zero value means pro.NewClient().
+	Pro pro.Client
 
 	snapMu    sync.Mutex
 	updMu     sync.Mutex             // one update download at a time
+	proMu     sync.Mutex             // one Pro check or install at a time
 	snapLocks map[string]profileLock // one per profile: snapshots and launches take turns
 }
 
