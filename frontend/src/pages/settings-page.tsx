@@ -18,19 +18,12 @@ import { APISettings } from '../components/api-settings'
 import { ExtensionSettings } from '../components/extension-settings'
 import { PageHead } from '../components/page-head'
 import { EngineSettings } from '../components/engine-settings'
+import { scrollSettingsTo } from '../lib/scroll'
 
 /** Settings come in groups, most used first; the technical ones sit near the end. */
 const groupKeys = ['general', 'profiles', 'automation', 'data', 'engines', 'about'] as const
 type GroupKey = typeof groupKeys[number]
 
-/** Brings a settings block to the top of the page's own scroll. scrollIntoView would also
- *  shift the window, hiding the page title. */
-export function scrollSettingsTo(id: string) {
-  const el = document.getElementById(id)
-  const root = el?.closest<HTMLElement>('.pagebody')
-  if (!el || !root) return
-  root.scrollTop += el.getBoundingClientRect().top - root.getBoundingClientRect().top - 10
-}
 
 type Props = {
   engines: main.EngineInfo[]

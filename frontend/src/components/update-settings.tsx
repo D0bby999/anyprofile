@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { Api, onUpdateProgress } from '../api'
 import { t } from '../i18n'
 import { errorText } from '../lib/format'
+import { scrollSettingsTo } from '../lib/scroll'
 import { useUpdate } from '../hooks/use-update'
 import { useConfirm } from './confirm'
 import { Icon } from './icons'
@@ -19,7 +20,7 @@ export function UpdateSettings({ openProfiles, checkToken = 0 }: { openProfiles:
   useEffect(() => onUpdateProgress((done, total) => setProgress([done, total])), [])
   useEffect(() => {
     if (!checkToken) return
-    document.getElementById('settings-update')?.scrollIntoView({ block: 'center' })
+    scrollSettingsTo('settings-update', 'center')
     check()
   }, [checkToken])
   if (!st) return null

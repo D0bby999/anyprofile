@@ -144,7 +144,7 @@ kbd { display: inline-flex; align-items: center; min-width: 22px; height: 20px; 
 .pagehead { display: flex; align-items: center; gap: 12px; height: 64px; padding: 14px 24px 0; flex: 0 0 auto; }
 .pagehead h1 { font-size: var(--t-lg); font-weight: 700; letter-spacing: -0.035em; }
 .pagehead .sub { color: var(--faint); font-size: var(--t-sm); }
-.pagebody { flex: 1; min-height: 0; padding: 10px 24px 24px; display: flex; flex-direction: column; gap: 14px; overflow: auto; }
+.pagebody { position: relative; flex: 1; min-height: 0; padding: 10px 24px 24px; display: flex; flex-direction: column; gap: 14px; overflow: auto; }
 /* A reading-width column centred in the page. The padding grows instead of the
    box shrinking, so the scrollbar stays at the window's edge and the title
    lines up with the column below it. */

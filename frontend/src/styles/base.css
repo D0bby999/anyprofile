@@ -2,7 +2,8 @@
    Primitives shared by every screen: type, buttons, fields, chips, banners. */
 
 * { box-sizing: border-box; }
-html, body, #root { height: 100%; margin: 0; }
+/* The window never scrolls: each page scrolls inside .pagebody. */
+html, body, #root { height: 100%; margin: 0; overflow: hidden; }
 body {
   font: var(--t-base)/1.5 var(--font);
   color: var(--ink);
