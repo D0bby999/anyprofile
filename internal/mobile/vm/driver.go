@@ -30,6 +30,7 @@ import (
 	"github.com/D0bby999/anyprofile/internal/engine"
 	"github.com/D0bby999/anyprofile/internal/launcher"
 	"github.com/D0bby999/anyprofile/internal/mobile"
+	"github.com/D0bby999/anyprofile/internal/mobile/adb"
 	"github.com/D0bby999/anyprofile/internal/mobile/vm/vnet"
 	"github.com/D0bby999/anyprofile/internal/netproxy"
 )
@@ -59,7 +60,7 @@ type proc struct {
 	pid    int
 	qmp    string // QEMU's control socket
 	net    *vnet.Network
-	adb    adb
+	adb    adb.Client
 	name   string
 	rt     Runtime
 	scrcpy *exec.Cmd
@@ -179,7 +180,7 @@ func (v *Driver) boot(ctx context.Context, rt Runtime, d mobile.Device, dial vne
 		n.Close()
 		return nil, fmt.Errorf("start qemu: %w", err)
 	}
-	p := &proc{pid: cmd.Process.Pid, qmp: qmpSock, net: n, adb: adb{rt.ADB, port}, name: d.Name, rt: rt, exited: make(chan struct{})}
+	p := &proc{pid: cmd.Process.Pid, qmp: qmpSock, net: n, adb: adb.Client{Bin: rt.ADB, Port: port}, name: d.Name, rt: rt, exited: make(chan struct{})}
 	go func() {
 		_ = cmd.Wait()
 		logf.Close()
@@ -187,7 +188,7 @@ func (v *Driver) boot(ctx context.Context, rt Runtime, d mobile.Device, dial vne
 	}()
 	bctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
-	if err := p.adb.waitBoot(bctx, p.exited); err != nil {
+	if err := p.adb.WaitBoot(bctx, p.exited); err != nil {
 		v.kill(p)
 		if tail := logTail(filepath.Join(dir, "qemu.log")); tail != "" {
 			return nil, fmt.Errorf("%w: %s", err, tail)
@@ -210,7 +211,7 @@ func (v *Driver) kill(p *proc) {
 		}
 	}
 	p.net.Close()
-	p.adb.disconnect()
+	p.adb.Disconnect()
 }
 
 // powerdown asks Android to shut down and waits; QEMU is killed after the
@@ -218,7 +219,7 @@ func (v *Driver) kill(p *proc) {
 // request goes through adb, with QMP as the fallback.
 func (v *Driver) powerdown(ctx context.Context, p *proc) {
 	c, cancel := context.WithTimeout(ctx, 10*time.Second)
-	_, err := p.adb.shell(c, "svc power shutdown")
+	_, err := p.adb.Shell(c, "svc power shutdown")
 	cancel()
 	if err != nil {
 		c, cancel = context.WithTimeout(ctx, 5*time.Second)
@@ -282,7 +283,7 @@ func (v *Driver) Create(ctx context.Context, d mobile.Device) (string, string, e
 }
 
 // provision runs once, on the first boot.
-func provision(ctx context.Context, a adb) error {
+func provision(ctx context.Context, a adb.Client) error {
 	for _, line := range []string{
 		"settings put global device_provisioned 1",
 		"settings put secure user_setup_complete 1",
@@ -290,7 +291,7 @@ func provision(ctx context.Context, a adb) error {
 		"wm density " + strconv.Itoa(density),
 	} {
 		c, cancel := context.WithTimeout(ctx, 30*time.Second)
-		_, err := a.shell(c, line)
+		_, err := a.Shell(c, line)
 		cancel()
 		if err != nil {
 			return fmt.Errorf("set up Android: %w", err)
@@ -334,10 +335,10 @@ func (v *Driver) track(id string, p *proc, startTime string) mobile.Run {
 		v.mu.Unlock()
 		p.net.Close()
 		v.closeWindow(p)
-		p.adb.disconnect()
+		p.adb.Disconnect()
 		close(done)
 	}()
-	return mobile.Run{Launch: mobile.Launch{PID: p.pid, PIDStartTime: startTime, ADBPort: p.adb.port}, Done: done}
+	return mobile.Run{Launch: mobile.Launch{PID: p.pid, PIDStartTime: startTime, ADBPort: p.adb.Port}, Done: done}
 }
 
 func (v *Driver) proc(id string) *proc {
@@ -374,8 +375,8 @@ func (v *Driver) showOn(p *proc) {
 			return // already open
 		}
 	}
-	cmd := exec.Command(p.rt.Scrcpy, "-s", p.adb.serial(), "--window-title="+p.name, "--no-audio")
-	cmd.Env = append(p.adb.env(), "ADB="+p.rt.ADB, "SCRCPY_SERVER_PATH="+p.rt.ScrcpyServer)
+	cmd := exec.Command(p.rt.Scrcpy, "-s", p.adb.Serial(), "--window-title="+p.name, "--no-audio")
+	cmd.Env = append(p.adb.Env(), "ADB="+p.rt.ADB, "SCRCPY_SERVER_PATH="+p.rt.ScrcpyServer)
 	if err := cmd.Start(); err != nil {
 		v.log.Warn("scrcpy", "err", err)
 		return
@@ -466,7 +467,7 @@ func (v *Driver) Adopt(ctx context.Context, d mobile.Device, l mobile.Launch, up
 		n.Close()
 		return mobile.Run{}, err
 	}
-	p := &proc{pid: l.PID, qmp: qmpSock, net: n, adb: adb{rt.ADB, port}, name: d.Name, rt: rt, exited: make(chan struct{})}
+	p := &proc{pid: l.PID, qmp: qmpSock, net: n, adb: adb.Client{Bin: rt.ADB, Port: port}, name: d.Name, rt: rt, exited: make(chan struct{})}
 	go func() { // not our child: watch the pid
 		for launcher.SameProcess(l.PID, l.PIDStartTime) {
 			time.Sleep(2 * time.Second)

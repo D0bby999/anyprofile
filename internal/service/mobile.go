@@ -33,13 +33,13 @@ const (
 // MobileAvailability tells the UI what stands between the user and a device.
 type MobileAvailability struct {
 	// Install is set when the driver downloads what it runs on (macOS).
-	Install *mobile.InstallStatus `json:"install"`
-	Supported bool   `json:"supported"` // this OS has a driver
-	Driver    string `json:"driver"`    // "vm" or "ldplayer"
-	Pro       bool   `json:"pro"`       // a paid-up AnyProfile Pro key
-	Ready     bool   `json:"ready"`     // the driver can create and open devices
-	Reason    string `json:"reason"`    // apperr code when not ready, like "ldplayer_missing"
-	Message   string `json:"message"`
+	Install   *mobile.InstallStatus `json:"install"`
+	Supported bool                  `json:"supported"` // this OS has a driver
+	Driver    string                `json:"driver"`    // "vm" or "ldplayer"
+	Pro       bool                  `json:"pro"`       // a paid-up AnyProfile Pro key
+	Ready     bool                  `json:"ready"`     // the driver can create and open devices
+	Reason    string                `json:"reason"`    // apperr code when not ready, like "ldplayer_missing"
+	Message   string                `json:"message"`
 }
 
 // MobileRow is a device with its live state.

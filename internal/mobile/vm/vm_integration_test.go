@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/D0bby999/anyprofile/internal/mobile"
+	"github.com/D0bby999/anyprofile/internal/mobile/adb"
 	"github.com/D0bby999/anyprofile/internal/netproxy"
 )
 
@@ -115,7 +116,7 @@ func TestVM(t *testing.T) {
 	sh := func(line string) string {
 		c, cancel := context.WithTimeout(ctx, 60*time.Second)
 		defer cancel()
-		out, err := a.shell(c, line)
+		out, err := a.Shell(c, line)
 		if err != nil {
 			t.Logf("%s: %v", line, err)
 		}
@@ -138,16 +139,16 @@ func TestVM(t *testing.T) {
 		for _, l := range strings.Split(os.Getenv("ANYPROFILE_VM_EXPLORE"), ";;") {
 			if strings.HasPrefix(l, "ADB:") {
 				c, cancel := context.WithTimeout(ctx, 60*time.Second)
-				out, err := a.run(c, strings.Fields(l[4:])...)
+				out, err := a.Run(c, strings.Fields(l[4:])...)
 				cancel()
 				t.Logf("EXPLORE %s => %q %v", l, out, err)
 				time.Sleep(3 * time.Second)
-				a.connect(ctx)
+				a.Connect(ctx)
 				continue
 			}
 			if strings.HasPrefix(l, "WAIT") {
 				c, cancel := context.WithTimeout(ctx, 3*time.Minute)
-				err := a.waitBoot(c, nil)
+				err := a.WaitBoot(c, nil)
 				cancel()
 				t.Logf("EXPLORE wait boot: %v", err)
 				continue
@@ -194,9 +195,9 @@ func TestVM(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	a = adb{drv2.proc(d.ID).adb.bin, run2.Launch.ADBPort}
+	a = adb.Client{Bin: drv2.proc(d.ID).adb.Bin, Port: run2.Launch.ADBPort}
 	c, cancel := context.WithTimeout(ctx, time.Minute)
-	if err := a.waitBoot(c, nil); err != nil {
+	if err := a.WaitBoot(c, nil); err != nil {
 		t.Fatalf("adb after adopt: %v", err)
 	}
 	cancel()

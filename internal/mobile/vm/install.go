@@ -37,8 +37,8 @@ const (
 func ImageBuiltin() []engine.Release {
 	return []engine.Release{{
 		Engine: ImageEngine, Version: "23.2.20261019", Chromium: "16.0", Platform: "darwin-arm64",
-		Date: "2026-10-19",
-		URL:  "https://github.com/jqssun/android-lineage-qemu/releases/download/v2026.10.18/UTM-VM-lineage-23.2-20261019-jqssun-virtio_arm64only.zip",
+		Date:   "2026-10-19",
+		URL:    "https://github.com/jqssun/android-lineage-qemu/releases/download/v2026.10.18/UTM-VM-lineage-23.2-20261019-jqssun-virtio_arm64only.zip",
 		SHA256: "171c0d215899d68f070fd45aea05ddb25737cf4ff16a25468e7cafbc65f4d8c9",
 		Files: map[string]string{
 			utmData + "/vda.qcow2": "c029184fe55eeb83556067ce64f3a6ec3efee71f4ffeff491f27944a1b22c7a6",
