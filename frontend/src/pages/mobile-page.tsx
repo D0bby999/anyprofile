@@ -8,6 +8,7 @@ import type { useMobile } from '../hooks/use-mobile'
 import { EmptyState } from '../components/empty-state'
 import { Icon } from '../components/icons'
 import { InstallProgress } from '../components/install-progress'
+import { MOBILE_APPS_GUIDE } from '../components/api-settings'
 import { MobileDialog } from '../components/mobile-dialog'
 import { PageHead } from '../components/page-head'
 import { useToast } from '../components/toast'
@@ -185,9 +186,7 @@ export function MobilePage({ mobile, onOpenPro, onOpenSettings }: Props) {
         </section>
         {rows.length > 0 && canUse && (
           <p className="hint">{t.mobile.apkHint} {t.mobile.apkWhere}{' '}
-            <a href="#" onClick={(e) => { e.preventDefault(); openExternal('https://www.apkmirror.com/') }}>{t.mobile.apkMirror}</a>{' '}
-            {t.mobile.apkOr}{' '}
-            <a href="#" onClick={(e) => { e.preventDefault(); openExternal('https://f-droid.org/') }}>{t.mobile.fdroid}</a>.
+            <a href="#" onClick={(e) => { e.preventDefault(); openExternal(MOBILE_APPS_GUIDE) }}>{t.mobile.apkGuide}</a>.
           </p>
         )}
       </div>

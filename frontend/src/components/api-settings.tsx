@@ -13,6 +13,7 @@ const CLIENT_KEY = 'anyprofile.mcpClient'
 const DOCS = 'https://github.com/D0bby999/anyprofile/blob/master/docs/'
 export const API_GUIDE = DOCS + 'local-api.md'
 export const MCP_GUIDE = DOCS + 'mcp.md'
+export const MOBILE_APPS_GUIDE = DOCS + 'mobile-apps.md'
 
 /** The local API: off by default, loopback only, one token kept in Go. */
 export function APISettings() {

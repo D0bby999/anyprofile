@@ -15,8 +15,10 @@ const api = {
   InstallMobileRuntime: vi.fn(() => Promise.resolve()),
   CreateMobileDevice: vi.fn(() => Promise.resolve({ id: 'n' })),
 }
+const openExternal = vi.fn()
 vi.mock('../api', async (orig) => ({
   ...(await orig<typeof import('../api')>()),
+  openExternal: (u: string) => openExternal(u),
   onDataChanged: () => () => {},
   onEngineProgress: () => () => {},
   Api: api,
@@ -75,6 +77,12 @@ describe('MobilePage', () => {
     fireEvent.click(screen.getByRole('button', { name: t.mobile.open }))
     await waitFor(() => expect(api.StartMobileDevice).toHaveBeenCalledWith('d1'))
     expect(await screen.findByText(t.mobile.ramTight)).toBeTruthy()
+  })
+
+  it('links to the guide for installing apps', () => {
+    page([device()], avail())
+    fireEvent.click(screen.getByRole('link', { name: t.mobile.apkGuide }))
+    expect(openExternal).toHaveBeenCalledWith('https://github.com/D0bby999/anyprofile/blob/master/docs/mobile-apps.md')
   })
 
   it('installs apps on a running device only', async () => {

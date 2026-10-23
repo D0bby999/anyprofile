@@ -329,7 +329,7 @@ export const vi: Messages = {
     closedOnly: 'Chỉ đổi được proxy, bộ nhớ và số nhân khi máy đang đóng.',
     ramTight: 'Đang chạy nhiều máy so với bộ nhớ của máy tính này. Mọi thứ có thể chậm lại.',
     apkHint: 'Muốn cài app, bấm Cài app trên máy đang chạy rồi chọn file APK, hoặc kéo file APK vào cửa sổ của máy.',
-    apkWhere: 'Máy không có Google Play. Lấy APK ở', apkMirror: 'APKMirror (file gốc do hãng ký)', apkOr: 'hoặc', fdroid: 'F-Droid (app mã nguồn mở)',
+    apkWhere: 'Máy không có Google Play.', apkGuide: 'Hướng dẫn cài app: Aurora Store, F-Droid, file APK',
     installApps: 'Cài app', appsInstalled: (n: number) => `Đã cài ${n} app.`,
     realIpWarning: 'Máy này sẽ cho mọi app và trang web thấy IP và vị trí thật của bạn.',
     created: (name: string) => `${name} đã sẵn sàng.`,

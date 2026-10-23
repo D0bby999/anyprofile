@@ -328,7 +328,7 @@ export const en = {
     closedOnly: 'Proxy, memory and cores can change only while the device is closed.',
     ramTight: 'Many devices are running for this computer\u2019s memory. Everything may slow down.',
     apkHint: 'To install apps, press Install apps on a running device and choose APK files, or drag them onto the device\u2019s window.',
-    apkWhere: 'Devices have no Google Play. Get APKs from', apkMirror: 'the developers\u2019 own files on APKMirror', apkOr: 'or', fdroid: 'open-source apps on F-Droid',
+    apkWhere: 'Devices have no Google Play.', apkGuide: 'How to install apps: Aurora Store, F-Droid, APK files',
     installApps: 'Install apps', appsInstalled: (n: number) => (n === 1 ? 'App installed.' : `${n} apps installed.`),
     realIpWarning: 'This device will show your real IP address and location to every app and site.',
     created: (name: string) => `${name} is ready.`,
