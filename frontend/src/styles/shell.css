@@ -177,6 +177,7 @@ kbd { display: inline-flex; align-items: center; min-width: 22px; height: 20px; 
 
 .tablewrap { flex: 1; min-height: 0; overflow: auto; }
 .table { width: 100%; border-collapse: separate; border-spacing: 0; }
+.table .tablecap { caption-side: top; text-align: left; padding: 14px 14px 6px; color: var(--muted); font-size: var(--t-xs); font-weight: 600; }
 .table th {
   position: sticky; top: 0; z-index: 1; height: 38px; padding: 0 12px;
   background: var(--surface-sunken); border-bottom: 1px solid var(--line);

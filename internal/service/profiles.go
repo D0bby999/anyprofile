@@ -5,7 +5,6 @@ package service
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -269,33 +268,12 @@ func (s *Service) regionStartURLs(p *store.Profile) {
 
 // applyNetwork fills timezone, position and languages from the profile's proxy exit.
 func (s *Service) applyNetwork(ctx context.Context, p *store.Profile) error {
-	country := ""
-	p.Lat, p.Lon = nil, nil
-	if p.ProxyID == "" {
-		p.Timezone = localZone()
-	} else {
-		px, err := s.Store.GetProxy(p.ProxyID)
-		if err != nil {
-			return fmt.Errorf("proxy: %w", err)
-		}
-		if px.CheckedAt == "" {
-			if px, err = s.CheckProxyByID(ctx, px.ID); err != nil {
-				return err
-			}
-		}
-		if px.Rotating {
-			return apperr.Newf("proxy_rotating", "proxy %s changes its IP between connections; use a sticky port", px.Label)
-		}
-		if px.Timezone == "" {
-			return apperr.Newf("proxy_no_timezone", "could not determine the timezone of proxy %s", px.Label)
-		}
-		p.Timezone, p.Lat, p.Lon, country = px.Timezone, px.Lat, px.Lon, px.Country
-	}
-	ui, langs, err := s.Locale(ctx, country)
+	n, err := s.proxyNetwork(ctx, p.ProxyID)
 	if err != nil {
 		return err
 	}
-	p.UILocale, p.Languages = ui, strings.Join(langs, ",")
+	p.Timezone, p.Lat, p.Lon = n.Timezone, n.Lat, n.Lon
+	p.UILocale, p.Languages = n.UILocale, strings.Join(n.Languages, ",")
 	return nil
 }
 

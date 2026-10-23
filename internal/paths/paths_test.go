@@ -28,3 +28,16 @@ func TestProfileSnapshotsIsUnderSnapshots(t *testing.T) {
 		t.Fatalf("snapshots = %s", d.ProfileSnapshots("abc"))
 	}
 }
+
+func TestMobilePaths(t *testing.T) {
+	d := Dirs{Root: filepath.FromSlash("/r")}
+	for got, want := range map[string]string{
+		d.MobileDevice("abc"): "/r/mobile/devices/abc",
+		d.MobileBackup("abc"): "/r/mobile/backups/abc",
+		d.MobileRuntime():     "/r/mobile/runtime",
+	} {
+		if got != filepath.FromSlash(want) {
+			t.Errorf("%s, want %s", got, want)
+		}
+	}
+}

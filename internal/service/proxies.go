@@ -4,7 +4,6 @@ package service
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"sort"
 	"strings"
@@ -118,10 +117,8 @@ func (s *Service) CheckProxyByID(ctx context.Context, id string) (store.Proxy, e
 	if err != nil {
 		return px, err
 	}
-	up := netproxy.Upstream{Scheme: px.Scheme, Host: px.Host, Port: px.Port, Username: px.Username}
-	if pw, err := s.Secrets.Get(secrets.ServiceProxy, id); err == nil {
-		up.Password = string(pw)
-	} else if !errors.Is(err, secrets.ErrNotFound) {
+	up, err := s.proxyUpstream(id)
+	if err != nil {
 		return px, err
 	}
 	e, err := s.CheckProxy(ctx, up)
@@ -206,7 +203,7 @@ func (s *Service) UpdateProxy(id string, m ProxyMeta) error {
 	return nil
 }
 
-// DeleteProxy refuses while a running profile depends on it.
+// DeleteProxy refuses while a running profile or mobile device depends on it.
 func (s *Service) DeleteProxy(id string) error {
 	running := map[string]bool{}
 	for _, in := range s.Launcher.List() {
@@ -223,6 +220,11 @@ func (s *Service) DeleteProxy(id string) error {
 			return apperr.New("proxy_in_use", "a running profile uses this proxy; close it first")
 		}
 	}
+	if name, err := s.mobileUsesProxy(id); err != nil {
+		return err
+	} else if name != "" {
+		return apperr.Newf("proxy_in_use", "mobile device %s uses this proxy; close it first", name)
+	}
 	if err := s.Store.DeleteProxy(id); err != nil {
 		return err
 	}
@@ -231,6 +233,7 @@ func (s *Service) DeleteProxy(id string) error {
 	}
 	s.notify("proxies")
 	s.notify("profiles")
+	s.notify("mobile")
 	return nil
 }
 

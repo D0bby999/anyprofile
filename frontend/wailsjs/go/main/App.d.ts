@@ -19,6 +19,8 @@ export function ArrangeWindows():Promise<number>;
 
 export function AssignProxiesMany(arg1:Array<string>,arg2:string):Promise<Record<string, string>>;
 
+export function BackupMobileDevice(arg1:string):Promise<void>;
+
 export function CheckAllProxies():Promise<void>;
 
 export function CheckProxy(arg1:string):Promise<store.Proxy>;
@@ -38,6 +40,8 @@ export function CopyAccountPassword(arg1:string,arg2:string):Promise<void>;
 export function CopyDiagnostics():Promise<void>;
 
 export function CopyMCPSetup(arg1:string):Promise<void>;
+
+export function CreateMobileDevice(arg1:service.MobileInput):Promise<store.MobileDevice>;
 
 export function CreateProfile(arg1:service.NewProfile):Promise<store.Profile>;
 
@@ -97,11 +101,15 @@ export function Language():Promise<string>;
 
 export function ListExtensions():Promise<Array<store.Extension>>;
 
+export function ListMobileDevices(arg1:store.ProfileFilter):Promise<Array<service.MobileRow>>;
+
 export function ListProfiles(arg1:store.ProfileFilter):Promise<Array<service.ProfileRow>>;
 
 export function ListProxies():Promise<Array<service.ProxyRow>>;
 
 export function MatchExit(arg1:string):Promise<void>;
+
+export function MobileAvailability():Promise<service.MobileAvailability>;
 
 export function NewAPIToken():Promise<void>;
 
@@ -129,6 +137,8 @@ export function ProOpenScripts():Promise<void>;
 
 export function ProStatus():Promise<service.ProStatus>;
 
+export function PurgeMobileDevice(arg1:string):Promise<void>;
+
 export function PurgeProfile(arg1:string):Promise<void>;
 
 export function QuickCreate(arg1:string):Promise<store.Profile>;
@@ -136,6 +146,10 @@ export function QuickCreate(arg1:string):Promise<store.Profile>;
 export function RemoveEngineVersion(arg1:string,arg2:string):Promise<void>;
 
 export function ResetFingerprint(arg1:string):Promise<void>;
+
+export function RestoreMobileBackup(arg1:string):Promise<void>;
+
+export function RestoreMobileDevice(arg1:string):Promise<void>;
 
 export function RestoreProfile(arg1:string):Promise<void>;
 
@@ -173,11 +187,15 @@ export function SnapshotSettings():Promise<service.SnapshotSettings>;
 
 export function Snapshots(arg1:string):Promise<Array<store.Snapshot>>;
 
+export function StartMobileDevice(arg1:string):Promise<service.MobileStart>;
+
 export function StartProfile(arg1:string):Promise<void>;
 
 export function StartProfiles(arg1:Array<string>):Promise<Record<string, string>>;
 
 export function StartupError():Promise<string>;
+
+export function StopMobileDevice(arg1:string):Promise<void>;
 
 export function StopProfile(arg1:string):Promise<void>;
 
@@ -191,7 +209,11 @@ export function TakeSnapshot(arg1:string):Promise<store.Snapshot>;
 
 export function TakeWhatsNew():Promise<service.WhatsNew>;
 
+export function TrashMobileDevice(arg1:string):Promise<void>;
+
 export function TrashProfile(arg1:string):Promise<void>;
+
+export function UpdateMobileDevice(arg1:string,arg2:service.MobileInput):Promise<void>;
 
 export function UpdateProfile(arg1:store.Profile):Promise<void>;
 

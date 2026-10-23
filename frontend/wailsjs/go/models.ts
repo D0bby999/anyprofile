@@ -371,6 +371,114 @@ export namespace service {
 		    return a;
 		}
 	}
+	export class MobileAvailability {
+	    supported: boolean;
+	    driver: string;
+	    pro: boolean;
+	    ready: boolean;
+	    reason: string;
+	    message: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new MobileAvailability(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.supported = source["supported"];
+	        this.driver = source["driver"];
+	        this.pro = source["pro"];
+	        this.ready = source["ready"];
+	        this.reason = source["reason"];
+	        this.message = source["message"];
+	    }
+	}
+	export class MobileInput {
+	    name: string;
+	    proxyId: string;
+	    ramMb: number;
+	    cpus: number;
+	    notes: string;
+	    tags: string[];
+	    pinned: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new MobileInput(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.name = source["name"];
+	        this.proxyId = source["proxyId"];
+	        this.ramMb = source["ramMb"];
+	        this.cpus = source["cpus"];
+	        this.notes = source["notes"];
+	        this.tags = source["tags"];
+	        this.pinned = source["pinned"];
+	    }
+	}
+	export class MobileRow {
+	    id: string;
+	    name: string;
+	    driver: string;
+	    platform: string;
+	    driverRef: string;
+	    proxyId: string;
+	    ramMb: number;
+	    cpus: number;
+	    imageVersion: string;
+	    notes: string;
+	    tags: string[];
+	    pinned: boolean;
+	    serial: number;
+	    createdAt: string;
+	    updatedAt: string;
+	    lastOpenAt: string;
+	    backedUpAt: string;
+	    deletedAt: string;
+	    state: string;
+	    error: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new MobileRow(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.name = source["name"];
+	        this.driver = source["driver"];
+	        this.platform = source["platform"];
+	        this.driverRef = source["driverRef"];
+	        this.proxyId = source["proxyId"];
+	        this.ramMb = source["ramMb"];
+	        this.cpus = source["cpus"];
+	        this.imageVersion = source["imageVersion"];
+	        this.notes = source["notes"];
+	        this.tags = source["tags"];
+	        this.pinned = source["pinned"];
+	        this.serial = source["serial"];
+	        this.createdAt = source["createdAt"];
+	        this.updatedAt = source["updatedAt"];
+	        this.lastOpenAt = source["lastOpenAt"];
+	        this.backedUpAt = source["backedUpAt"];
+	        this.deletedAt = source["deletedAt"];
+	        this.state = source["state"];
+	        this.error = source["error"];
+	    }
+	}
+	export class MobileStart {
+	    warning: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new MobileStart(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.warning = source["warning"];
+	    }
+	}
 	export class NewProfile {
 	    engine: string;
 	    name: string;
@@ -650,6 +758,7 @@ export namespace service {
 	export class StorageInfo {
 	    profilesBytes: number;
 	    snapshotsBytes: number;
+	    mobileBytes: number;
 	    orphans: Orphan[];
 	
 	    static createFrom(source: any = {}) {
@@ -660,6 +769,7 @@ export namespace service {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.profilesBytes = source["profilesBytes"];
 	        this.snapshotsBytes = source["snapshotsBytes"];
+	        this.mobileBytes = source["mobileBytes"];
 	        this.orphans = this.convertValues(source["orphans"], Orphan);
 	    }
 	
@@ -823,6 +933,52 @@ export namespace store {
 	        this.version = source["version"];
 	        this.createdAt = source["createdAt"];
 	        this.profiles = source["profiles"];
+	    }
+	}
+	export class MobileDevice {
+	    id: string;
+	    name: string;
+	    driver: string;
+	    platform: string;
+	    driverRef: string;
+	    proxyId: string;
+	    ramMb: number;
+	    cpus: number;
+	    imageVersion: string;
+	    notes: string;
+	    tags: string[];
+	    pinned: boolean;
+	    serial: number;
+	    createdAt: string;
+	    updatedAt: string;
+	    lastOpenAt: string;
+	    backedUpAt: string;
+	    deletedAt: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new MobileDevice(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.name = source["name"];
+	        this.driver = source["driver"];
+	        this.platform = source["platform"];
+	        this.driverRef = source["driverRef"];
+	        this.proxyId = source["proxyId"];
+	        this.ramMb = source["ramMb"];
+	        this.cpus = source["cpus"];
+	        this.imageVersion = source["imageVersion"];
+	        this.notes = source["notes"];
+	        this.tags = source["tags"];
+	        this.pinned = source["pinned"];
+	        this.serial = source["serial"];
+	        this.createdAt = source["createdAt"];
+	        this.updatedAt = source["updatedAt"];
+	        this.lastOpenAt = source["lastOpenAt"];
+	        this.backedUpAt = source["backedUpAt"];
+	        this.deletedAt = source["deletedAt"];
 	    }
 	}
 	export class Profile {

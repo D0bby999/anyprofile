@@ -27,14 +27,14 @@ describe('i18n catalogs', () => {
   })
 
   it('default to English', () => {
-    expect(t.nav.all).toBe('All profiles')
+    expect(t.nav.all).toBe('Web')
   })
 
   it('switch languages', () => {
     expect(setLanguage('vi')).toBe('vi')
-    expect(t.nav.all).toBe('Tất cả profile')
+    expect(t.nav.trash).toBe('Thùng rác')
     expect(setLanguage('xx')).toBe('en')
-    expect(t.nav.all).toBe('All profiles')
+    expect(t.nav.trash).toBe('Trash')
   })
 })
 

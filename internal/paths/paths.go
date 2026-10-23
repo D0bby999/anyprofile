@@ -60,9 +60,17 @@ func (d Dirs) Recipes() string { return filepath.Join(d.Root, "recipes") }
 // Pro holds the AnyProfile Pro pack, when the user has a key.
 func (d Dirs) Pro() string { return filepath.Join(d.Root, "pro") }
 
+// Mobile holds the mobile devices (macOS VMs), their backups and the VM runtime.
+func (d Dirs) Mobile() string                { return filepath.Join(d.Root, "mobile") }
+func (d Dirs) MobileDevices() string         { return filepath.Join(d.Mobile(), "devices") }
+func (d Dirs) MobileDevice(id string) string { return filepath.Join(d.MobileDevices(), id) }
+func (d Dirs) MobileBackups() string         { return filepath.Join(d.Mobile(), "backups") }
+func (d Dirs) MobileBackup(id string) string { return filepath.Join(d.MobileBackups(), id) }
+func (d Dirs) MobileRuntime() string         { return filepath.Join(d.Mobile(), "runtime") }
+
 // Ensure creates every directory with owner-only permissions, tightening any that exist.
 func (d Dirs) Ensure() error {
-	for _, p := range []string{d.Root, d.Engines(), d.Profiles(), d.Logs(), d.Backups(), d.Snapshots(), d.Extensions(), d.Uploads(), d.Recipes()} {
+	for _, p := range []string{d.Root, d.Engines(), d.Profiles(), d.Logs(), d.Backups(), d.Snapshots(), d.Extensions(), d.Uploads(), d.Recipes(), d.MobileDevices(), d.MobileBackups()} {
 		if err := os.MkdirAll(p, 0o700); err != nil {
 			return fmt.Errorf("create %s: %w", p, err)
 		}

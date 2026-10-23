@@ -8,7 +8,7 @@ import { debounce } from './lib/debounce'
 
 export type LaunchInfo = { profileId: string; state: string; pid: number; cdpPort: number; error: string }
 export type EngineProgress = { engine: string; version?: string; done: number; total: number }
-export type DataKind = 'profiles' | 'proxies' | 'sites' | 'settings' | 'snapshots' | 'extensions' | 'update' | 'agent' | 'engines' | 'pro'
+export type DataKind = 'profiles' | 'proxies' | 'sites' | 'settings' | 'snapshots' | 'extensions' | 'update' | 'agent' | 'engines' | 'pro' | 'mobile'
 
 /** Write to the OS clipboard; navigator.clipboard may be blocked in the WebView. */
 export const copyText = (s: string) => ClipboardSetText(s)
@@ -35,6 +35,13 @@ export function onProEvent(fn: (what: 'activated' | 'updated', version: string) 
 
 export function onLaunchChanged(fn: (info: LaunchInfo) => void): () => void {
   return EventsOn('launch:changed', fn)
+}
+
+/** A mobile device changed state: stopped, provisioning, starting, running, stopping, working. */
+export type MobileInfo = { deviceId: string; state: string; error?: string }
+
+export function onMobileChanged(fn: (info: MobileInfo) => void): () => void {
+  return EventsOn('mobile:changed', fn)
 }
 
 export function onEngineProgress(fn: (p: EngineProgress) => void): () => void {

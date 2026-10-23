@@ -30,7 +30,7 @@ export function ProxiesPage({ onChanged }: { onChanged: () => void }) {
 
   const load = useCallback(() => { Api.ListProxies().then((r) => setRows(r ?? [])).catch((e) => toast.error(errorText(e))) }, [toast])
   useEffect(load, [load])
-  useEffect(() => onDataChanged(['proxies', 'profiles'], load), [load])
+  useEffect(() => onDataChanged(['proxies', 'profiles', 'mobile'], load), [load])
 
   const run = async (what: string, fn: () => Promise<unknown>) => {
     setBusy(what)

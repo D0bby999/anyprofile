@@ -18,6 +18,7 @@ import (
 
 	"github.com/D0bby999/anyprofile/internal/engine"
 	"github.com/D0bby999/anyprofile/internal/launcher"
+	"github.com/D0bby999/anyprofile/internal/mobile"
 	"github.com/D0bby999/anyprofile/internal/netproxy"
 	"github.com/D0bby999/anyprofile/internal/paths"
 	"github.com/D0bby999/anyprofile/internal/pro"
@@ -41,11 +42,13 @@ type Service struct {
 	Catalog  *engine.Catalog
 	Locale   LocaleFunc
 	Launcher *launcher.Launcher
-	Log      *slog.Logger
+	// Mobile runs this OS's mobile devices; nil where there is no driver.
+	Mobile *mobile.Manager
+	Log    *slog.Logger
 	// Clock is nil in production (time.Now); tests fix it.
 	Clock func() time.Time
 	// OnChange is told the kind of data a write changed: "profiles",
-	// "proxies", "sites" or "settings". Nil in tests that do not care.
+	// "proxies", "sites", "settings" or "mobile". Nil in tests that do not care.
 	OnChange func(kind string)
 	// CheckProxy measures a proxy's exit; netproxy.Check outside tests.
 	CheckProxy func(ctx context.Context, up netproxy.Upstream) (netproxy.Exit, error)

@@ -26,6 +26,10 @@ export function AssignProxiesMany(arg1, arg2) {
   return window['go']['main']['App']['AssignProxiesMany'](arg1, arg2);
 }
 
+export function BackupMobileDevice(arg1) {
+  return window['go']['main']['App']['BackupMobileDevice'](arg1);
+}
+
 export function CheckAllProxies() {
   return window['go']['main']['App']['CheckAllProxies']();
 }
@@ -64,6 +68,10 @@ export function CopyDiagnostics() {
 
 export function CopyMCPSetup(arg1) {
   return window['go']['main']['App']['CopyMCPSetup'](arg1);
+}
+
+export function CreateMobileDevice(arg1) {
+  return window['go']['main']['App']['CreateMobileDevice'](arg1);
 }
 
 export function CreateProfile(arg1) {
@@ -182,6 +190,10 @@ export function ListExtensions() {
   return window['go']['main']['App']['ListExtensions']();
 }
 
+export function ListMobileDevices(arg1) {
+  return window['go']['main']['App']['ListMobileDevices'](arg1);
+}
+
 export function ListProfiles(arg1) {
   return window['go']['main']['App']['ListProfiles'](arg1);
 }
@@ -192,6 +204,10 @@ export function ListProxies() {
 
 export function MatchExit(arg1) {
   return window['go']['main']['App']['MatchExit'](arg1);
+}
+
+export function MobileAvailability() {
+  return window['go']['main']['App']['MobileAvailability']();
 }
 
 export function NewAPIToken() {
@@ -246,6 +262,10 @@ export function ProStatus() {
   return window['go']['main']['App']['ProStatus']();
 }
 
+export function PurgeMobileDevice(arg1) {
+  return window['go']['main']['App']['PurgeMobileDevice'](arg1);
+}
+
 export function PurgeProfile(arg1) {
   return window['go']['main']['App']['PurgeProfile'](arg1);
 }
@@ -260,6 +280,14 @@ export function RemoveEngineVersion(arg1, arg2) {
 
 export function ResetFingerprint(arg1) {
   return window['go']['main']['App']['ResetFingerprint'](arg1);
+}
+
+export function RestoreMobileBackup(arg1) {
+  return window['go']['main']['App']['RestoreMobileBackup'](arg1);
+}
+
+export function RestoreMobileDevice(arg1) {
+  return window['go']['main']['App']['RestoreMobileDevice'](arg1);
 }
 
 export function RestoreProfile(arg1) {
@@ -334,6 +362,10 @@ export function Snapshots(arg1) {
   return window['go']['main']['App']['Snapshots'](arg1);
 }
 
+export function StartMobileDevice(arg1) {
+  return window['go']['main']['App']['StartMobileDevice'](arg1);
+}
+
 export function StartProfile(arg1) {
   return window['go']['main']['App']['StartProfile'](arg1);
 }
@@ -344,6 +376,10 @@ export function StartProfiles(arg1) {
 
 export function StartupError() {
   return window['go']['main']['App']['StartupError']();
+}
+
+export function StopMobileDevice(arg1) {
+  return window['go']['main']['App']['StopMobileDevice'](arg1);
 }
 
 export function StopProfile(arg1) {
@@ -370,8 +406,16 @@ export function TakeWhatsNew() {
   return window['go']['main']['App']['TakeWhatsNew']();
 }
 
+export function TrashMobileDevice(arg1) {
+  return window['go']['main']['App']['TrashMobileDevice'](arg1);
+}
+
 export function TrashProfile(arg1) {
   return window['go']['main']['App']['TrashProfile'](arg1);
+}
+
+export function UpdateMobileDevice(arg1, arg2) {
+  return window['go']['main']['App']['UpdateMobileDevice'](arg1, arg2);
 }
 
 export function UpdateProfile(arg1) {

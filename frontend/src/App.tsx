@@ -4,6 +4,7 @@ import { Api, main, onDataChanged, onMenu, service } from './api'
 import { language, setLanguage, t, type Language } from './i18n'
 import { applyTheme, readTheme, type ThemeChoice } from './lib/theme'
 import { useProfiles } from './hooks/use-profiles'
+import { useMobile } from './hooks/use-mobile'
 import { countProfiles } from './lib/health'
 import { tagCounts } from './lib/tags'
 import { useSites } from './hooks/use-sites'
@@ -12,6 +13,7 @@ import { NewProfileDialog } from './components/new-profile-dialog'
 import { Icon, LogoMark } from './components/icons'
 import { ProfilesPage } from './pages/profiles-page'
 import { ProxiesPage } from './pages/proxies-page'
+import { MobilePage } from './pages/mobile-page'
 import { TrashPage } from './pages/trash-page'
 import { ToolsPage } from './pages/tools-page'
 import { SettingsPage } from './pages/settings-page'
@@ -43,6 +45,7 @@ export default function App() {
   const [lang, setLang] = useState<Language>(language)
   const [defaults, setDefaults] = useState<service.Defaults>(service.Defaults.createFrom({ site: 'other', proxy: 'auto', onOpen: 'start' }))
   const profiles = useProfiles()
+  const mobile = useMobile()
   const { sites } = useSites()
 
   useEffect(() => applyTheme(theme), [theme])
@@ -148,6 +151,7 @@ export default function App() {
   ]
   const places: Command[] = [
     { id: 'all', label: t.nav.all, icon: 'profiles', run: () => navigate('profiles', 'all') },
+    { id: 'mobile', label: t.nav.mobile, icon: 'mobile', run: () => setPage('mobile') },
     { id: 'running', label: t.nav.running, icon: 'running', run: () => navigate('profiles', 'running') },
     { id: 'attention', label: t.nav.attention, icon: 'alert', run: () => navigate('profiles', 'attention') },
     { id: 'proxies', label: t.nav.proxies, icon: 'proxy', run: () => setPage('proxies') },
@@ -163,7 +167,7 @@ export default function App() {
   }
   return (
     <div className="app" key={lang}>
-      <Sidebar page={page} view={view} counts={counts} tags={tags} sites={sites} siteCounts={siteCounts} proxyCount={proxyCount}
+      <Sidebar page={page} view={view} counts={counts} tags={tags} sites={sites} siteCounts={siteCounts} proxyCount={proxyCount} mobileCount={mobile.rows.length}
         engineReady={engineReady}
         engineLabel={defaultEngine ? (engineReady ? t.engines.ready(engineName, defaultEngine.version) : t.engines.missing(engineName)) : ''}
         onNavigate={navigate} onNewProfile={newProfile} />
@@ -174,8 +178,9 @@ export default function App() {
             onNew={newProfile} onNeedEngine={() => setPage('settings')} onOpenSettings={openSettings} onClearView={() => setView('all')} onView={setView}
             activeId={activeId} setActiveId={setActiveId} />
         )}
-        {page === 'proxies' && <ProxiesPage onChanged={() => { refreshProxies(); profiles.reload() }} />}
-        {page === 'trash' && <TrashPage onChanged={profiles.reload} />}
+        {page === 'mobile' && <MobilePage mobile={mobile} onOpenPro={() => openSettings('settings-pro')} onOpenSettings={() => openSettings()} />}
+        {page === 'proxies' && <ProxiesPage onChanged={() => { refreshProxies(); profiles.reload(); mobile.reload() }} />}
+        {page === 'trash' && <TrashPage onChanged={() => { profiles.reload(); mobile.reload() }} />}
         {page === 'tools' && <ToolsPage onOpenPro={() => openSettings('settings-pro')} />}
         {page === 'settings' && (
           <SettingsPage engines={engines ?? []} engineCounts={engineCounts} defaults={defaults} onEnginesChanged={refreshEngines} theme={theme} onTheme={setTheme} fileVaultOn={fileVaultOn}

@@ -19,7 +19,7 @@ const rows = [
 const sidebar = (onNavigate = vi.fn(), many = 0) => render(
   <Sidebar page="profiles" view="all" counts={countProfiles(rows)}
     tags={many ? Array.from({ length: many }, (_, i) => [`tag-${i}`, 1] as [string, number]) : tagCounts(rows)}
-    sites={[]} siteCounts={new Map()} proxyCount={0} engineLabel="" engineReady onNavigate={onNavigate} onNewProfile={vi.fn()} />,
+    sites={[]} siteCounts={new Map()} proxyCount={0} mobileCount={2} engineLabel="" engineReady onNavigate={onNavigate} onNewProfile={vi.fn()} />,
 )
 
 describe('Sidebar', () => {
@@ -28,6 +28,16 @@ describe('Sidebar', () => {
     expect(screen.getByRole('button', { name: new RegExp(t.nav.all) }).textContent).toContain('3')
     expect(screen.queryByRole('button', { name: new RegExp(t.nav.running) })).toBeNull()
     expect(screen.queryByRole('button', { name: new RegExp(t.nav.attention) })).toBeNull()
+  })
+
+  it('has Web and Mobile, Mobile with its device count', () => {
+    const onNavigate = vi.fn()
+    sidebar(onNavigate)
+    expect(screen.getByRole('button', { name: new RegExp(t.nav.all) })).toBeTruthy()
+    const mobile = screen.getByRole('button', { name: new RegExp(t.nav.mobile) })
+    expect(mobile.textContent).toContain('2')
+    fireEvent.click(mobile)
+    expect(onNavigate).toHaveBeenCalledWith('mobile')
   })
 
   it('lists tags with counts and opens one', () => {

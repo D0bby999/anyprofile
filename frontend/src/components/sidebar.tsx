@@ -7,7 +7,7 @@ import type { Site } from '../lib/sites'
 import { SiteGlyph } from './site-glyph'
 import { Icon, LogoMark, type IconName } from './icons'
 
-export type Page = 'profiles' | 'proxies' | 'trash' | 'tools' | 'settings'
+export type Page = 'profiles' | 'mobile' | 'proxies' | 'trash' | 'tools' | 'settings'
 /** What the profile table shows: everything, the running ones, the ones that
  *  need attention (both picked from the status bar), one platform, or one tag. */
 export type View = 'all' | 'running' | 'attention' | `site:${string}` | `tag:${string}`
@@ -23,13 +23,14 @@ type Props = {
   sites: Site[]
   siteCounts: Map<string, number>
   proxyCount: number
+  mobileCount: number
   engineLabel: string
   engineReady: boolean
   onNavigate: (page: Page, view?: View) => void
   onNewProfile: () => void
 }
 
-export function Sidebar({ page, view, counts, tags, sites, siteCounts, proxyCount, engineLabel, engineReady, onNavigate, onNewProfile }: Props) {
+export function Sidebar({ page, view, counts, tags, sites, siteCounts, proxyCount, mobileCount, engineLabel, engineReady, onNavigate, onNewProfile }: Props) {
   const [tagsOpen, setTagsOpen] = useState(true)
   const [allTags, setAllTags] = useState(false)
   const item = (label: string, icon: IconName, active: boolean, onClick: () => void, count?: number, tone: '' | 'live' | 'warn' = '') => (
@@ -58,6 +59,7 @@ export function Sidebar({ page, view, counts, tags, sites, siteCounts, proxyCoun
       </button>
       <nav className="sidenav" aria-label={t.appName}>
         {item(t.nav.all, 'profiles', onProfiles('all'), () => onNavigate('profiles', 'all'), counts.all)}
+        {item(t.nav.mobile, 'mobile', page === 'mobile', () => onNavigate('mobile'), mobileCount)}
         {item(t.nav.proxies, 'proxy', page === 'proxies', () => onNavigate('proxies'), proxyCount)}
         {item(t.nav.trash, 'trash', page === 'trash', () => onNavigate('trash'))}
 

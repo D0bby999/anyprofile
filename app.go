@@ -19,6 +19,7 @@ import (
 	"github.com/D0bby999/anyprofile/internal/engine/apostate"
 	"github.com/D0bby999/anyprofile/internal/engine/fury"
 	"github.com/D0bby999/anyprofile/internal/launcher"
+	"github.com/D0bby999/anyprofile/internal/mobile"
 	"github.com/D0bby999/anyprofile/internal/netproxy"
 	"github.com/D0bby999/anyprofile/internal/paths"
 	"github.com/D0bby999/anyprofile/internal/secrets"
@@ -124,10 +125,15 @@ func (a *App) init() error {
 			loc, err := a.fury.LocaleFor(ctx, cc)
 			return loc.UILocale, loc.Languages, err
 		}}
+	if drv := mobileDriver(dirs, log); drv != nil {
+		a.svc.Mobile = mobile.NewManager(drv, st, log,
+			func(in mobile.Info) { runtime.EventsEmit(a.ctx, "mobile:changed", in) })
+	}
 	l.BeforeStart, l.AfterExit = a.svc.BeforeLaunch, a.svc.AfterExit
 	a.svc.LoadEngineList()
 	go a.svc.PruneEngines(context.Background())
 	l.Adopt()
+	a.svc.AdoptMobileDevices(context.Background())
 	a.agent = agent.NewHub(time.Minute)
 	a.agent.Behind = l.Behind
 	a.agent.OnActive = func(id string, on bool) {

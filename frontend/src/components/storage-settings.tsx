@@ -82,6 +82,9 @@ export function StorageSettings() {
       <p className="desc" style={{ margin: 0 }}>
         {info ? t.storage.profilesSize(formatBytes(Number(info.profilesBytes))) : t.common.loading}
       </p>
+      {!!info && Number(info.mobileBytes) > 0 && (
+        <p className="desc" style={{ margin: 0 }}>{t.storage.mobileSize(formatBytes(Number(info.mobileBytes)))}</p>
+      )}
       <div className="row">
         <button className="btn" disabled={busy !== ''} onClick={clearCache}>
           <Icon name="trash" className="icon sm" />{t.storage.clearCache}

@@ -97,10 +97,11 @@ func (s *Store) DeleteProxy(id string) error {
 	return affected(res, err)
 }
 
-// ProxyUsage maps proxy id to the names of live profiles using it.
+// ProxyUsage maps proxy id to the names of live profiles and mobile devices using it.
 func (s *Store) ProxyUsage() (map[string][]string, error) {
-	rows, err := s.db.Query(`SELECT proxy_id, name FROM profiles
-		WHERE proxy_id IS NOT NULL AND deleted_at IS NULL ORDER BY name`)
+	rows, err := s.db.Query(`SELECT proxy_id, name FROM profiles WHERE proxy_id IS NOT NULL AND deleted_at IS NULL
+		UNION ALL SELECT proxy_id, name FROM mobile_devices WHERE proxy_id IS NOT NULL AND deleted_at IS NULL
+		ORDER BY name`)
 	if err != nil {
 		return nil, err
 	}

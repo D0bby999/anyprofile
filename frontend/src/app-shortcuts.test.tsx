@@ -26,6 +26,7 @@ vi.mock('./api', async (orig) => ({
   onDataChanged: () => () => {},
   onMenu: () => () => {},
   onLaunchChanged: () => () => {},
+  onMobileChanged: () => () => {},
   onEngineProgress: () => () => {},
   Api: new Proxy({}, { get: (_, name: string) => api[name] ?? (() => Promise.resolve([])) }),
 }))

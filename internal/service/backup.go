@@ -31,6 +31,10 @@ import (
 // them on this computer only, and a profile without its cookie key has lost
 // its logins.
 //
+// Mobile devices travel as database rows only: their disks (several GB per
+// VM, or an LDPlayer instance) stay out. A device's own backup is
+// BackupMobileDevice.
+//
 // Format: "APBACKUP1\n", a 16-byte salt, Argon2id time and memory (KiB) as
 // uint32 big endian and threads as one byte, then a snapshot stream keyed
 // with Argon2id(password, salt). Inside: manifest.json, anyprofile.db,

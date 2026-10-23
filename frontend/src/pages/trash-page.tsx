@@ -14,14 +14,16 @@ import { useConfirm } from '../components/confirm'
 
 export function TrashPage({ onChanged }: { onChanged: () => void }) {
   const [rows, setRows] = useState<service.ProfileRow[]>([])
+  const [devices, setDevices] = useState<service.MobileRow[]>([])
   const [error, setError] = useState('')
   const { sites } = useSites()
   const toast = useToast()
   const confirm = useConfirm()
 
   const load = useCallback(() => {
-    Api.ListProfiles(store.ProfileFilter.createFrom({ query: '', tag: '', trashed: true }))
-      .then((r) => setRows(r ?? [])).catch((e) => setError(errorText(e)))
+    const trashed = store.ProfileFilter.createFrom({ query: '', tag: '', trashed: true })
+    Api.ListProfiles(trashed).then((r) => setRows(r ?? [])).catch((e) => setError(errorText(e)))
+    Api.ListMobileDevices(trashed).then((r) => setDevices(r ?? [])).catch((e) => setError(errorText(e)))
   }, [])
   useEffect(load, [load])
 
@@ -42,8 +44,9 @@ export function TrashPage({ onChanged }: { onChanged: () => void }) {
         {error && <div className="banner danger" role="alert"><Icon name="alert" /><span className="grow">{error}</span></div>}
         <section className="card fill">
           <div className="tablewrap">
-            {rows.length === 0 ? <EmptyState icon="trash" title={t.trash.emptyTitle} text={t.trash.emptyText} /> : (
+            {rows.length === 0 && devices.length === 0 ? <EmptyState icon="trash" title={t.trash.emptyTitle} text={t.trash.emptyText} /> : rows.length > 0 && (
               <table className="table">
+                {devices.length > 0 && <caption className="tablecap">{t.trash.profilesTitle}</caption>}
                 <tbody>
                   {rows.map((r) => (
                     <tr key={r.id}>
@@ -53,6 +56,25 @@ export function TrashPage({ onChanged }: { onChanged: () => void }) {
                       <td className="col-actions"><span className="row">
                         <button className="btn sm" onClick={() => run(() => Api.RestoreProfile(r.id))}><Icon name="restore" className="icon sm" />{t.trash.restore}</button>
                         <button className="btn sm danger" onClick={async () => { if (await confirm({ ...t.confirm.purge(r.name), danger: true })) run(() => Api.PurgeProfile(r.id)) }}>
+                          <Icon name="trash" className="icon sm" />{t.trash.purge}
+                        </button>
+                      </span></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+            {devices.length > 0 && (
+              <table className="table">
+                <caption className="tablecap">{t.trash.mobileTitle}</caption>
+                <tbody>
+                  {devices.map((d) => (
+                    <tr key={d.id}>
+                      <td className="cellname"><b>{d.name}</b><span className="sub">#{d.serial} · {d.ramMb / 1024} GB</span></td>
+                      <td className="muted">{t.trash.deletedAgo(relativeTime(d.deletedAt))}</td>
+                      <td className="col-actions"><span className="row">
+                        <button className="btn sm" onClick={() => run(() => Api.RestoreMobileDevice(d.id))}><Icon name="restore" className="icon sm" />{t.trash.restore}</button>
+                        <button className="btn sm danger" onClick={async () => { if (await confirm({ ...t.confirm.purgeMobile(d.name), danger: true })) run(() => Api.PurgeMobileDevice(d.id)) }}>
                           <Icon name="trash" className="icon sm" />{t.trash.purge}
                         </button>
                       </span></td>
