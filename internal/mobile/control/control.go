@@ -207,7 +207,13 @@ func (d *Device) Type(ctx context.Context, ref, text string, submit bool) error 
 			d.shell(context.Background(), "ime set "+prev)
 		}
 	}()
-	time.Sleep(300 * time.Millisecond)
+	// A broadcast sent before the keyboard is bound reaches no one and its text is lost:
+	// the first switch after installing it takes over 300 ms.
+	for deadline := time.Now().Add(5 * time.Second); time.Now().Before(deadline); time.Sleep(100 * time.Millisecond) {
+		if out, _ := d.shell(ctx, "dumpsys input_method"); keyboardBound(out) {
+			break
+		}
+	}
 	// One chunk at a time, as a person types in bursts; base64 is [A-Za-z0-9+/=].
 	runes := []rune(text)
 	for i := 0; i < len(runes); {
@@ -226,6 +232,12 @@ func (d *Device) Type(ctx context.Context, ref, text string, submit bool) error 
 		return d.PressKey(ctx, "enter")
 	}
 	return nil
+}
+
+// keyboardBound reads dumpsys input_method: ADBKeyBoard is the current input
+// method and the system has bound to it.
+func keyboardBound(dump string) bool {
+	return strings.Contains(dump, "mCurId="+keyboardIME) && strings.Contains(dump, "mBoundToMethod=true")
 }
 
 func (d *Device) ensureKeyboard(ctx context.Context) error {

@@ -118,3 +118,21 @@ func TestRefusals(t *testing.T) {
 		t.Error("sideways swipe")
 	}
 }
+
+func TestKeyboardBound(t *testing.T) {
+	for _, c := range []struct {
+		dump string
+		want bool
+	}{
+		{"  mCurId=com.android.adbkeyboard/.AdbIME\n  mBoundToMethod=true\n", true},
+		{"  mCurId=com.android.adbkeyboard/.AdbIME\n  mBoundToMethod=false\n", false},
+		{"  mCurId=com.android.inputmethod.latin/.LatinIME\n  mBoundToMethod=true\n", false},
+		// Android 9 puts them on one line.
+		{"  mCurId=com.android.adbkeyboard/.AdbIME mHaveConnection=true mBoundToMethod=true", true},
+		{"", false},
+	} {
+		if got := keyboardBound(c.dump); got != c.want {
+			t.Errorf("keyboardBound(%q) = %v", c.dump, got)
+		}
+	}
+}
