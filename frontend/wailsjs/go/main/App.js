@@ -178,6 +178,10 @@ export function InstallEngineVersion(arg1, arg2) {
   return window['go']['main']['App']['InstallEngineVersion'](arg1, arg2);
 }
 
+export function InstallMobileApps(arg1) {
+  return window['go']['main']['App']['InstallMobileApps'](arg1);
+}
+
 export function InstallMobileRuntime() {
   return window['go']['main']['App']['InstallMobileRuntime']();
 }

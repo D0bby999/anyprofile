@@ -74,7 +74,7 @@ export function MobileDialog({ row, onClose, onSaved }: Props) {
         {locked ? <span className="muted">{proxies.find((p) => p.id === proxyId)?.label ?? t.common.direct}</span> : (
           <ProxySelect value={proxyId} onChange={setProxyId} proxies={proxies} allowAuto={!row} currentProfile={row?.name} />
         )}
-        {proxyId === '' && !locked && <RealIpWarning />}
+        {proxyId === '' && !locked && <RealIpWarning text={t.mobile.realIpWarning} />}
       </div>
       <div className="row">
         <label className="field grow">

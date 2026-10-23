@@ -10,6 +10,7 @@ const api = {
   ListProxies: vi.fn(() => Promise.resolve([{ id: 'px', label: 'gw.example:1', country: 'JP', rotating: false, usedBy: [] }])),
   StartMobileDevice: vi.fn(() => Promise.resolve({ warning: '' })),
   BackupMobileDevice: vi.fn(() => Promise.resolve()),
+  InstallMobileApps: vi.fn(() => Promise.resolve(2)),
   ShowMobileDevice: vi.fn(() => Promise.resolve()),
   InstallMobileRuntime: vi.fn(() => Promise.resolve()),
   CreateMobileDevice: vi.fn(() => Promise.resolve({ id: 'n' })),
@@ -74,6 +75,16 @@ describe('MobilePage', () => {
     fireEvent.click(screen.getByRole('button', { name: t.mobile.open }))
     await waitFor(() => expect(api.StartMobileDevice).toHaveBeenCalledWith('d1'))
     expect(await screen.findByText(t.mobile.ramTight)).toBeTruthy()
+  })
+
+  it('installs apps on a running device only', async () => {
+    page([device({ state: 'running' })], avail())
+    fireEvent.click(screen.getByRole('button', { name: t.mobile.installApps }))
+    await waitFor(() => expect(api.InstallMobileApps).toHaveBeenCalledWith('d1'))
+    expect(await screen.findByText(t.mobile.appsInstalled(2))).toBeTruthy()
+    cleanup()
+    page([device()], avail())
+    expect(screen.queryByRole('button', { name: t.mobile.installApps })).toBeNull()
   })
 
   it('shows Close and Show window for a running device and locks backup', async () => {

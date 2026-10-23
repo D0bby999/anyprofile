@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { useEffect, useState } from 'react'
-import { Api, onEngineProgress, service, type EngineProgress } from '../api'
+import { Api, onEngineProgress, openExternal, service, type EngineProgress } from '../api'
 import { t } from '../i18n'
 import { errorText, relativeTime } from '../lib/format'
 import { tagColor } from '../lib/tags'
@@ -78,6 +78,11 @@ export function MobilePage({ mobile, onOpenPro, onOpenSettings }: Props) {
     if (res.warning === 'ram_tight') toast.info(t.mobile.ramTight)
   })
 
+  const installApps = (id: string) => run(id, async () => {
+    const n = await Api.InstallMobileApps(id)
+    if (n > 0) toast.success(t.mobile.appsInstalled(n))
+  })
+
   return (
     <>
       <PageHead title={t.mobile.title} sub={t.mobile.total(rows.length)}>
@@ -147,6 +152,9 @@ export function MobilePage({ mobile, onOpenPro, onOpenSettings }: Props) {
                           {running && (
                             <button className="iconbtn sm" onClick={() => run(r.id, () => Api.ShowMobileDevice(r.id))} aria-label={t.mobile.show} title={t.mobile.show}><Icon name="monitor" /></button>
                           )}
+                          {running && (
+                            <button className="btn sm" disabled={working} onClick={() => installApps(r.id)}><Icon name="plus" className="icon sm" />{t.mobile.installApps}</button>
+                          )}
                           <button className="iconbtn sm" disabled={working} onClick={() => setEditing(r)} aria-label={t.mobile.edit} title={t.mobile.edit}><Icon name="pencil" /></button>
                           <button className="iconbtn sm" disabled={working || running} onClick={() => run(r.id, () => Api.BackupMobileDevice(r.id), t.mobile.backupDone)}
                             aria-label={t.mobile.backup} title={t.mobile.backup}><Icon name="download" /></button>
@@ -175,7 +183,13 @@ export function MobilePage({ mobile, onOpenPro, onOpenSettings }: Props) {
             )}
           </div>
         </section>
-        {rows.length > 0 && canUse && <p className="hint">{t.mobile.apkHint}</p>}
+        {rows.length > 0 && canUse && (
+          <p className="hint">{t.mobile.apkHint} {t.mobile.apkWhere}{' '}
+            <a href="#" onClick={(e) => { e.preventDefault(); openExternal('https://www.apkmirror.com/') }}>{t.mobile.apkMirror}</a>{' '}
+            {t.mobile.apkOr}{' '}
+            <a href="#" onClick={(e) => { e.preventDefault(); openExternal('https://f-droid.org/') }}>{t.mobile.fdroid}</a>.
+          </p>
+        )}
       </div>
       {editing && (
         <MobileDialog row={editing === 'new' ? null : editing} onClose={() => setEditing(null)}

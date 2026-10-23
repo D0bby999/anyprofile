@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"os"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"sync"
@@ -391,6 +392,29 @@ func (s *Service) ShowMobileDevice(ctx context.Context, id string) error {
 		return apperr.New("mobile_not_running", "open the device first")
 	}
 	return sh.Show(ctx, mobileDevice(d))
+}
+
+// InstallMobileApps installs APK files from this computer on a running
+// device, in order, and stops at the first that fails.
+func (s *Service) InstallMobileApps(ctx context.Context, id string, apks []string) (int, error) {
+	for _, f := range apks {
+		if !strings.EqualFold(filepath.Ext(f), ".apk") {
+			return 0, apperr.New("mobile_apk", "only .apk files install")
+		}
+	}
+	c, err := s.MobileControl(id)
+	if err != nil {
+		return 0, err
+	}
+	for i, f := range apks {
+		if err := c.Install(ctx, f); err != nil {
+			if strings.Contains(err.Error(), "NO_MATCHING_ABIS") {
+				return i, apperr.New("mobile_apk_abi", filepath.Base(f)+" is not made for ARM phones")
+			}
+			return i, apperr.New("mobile_install", filepath.Base(f)+": "+err.Error())
+		}
+	}
+	return len(apks), nil
 }
 
 // MobileControl is the agent's handle on a running device; it keeps the

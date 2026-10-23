@@ -11,7 +11,7 @@ Máy mobile thuộc **AnyProfile Pro**. Không có key Pro thì trang Mobile v�
 |---|---|---|
 | Máy Android | Máy ảo LineageOS 23 (Android 16) trên QEMU, dùng Hypervisor của macOS | Một instance LDPlayer 9 (Android 9) |
 | Cần cài | Không. Lần đầu bấm **Tải về** trên trang Mobile: tổng khoảng 1,1 GB gồm bộ chạy máy ảo (20 MB) và image Android | LDPlayer 9 cài sẵn, bật ảo hoá (VT-x / AMD-V) trong BIOS |
-| Google Play | Không có. Cài app bằng cách kéo file APK vào cửa sổ máy | Có store của LDPlayer; kéo APK vào cửa sổ cũng được |
+| Google Play | Không có. Cài app bằng file APK (mục "Cài app" bên dưới) | Có store của LDPlayer; cài APK cũng được |
 | Mạng đi qua proxy bằng | Mạng ảo trong AnyProfile: mọi kết nối TCP của máy đi qua proxy | App tunnel (SocksTun) trong máy, VPN luôn bật và chặn khi VPN tắt |
 
 Image Android lấy từ bản dựng LineageOS của jqssun (`android-lineage-qemu`), đã ghim bằng SHA256 và kiểm chứng nhận
@@ -24,6 +24,29 @@ build. AnyProfile không lưu trữ image.
 - **Đĩa:** tải image cần trống 4 GB một lúc; mỗi máy mới cần trống 3 GB. Trên macOS, máy mới là bản sao APFS của
   image nên lúc đầu gần như không tốn chỗ, rồi lớn dần theo app và dữ liệu.
 - **Thời gian (đo trên MacBook M2):** tạo máy 35–45 giây, mở 27–33 giây, đóng khoảng 5 giây.
+
+## Cài app
+
+Máy đang chạy có nút **Cài app** trên trang Mobile: chọn một hay nhiều file `.apk` trên máy tính. Kéo file APK thả
+vào cửa sổ của máy cũng cài được.
+
+- Máy không có Google Play. Lấy APK ở [APKMirror](https://www.apkmirror.com/) (file gốc do chính hãng ký) hoặc
+  [F-Droid](https://f-droid.org/) (app mã nguồn mở).
+- Trên Mac chọn bản **arm64-v8a**. Bản chỉ cho x86 báo "APK này không dành cho điện thoại ARM".
+- Gói chia nhỏ (`.apks`, `.xapk`, `.apkm`) chưa cài được: tải bản APK đơn nếu có.
+
+## Màn hình và độ mượt (macOS)
+
+Máy ảo không có GPU: Android vẽ màn hình bằng CPU, và cửa sổ của máy (scrcpy) nén hình bằng CPU. Vì vậy màn hình máy
+là 720×1600, như điện thoại tầm trung. Đo trên M2 khi cuộn trang Cài đặt: ở 1080×2400 có 42% khung hình bị giật và
+máy ảo dùng 3,2 nhân CPU; ở 720×1600 còn 16% và 1,6 nhân. Đóng cửa sổ của máy (máy vẫn chạy cho agent) thì gần như
+hết giật.
+
+## Google hỏi "Bạn không phải robot"
+
+Trang kiểm tra của Google (`google.com/sorry`) phụ thuộc vào **IP**. Máy không có proxy dùng IP của máy tính; nếu
+Google đang nghi IP đó thì trình duyệt thường trên máy tính cũng bị hỏi y như vậy. Gắn proxy riêng cho máy (tốt nhất
+là proxy dân cư hoặc 4G) và đăng nhập tài khoản Google trong máy thì ít bị hỏi hơn. AnyProfile không vượt captcha.
 
 ## Proxy, múi giờ, ngôn ngữ
 

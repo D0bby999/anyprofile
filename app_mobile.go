@@ -71,6 +71,23 @@ func (a *App) InstallMobileRuntime() error {
 	})
 }
 
+var apkDialogTitle = map[string]string{"en": "Install apps (.apk)", "vi": "Cài app (.apk)"}
+
+// InstallMobileApps asks for APK files and installs them on a running device.
+// Cancelling installs nothing and returns 0.
+func (a *App) InstallMobileApps(id string) (int, error) {
+	if err := a.ready(); err != nil {
+		return 0, err
+	}
+	files, err := runtime.OpenMultipleFilesDialog(a.ctx, runtime.OpenDialogOptions{Title: apkDialogTitle[a.svc.Language()],
+		Filters: []runtime.FileFilter{{DisplayName: "Android apps (*.apk)", Pattern: "*.apk"}}})
+	if err != nil || len(files) == 0 {
+		return 0, err
+	}
+	n, err := a.svc.InstallMobileApps(a.ctx, id, files)
+	return n, err
+}
+
 // ShowMobileDevice opens a running device's window again.
 func (a *App) ShowMobileDevice(id string) error {
 	return a.must(func() error { return a.svc.ShowMobileDevice(a.ctx, id) })

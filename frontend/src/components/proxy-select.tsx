@@ -30,11 +30,11 @@ export function ProxySelect({ value, onChange, proxies, allowAuto, currentProfil
   )
 }
 
-/** Said wherever a choice leads to a profile without proxy, with the way to get one. */
-export function RealIpWarning() {
+/** Said wherever a choice leads to a profile or device without proxy, with the way to get one. */
+export function RealIpWarning({ text = t.create.realIpWarning }: { text?: string }) {
   return (
     <div className="realip" role="note">
-      <Icon name="alert" className="icon sm" /><span className="grow">{t.create.realIpWarning}</span>
+      <Icon name="alert" className="icon sm" /><span className="grow">{text}</span>
       <BuyProxiesButton className="btn sm buy" />
     </div>
   )

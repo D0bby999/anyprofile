@@ -280,3 +280,19 @@ func TestMobileUnsupported(t *testing.T) {
 		t.Fatalf("%v %v", rows, err)
 	}
 }
+
+func TestInstallMobileApps(t *testing.T) {
+	ctx := context.Background()
+	s, _ := newMobileService(t, "active")
+	d, err := s.CreateMobileDevice(ctx, MobileInput{Name: "a"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.InstallMobileApps(ctx, d.ID, []string{"/x/app.apk", "/x/app.xapk"}); code(err) != "mobile_apk" {
+		t.Fatalf("not an apk: %v", err)
+	}
+	// The fake driver has no adb; real ones refuse a closed device with mobile_not_running.
+	if n, err := s.InstallMobileApps(ctx, d.ID, []string{"/x/app.APK"}); err == nil || n != 0 {
+		t.Fatalf("installed on a device it cannot reach: %d %v", n, err)
+	}
+}
