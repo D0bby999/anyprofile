@@ -198,3 +198,45 @@ Hai bước kiểm còn mở của plan nằm trong các bước trên: bước 
 
 Ghi lại profile nào, bước nào, chữ trên toast hoặc cột Status, và chụp đúng vùng bị lỗi.
 Nhật ký nằm ở `~/Library/Application Support/AnyProfile/logs/anyprofile.log` (không chứa mật khẩu).
+
+## Phần C: máy mobile
+
+Làm trên bản build sắp phát hành, bộ dữ liệu **thật**, có key Pro còn hạn và một proxy dân cư thật. Mục có ★ chặn
+phát hành: chưa đạt thì không phát hành. Cách máy mobile chạy: `docs/mobile.md`.
+
+### Mac
+
+1. Chưa nhập key Pro (hoặc key hết hạn): trang Mobile hiện thẻ AnyProfile Pro, không tạo hay mở được máy, nút
+   Mua AnyProfile Pro dẫn tới trang Pro.
+2. Có key: bấm Tải về, chờ xong; tạo một máy có proxy, Mở, bấm Hiện cửa sổ: thấy màn hình điện thoại. Kéo file APK
+   của TikTok vào cửa sổ: app được cài.
+3. ★ Trong máy, mở trình duyệt tới `ipinfo.io`: IP là IP của proxy. `browserleaks.com/webrtc` không hiện IP thật.
+   `test-ipv6.com` báo không có IPv6.
+4. ★ Đóng máy, sửa proxy thành sai mật khẩu (hoặc tắt proxy ở nhà cung cấp), mở lại: máy không vào được trang
+   nào, và không trang nào hiện IP thật.
+5. Cài đặt → Hệ thống của máy: múi giờ khớp quốc gia của proxy. TikTok hiện đúng ngôn ngữ của quốc gia đó.
+6. Đóng, mở lại: app và dữ liệu còn. Sao lưu; cài thêm một app; Khôi phục bản sao lưu: app vừa cài mất, mọi thứ
+   như lúc sao lưu.
+7. Mở máy, chạy `pkill -9 AnyProfile`, mở lại AnyProfile: máy vẫn Đang chạy và có mạng. Đóng máy rồi
+   `pgrep qemu-system`: không còn gì.
+
+### Windows có LDPlayer 9
+
+8. Tạo, mở. ★ `ipinfo.io` trong máy hiện IP proxy. Múi giờ khớp quốc gia của proxy; ngôn ngữ đúng từ lần mở thứ
+   hai.
+9. ★ Khi máy đang chạy: (a) trong máy vào Cài đặt → Ứng dụng → SocksTun → Buộc dừng, rồi tải lại `ipinfo.io`;
+   (b) thoát AnyProfile. Cả hai lần máy mất mạng, không lần nào hiện IP thật.
+10. Sao lưu, Khôi phục. Xoá instance `ap-…` trong LDPlayer Multi-Instance Manager, rồi Mở máy đó trong AnyProfile:
+    báo máy không còn trong LDPlayer.
+
+### Agent (Claude Code nối MCP), trên cả hai hệ
+
+11. Chạy recipe `mobile-check-ip` với một máy: agent báo đúng IP và quốc gia của proxy.
+12. Chạy `tiktok-app-upload` với tài khoản TikTok phụ, privacy `everyone`: agent dừng trước nút Đăng và hỏi.
+    Chạy lại với `only_me`: video đăng ở chế độ Chỉ mình tôi.
+13. Bảo agent gõ một caption tiếng Việt có emoji: chữ hiện đúng trong ô.
+
+### Không chặn phát hành, nên làm trước khi quảng cáo
+
+14. Trong 2 tuần, dùng vài tài khoản TikTok phụ như người thật trên máy ảo Mac, trên LDPlayer và trên điện thoại
+    thật, cùng loại proxy. So lượt xem và tình trạng tài khoản (bị hạn chế, bị đòi xác minh).

@@ -63,7 +63,7 @@ describe('MobilePage', () => {
 
   it('says what the driver is missing', () => {
     page([], avail({ ready: false, reason: 'ldplayer_missing', message: 'Install LDPlayer 9.' }))
-    expect(screen.getByRole('status').textContent).toContain('Install LDPlayer 9.')
+    expect(screen.getByRole('status').textContent).toContain(t.errors.ldplayer_missing)
     expect((screen.getByRole('button', { name: t.mobile.newDevice }) as HTMLButtonElement).disabled).toBe(true)
   })
 

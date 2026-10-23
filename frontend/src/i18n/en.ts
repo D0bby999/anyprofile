@@ -552,6 +552,8 @@ export const en = {
     mobile_bad_cpus: 'Choose between 1 and 8 CPU cores.',
     disk_full: 'Free at least 3 GB of disk space first.',
     mobile_not_running: 'Open the device first.',
+    ldplayer_missing: 'LDPlayer 9 is not installed on this computer. Install it from ldplayer.net, then try again.',
+    mobile_missing: 'This device is no longer in LDPlayer: it was deleted there.',
     android_runtime_missing: 'The Android VM runtime is not installed yet.',
     android_image_missing: 'The Android image is not installed yet.',
     android_runtime_unavailable: 'The Android VM runtime is not published for this version of AnyProfile yet. Update AnyProfile and try again.',

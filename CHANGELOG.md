@@ -5,6 +5,17 @@ keeps them together.
 
 ## Unreleased
 
+- Mobile devices, part of AnyProfile Pro: separate Android devices, each with
+  its own apps, data and proxy. On a Mac they run as LineageOS (Android 16)
+  virtual machines that the Mobile page downloads; on Windows, as LDPlayer 9
+  instances. A device reaches the internet only through its proxy, DNS
+  included; UDP, ping and IPv6 are blocked, and a dead proxy means no network,
+  not your own IP. Timezone and language follow the proxy's country. Devices
+  can be backed up, restored and trashed like profiles. Apps can still tell a
+  device is a virtual machine or an emulator (docs/mobile.md).
+- AI agents drive mobile devices over MCP: list, open and close them, read
+  the screen, tap, swipe, type in any language, take screenshots, open apps
+  and links, and push files or APKs from the uploads folder (docs/mcp.md).
 - macOS downloads as a disk image: open it and drag AnyProfile onto
   Applications. The in-app updater keeps using the .zip. The release
   workflow can sign with a Developer ID and notarize the image, which lets

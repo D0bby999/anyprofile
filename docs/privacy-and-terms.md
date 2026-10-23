@@ -1,6 +1,6 @@
 # Privacy and terms / Quyền riêng tư và điều khoản
 
-Last updated / Cập nhật: 2026-10-17
+Last updated / Cập nhật: 2026-10-23
 
 ## English
 
@@ -12,6 +12,8 @@ Everything stays on your computer:
   folder per profile, under `~/Library/Application Support/AnyProfile` (macOS) or `%APPDATA%\AnyProfile` (Windows);
 - proxy passwords, account passwords, 2FA secrets, cookie keys and the local API token, in an encrypted file
   (`secrets.vault`) in the same folder; its key is in the macOS Keychain or Windows Credential Manager.
+- with AnyProfile Pro, each mobile device's Android disks and its backups, in the `mobile` folder of the same
+  place; on Windows the device itself is an LDPlayer instance, stored where LDPlayer keeps its instances.
 - a backup you make (Settings → Backup) is a file where you save it, holding all of the above, encrypted with the
   password you choose (Argon2id, AES-256-GCM). We cannot open it or recover a forgotten password.
 
@@ -33,16 +35,21 @@ There is no AnyProfile account and no AnyProfile server.
 - **When you click a donate button** (Settings → Support AnyProfile): GitHub Sponsors or a Stripe payment page
   opens in your default browser, and that service takes the payment under its own privacy policy. Card
   donations go to Cassau, LLC, the company behind AnyProfile and PostClaw. AnyProfile sends nothing about it.
+- **Mobile devices (AnyProfile Pro):** everything a device sends goes through its proxy, DNS included (DNS over
+  HTTPS to Cloudflare's 1.1.1.1, through the proxy). On macOS, Download on the Mobile page fetches the virtual
+  machine runtime from AnyProfile's GitHub Releases and the LineageOS image from its builder's GitHub Releases
+  (jqssun/android-lineage-qemu). AnyProfile sends nothing about the device itself anywhere.
 - **AnyProfile Pro, only if you buy it or enter a key** (Settings → AnyProfile Pro): Buy opens the payment
   page of pro.anytools.world in your default browser; Stripe takes the payment under its own privacy policy.
   While that page is open, the app asks the server every 5 seconds (for up to 30 minutes) whether the purchase it
   started is paid, with a random one-time code. With a key, once a day the app sends the key, a random install
   id made on this computer (nothing from its hardware), the Pro pack's and the app's version and the operating
-  system, and downloads a newer signed pack when there is one. Nothing about profiles, proxies, cookies or
-  sites. Without a key the app sends none of this.
+  system, and downloads a newer signed pack when there is one. Nothing about profiles, mobile devices, proxies,
+  cookies or sites. Without a key the app sends none of this. Pro includes mobile devices; when it lapses, your
+  devices and their data stay, but they cannot be opened or created until it is renewed.
 - **When you connect an AI agent (MCP):** the agent reads the pages you let it work on, and sends what it reads
   to its own model provider (Anthropic for Claude Code, for example). AnyProfile sends nothing for it; the log
-  records which tool ran on which profile, never page content or typed text. An agent can upload only the files
+  records which tool ran on which profile or mobile device, never page or screen content or typed text. An agent can upload only the files
   you put in AnyProfile's uploads folder.
 - **Nothing else.** No analytics, no crash reports, no telemetry. Settings → Help → Copy diagnostics only fills
   your clipboard; you decide where to paste it.
@@ -54,6 +61,8 @@ There is no AnyProfile account and no AnyProfile server.
 - You are responsible for following the terms of every site and platform you use with it, and the law where you
   live. Many platforms limit how many accounts one person may run; AnyProfile does not change those rules.
 - Do not use AnyProfile for fraud, spam, ban evasion, or to access accounts that are not yours.
+- A mobile device is Android in a virtual machine (macOS) or in LDPlayer (Windows), not a real phone, and apps can
+  tell. AnyProfile does not hide that, and does not promise that an account on it will not be limited.
 - Keep backups of what matters (Settings → Backup). A lost Keychain or Credential Manager entry can sign a profile
   out of every site, and so can a lost backup password.
 
@@ -67,6 +76,8 @@ Mọi thứ nằm trên máy của bạn:
   mỗi profile, trong `~/Library/Application Support/AnyProfile` (macOS) hoặc `%APPDATA%\AnyProfile` (Windows);
 - mật khẩu proxy, mật khẩu tài khoản, khoá 2FA, khoá cookie và token của API trên máy, trong một file mã hoá
   (`secrets.vault`) cùng thư mục; khoá của file nằm trong Keychain của macOS hoặc Windows Credential Manager.
+- với AnyProfile Pro, đĩa Android của từng máy mobile và bản sao lưu của nó, trong thư mục `mobile` ở cùng chỗ;
+  trên Windows, bản thân máy là một instance LDPlayer, nằm nơi LDPlayer lưu instance.
 - bản sao lưu bạn tạo (Cài đặt → Sao lưu) là một file nằm nơi bạn chọn, chứa tất cả những thứ trên, mã hoá bằng mật
   khẩu bạn đặt (Argon2id, AES-256-GCM). Chúng tôi không mở được file đó và không lấy lại được mật khẩu đã quên.
 
@@ -88,15 +99,20 @@ Không có tài khoản AnyProfile, không có máy chủ AnyProfile.
 - **Khi bạn bấm nút ủng hộ** (Cài đặt → Ủng hộ AnyProfile): GitHub Sponsors hoặc trang thanh toán Stripe mở trong
   trình duyệt mặc định, và dịch vụ đó xử lý thanh toán theo chính sách riêng của họ. Ủng hộ bằng thẻ chuyển đến
   Cassau, LLC, công ty đứng sau AnyProfile và PostClaw. AnyProfile không gửi gì về việc này.
+- **Máy mobile (AnyProfile Pro):** mọi thứ máy gửi đi đều qua proxy của nó, kể cả DNS (DNS qua HTTPS tới 1.1.1.1
+  của Cloudflare, đi qua proxy). Trên macOS, nút Tải về ở trang Mobile tải bộ chạy máy ảo từ GitHub Releases của
+  AnyProfile và image LineageOS từ GitHub Releases của người dựng nó (jqssun/android-lineage-qemu). AnyProfile
+  không gửi gì về chính chiếc máy đi đâu cả.
 - **AnyProfile Pro, chỉ khi bạn mua hoặc nhập key** (Cài đặt → AnyProfile Pro): nút Mua mở trang thanh toán
   của pro.anytools.world trong trình duyệt mặc định; Stripe xử lý thanh toán theo chính sách riêng của họ. Trong
   lúc chờ, app hỏi máy chủ mỗi 5 giây (tối đa 30 phút) xem lần mua do app bắt đầu đã trả chưa, kèm một mã dùng
   một lần ngẫu nhiên. Khi có key, mỗi ngày một lần app gửi key, một mã máy ngẫu nhiên tạo trên máy này (không lấy
   từ phần cứng), phiên bản gói Pro và phiên bản app, hệ điều hành, và tải gói mới có chữ ký khi có. Không gửi gì
-  về profile, proxy, cookie hay trang web. Không có key thì app không gửi gì trong số này.
+  về profile, máy mobile, proxy, cookie hay trang web. Không có key thì app không gửi gì trong số này. Pro gồm cả
+  máy mobile; khi Pro hết hạn, máy và dữ liệu vẫn còn nhưng không mở hay tạo được cho tới khi gia hạn.
 - **Khi bạn kết nối một AI agent (MCP):** agent đọc các trang bạn cho nó làm việc, và gửi những gì nó đọc lên nhà
   cung cấp mô hình của chính nó (ví dụ Anthropic với Claude Code, OpenAI với Codex). AnyProfile không gửi gì cho việc này; log chỉ ghi
-  tool nào chạy trên profile nào, không bao giờ ghi nội dung trang hay chữ đã gõ. Agent chỉ upload được các file
+  tool nào chạy trên profile hay máy mobile nào, không bao giờ ghi nội dung trang, màn hình hay chữ đã gõ. Agent chỉ upload được các file
   bạn đặt vào thư mục uploads của AnyProfile.
 - **Ngoài ra không gì cả.** Không thống kê, không báo cáo lỗi tự động. Cài đặt → Trợ giúp → Sao chép thông tin chẩn đoán chỉ
   chép vào bộ nhớ tạm; bạn tự quyết dán ở đâu.
@@ -108,5 +124,8 @@ Không có tài khoản AnyProfile, không có máy chủ AnyProfile.
 - Bạn tự chịu trách nhiệm tuân thủ điều khoản của mọi trang và nền tảng bạn dùng cùng app, và pháp luật nơi bạn
   sống. Nhiều nền tảng giới hạn số tài khoản một người được dùng; AnyProfile không thay đổi các quy định đó.
 - Không dùng AnyProfile để lừa đảo, spam, lách lệnh cấm, hay truy cập tài khoản không phải của bạn.
+- Máy mobile là Android chạy trong máy ảo (macOS) hoặc trong LDPlayer (Windows), không phải điện thoại thật, và
+  ứng dụng nhận ra được điều đó. AnyProfile không che giấu việc này, và không hứa tài khoản dùng trên đó sẽ không
+  bị hạn chế.
 - Hãy sao lưu những gì quan trọng (Cài đặt → Sao lưu). Mất một mục trong Keychain hoặc Credential Manager có thể làm profile bị đăng
   xuất khỏi mọi trang.

@@ -118,6 +118,33 @@ request nào: đây vẫn là file `latest.json` app đã đọc.
   đã cài khi mở, nếu cùng `catalogue`; khác `catalogue` thì giữ bản của nó. Chromium đổi thì baseline fingerprint
   được đo lại. Xoá một bản: profile của nó chuyển sang bản mới nhất cùng `catalogue`; không có thì không cho xoá.
 
+## Android VM runtime
+
+Máy mobile trên macOS tải hai engine qua `engines.json`: `android-vm` (QEMU, scrcpy, adb, do repo này dựng) và
+`android-vm-image` (LineageOS của jqssun). Chi tiết: `docs/android-vm-runtime.md`. Không cần ra app mới.
+
+1. **Runtime:** đẩy tag, workflow `android-vm-runtime` dựng, ký (Developer ID nếu có secret, không thì ad hoc) và
+   tạo bản phát hành không đánh dấu latest:
+
+   ```
+   git tag android-vm-v1.0.0 && git push origin android-vm-v1.0.0
+   ```
+
+2. Tải `engines-entry.json` của bản đó, chạy thử (`ANYPROFILE_VM_RUNTIME=…`, `go test -tags vmintegration`, xem
+   `docs/android-vm-runtime.md`), rồi thêm mục vào `engines.json`:
+
+   ```
+   gh release download android-vm-v1.0.0 -R D0bby999/anyprofile -p engines-entry.json
+   jq --slurpfile e engines-entry.json '. + $e' engines.json > engines.new && mv engines.new engines.json
+   ```
+
+3. **Image mới (tuỳ):** `scripts/pin-android-vm-image.sh <tag của jqssun>` in mục của nó; chạy thử như trên rồi thêm
+   vào `engines.json`.
+4. Commit `engines.json` và ký vào `latest.json` như mục trên (`go run ./tools/release engines …`).
+
+Image dùng khi chưa có danh sách ký nằm trong `vm.ImageBuiltin()`; runtime thì không có bản dựng sẵn trong app, nên
+trước lần ký đầu nút Tải về trên trang Mobile báo bộ chạy chưa được phát hành.
+
 ## Repo
 
 `D0bby999/anyprofile` (công khai) chứa mã nguồn, CI và các bản phát hành. Lịch sử đã viết lại ngày

@@ -27,6 +27,11 @@ Website: [anytools.world/anyprofile](https://anytools.world/en/anyprofile)
 - **Buying proxies:** Proxies → Buy proxies lists providers that suit
   long-lived accounts and opens them in your default browser. Some are
   referral links; see `docs/privacy-and-terms.md`.
+- **Mobile devices (AnyProfile Pro):** separate Android devices, each with its
+  own apps, data and proxy: a LineageOS virtual machine on macOS, an LDPlayer 9
+  instance on Windows. A device reaches the internet only through its proxy
+  (UDP and IPv6 are blocked), and AI agents can drive it over MCP. Apps can
+  still tell it is a virtual machine or emulator. See `docs/mobile.md`.
 - **Data:** `~/Library/Application Support/AnyProfile` on macOS,
   `%APPDATA%\AnyProfile` on Windows, holds the SQLite database, the engines
   and one folder per profile.

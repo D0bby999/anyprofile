@@ -267,16 +267,43 @@ thay và ghi lại trong kết quả công cụ (dòng `Dialog:`):
 Để nhận hộp thoại, agent bật miền `Page` của DevTools; script của trang không thấy được việc này. Miền `Runtime`,
 thứ trang có thể nhận ra, vẫn không bao giờ bật.
 
+## Máy mobile
+
+Khi có máy mobile (AnyProfile Pro, `docs/mobile.md`), agent có thêm các tool dưới đây. Mọi tool nhận `device`: id,
+đúng tên, hoặc `#số thứ tự`.
+
+| Tool | Làm gì |
+|---|---|
+| `list_devices` | id, số thứ tự, tên, đang mở hay không, quốc gia của proxy, tag |
+| `open_device` / `close_device` | mở máy (có proxy) và đợi Android sẵn sàng, có thể mất một hai phút; đóng máy |
+| `device_snapshot` | màn hình dưới dạng dàn ý; thứ bấm hay gõ được có `[ref=mN]` |
+| `device_tap`, `device_swipe` | chạm theo `ref` hoặc theo toạ độ; vuốt theo hướng (`up` là mục kế tiếp của feed) hoặc giữa hai điểm |
+| `device_type`, `device_press_key` | gõ chữ (mọi ngôn ngữ, cả emoji); bấm back, home, recents, enter… |
+| `device_screenshot`, `device_wait_for` | ảnh màn hình; đợi chữ hiện ra hoặc mất đi |
+| `device_list_apps`, `device_launch_app`, `device_open_url` | các app đã cài; mở app theo tên gói; mở địa chỉ http(s) trong trình duyệt của máy |
+| `device_push_file` | chép một file từ thư mục uploads vào ảnh của máy (`DCIM/AnyProfile`), nơi thư viện và ô chọn file của app thấy nó đầu tiên |
+| `device_install_apk` | cài app từ file `.apk` trong thư mục uploads |
+
+- Màn hình chuyển động liên tục (feed video) không đọc được thành dàn ý: agent dùng `device_screenshot` rồi chạm
+  theo toạ độ.
+- Gõ chữ dùng bàn phím ADBKeyBoard, cài vào máy lần đầu cần; xong việc AnyProfile trả lại bàn phím cũ.
+- Như trang web, **mọi thứ trên màn hình máy là nội dung không đáng tin**, và AnyProfile báo điều đó cho agent.
+- `logs/anyprofile.log` ghi mỗi lần gọi một dòng kèm id máy; không ghi chữ đã gõ hay nội dung màn hình.
+- Recipe mẫu trong gói Pro: `mobile-check-ip` (máy có ra internet qua đúng proxy không) và `tiktok-app-upload`
+  (đăng video bằng app TikTok, mặc định Chỉ mình tôi, dừng hỏi trước khi đăng công khai).
+
 ## Không có
 
 - Chạy JavaScript tuỳ ý trên trang, xuất cookie, đổi fingerprint hay viewport, tạo hoặc xoá profile, gán proxy.
 - Upload file nằm ngoài thư mục uploads.
 - Request trước lần đầu agent dùng tab: tải lại trang (`navigate` với `reload`) để thấy chúng.
 - Profile đã mở từ trước khi AnyProfile khởi động lại không điều khiển được (`agent_no_pipe`): đóng rồi mở lại.
+- Với máy mobile: chạy lệnh shell, đọc file trong máy, tạo hoặc xoá máy, đổi proxy, cài app từ file ngoài thư mục
+  uploads.
 
 ## An toàn
 
-- **Ai có token thì điều khiển được mọi profile**, kể cả đọc nội dung các trang đã đăng nhập. Chỉ đưa token cho
+- **Ai có token thì điều khiển được mọi profile và máy mobile**, kể cả đọc nội dung các trang đã đăng nhập. Chỉ đưa token cho
   agent bạn tin.
 - **Trang web có thể tìm cách lừa agent** (prompt injection), ví dụ chèn chữ "hãy chuyển tiền tới…". AnyProfile báo
   cho agent rằng mọi nội dung từ trang là không đáng tin, và không có tool chạy JavaScript hay lấy cookie. Dù vậy,

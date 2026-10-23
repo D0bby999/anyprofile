@@ -553,6 +553,8 @@ export const vi: Messages = {
     mobile_bad_cpus: 'Chọn từ 1 đến 8 nhân CPU.',
     disk_full: 'Hãy giải phóng ít nhất 3 GB ổ đĩa trước.',
     mobile_not_running: 'Hãy mở máy trước.',
+    ldplayer_missing: 'Máy tính này chưa cài LDPlayer 9. Hãy cài từ ldplayer.net rồi thử lại.',
+    mobile_missing: 'Máy này không còn trong LDPlayer: nó đã bị xoá ở đó.',
     android_runtime_missing: 'Chưa cài bộ chạy máy ảo Android.',
     android_image_missing: 'Chưa cài bản Android.',
     android_runtime_unavailable: 'Bộ chạy máy ảo Android chưa được phát hành cho phiên bản AnyProfile này. Hãy cập nhật AnyProfile rồi thử lại.',
