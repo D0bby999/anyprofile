@@ -104,7 +104,7 @@ func TestQemuArgs(t *testing.T) {
 	args := qemuArgs(rt, mobile.Device{ID: "abc", RAMMB: 3072, CPUs: 4}, "52:54:00:01:02:03", "/t/abc.net", "/t/abc.qmp")
 	line := strings.Join(args, " ")
 	for _, want := range []string{"-accel hvf", "-m 3072", "-smp 4", "file=/rt/code,,1.fd",
-		"addr.path=/t/abc.net,reconnect-ms=1000", "mac=52:54:00:01:02:03", "xres=1080,yres=2400",
+		"addr.path=/t/abc.net,reconnect-ms=1000", "mac=52:54:00:01:02:03", "xres=720,yres=1600",
 		"unix:/t/abc.qmp,server=on,wait=off", "-display none"} {
 		if !strings.Contains(line, want) {
 			t.Errorf("missing %q in %s", want, line)

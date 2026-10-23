@@ -40,8 +40,11 @@ const (
 	bootTimeout      = 4 * time.Minute
 	powerdownTimeout = 30 * time.Second
 	guestADBPort     = 5555
-	// The screen of a common phone; LineageOS draws it at this density.
-	screenW, screenH, density = 1080, 2400, 420
+	// The screen of a mid-range phone. Android draws it on the CPU (no GPU in
+	// the VM) and scrcpy encodes it on the CPU too: at 1080x2400, 42% of frames
+	// were janky while scrolling, at 720x1600 16%, with half the CPU. The
+	// density keeps the layout of a 1080x2400 phone at 420.
+	screenW, screenH, density = 720, 1600, 280
 )
 
 // Driver runs the VMs of one computer.
@@ -237,7 +240,7 @@ func (v *Driver) powerdown(ctx context.Context, p *proc) {
 }
 
 // Create makes the device's disks and sets Android up once, offline: no
-// setup wizard, adb on, the phone screen density.
+// setup wizard, adb on.
 func (v *Driver) Create(ctx context.Context, d mobile.Device) (string, string, error) {
 	rt, err := Locate(v.runtime)
 	if err != nil {
@@ -288,7 +291,6 @@ func provision(ctx context.Context, a adb.Client) error {
 		"settings put global device_provisioned 1",
 		"settings put secure user_setup_complete 1",
 		"pm disable-user --user 0 org.lineageos.setupwizard",
-		"wm density " + strconv.Itoa(density),
 		// No PIN, so no lock screen: it would cover every app after boot.
 		"locksettings set-disabled true",
 	} {
@@ -315,6 +317,10 @@ func (v *Driver) Start(ctx context.Context, d mobile.Device, o mobile.StartOptio
 	}
 	if err := setClock(ctx, p.adb, time.Now()); err != nil {
 		v.log.Warn("mobile clock", "device", d.ID, "err", err)
+	}
+	// Set at every start: devices made at 1080x2400 kept density 420, too large now.
+	if _, err := p.adb.Shell(ctx, "wm density "+strconv.Itoa(density)); err != nil {
+		v.log.Warn("mobile density", "device", d.ID, "err", err)
 	}
 	// Devices made before the lock screen was turned off at setup still show it.
 	if _, err := p.adb.Shell(ctx, "wm dismiss-keyguard"); err != nil {
