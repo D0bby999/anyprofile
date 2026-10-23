@@ -16,6 +16,7 @@ import (
 	"github.com/D0bby999/anyprofile/internal/api"
 	"github.com/D0bby999/anyprofile/internal/pro"
 	"github.com/D0bby999/anyprofile/internal/service"
+	"github.com/D0bby999/anyprofile/internal/store"
 )
 
 // apiState holds the running local API server, if any.
@@ -66,6 +67,46 @@ func (b apiBackend) Stop(id string) error {
 	return b.svc.Launcher.Stop(id)
 }
 
+// apiMobile lets agents drive mobile devices through the service.
+type apiMobile struct{ svc *service.Service }
+
+func (m apiMobile) MobileDevices() ([]api.MobileDevice, error) {
+	rows, err := m.svc.ListMobileDevices(store.ProfileFilter{})
+	if err != nil {
+		return nil, err
+	}
+	countries := map[string]string{}
+	if pxs, err := m.svc.ListProxies(); err == nil {
+		for _, p := range pxs {
+			countries[p.ID] = p.Country
+		}
+	}
+	out := make([]api.MobileDevice, 0, len(rows))
+	for _, r := range rows {
+		out = append(out, api.MobileDevice{ID: r.ID, Serial: r.Serial, Name: r.Name, State: string(r.State),
+			Platform: r.Platform, Tags: r.Tags, Country: countries[r.ProxyID]})
+	}
+	return out, nil
+}
+
+func (m apiMobile) StartMobile(ctx context.Context, id string) error {
+	m.svc.Log.Info("api asked to start", "device", id)
+	_, err := m.svc.StartMobileDevice(ctx, id)
+	return err
+}
+
+func (m apiMobile) StopMobile(ctx context.Context, id string) error {
+	return m.svc.StopMobileDevice(ctx, id)
+}
+
+func (m apiMobile) MobileControl(id string) (api.DeviceControl, error) {
+	c, err := m.svc.MobileControl(id)
+	if err != nil {
+		return nil, err
+	}
+	return c, nil
+}
+
 // restartAPI stops the server and starts it again when Settings has it on.
 func (a *App) restartAPI() {
 	a.api.mu.Lock()
@@ -88,6 +129,9 @@ func (a *App) restartAPI() {
 	srv.Agent = a.agent
 	srv.Uploads, srv.Recipes = a.svc.Dirs.Uploads(), a.svc.Dirs.Recipes()
 	srv.ProRecipes = pro.Recipes(a.svc.Dirs.Pro())
+	if a.svc.Mobile != nil {
+		srv.Mobile = apiMobile{a.svc}
+	}
 	if err := srv.Start(); err != nil {
 		a.api.err = err.Error()
 		a.svc.Log.Warn("api start", "err", err)

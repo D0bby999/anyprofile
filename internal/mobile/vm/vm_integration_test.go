@@ -129,6 +129,12 @@ func TestVM(t *testing.T) {
 	if got := sh("settings get global device_provisioned"); got != "1" {
 		t.Errorf("device_provisioned = %q", got)
 	}
+	if got := sh("date +%s"); got != "" {
+		n, _ := strconv.ParseInt(got, 10, 64)
+		if d := time.Now().Unix() - n; d > 120 || d < -120 {
+			t.Errorf("the VM's clock is %ds off: HTTPS fails on certificates newer than the image", d)
+		}
+	}
 	if got := sh("getprop persist.sys.timezone"); got != "Asia/Tokyo" {
 		t.Errorf("timezone = %q", got)
 	}

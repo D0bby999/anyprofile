@@ -7,6 +7,7 @@ package vm
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -58,6 +59,17 @@ func thirdPartyPackages(ctx context.Context, a adb.Client) ([]string, error) {
 		}
 	}
 	return pkgs, nil
+}
+
+// setClock sets Android's clock to now. The VM boots with the time of its
+// image build (measured: 3.5 days behind), and the network time it would
+// fetch goes over UDP, which the VM has no way out for; with a clock in the
+// past, HTTPS fails on every certificate issued since.
+func setClock(ctx context.Context, a adb.Client, now time.Time) error {
+	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
+	defer cancel()
+	_, err := a.Shell(ctx, "settings put global auto_time 0; cmd alarm set-time "+strconv.FormatInt(now.UnixMilli(), 10))
+	return err
 }
 
 func applyLocale(ctx context.Context, a adb.Client, tz, locale string) error {

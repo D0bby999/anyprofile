@@ -289,6 +289,8 @@ func provision(ctx context.Context, a adb.Client) error {
 		"settings put secure user_setup_complete 1",
 		"pm disable-user --user 0 org.lineageos.setupwizard",
 		"wm density " + strconv.Itoa(density),
+		// No PIN, so no lock screen: it would cover every app after boot.
+		"locksettings set-disabled true",
 	} {
 		c, cancel := context.WithTimeout(ctx, 30*time.Second)
 		_, err := a.Shell(c, line)
@@ -310,6 +312,13 @@ func (v *Driver) Start(ctx context.Context, d mobile.Device, o mobile.StartOptio
 	p, err := v.boot(ctx, rt, d, dialerFor(o.Upstream), bootTimeout)
 	if err != nil {
 		return mobile.Run{}, err
+	}
+	if err := setClock(ctx, p.adb, time.Now()); err != nil {
+		v.log.Warn("mobile clock", "device", d.ID, "err", err)
+	}
+	// Devices made before the lock screen was turned off at setup still show it.
+	if _, err := p.adb.Shell(ctx, "wm dismiss-keyguard"); err != nil {
+		v.log.Warn("mobile keyguard", "device", d.ID, "err", err)
 	}
 	if err := applyLocale(ctx, p.adb, o.Timezone, o.Locale); err != nil {
 		v.log.Warn("mobile locale", "device", d.ID, "err", err)
@@ -355,6 +364,15 @@ func (v *Driver) Stop(ctx context.Context, d mobile.Device) error {
 	v.closeWindow(p)
 	v.powerdown(ctx, p)
 	return nil
+}
+
+// ADB is the adb of a running device.
+func (v *Driver) ADB(d mobile.Device) (adb.Client, bool) {
+	p := v.proc(d.ID)
+	if p == nil {
+		return adb.Client{}, false
+	}
+	return p.adb, true
 }
 
 // Show opens the device's window again after the user closed it.

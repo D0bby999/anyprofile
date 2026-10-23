@@ -11,9 +11,12 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/D0bby999/anyprofile/internal/engine"
 )
 
 // ServerPort is AnyProfile's own adb server, apart from the user's (5037)
@@ -48,6 +51,39 @@ func (a Client) Run(ctx context.Context, args ...string) (string, error) {
 		return s, fmt.Errorf("adb %s: %v: %s", strings.Join(args, " "), err, s)
 	}
 	return s, nil
+}
+
+// Output is adb -s <device> args... with the output as it came (a
+// screenshot's bytes); errors carry what adb printed.
+func (a Client) Output(ctx context.Context, args ...string) ([]byte, error) {
+	cmd := a.command(ctx, append([]string{"-s", a.Serial()}, args...)...)
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	out, err := cmd.Output()
+	if err != nil {
+		return nil, fmt.Errorf("adb %s: %v: %s", strings.Join(args, " "), err, bytes.TrimSpace(stderr.Bytes()))
+	}
+	return out, nil
+}
+
+// FetchAPK downloads an app once into dir and checks it by hash.
+func FetchAPK(ctx context.Context, dir, name, url, sha string) (string, error) {
+	p := filepath.Join(dir, name)
+	if engine.VerifySHA256(p, sha) == nil {
+		return p, nil
+	}
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		return "", err
+	}
+	tmp := p + ".part"
+	if err := engine.Download(ctx, url, tmp, nil); err != nil {
+		return "", err
+	}
+	if err := engine.VerifySHA256(tmp, sha); err != nil {
+		os.Remove(tmp)
+		return "", err
+	}
+	return p, os.Rename(tmp, p)
 }
 
 // Shell runs one shell command line on the device.

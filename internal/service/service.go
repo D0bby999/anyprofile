@@ -19,6 +19,7 @@ import (
 	"github.com/D0bby999/anyprofile/internal/engine"
 	"github.com/D0bby999/anyprofile/internal/launcher"
 	"github.com/D0bby999/anyprofile/internal/mobile"
+	"github.com/D0bby999/anyprofile/internal/mobile/control"
 	"github.com/D0bby999/anyprofile/internal/netproxy"
 	"github.com/D0bby999/anyprofile/internal/paths"
 	"github.com/D0bby999/anyprofile/internal/pro"
@@ -56,9 +57,11 @@ type Service struct {
 	Pro pro.Client
 
 	snapMu    sync.Mutex
-	updMu     sync.Mutex             // one update download at a time
-	proMu     sync.Mutex             // one Pro check or install at a time
-	snapLocks map[string]profileLock // one per profile: snapshots and launches take turns
+	updMu     sync.Mutex // one update download at a time
+	proMu     sync.Mutex // one Pro check or install at a time
+	ctlMu     sync.Mutex
+	controls  map[string]*control.Device // the agent's handle on each running mobile device
+	snapLocks map[string]profileLock     // one per profile: snapshots and launches take turns
 }
 
 func (s *Service) notify(kind string) {

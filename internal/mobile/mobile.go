@@ -14,6 +14,7 @@ import (
 	"sync"
 
 	"github.com/D0bby999/anyprofile/internal/apperr"
+	"github.com/D0bby999/anyprofile/internal/mobile/adb"
 	"github.com/D0bby999/anyprofile/internal/netproxy"
 	"github.com/D0bby999/anyprofile/internal/store"
 )
@@ -88,6 +89,12 @@ type Driver interface {
 	Restore(ctx context.Context, d Device, dir string) error
 	// Adopt takes back a device that outlived the app. An error means it is gone.
 	Adopt(ctx context.Context, d Device, l Launch, up *netproxy.Upstream) (Run, error)
+}
+
+// ADBer is a Driver that gives the adb of a running device, for the agent
+// tools (package control).
+type ADBer interface {
+	ADB(d Device) (adb.Client, bool)
 }
 
 // Shower is a Driver whose device shows in a window the user can close

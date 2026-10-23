@@ -228,8 +228,15 @@ func tabLine(t agent.Tab) *mcp.CallToolResult {
 }
 
 func (s *Server) mcpHandler() http.Handler {
+	ins := instructions
+	if s.Mobile != nil {
+		ins += mobileInstructions
+	}
 	srv := mcp.NewServer(&mcp.Implementation{Name: "anyprofile", Title: "AnyProfile", Version: update.Current},
-		&mcp.ServerOptions{Instructions: instructions})
+		&mcp.ServerOptions{Instructions: ins})
+	if s.Mobile != nil {
+		s.addMobileTools(srv)
+	}
 
 	add(s, srv, "list_profiles", "List the browser profiles: id, #serial, name, open or not, platforms and tags.", true,
 		func(_ context.Context, in listIn) (*mcp.CallToolResult, error) {

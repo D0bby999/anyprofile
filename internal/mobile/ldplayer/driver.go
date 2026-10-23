@@ -20,7 +20,6 @@ import (
 	"time"
 
 	"github.com/D0bby999/anyprofile/internal/apperr"
-	"github.com/D0bby999/anyprofile/internal/engine"
 	"github.com/D0bby999/anyprofile/internal/mobile"
 	"github.com/D0bby999/anyprofile/internal/mobile/adb"
 	"github.com/D0bby999/anyprofile/internal/netproxy"
@@ -232,32 +231,12 @@ func (d *Driver) ensureTunnel(ctx context.Context, a adb.Client) error {
 	if out, _ := a.Shell(ctx, "pm path "+tunnelPkg); strings.HasPrefix(out, "package:") {
 		return nil
 	}
-	apk, err := d.tunnelAPK(ctx)
+	apk, err := adb.FetchAPK(ctx, d.runtime, "sockstun-"+tunnelVersion+".apk", tunnelURL, tunnelSHA256)
 	if err != nil {
 		return err
 	}
 	_, err = a.Run(ctx, "install", "-r", apk)
 	return err
-}
-
-// tunnelAPK is SocksTun's release, downloaded once and checked by hash.
-func (d *Driver) tunnelAPK(ctx context.Context) (string, error) {
-	p := filepath.Join(d.runtime, "sockstun-"+tunnelVersion+".apk")
-	if engine.VerifySHA256(p, tunnelSHA256) == nil {
-		return p, nil
-	}
-	if err := os.MkdirAll(d.runtime, 0o700); err != nil {
-		return "", err
-	}
-	tmp := p + ".part"
-	if err := engine.Download(ctx, tunnelURL, tmp, nil); err != nil {
-		return "", err
-	}
-	if err := engine.VerifySHA256(tmp, tunnelSHA256); err != nil {
-		os.Remove(tmp)
-		return "", err
-	}
-	return p, os.Rename(tmp, p)
 }
 
 // locale sets the timezone at once and the language for the next start:
@@ -325,6 +304,15 @@ func (d *Driver) proc(id string) *proc {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	return d.procs[id]
+}
+
+// ADB is the adb of a running device.
+func (d *Driver) ADB(dev mobile.Device) (adb.Client, bool) {
+	p := d.proc(dev.ID)
+	if p == nil {
+		return adb.Client{}, false
+	}
+	return p.adb, true
 }
 
 func (d *Driver) Stop(ctx context.Context, dev mobile.Device) error {

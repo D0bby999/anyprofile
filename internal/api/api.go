@@ -70,7 +70,9 @@ type Server struct {
 	// recipe of the user's own with the same name wins: they can change a
 	// Pro recipe by copying it into Recipes.
 	ProRecipes string
-	prompts    promptSet
+	// Mobile serves the device tools to agents; nil leaves them out.
+	Mobile  MobileBackend
+	prompts promptSet
 }
 
 func New(b Backend, log *slog.Logger, port int, token string) *Server {

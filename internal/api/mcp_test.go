@@ -98,6 +98,13 @@ func (s *syncBuffer) String() string { s.mu.Lock(); defer s.mu.Unlock(); return 
 
 func mcpSetup(t *testing.T) (*fake, *Server, *httptest.Server) {
 	t.Helper()
+	return mcpSetupWith(t, nil)
+}
+
+// mcpSetupWith sets the server's mobile devices before its handler is built,
+// as the app does.
+func mcpSetupWith(t *testing.T, mobile MobileBackend) (*fake, *Server, *httptest.Server) {
+	t.Helper()
 	f := &fake{pipe: &pipe{done: make(chan struct{})}, profiles: []Profile{
 		{ID: "p1", Serial: 1, Name: "Kênh", Sites: []string{"tiktok"}, Tags: []string{"vn"}, State: "stopped"},
 		{ID: "p2", Serial: 2, Name: "Shop", Sites: []string{"shopee"}, Tags: []string{}, State: "stopped"},
@@ -107,6 +114,7 @@ func mcpSetup(t *testing.T) (*fake, *Server, *httptest.Server) {
 	s.Agent = agent.NewHub(time.Minute)
 	t.Cleanup(s.Agent.Close)
 	s.Uploads, s.Recipes = t.TempDir(), t.TempDir()
+	s.Mobile = mobile
 	srv := httptest.NewServer(s.Handler())
 	t.Cleanup(srv.Close)
 	return f, s, srv

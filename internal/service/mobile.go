@@ -12,6 +12,7 @@ import (
 
 	"github.com/D0bby999/anyprofile/internal/apperr"
 	"github.com/D0bby999/anyprofile/internal/mobile"
+	"github.com/D0bby999/anyprofile/internal/mobile/control"
 	"github.com/D0bby999/anyprofile/internal/store"
 )
 
@@ -390,6 +391,37 @@ func (s *Service) ShowMobileDevice(ctx context.Context, id string) error {
 		return apperr.New("mobile_not_running", "open the device first")
 	}
 	return sh.Show(ctx, mobileDevice(d))
+}
+
+// MobileControl is the agent's handle on a running device; it keeps the
+// device's refs between calls.
+func (s *Service) MobileControl(id string) (*control.Device, error) {
+	if s.Mobile == nil {
+		return nil, errMobileUnsupported
+	}
+	d, err := s.liveMobile(id)
+	if err != nil {
+		return nil, err
+	}
+	ab, ok := s.Mobile.Driver().(mobile.ADBer)
+	if !ok {
+		return nil, errMobileUnsupported
+	}
+	a, ok := ab.ADB(mobileDevice(d))
+	if !ok || s.Mobile.Info(id).State != mobile.Running {
+		return nil, apperr.New("mobile_not_running", "open the device first")
+	}
+	s.ctlMu.Lock()
+	defer s.ctlMu.Unlock()
+	if s.controls == nil {
+		s.controls = map[string]*control.Device{}
+	}
+	if c := s.controls[id]; c != nil && c.ADB == a {
+		return c, nil
+	}
+	c := &control.Device{ADB: a, Runtime: s.Dirs.MobileRuntime()}
+	s.controls[id] = c
+	return c, nil
 }
 
 // StopAllMobile closes every running device, in parallel, when the app quits:
