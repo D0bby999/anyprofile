@@ -96,6 +96,26 @@ type Shower interface {
 	Show(ctx context.Context, d Device) error
 }
 
+// Component is one download a driver needs: what is installed ("" for
+// nothing, "dev" for a development layout) and the newest it may install.
+type Component struct {
+	Engine    string `json:"engine"`
+	Installed string `json:"installed"`
+	Latest    string `json:"latest"`
+}
+
+// InstallStatus is a driver's downloads.
+type InstallStatus struct {
+	Runtime Component `json:"runtime"`
+	Image   Component `json:"image"`
+}
+
+// Installer is a Driver that downloads what it runs on (the macOS VM).
+type Installer interface {
+	InstallStatus() InstallStatus
+	Install(ctx context.Context, progress func(engine string, done, total int64)) error
+}
+
 // Launches stores what runs; *store.Store outside tests.
 type Launches interface {
 	PutMobileLaunch(store.MobileLaunch) error

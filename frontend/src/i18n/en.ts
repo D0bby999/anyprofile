@@ -329,6 +329,9 @@ export const en = {
     ramTight: 'Many devices are running for this computer\u2019s memory. Everything may slow down.',
     apkHint: 'To install an app, drag its APK file onto the device\u2019s window.',
     created: (name: string) => `${name} is ready.`,
+    installTitle: 'Download Android for your devices',
+    installText: 'About 1.1 GB: the virtual machine (20 MB) and LineageOS, Android 16, from its publisher. It needs 4 GB of free disk space while it unpacks.',
+    install: 'Download', installed: 'Android is ready. Create your first device.',
   },
   settings: {
     title: 'Settings',
@@ -551,6 +554,8 @@ export const en = {
     mobile_not_running: 'Open the device first.',
     android_runtime_missing: 'The Android VM runtime is not installed yet.',
     android_image_missing: 'The Android image is not installed yet.',
+    android_runtime_unavailable: 'The Android VM runtime is not published for this version of AnyProfile yet. Update AnyProfile and try again.',
+    disk_full_image: 'Free at least 4 GB of disk space to download Android.',
     proxy_unreachable: 'The proxy did not answer. Check the address, port and password, or ask the provider.',
     cookie_key_lost: `This profile\u2019s cookie key is missing from ${vaultShort}. Opening it with a new key would sign it out of every site.`,
     cookie_key_mismatch: `${isWindows ? 'Windows Credential Manager' : 'The Keychain'} holds a different cookie key than this profile was created with.`,

@@ -5,6 +5,7 @@ package main
 import (
 	"github.com/D0bby999/anyprofile/internal/service"
 	"github.com/D0bby999/anyprofile/internal/store"
+	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 // Mobile devices
@@ -58,6 +59,16 @@ func (a *App) RestoreMobileDevice(id string) error {
 
 func (a *App) PurgeMobileDevice(id string) error {
 	return a.must(func() error { return a.svc.PurgeMobileDevice(a.ctx, id) })
+}
+
+// InstallMobileRuntime downloads the Android VM runtime and image, emitting
+// "engine:progress" like an engine install.
+func (a *App) InstallMobileRuntime() error {
+	return a.must(func() error {
+		return a.svc.InstallMobileRuntime(a.ctx, func(engine string, done, total int64) {
+			runtime.EventsEmit(a.ctx, "engine:progress", map[string]any{"engine": engine, "done": done, "total": total})
+		})
+	})
 }
 
 // ShowMobileDevice opens a running device's window again.

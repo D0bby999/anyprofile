@@ -32,6 +32,8 @@ const (
 
 // MobileAvailability tells the UI what stands between the user and a device.
 type MobileAvailability struct {
+	// Install is set when the driver downloads what it runs on (macOS).
+	Install *mobile.InstallStatus `json:"install"`
 	Supported bool   `json:"supported"` // this OS has a driver
 	Driver    string `json:"driver"`    // "vm" or "ldplayer"
 	Pro       bool   `json:"pro"`       // a paid-up AnyProfile Pro key
@@ -84,6 +86,10 @@ func (s *Service) MobileAvailability() MobileAvailability {
 		return a
 	}
 	a.Supported, a.Driver = true, s.Mobile.Driver().Name()
+	if in, ok := s.Mobile.Driver().(mobile.Installer); ok {
+		st := in.InstallStatus()
+		a.Install = &st
+	}
 	if err := s.Mobile.Driver().Available(); err != nil {
 		a.Reason, a.Message = codeOf(err), err.Error()
 		var ae *apperr.Error
@@ -102,6 +108,38 @@ func codeOf(err error) string {
 		return ae.Code
 	}
 	return "mobile_unavailable"
+}
+
+// imageDiskNeed is the room installing the image takes: the 1.1 GB zip and
+// the 2.3 GB it unpacks to, both on disk for a moment.
+const imageDiskNeed = 4 << 30
+
+// InstallMobileRuntime downloads the VM runtime and the Android image (macOS).
+// It is part of Pro, as the devices are.
+func (s *Service) InstallMobileRuntime(ctx context.Context, progress func(engine string, done, total int64)) error {
+	if err := s.mobileAllowed(); err != nil {
+		return err
+	}
+	if s.Mobile == nil {
+		return errMobileUnsupported
+	}
+	in, ok := s.Mobile.Driver().(mobile.Installer)
+	if !ok {
+		return apperr.New("mobile_nothing_to_install", "this computer has nothing to download for mobile devices")
+	}
+	if st := in.InstallStatus(); st.Image.Installed == "" {
+		if err := os.MkdirAll(s.Dirs.MobileRuntime(), 0o700); err != nil {
+			return err
+		}
+		if free, err := mobile.FreeBytes(s.Dirs.MobileRuntime()); err == nil && free < imageDiskNeed {
+			return apperr.New("disk_full_image", "free at least 4 GB of disk space to download Android")
+		}
+	}
+	if err := in.Install(ctx, progress); err != nil {
+		return err
+	}
+	s.notify("mobile")
+	return nil
 }
 
 // mobileReady is the gate for creating and opening: Pro, a driver, and the

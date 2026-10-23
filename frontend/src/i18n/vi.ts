@@ -330,6 +330,9 @@ export const vi: Messages = {
     ramTight: 'Đang chạy nhiều máy so với bộ nhớ của máy tính này. Mọi thứ có thể chậm lại.',
     apkHint: 'Muốn cài app, kéo file APK của app vào cửa sổ của máy.',
     created: (name: string) => `${name} đã sẵn sàng.`,
+    installTitle: 'Tải Android cho các máy của bạn',
+    installText: 'Khoảng 1,1 GB: bộ chạy máy ảo (20 MB) và LineageOS, Android 16, tải từ nơi phát hành. Cần 4 GB ổ đĩa trống trong lúc giải nén.',
+    install: 'Tải về', installed: 'Android đã sẵn sàng. Hãy tạo máy đầu tiên.',
   },
   settings: {
     title: 'Cài đặt',
@@ -552,6 +555,8 @@ export const vi: Messages = {
     mobile_not_running: 'Hãy mở máy trước.',
     android_runtime_missing: 'Chưa cài bộ chạy máy ảo Android.',
     android_image_missing: 'Chưa cài bản Android.',
+    android_runtime_unavailable: 'Bộ chạy máy ảo Android chưa được phát hành cho phiên bản AnyProfile này. Hãy cập nhật AnyProfile rồi thử lại.',
+    disk_full_image: 'Hãy giải phóng ít nhất 4 GB ổ đĩa để tải Android.',
     proxy_unreachable: 'Proxy không phản hồi. Kiểm tra địa chỉ, cổng và mật khẩu, hoặc hỏi nhà cung cấp.',
     cookie_key_lost: `Khoá cookie của profile này không còn trong ${vaultShort}. Mở bằng khoá mới sẽ đăng xuất mọi trang.`,
     cookie_key_mismatch: `${vaultShort} đang giữ khoá cookie khác với khoá profile được tạo.`,

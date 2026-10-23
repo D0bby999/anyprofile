@@ -27,6 +27,7 @@ import (
 
 	"golang.org/x/sys/unix"
 
+	"github.com/D0bby999/anyprofile/internal/engine"
 	"github.com/D0bby999/anyprofile/internal/launcher"
 	"github.com/D0bby999/anyprofile/internal/mobile"
 	"github.com/D0bby999/anyprofile/internal/mobile/vm/vnet"
@@ -47,6 +48,7 @@ type Driver struct {
 	runtime string // the mobile runtime folder (see Runtime)
 	devices string // one folder per device
 	log     *slog.Logger
+	cat     *engine.Catalog
 
 	mu    sync.Mutex
 	procs map[string]*proc

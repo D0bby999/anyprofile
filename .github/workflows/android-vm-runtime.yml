@@ -1,0 +1,54 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Pushing a tag android-vm-vX.Y.Z builds the Android VM runtime for macOS
+# (scripts/build-android-vm-runtime.sh) and publishes it as a GitHub release.
+# The app learns of it only once its entry is signed into latest.json:
+#   go run ./tools/release engines -manifest latest.json engines.json
+# (docs/releasing.md, "Android VM runtime").
+name: android-vm-runtime
+
+on:
+  push:
+    tags: ['android-vm-v*.*.*']
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-14
+    env:
+      MACOS_CERT_P12: ${{ secrets.MACOS_CERT_P12 }}
+      MACOS_CERT_PASSWORD: ${{ secrets.MACOS_CERT_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Import the Developer ID certificate
+        if: env.MACOS_CERT_P12 != ''
+        run: |
+          kc="$RUNNER_TEMP/sign.keychain-db"
+          pw=$(openssl rand -hex 16)
+          security create-keychain -p "$pw" "$kc"
+          security set-keychain-settings -lut 21600 "$kc"
+          security unlock-keychain -p "$pw" "$kc"
+          printf '%s' "$MACOS_CERT_P12" | base64 --decode > "$RUNNER_TEMP/cert.p12"
+          security import "$RUNNER_TEMP/cert.p12" -k "$kc" -P "$MACOS_CERT_PASSWORD" -T /usr/bin/codesign
+          rm "$RUNNER_TEMP/cert.p12"
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$pw" "$kc" >/dev/null
+          # shellcheck disable=SC2046 # one argument per keychain already listed
+          security list-keychains -d user -s "$kc" $(security list-keychains -d user | tr -d '"')
+          id=$(security find-identity -v -p codesigning "$kc" | awk -F'"' '/Developer ID Application/ {print $2; exit}')
+          test -n "$id" || { echo "no Developer ID Application identity in MACOS_CERT_P12" >&2; exit 1; }
+          echo "MACOS_SIGN_ID=$id" >> "$GITHUB_ENV"
+      - name: Build
+        run: |
+          v="${GITHUB_REF_NAME#android-vm-v}"
+          scripts/build-android-vm-runtime.sh "$v" dist "${MACOS_SIGN_ID:--}" > entry.json
+          url="https://github.com/${GITHUB_REPOSITORY}/releases/download/${GITHUB_REF_NAME}"
+          jq --arg u "$url" '.url |= sub("^REPLACE"; $u)' entry.json > dist/engines-entry.json
+          cat dist/engines-entry.json
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # --latest=false: the app reads releases/latest/download/latest.json for its own updates.
+          gh release create "$GITHUB_REF_NAME" dist/* --latest=false --title "Android VM runtime ${GITHUB_REF_NAME#android-vm-v}" \
+            --notes "QEMU, EDK2, scrcpy and adb for AnyProfile mobile devices on macOS. Sources: SOURCES.txt inside the archive. Add dist/engines-entry.json to engines.json and sign it into latest.json."

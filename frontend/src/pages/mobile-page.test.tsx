@@ -11,11 +11,13 @@ const api = {
   StartMobileDevice: vi.fn(() => Promise.resolve({ warning: '' })),
   BackupMobileDevice: vi.fn(() => Promise.resolve()),
   ShowMobileDevice: vi.fn(() => Promise.resolve()),
+  InstallMobileRuntime: vi.fn(() => Promise.resolve()),
   CreateMobileDevice: vi.fn(() => Promise.resolve({ id: 'n' })),
 }
 vi.mock('../api', async (orig) => ({
   ...(await orig<typeof import('../api')>()),
   onDataChanged: () => () => {},
+  onEngineProgress: () => () => {},
   Api: api,
 }))
 const { MobilePage } = await import('./mobile-page')
@@ -51,6 +53,12 @@ describe('MobilePage', () => {
     expect((screen.getByRole('button', { name: t.mobile.open }) as HTMLButtonElement).disabled).toBe(true)
     fireEvent.click(screen.getByRole('button', { name: t.mobile.backup }))
     await waitFor(() => expect(api.BackupMobileDevice).toHaveBeenCalledWith('d1'))
+  })
+
+  it('downloads Android when the runtime is missing', async () => {
+    page([], avail({ ready: false, reason: 'android_runtime_missing', message: '' }))
+    fireEvent.click(screen.getByRole('button', { name: t.mobile.install }))
+    await waitFor(() => expect(api.InstallMobileRuntime).toHaveBeenCalled())
   })
 
   it('says what the driver is missing', () => {

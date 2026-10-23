@@ -116,6 +116,59 @@ export namespace main {
 
 }
 
+export namespace mobile {
+	
+	export class Component {
+	    engine: string;
+	    installed: string;
+	    latest: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Component(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.engine = source["engine"];
+	        this.installed = source["installed"];
+	        this.latest = source["latest"];
+	    }
+	}
+	export class InstallStatus {
+	    runtime: Component;
+	    image: Component;
+	
+	    static createFrom(source: any = {}) {
+	        return new InstallStatus(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.runtime = this.convertValues(source["runtime"], Component);
+	        this.image = this.convertValues(source["image"], Component);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+
+}
+
 export namespace netproxy {
 	
 	export class ParsedLine {
@@ -372,6 +425,7 @@ export namespace service {
 		}
 	}
 	export class MobileAvailability {
+	    install?: mobile.InstallStatus;
 	    supported: boolean;
 	    driver: string;
 	    pro: boolean;
@@ -385,6 +439,7 @@ export namespace service {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.install = this.convertValues(source["install"], mobile.InstallStatus);
 	        this.supported = source["supported"];
 	        this.driver = source["driver"];
 	        this.pro = source["pro"];
@@ -392,6 +447,24 @@ export namespace service {
 	        this.reason = source["reason"];
 	        this.message = source["message"];
 	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
 	}
 	export class MobileInput {
 	    name: string;

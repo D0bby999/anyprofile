@@ -56,7 +56,7 @@ func Locate(root string) (Runtime, error) {
 	if err != nil || ver == "" || strings.ContainsAny(ver, `/\`) || ver == "." || ver == ".." {
 		return r, errImageMissing
 	}
-	r.ImageVersion, r.ImageDir = ver, filepath.Join(root, "image", ver)
+	r.ImageVersion, r.ImageDir = ver, imageDisks(filepath.Join(root, "image", ver))
 	for _, f := range []string{"vda.qcow2", "vdb.qcow2"} {
 		if !exists(filepath.Join(r.ImageDir, f)) {
 			return r, errImageMissing

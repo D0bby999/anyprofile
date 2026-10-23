@@ -95,6 +95,8 @@ export function InstallEngine(arg1:string):Promise<void>;
 
 export function InstallEngineVersion(arg1:string,arg2:string):Promise<void>;
 
+export function InstallMobileRuntime():Promise<void>;
+
 export function InstallUpdate():Promise<void>;
 
 export function Language():Promise<string>;

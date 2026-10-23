@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { useEffect, useState } from 'react'
-import { Api, service } from '../api'
+import { Api, onEngineProgress, service, type EngineProgress } from '../api'
 import { t } from '../i18n'
 import { errorText, relativeTime } from '../lib/format'
 import { tagColor } from '../lib/tags'
 import type { useMobile } from '../hooks/use-mobile'
 import { EmptyState } from '../components/empty-state'
 import { Icon } from '../components/icons'
+import { InstallProgress } from '../components/install-progress'
 import { MobileDialog } from '../components/mobile-dialog'
 import { PageHead } from '../components/page-head'
 import { useToast } from '../components/toast'
@@ -15,6 +16,8 @@ import { useConfirm } from '../components/confirm'
 type Props = { mobile: ReturnType<typeof useMobile>; onOpenPro: () => void; onOpenSettings: () => void }
 
 const busyStates = ['provisioning', 'starting', 'stopping', 'working']
+const installReasons = ['android_runtime_missing', 'android_image_missing']
+const installEngines = ['android-vm', 'android-vm-image']
 
 function StateChip({ r }: { r: service.MobileRow }) {
   const label = t.mobile.state[r.state] ?? r.state
@@ -30,6 +33,21 @@ export function MobilePage({ mobile, onOpenPro, onOpenSettings }: Props) {
   const [proxies, setProxies] = useState<service.ProxyRow[]>([])
   const [editing, setEditing] = useState<service.MobileRow | null | 'new'>(null)
   const [busy, setBusy] = useState('') // a device id while one of its actions runs
+  const [installing, setInstalling] = useState<EngineProgress | null>(null)
+  useEffect(() => onEngineProgress((p) => { if (installEngines.includes(p.engine)) setInstalling(p) }), [])
+
+  const install = async () => {
+    setInstalling({ engine: 'android-vm', done: 0, total: 0 })
+    try {
+      await Api.InstallMobileRuntime()
+      toast.success(t.mobile.installed)
+    } catch (e) {
+      toast.error(errorText(e))
+    } finally {
+      setInstalling(null)
+      reload()
+    }
+  }
   const toast = useToast()
   const confirm = useConfirm()
 
@@ -76,7 +94,16 @@ export function MobilePage({ mobile, onOpenPro, onOpenSettings }: Props) {
             <div className="row"><button className="btn primary" onClick={onOpenPro}><Icon name="spark" />{t.mobile.getPro}</button></div>
           </section>
         )}
-        {avail?.pro && !avail.ready && (
+        {avail?.pro && !avail.ready && installReasons.includes(avail.reason) && (
+          <section className="card pad">
+            <h2>{t.mobile.installTitle}</h2>
+            <p className="desc">{t.mobile.installText}</p>
+            {installing ? <InstallProgress progress={installing} /> : (
+              <div className="row"><button className="btn primary" onClick={install}><Icon name="download" />{t.mobile.install}</button></div>
+            )}
+          </section>
+        )}
+        {avail?.pro && !avail.ready && !installReasons.includes(avail.reason) && (
           <div className="banner warn" role="status">
             <Icon name="alert" />
             <span className="grow">{t.mobile.notReady} {t.errors[avail.reason] ?? avail.message}</span>

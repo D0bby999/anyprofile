@@ -94,7 +94,7 @@ func (a *App) init() error {
 	}
 	// One catalog for both: the compiled-in releases, and the signed list
 	// from latest.json once LoadEngineList or an update check adds it.
-	cat := engine.NewCatalog(update.Current, append(apostate.Builtin(), fury.Builtin()...)...)
+	cat := engine.NewCatalog(update.Current, append(append(apostate.Builtin(), fury.Builtin()...), mobileBuiltin()...)...)
 	ap.SetCatalog(cat)
 	a.fury.SetCatalog(cat)
 	a.engines = map[string]engine.Engine{"apostate": ap}
@@ -125,7 +125,7 @@ func (a *App) init() error {
 			loc, err := a.fury.LocaleFor(ctx, cc)
 			return loc.UILocale, loc.Languages, err
 		}}
-	if drv := mobileDriver(dirs, log); drv != nil {
+	if drv := mobileDriver(dirs, log, cat); drv != nil {
 		a.svc.Mobile = mobile.NewManager(drv, st, log,
 			func(in mobile.Info) { runtime.EventsEmit(a.ctx, "mobile:changed", in) })
 	}
