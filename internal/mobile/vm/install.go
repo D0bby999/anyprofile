@@ -33,7 +33,7 @@ const (
 // zip's hash matches GitHub's digest for the asset, and `gh attestation
 // verify --repo jqssun/android-lineage-qemu` passed. "chromium" carries the
 // Android version, the field every release needs. scripts/pin-android-vm-image.sh
-// prints a newer entry.
+// prints a newer entry; the steps are in docs/mobile-maintenance.md.
 func ImageBuiltin() []engine.Release {
 	return []engine.Release{{
 		Engine: ImageEngine, Version: "23.2.20261019", Chromium: "16.0", Platform: "darwin-arm64",

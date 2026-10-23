@@ -1,5 +1,7 @@
 # Android VM runtime (macOS)
 
+Danh sách mọi thành phần của máy mobile, nguồn và cách cập nhật: `docs/mobile-maintenance.md`.
+
 Máy mobile trên macOS cần hai thứ tải về, cả hai đi qua danh sách engine có ký như Apostate và Fury
 (`internal/engine`, `docs/releasing.md`):
 

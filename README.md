@@ -31,7 +31,8 @@ Website: [anytools.world/anyprofile](https://anytools.world/en/anyprofile)
   own apps, data and proxy: a LineageOS virtual machine on macOS, an LDPlayer 9
   instance on Windows. A device reaches the internet only through its proxy
   (UDP and IPv6 are blocked), and AI agents can drive it over MCP. Apps can
-  still tell it is a virtual machine or emulator. See `docs/mobile.md`.
+  still tell it is a virtual machine or emulator. See `docs/mobile.md`;
+  installing apps (no Google Play): `docs/mobile-apps.md`.
 - **Data:** `~/Library/Application Support/AnyProfile` on macOS,
   `%APPDATA%\AnyProfile` on Windows, holds the SQLite database, the engines
   and one folder per profile.

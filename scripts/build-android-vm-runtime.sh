@@ -19,6 +19,7 @@ ident=${3:--}
 here=$(cd "$(dirname "$0")/.." && pwd)
 ents="$here/build/darwin/qemu.entitlements"
 
+# Pinned scrcpy; how to update it: docs/mobile-maintenance.md.
 scrcpy_ver=5.0.1
 scrcpy_sha=33611e51977a8289e2e124b220f727895181ef2eb9060e0987a4dc2db9cf0d6b
 

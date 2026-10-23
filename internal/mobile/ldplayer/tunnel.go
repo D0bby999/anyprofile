@@ -15,6 +15,7 @@ import (
 // needed); UDP itself would need UDP ASSOCIATE, which the relay refuses.
 // Android's always-on VPN with lockdown blocks every connection the tunnel
 // does not carry, so a stopped tunnel is no network, not the host's.
+// Updating the pin: docs/mobile-maintenance.md.
 const (
 	tunnelPkg     = "hev.sockstun"
 	tunnelService = tunnelPkg + "/.TProxyService"

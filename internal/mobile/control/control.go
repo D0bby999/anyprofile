@@ -33,6 +33,7 @@ import (
 // ADBKeyBoard (github.com/senzhk/ADBKeyBoard, GPL-2.0) is an input method
 // that types what it receives in a broadcast, base64 encoded: Vietnamese,
 // emoji, anything. It is installed on first use and set only while typing.
+// Updating the pin: docs/mobile-maintenance.md.
 const (
 	keyboardIME    = "com.android.adbkeyboard/.AdbIME"
 	keyboardPkg    = "com.android.adbkeyboard"
