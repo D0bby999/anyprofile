@@ -179,8 +179,8 @@ func engineList(m map[string]engine.Engine) []engine.Engine {
 
 // quitText is the native quit dialog; the web UI has its own catalogs.
 var quitText = map[string]struct{ Title, Message, Confirm, Cancel string }{
-	"en": {"Quit AnyProfile?", "%d browsers are open. Quitting closes all of them.", "Close all and quit", "Cancel"},
-	"vi": {"Thoát AnyProfile?", "Đang có %d trình duyệt mở. Thoát app sẽ đóng tất cả.", "Đóng tất cả và thoát", "Huỷ"},
+	"en": {"Quit AnyProfile?", "%d browsers or mobile devices are open. Quitting closes all of them.", "Close all and quit", "Cancel"},
+	"vi": {"Thoát AnyProfile?", "Đang có %d trình duyệt hoặc máy mobile mở. Thoát app sẽ đóng tất cả.", "Đóng tất cả và thoát", "Huỷ"},
 }
 
 // beforeClose closes every browser before quitting: proxy relays live in this
@@ -195,6 +195,9 @@ func (a *App) beforeClose(ctx context.Context) (prevent bool) {
 		return false
 	}
 	n := len(a.svc.Launcher.List())
+	if a.svc.Mobile != nil {
+		n += a.svc.Mobile.Running()
+	}
 	if n == 0 {
 		return false
 	}
@@ -211,6 +214,7 @@ func (a *App) beforeClose(ctx context.Context) (prevent bool) {
 		return true
 	}
 	a.svc.Launcher.StopAll()
+	a.svc.StopAllMobile(ctx)
 	return false
 }
 

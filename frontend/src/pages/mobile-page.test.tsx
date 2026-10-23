@@ -10,6 +10,7 @@ const api = {
   ListProxies: vi.fn(() => Promise.resolve([{ id: 'px', label: 'gw.example:1', country: 'JP', rotating: false, usedBy: [] }])),
   StartMobileDevice: vi.fn(() => Promise.resolve({ warning: '' })),
   BackupMobileDevice: vi.fn(() => Promise.resolve()),
+  ShowMobileDevice: vi.fn(() => Promise.resolve()),
   CreateMobileDevice: vi.fn(() => Promise.resolve({ id: 'n' })),
 }
 vi.mock('../api', async (orig) => ({
@@ -67,10 +68,12 @@ describe('MobilePage', () => {
     expect(await screen.findByText(t.mobile.ramTight)).toBeTruthy()
   })
 
-  it('shows Close for a running device and locks backup', () => {
+  it('shows Close and Show window for a running device and locks backup', async () => {
     page([device({ state: 'running' })], avail())
     expect(screen.getByRole('button', { name: t.mobile.close })).toBeTruthy()
     expect((screen.getByRole('button', { name: t.mobile.backup }) as HTMLButtonElement).disabled).toBe(true)
+    fireEvent.click(screen.getByRole('button', { name: t.mobile.show }))
+    await waitFor(() => expect(api.ShowMobileDevice).toHaveBeenCalledWith('d1'))
   })
 
   it('creates a device with the default memory and an automatic proxy', async () => {

@@ -117,6 +117,9 @@ export function MobilePage({ mobile, onOpenPro, onOpenSettings }: Props) {
                           {r.backedUpAt && <small className="faint">{t.mobile.backedUp(relativeTime(r.backedUpAt))}</small>}</td>
                         <td className="muted nowrap">{r.lastOpenAt ? relativeTime(r.lastOpenAt) : t.mobile.never}</td>
                         <td className="col-actions"><span className="row">
+                          {running && (
+                            <button className="iconbtn sm" onClick={() => run(r.id, () => Api.ShowMobileDevice(r.id))} aria-label={t.mobile.show} title={t.mobile.show}><Icon name="monitor" /></button>
+                          )}
                           <button className="iconbtn sm" disabled={working} onClick={() => setEditing(r)} aria-label={t.mobile.edit} title={t.mobile.edit}><Icon name="pencil" /></button>
                           <button className="iconbtn sm" disabled={working || running} onClick={() => run(r.id, () => Api.BackupMobileDevice(r.id), t.mobile.backupDone)}
                             aria-label={t.mobile.backup} title={t.mobile.backup}><Icon name="download" /></button>

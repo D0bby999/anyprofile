@@ -130,6 +130,7 @@ func Start(cfg Config) (*Network, error) {
 		n.Close()
 		return nil, err
 	}
+	n.track(srv.Underlying)
 	n.goServe(func() { _ = srv.Serve() })
 	if err := n.serveDNS(); err != nil {
 		n.Close()
@@ -200,6 +201,9 @@ func (n *Network) acceptQemu() {
 		if err != nil {
 			return
 		}
+		// The switch checks its context only between reads: Close closes
+		// the connection to end a read in progress.
+		n.track(c)
 		n.goServe(func() {
 			defer c.Close()
 			_ = n.sw.Accept(n.ctx, c, types.QemuProtocol)

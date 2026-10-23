@@ -181,6 +181,8 @@ export function SetTOTP(arg1:string,arg2:string,arg3:string):Promise<void>;
 
 export function SetUpdateAuto(arg1:boolean):Promise<void>;
 
+export function ShowMobileDevice(arg1:string):Promise<void>;
+
 export function Sites():Promise<Array<site.Site>>;
 
 export function SnapshotSettings():Promise<service.SnapshotSettings>;

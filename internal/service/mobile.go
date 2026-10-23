@@ -8,6 +8,7 @@ import (
 	"os"
 	"runtime"
 	"strings"
+	"sync"
 
 	"github.com/D0bby999/anyprofile/internal/apperr"
 	"github.com/D0bby999/anyprofile/internal/mobile"
@@ -335,6 +336,44 @@ func (s *Service) StopMobileDevice(ctx context.Context, id string) error {
 	}
 	s.notify("mobile")
 	return nil
+}
+
+// ShowMobileDevice opens a running device's window again.
+func (s *Service) ShowMobileDevice(ctx context.Context, id string) error {
+	if s.Mobile == nil {
+		return errMobileUnsupported
+	}
+	d, err := s.liveMobile(id)
+	if err != nil {
+		return err
+	}
+	sh, ok := s.Mobile.Driver().(mobile.Shower)
+	if !ok || s.Mobile.Info(id).State != mobile.Running {
+		return apperr.New("mobile_not_running", "open the device first")
+	}
+	return sh.Show(ctx, mobileDevice(d))
+}
+
+// StopAllMobile closes every running device, in parallel, when the app quits:
+// a VM's network lives in this process.
+func (s *Service) StopAllMobile(ctx context.Context) {
+	if s.Mobile == nil {
+		return
+	}
+	var wg sync.WaitGroup
+	for _, in := range s.Mobile.List() {
+		if in.State == mobile.Stopped {
+			continue
+		}
+		wg.Add(1)
+		go func(id string) {
+			defer wg.Done()
+			if err := s.StopMobileDevice(ctx, id); err != nil {
+				s.Log.Warn("stop mobile device", "device", id, "err", err)
+			}
+		}(in.DeviceID)
+	}
+	wg.Wait()
 }
 
 // TrashMobileDevice closes the device and moves it to the trash.

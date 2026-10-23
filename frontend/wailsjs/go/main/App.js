@@ -350,6 +350,10 @@ export function SetUpdateAuto(arg1) {
   return window['go']['main']['App']['SetUpdateAuto'](arg1);
 }
 
+export function ShowMobileDevice(arg1) {
+  return window['go']['main']['App']['ShowMobileDevice'](arg1);
+}
+
 export function Sites() {
   return window['go']['main']['App']['Sites']();
 }

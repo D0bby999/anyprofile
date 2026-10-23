@@ -3,17 +3,9 @@
 package main
 
 import (
-	"log/slog"
-
-	"github.com/D0bby999/anyprofile/internal/mobile"
-	"github.com/D0bby999/anyprofile/internal/paths"
 	"github.com/D0bby999/anyprofile/internal/service"
 	"github.com/D0bby999/anyprofile/internal/store"
 )
-
-// mobileDriver is this OS's mobile device driver, nil while it has none:
-// the QEMU VM driver (macOS) and the LDPlayer driver (Windows) plug in here.
-func mobileDriver(dirs paths.Dirs, log *slog.Logger) mobile.Driver { return nil }
 
 // Mobile devices
 
@@ -66,6 +58,11 @@ func (a *App) RestoreMobileDevice(id string) error {
 
 func (a *App) PurgeMobileDevice(id string) error {
 	return a.must(func() error { return a.svc.PurgeMobileDevice(a.ctx, id) })
+}
+
+// ShowMobileDevice opens a running device's window again.
+func (a *App) ShowMobileDevice(id string) error {
+	return a.must(func() error { return a.svc.ShowMobileDevice(a.ctx, id) })
 }
 
 func (a *App) BackupMobileDevice(id string) error {

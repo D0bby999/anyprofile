@@ -90,6 +90,12 @@ type Driver interface {
 	Adopt(ctx context.Context, d Device, l Launch, up *netproxy.Upstream) (Run, error)
 }
 
+// Shower is a Driver whose device shows in a window the user can close
+// while the device keeps running; Show opens it again.
+type Shower interface {
+	Show(ctx context.Context, d Device) error
+}
+
 // Launches stores what runs; *store.Store outside tests.
 type Launches interface {
 	PutMobileLaunch(store.MobileLaunch) error
