@@ -3,7 +3,11 @@
 The notes of each release tag are shown in the app's update prompt; this file
 keeps them together.
 
-## 0.2.0 (2026-10-24)
+## 0.1.0 (2026-10-24)
+
+The first public release. Earlier builds numbered 0.1.0 and 0.1.1 were never
+published; what they had is listed under them below and is all in this one.
+
 
 - AnyProfile Pro: buy it by the month or the year in Settings (card, Apple
   Pay, Google Pay); the key activates by itself. Pro brings tested recipes and
@@ -53,7 +57,7 @@ keeps them together.
   keeps its header in a narrow window, and the profile list loses its refresh
   button: it updates by itself.
 
-## 0.1.1 (2026-10-18)
+### From the unpublished 0.1.1 (2026-10-18)
 
 - Engine versions: Settings → Engines lists every version of Apostate and
   Fury, to download or remove. New versions arrive in the signed latest.json,
@@ -168,7 +172,7 @@ keeps them together.
   selection bar and the details drawer: at once, with an Undo in the notice
   (the drawer asked first; the others said nothing).
 
-## 0.1.0 (2026-10-17)
+### From the unpublished 0.1.0 (2026-10-17)
 
 First beta.
 

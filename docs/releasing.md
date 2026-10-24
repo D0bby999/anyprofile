@@ -152,7 +152,8 @@ trước lần ký đầu nút Tải về trên trang Mobile báo bộ chạy ch
 tư cũ đã xoá; lịch sử gốc của nó nằm trong file sao lưu `anyprofile-private-final-261017.bundle` trên máy
 phát hành.
 
-Bản phát hành đầu: `v0.1.0`, 2026-10-17.
+Bản phát hành công khai đầu: `v0.1.0`, 2026-10-24. Hai bản dựng trước đó cũng mang số 0.1.0 (2026-10-17) và 0.1.1
+(2026-10-18) chỉ là bản nháp; chúng đã bị xoá, tệp cài và ghi chú được sao lưu trên máy phát hành.
 
 ## Thử mà không phát hành
 
