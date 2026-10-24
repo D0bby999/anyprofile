@@ -23,7 +23,8 @@ ents="$here/build/darwin/qemu.entitlements"
 scrcpy_ver=5.0.1
 scrcpy_sha=33611e51977a8289e2e124b220f727895181ef2eb9060e0987a4dc2db9cf0d6b
 
-brew list qemu >/dev/null 2>&1 || brew install qemu
+# stdout is the engines.json entry: brew's progress goes to stderr.
+brew list qemu >/dev/null 2>&1 || brew install qemu >&2
 brew=$(brew --prefix)
 qemu_ver=$(brew list --versions qemu | awk '{print $2}')
 
