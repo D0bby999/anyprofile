@@ -7,13 +7,15 @@ import { ConfirmProvider } from '../components/confirm'
 import { ToastProvider } from '../components/toast'
 
 const api = {
-  ListProxies: vi.fn(() => Promise.resolve([{ id: 'px', label: 'gw.example:1', country: 'JP', rotating: false, usedBy: [] }])),
+  ListProxies: vi.fn(() => Promise.resolve([{ id: 'px', label: 'gw.example:1', country: 'JP', exitIp: '2.2.2.2', rotating: false, usedBy: [], assignable: true }])),
   StartMobileDevice: vi.fn(() => Promise.resolve({ warning: '' })),
   BackupMobileDevice: vi.fn(() => Promise.resolve()),
   InstallMobileApps: vi.fn(() => Promise.resolve(2)),
   ShowMobileDevice: vi.fn(() => Promise.resolve()),
   InstallMobileRuntime: vi.fn(() => Promise.resolve()),
   CreateMobileDevice: vi.fn(() => Promise.resolve({ id: 'n' })),
+  TrashMobileDevice: vi.fn(() => Promise.resolve()),
+  RestoreMobileDevice: vi.fn(() => Promise.resolve()),
 }
 const openExternal = vi.fn()
 vi.mock('../api', async (orig) => ({
@@ -77,6 +79,21 @@ describe('MobilePage', () => {
     fireEvent.click(screen.getByRole('button', { name: t.mobile.open }))
     await waitFor(() => expect(api.StartMobileDevice).toHaveBeenCalledWith('d1'))
     expect(await screen.findByText(t.mobile.ramTight)).toBeTruthy()
+  })
+
+  it('says a running device has no network when its proxy stopped answering', async () => {
+    api.ListProxies.mockImplementationOnce(() => Promise.resolve([{ id: 'px', label: 'gw.example:1', country: 'JP', exitIp: '2.2.2.2',
+      rotating: false, usedBy: [], assignable: false, failedAt: '2026-10-24T08:00:00Z' }]))
+    page([device({ proxyId: 'px', state: 'running' })], avail())
+    expect(await screen.findByText(t.mobile.proxyDown)).toBeTruthy()
+  })
+
+  it('moves a device to the trash with Undo', async () => {
+    page([device()], avail())
+    fireEvent.click(screen.getByRole('button', { name: t.mobile.trash }))
+    await waitFor(() => expect(api.TrashMobileDevice).toHaveBeenCalledWith('d1'))
+    fireEvent.click(await screen.findByRole('button', { name: t.common.undo }))
+    await waitFor(() => expect(api.RestoreMobileDevice).toHaveBeenCalledWith('d1'))
   })
 
   it('links to the guide for installing apps', () => {

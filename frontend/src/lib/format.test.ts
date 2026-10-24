@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { describe, expect, it } from 'vitest'
 import { t } from '../i18n'
-import { allTags, errorText, formatBytes, nameSeries, parseTags, relativeTime } from './format'
+import { setLanguage } from '../i18n'
+import { allTags, errorText, formatBytes, formatDate, nameSeries, parseTags, proxyLineError, relativeTime } from './format'
 
 describe('relativeTime', () => {
   const now = new Date('2026-10-12T12:00:00Z')
@@ -54,5 +55,24 @@ describe('nameSeries', () => {
   })
   it('numbers copies from 1', () => {
     expect(nameSeries('Shop', 3)).toEqual(['Shop 1', 'Shop 2', 'Shop 3'])
+  })
+})
+
+describe('formatDate', () => {
+  it('follows the app language, not the system one', () => {
+    setLanguage('vi')
+    try {
+      expect(formatDate('2026-11-23T12:00:00')).toBe('23/11/2026')
+    } finally {
+      setLanguage('en')
+    }
+    expect(formatDate('2026-11-23T12:00:00')).toBe('11/23/2026')
+  })
+})
+
+describe('proxyLineError', () => {
+  it('puts a known problem in words and keeps an unknown one as sent', () => {
+    expect(proxyLineError({ line: 2, err: 'bad port "x"', code: 'port' })).toBe(t.proxies.failedLine(2, t.proxies.parseErr.port))
+    expect(proxyLineError({ line: 3, err: 'odd', code: '' })).toBe(t.proxies.failedLine(3, 'odd'))
   })
 })

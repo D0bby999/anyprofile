@@ -22,6 +22,9 @@ type ProxyRow struct {
 	store.Proxy
 	UsedBy []string `json:"usedBy"`
 	Expiry string   `json:"expiry"` // "", "soon" or "expired"
+	// Assignable: free, sticky, its last check passed and it has not
+	// expired. Only these are handed out as "the next free proxy".
+	Assignable bool `json:"assignable"`
 }
 
 // ImportResult reports a pasted list: how many were added and which lines failed.
@@ -43,8 +46,9 @@ func (s *Service) ListProxies() ([]ProxyRow, error) {
 	}
 	out := make([]ProxyRow, 0, len(ps))
 	for _, p := range ps {
-		out = append(out, ProxyRow{Proxy: p, UsedBy: append([]string{}, use[p.ID]...),
-			Expiry: expiry(p.ExpiresOn, s.now())})
+		r := ProxyRow{Proxy: p, UsedBy: append([]string{}, use[p.ID]...), Expiry: expiry(p.ExpiresOn, s.now())}
+		r.Assignable = len(r.UsedBy) == 0 && !p.Rotating && p.ExitIP != "" && p.FailedAt == "" && r.Expiry != "expired"
+		out = append(out, r)
 	}
 	return out, nil
 }
@@ -123,6 +127,9 @@ func (s *Service) CheckProxyByID(ctx context.Context, id string) (store.Proxy, e
 	}
 	e, err := s.CheckProxy(ctx, up)
 	if err != nil {
+		if ferr := s.Store.SaveProxyFailure(id); ferr == nil {
+			s.notify("proxies")
+		}
 		// The network detail goes to the log; the user gets a sentence.
 		return px, apperr.Newf("proxy_unreachable", "%v", err)
 	}
@@ -135,17 +142,17 @@ func (s *Service) CheckProxyByID(ctx context.Context, id string) (store.Proxy, e
 	return s.Store.GetProxy(id)
 }
 
-func (s *Service) CheckAllProxies(ctx context.Context) error {
+// CheckAllProxies checks every proxy and returns how many did not answer.
+func (s *Service) CheckAllProxies(ctx context.Context) (int, error) {
 	ps, err := s.Store.ListProxies()
 	if err != nil {
-		return err
+		return 0, err
 	}
 	ids := make([]string, len(ps))
 	for i, p := range ps {
 		ids[i] = p.ID
 	}
-	s.checkMany(ctx, ids)
-	return nil
+	return len(s.checkMany(ctx, ids)), nil
 }
 
 // ProxyMeta is what the proxy edit form sends.
@@ -237,14 +244,14 @@ func (s *Service) DeleteProxy(id string) error {
 	return nil
 }
 
-// nextFreeProxy is the oldest sticky proxy no live profile uses, or "" for none.
+// nextFreeProxy is the oldest assignable proxy, or "" for none.
 func (s *Service) nextFreeProxy() (string, error) {
 	rows, err := s.ListProxies()
 	if err != nil {
 		return "", err
 	}
 	for _, r := range rows {
-		if len(r.UsedBy) == 0 && !r.Rotating {
+		if r.Assignable {
 			return r.ID, nil
 		}
 	}

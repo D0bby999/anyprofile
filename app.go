@@ -143,6 +143,7 @@ func (a *App) init() error {
 	a.restartAPI()
 	a.svc.CleanUpdates()
 	a.setMenuLanguage(a.svc.Language())
+	go a.svc.WatchMobileProxies(a.ctx)
 	go func() {
 		// Looked at every few hours, so an app left open for days still
 		// learns of a release; CheckUpdate asks the server once a day at

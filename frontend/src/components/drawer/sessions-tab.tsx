@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import { Api, onDataChanged, store } from '../../api'
 import { t } from '../../i18n'
-import { relativeTime, sinceSpan } from '../../lib/format'
+import { formatDateTime, relativeTime, sinceSpan } from '../../lib/format'
 import { countryName, flagText } from '../../lib/flags'
 
 /** Notes for one session, compared with the next older session that measured an exit. */
@@ -35,7 +35,7 @@ export function SessionsTab({ profileId }: { profileId: string }) {
       <tbody>
         {list.map((s, i) => (
           <tr key={s.id}>
-            <td title={new Date(s.startedAt).toLocaleString()}>{relativeTime(s.startedAt)}</td>
+            <td title={formatDateTime(s.startedAt)}>{relativeTime(s.startedAt)}</td>
             <td className="nowrap">{s.stoppedAt ? spanBetween(s.startedAt, s.stoppedAt) : t.sessions.running}</td>
             <td><span className="mono selectable">{s.exitIp || '–'}</span>{s.exitCountry && <small title={countryName(s.exitCountry)}> {s.exitCountry}</small>}</td>
             <td>

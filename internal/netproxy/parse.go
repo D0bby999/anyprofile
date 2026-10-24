@@ -15,7 +15,17 @@ type ParsedLine struct {
 	Upstream Upstream `json:"-"`
 	Display  string   `json:"display"` // redacted
 	Err      string   `json:"err"`
+	// Code names the problem for the UI to put in words: not_url, scheme,
+	// host_port, format or port.
+	Code string `json:"code"`
 }
+
+// parseError is a line that is not a proxy, with a code the UI translates.
+type parseError struct{ code, msg string }
+
+func (e parseError) Error() string { return e.msg }
+
+func errf(code, format string, a ...any) error { return parseError{code, fmt.Sprintf(format, a...)} }
 
 // ParseList accepts one proxy per line, in either form:
 //
@@ -34,6 +44,9 @@ func ParseList(text string) []ParsedLine {
 		p := ParsedLine{Line: i + 1, Upstream: up}
 		if err != nil {
 			p.Err = err.Error()
+			if pe, ok := err.(parseError); ok {
+				p.Code = pe.code
+			}
 		} else {
 			p.Display = up.Redacted()
 		}
@@ -46,26 +59,26 @@ func parseOne(line string) (Upstream, error) {
 	if strings.Contains(line, "://") {
 		u, err := url.Parse(line)
 		if err != nil {
-			return Upstream{}, fmt.Errorf("not a proxy URL")
+			return Upstream{}, errf("not_url", "not a proxy URL")
 		}
 		scheme := map[string]string{"http": "http", "https": "http", "socks5": "socks5", "socks5h": "socks5"}[u.Scheme]
 		if scheme == "" {
-			return Upstream{}, fmt.Errorf("unsupported scheme %q", u.Scheme)
+			return Upstream{}, errf("scheme", "unsupported scheme %q", u.Scheme)
 		}
 		port, err := strconv.Atoi(u.Port())
 		if err != nil || u.Hostname() == "" {
-			return Upstream{}, fmt.Errorf("needs host:port")
+			return Upstream{}, errf("host_port", "needs host:port")
 		}
 		pass, _ := u.User.Password()
 		return check(Upstream{Scheme: scheme, Host: u.Hostname(), Port: port, Username: u.User.Username(), Password: pass})
 	}
 	parts := strings.Split(line, ":")
 	if len(parts) != 2 && len(parts) < 4 {
-		return Upstream{}, fmt.Errorf("expected host:port or host:port:user:pass")
+		return Upstream{}, errf("format", "expected host:port or host:port:user:pass")
 	}
 	port, err := strconv.Atoi(parts[1])
 	if err != nil {
-		return Upstream{}, fmt.Errorf("bad port %q", parts[1])
+		return Upstream{}, errf("port", "bad port %q", parts[1])
 	}
 	up := Upstream{Scheme: "http", Host: parts[0], Port: port}
 	if len(parts) >= 4 {
@@ -77,7 +90,7 @@ func parseOne(line string) (Upstream, error) {
 
 func check(up Upstream) (Upstream, error) {
 	if up.Host == "" || up.Port < 1 || up.Port > 65535 {
-		return up, fmt.Errorf("bad host or port")
+		return up, errf("host_port", "bad host or port")
 	}
 	return up, nil
 }

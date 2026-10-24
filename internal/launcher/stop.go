@@ -33,6 +33,9 @@ func (l *Launcher) watch(p *proc, pid int, wait <-chan error) {
 	}
 	l.mu.Lock()
 	delete(l.procs, p.info.ProfileID)
+	// The browser and its DevTools port are gone; the Stopped event must not
+	// carry the old port, or the list keeps warning that it is open.
+	p.info.PID, p.info.CDPPort = 0, 0
 	l.mu.Unlock()
 	l.set(p, Stopped, "")
 	close(p.done)

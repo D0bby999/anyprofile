@@ -55,11 +55,24 @@ export function MobilePage({ mobile, onOpenPro, onOpenSettings }: Props) {
   useEffect(() => { Api.ListProxies().then((p) => setProxies(p ?? [])).catch(() => {}) }, [rows])
 
   const canUse = !!avail?.pro && !!avail?.ready
-  const proxyLabel = (id: string) => {
-    if (!id) return <span className="faint">{t.common.direct}</span>
-    const p = proxies.find((x) => x.id === id)
-    return p ? <span>{p.label}{p.country && <span className="faint"> · {p.country}</span>}</span> : <span className="faint">…</span>
+  const proxyLabel = (r: service.MobileRow) => {
+    if (!r.proxyId) return <span className="faint">{t.common.direct}</span>
+    const p = proxies.find((x) => x.id === r.proxyId)
+    if (!p) return <span className="faint">…</span>
+    return (
+      <>
+        <span>{p.label}{p.country && <span className="faint"> · {p.country}</span>}</span>
+        {p.failedAt && <small className="danger">{r.state === 'running' ? t.mobile.proxyDown : t.proxies.failed}</small>}
+      </>
+    )
   }
+
+  // The trash gives a device back, so moving it there asks nothing and offers Undo.
+  const trash = (r: service.MobileRow) => run(r.id, async () => {
+    await Api.TrashMobileDevice(r.id)
+    toast.success(t.profiles.trashedOne(r.name), { label: t.common.undo,
+      run: () => { Api.RestoreMobileDevice(r.id).then(reload).catch((e) => toast.error(errorText(e))) } })
+  })
 
   const run = async (id: string, fn: () => Promise<unknown>, done?: string) => {
     setBusy(id)
@@ -145,7 +158,7 @@ export function MobilePage({ mobile, onOpenPro, onOpenSettings }: Props) {
                           ))}</span>}
                           {r.error && <small className="danger">{r.error}</small>}
                         </td>
-                        <td>{proxyLabel(r.proxyId)}</td>
+                        <td className="stack">{proxyLabel(r)}</td>
                         <td className="stack nowrap"><StateChip r={r} />
                           {r.backedUpAt && <small className="faint">{t.mobile.backedUp(relativeTime(r.backedUpAt))}</small>}</td>
                         <td className="muted nowrap">{r.lastOpenAt ? relativeTime(r.lastOpenAt) : t.mobile.never}</td>
@@ -164,7 +177,7 @@ export function MobilePage({ mobile, onOpenPro, onOpenSettings }: Props) {
                               onClick={async () => { if (await confirm({ ...t.confirm.restoreMobile(relativeTime(r.backedUpAt)), danger: true })) run(r.id, () => Api.RestoreMobileBackup(r.id), t.mobile.restoreDone) }}>
                               <Icon name="restore" /></button>
                           )}
-                          <button className="iconbtn sm" disabled={working} onClick={() => run(r.id, () => Api.TrashMobileDevice(r.id), t.mobile.trashed)}
+                          <button className="iconbtn sm" disabled={working} onClick={() => trash(r)}
                             aria-label={t.mobile.trash} title={t.mobile.trash}><Icon name="trash" /></button>
                           {running || r.state === 'stopping' ? (
                             <button className={`btn sm stop actbtn${working ? ' busy' : ''}`} aria-busy={working} disabled={working} onClick={() => run(r.id, () => Api.StopMobileDevice(r.id))}>

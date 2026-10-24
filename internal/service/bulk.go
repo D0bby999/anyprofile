@@ -54,7 +54,7 @@ func (s *Service) freeProxyCount() (int, error) {
 	}
 	n := 0
 	for _, r := range rows {
-		if len(r.UsedBy) == 0 && !r.Rotating {
+		if r.Assignable {
 			n++
 		}
 	}

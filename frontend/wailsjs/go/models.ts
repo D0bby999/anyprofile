@@ -175,6 +175,7 @@ export namespace netproxy {
 	    line: number;
 	    display: string;
 	    err: string;
+	    code: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new ParsedLine(source);
@@ -185,6 +186,7 @@ export namespace netproxy {
 	        this.line = source["line"];
 	        this.display = source["display"];
 	        this.err = source["err"];
+	        this.code = source["code"];
 	    }
 	}
 	export class Upstream {
@@ -762,11 +764,13 @@ export namespace service {
 	    lon?: number;
 	    rotating: boolean;
 	    checkedAt: string;
+	    failedAt: string;
 	    createdAt: string;
 	    note: string;
 	    expiresOn: string;
 	    usedBy: string[];
 	    expiry: string;
+	    assignable: boolean;
 	
 	    static createFrom(source: any = {}) {
 	        return new ProxyRow(source);
@@ -789,11 +793,13 @@ export namespace service {
 	        this.lon = source["lon"];
 	        this.rotating = source["rotating"];
 	        this.checkedAt = source["checkedAt"];
+	        this.failedAt = source["failedAt"];
 	        this.createdAt = source["createdAt"];
 	        this.note = source["note"];
 	        this.expiresOn = source["expiresOn"];
 	        this.usedBy = source["usedBy"];
 	        this.expiry = source["expiry"];
+	        this.assignable = source["assignable"];
 	    }
 	}
 	export class SiteInput {
@@ -1176,6 +1182,7 @@ export namespace store {
 	    lon?: number;
 	    rotating: boolean;
 	    checkedAt: string;
+	    failedAt: string;
 	    createdAt: string;
 	    note: string;
 	    expiresOn: string;
@@ -1201,6 +1208,7 @@ export namespace store {
 	        this.lon = source["lon"];
 	        this.rotating = source["rotating"];
 	        this.checkedAt = source["checkedAt"];
+	        this.failedAt = source["failedAt"];
 	        this.createdAt = source["createdAt"];
 	        this.note = source["note"];
 	        this.expiresOn = source["expiresOn"];

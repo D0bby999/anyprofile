@@ -296,3 +296,57 @@ func TestInstallMobileApps(t *testing.T) {
 		t.Fatalf("installed on a device it cannot reach: %d %v", n, err)
 	}
 }
+
+// The proxy of a running device that stops answering is marked failed after
+// two tries in a row, and cleared once it answers again.
+func TestWatchMobileProxies(t *testing.T) {
+	ctx := context.Background()
+	s, _ := newMobileService(t, "active")
+	if _, err := s.ImportProxies(ctx, "gw.example:10002:u:secret2", ""); err != nil {
+		t.Fatal(err)
+	}
+	px, _ := s.ListProxies()
+	d, err := s.CreateMobileDevice(ctx, MobileInput{Name: "phone", ProxyID: px[0].ID})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var down bool
+	pings := 0
+	s.PingProxy = func(_ context.Context, up netproxy.Upstream) error {
+		pings++
+		if up.Port != 10002 || up.Password != "secret2" {
+			t.Errorf("pinged %+v", up)
+		}
+		if down {
+			return errors.New("connection refused")
+		}
+		return nil
+	}
+	misses := map[string]int{}
+	failed := func() bool { p, _ := s.Store.GetProxy(px[0].ID); return p.FailedAt != "" }
+
+	s.watchMobileProxies(ctx, misses)
+	if pings != 0 {
+		t.Fatal("a stopped device's proxy was tried")
+	}
+	if _, err := s.StartMobileDevice(ctx, d.ID); err != nil {
+		t.Fatal(err)
+	}
+	down = true
+	s.watchMobileProxies(ctx, misses)
+	if failed() {
+		t.Fatal("one missed try marked the proxy failed")
+	}
+	s.watchMobileProxies(ctx, misses)
+	if !failed() {
+		t.Fatal("two missed tries did not mark the proxy failed")
+	}
+	down = false
+	s.watchMobileProxies(ctx, misses)
+	if failed() {
+		t.Fatal("an answering proxy stayed failed")
+	}
+	if pings != 3 {
+		t.Fatalf("pings = %d, want 3", pings)
+	}
+}

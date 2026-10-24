@@ -39,7 +39,7 @@ export function TrashPage({ onChanged }: { onChanged: () => void }) {
 
   return (
     <>
-      <PageHead title={t.trash.title} sub={t.trash.total(rows.length)} />
+      <PageHead title={t.trash.title} sub={t.trash.total(rows.length, devices.length)} />
       <div className="pagebody">
         {error && <div className="banner danger" role="alert"><Icon name="alert" /><span className="grow">{error}</span></div>}
         <section className="card fill">

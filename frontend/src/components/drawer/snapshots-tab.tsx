@@ -2,13 +2,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { Api, onDataChanged, store } from '../../api'
 import { t } from '../../i18n'
-import { errorText, formatBytes, relativeTime } from '../../lib/format'
+import { errorText, formatBytes, formatDateTime, relativeTime } from '../../lib/format'
 import { focusFirstItem, menuArrows } from '../../lib/menu-keys'
 import { useConfirm } from '../confirm'
 import { Icon } from '../icons'
 import { useToast } from '../toast'
 
-const when = (iso: string) => new Date(iso).toLocaleString([], { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+const when = (iso: string) => formatDateTime(iso, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
 
 function SnapshotMenu({ snap, disabled, onRestore, onDelete }: { snap: store.Snapshot; disabled: boolean; onRestore: () => void; onDelete: () => void }) {
   const [open, setOpen] = useState(false)

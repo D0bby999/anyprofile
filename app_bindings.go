@@ -508,8 +508,11 @@ func (a *App) CheckProxy(id string) (store.Proxy, error) {
 	return a.svc.CheckProxyByID(a.ctx, id)
 }
 
-func (a *App) CheckAllProxies() error {
-	return a.must(func() error { return a.svc.CheckAllProxies(a.ctx) })
+// CheckAllProxies returns how many proxies did not answer.
+func (a *App) CheckAllProxies() (int, error) {
+	var n int
+	err := a.must(func() (err error) { n, err = a.svc.CheckAllProxies(a.ctx); return err })
+	return n, err
 }
 
 func (a *App) UpdateProxy(id string, m service.ProxyMeta) error {

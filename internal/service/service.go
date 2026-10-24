@@ -53,6 +53,8 @@ type Service struct {
 	OnChange func(kind string)
 	// CheckProxy measures a proxy's exit; netproxy.Check outside tests.
 	CheckProxy func(ctx context.Context, up netproxy.Upstream) (netproxy.Exit, error)
+	// PingProxy opens one connection through up; nil means a real one.
+	PingProxy func(ctx context.Context, up netproxy.Upstream) error
 	// Pro reaches the AnyProfile Pro server; the zero value means pro.NewClient().
 	Pro pro.Client
 

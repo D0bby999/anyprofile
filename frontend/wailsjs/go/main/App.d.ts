@@ -21,7 +21,7 @@ export function AssignProxiesMany(arg1:Array<string>,arg2:string):Promise<Record
 
 export function BackupMobileDevice(arg1:string):Promise<void>;
 
-export function CheckAllProxies():Promise<void>;
+export function CheckAllProxies():Promise<number>;
 
 export function CheckProxy(arg1:string):Promise<store.Proxy>;
 

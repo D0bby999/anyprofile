@@ -52,7 +52,7 @@ describe('WelcomePage', () => {
 
   it('creates the profile, finishes setup and hands over the new id', async () => {
     state.installed = true
-    state.proxies = [{ id: 'px', label: 'gw:1', country: 'US', exitIp: '1.1.1.1', timezone: 'America/New_York', rotating: false, usedBy: [] }]
+    state.proxies = [{ id: 'px', label: 'gw:1', country: 'US', exitIp: '1.1.1.1', timezone: 'America/New_York', rotating: false, usedBy: [], assignable: true }]
     const onDone = vi.fn()
     page(onDone)
     const name = await screen.findByPlaceholderText(t.welcome.namePlaceholder)

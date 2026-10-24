@@ -186,6 +186,14 @@ host-only
 	if got[3].Err == "" || got[4].Err == "" {
 		t.Errorf("bad lines not rejected: %+v %+v", got[3], got[4])
 	}
+	if got[3].Code != "format" || got[4].Code != "host_port" {
+		t.Errorf("codes = %q %q", got[3].Code, got[4].Code)
+	}
+	for line, code := range map[string]string{"ftp://h:21": "scheme", "http://:80": "host_port", "h:port": "port", "proxy cua toi": "format"} {
+		if g := ParseList(line); len(g) != 1 || g[0].Code != code {
+			t.Errorf("%q: %+v, want code %s", line, g, code)
+		}
+	}
 	for _, p := range got {
 		if strings.Contains(p.Display, "pa") && strings.Contains(p.Display, "ss") {
 			t.Errorf("display leaks password: %q", p.Display)

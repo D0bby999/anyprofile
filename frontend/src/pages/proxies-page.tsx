@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { useCallback, useEffect, useState } from 'react'
 import { Api, onDataChanged, service } from '../api'
-import { language, t } from '../i18n'
-import { errorText, relativeTime } from '../lib/format'
+import { t } from '../i18n'
+import { errorText, formatDate, proxyLineError, relativeTime } from '../lib/format'
 import { EmptyState } from '../components/empty-state'
 import { Icon } from '../components/icons'
 import { PageHead } from '../components/page-head'
@@ -12,6 +12,7 @@ import { useToast } from '../components/toast'
 import { useConfirm } from '../components/confirm'
 
 function ProxyState({ p }: { p: service.ProxyRow }) {
+  if (p.failedAt) return <span className="chip danger"><span className="dot" />{t.proxies.failed}</span>
   if (!p.checkedAt) return <span className="chip">{t.proxies.unchecked}</span>
   if (p.rotating) return <span className="chip warn"><span className="dot" />{t.proxies.rotating}</span>
   return <span className="chip ok"><span className="dot" />{t.proxies.ok}</span>
@@ -49,7 +50,7 @@ export function ProxiesPage({ onChanged }: { onChanged: () => void }) {
   const importList = () => run('import', async () => {
     const res = await Api.ImportProxies(text, expiresOn)
     if (res.added > 0) toast.success(t.proxies.added(res.added))
-    setFailedLines((res.failed ?? []).map((f) => t.proxies.failedLine(f.line, f.err)))
+    setFailedLines((res.failed ?? []).map(proxyLineError))
     setText('') // pasted passwords should not linger on screen
     setExpiresOn('')
   })
@@ -58,7 +59,11 @@ export function ProxiesPage({ onChanged }: { onChanged: () => void }) {
     <>
       <PageHead title={t.proxies.title} sub={t.proxies.total(rows.length)}>
         <button className={`btn nodrag${busy === 'all' ? ' busy' : ''}`} aria-busy={busy === 'all'} disabled={!!busy || rows.length === 0}
-          onClick={() => run('all', () => Api.CheckAllProxies())}>
+          onClick={() => run('all', async () => {
+            const failed = await Api.CheckAllProxies()
+            if (failed > 0) toast.error(t.proxies.failedCount(failed))
+            else toast.success(t.proxies.allOk)
+          })}>
           <Icon name="refresh" />{t.proxies.checkAll}
         </button>
         <BuyProxiesButton className="btn buy nodrag" />
@@ -111,10 +116,10 @@ export function ProxiesPage({ onChanged }: { onChanged: () => void }) {
                             )}
                           </span>
                         </span>
-                      ) : <span className="faint">{t.proxies.unchecked}</span>}</td>
+                      ) : <span className="faint">{p.checkedAt ? '—' : t.proxies.unchecked}</span>}</td>
                       <td className="stack nowrap"><ProxyState p={p} />{p.checkedAt && <small className="faint">{t.proxies.checkedAgo(relativeTime(p.checkedAt))}</small>}</td>
                       <td className="stack nowrap">
-                        {p.expiresOn && <span className="muted">{new Date(p.expiresOn + 'T00:00:00').toLocaleDateString(language)}</span>}
+                        {p.expiresOn && <span className="muted">{formatDate(p.expiresOn + 'T00:00:00')}</span>}
                         {p.expiry === 'soon' && <span className="chip warn"><span className="dot" />{t.proxies.expiringSoon}</span>}
                         {p.expiry === 'expired' && <span className="chip danger"><span className="dot" />{t.proxies.expired}</span>}
                       </td>

@@ -524,6 +524,62 @@ func TestProxyCheckErrorHasCode(t *testing.T) {
 	}
 }
 
+// A failed check is recorded and keeps the proxy from being handed out;
+// the next good check clears it. The exit of the last good check stays.
+func TestProxyFailureIsRecorded(t *testing.T) {
+	s, _ := newService(t)
+	ctx := context.Background()
+	good := s.CheckProxy
+	down := func(context.Context, netproxy.Upstream) (netproxy.Exit, error) {
+		return netproxy.Exit{}, errors.New("connection refused")
+	}
+	// The dead one is added first, as in the first-run wizard.
+	s.CheckProxy = down
+	if _, err := s.ImportProxies(ctx, "gw.example:20001:u:pw", ""); err != nil {
+		t.Fatal(err)
+	}
+	s.CheckProxy = good
+	if _, err := s.ImportProxies(ctx, "gw.example:20002:u:pw\ngw.example:20003:u:pw", ""); err != nil {
+		t.Fatal(err)
+	}
+	rows, _ := s.ListProxies()
+	if rows[0].FailedAt == "" || rows[0].CheckedAt == "" || rows[0].Assignable {
+		t.Fatalf("dead proxy = %+v", rows[0])
+	}
+	if rows[1].FailedAt != "" || !rows[1].Assignable {
+		t.Fatalf("good proxy = %+v", rows[1])
+	}
+	if id, _ := s.nextFreeProxy(); id != rows[1].ID {
+		t.Fatalf("next free = %s, want the checked one %s", id, rows[1].ID)
+	}
+	if n, _ := s.freeProxyCount(); n != 2 {
+		t.Fatalf("free = %d, want 2", n)
+	}
+	if err := s.UpdateProxy(rows[1].ID, ProxyMeta{Label: rows[1].Label, ExpiresOn: "2001-01-01"}); err != nil {
+		t.Fatal(err)
+	}
+	if id, _ := s.nextFreeProxy(); id != rows[2].ID {
+		t.Fatalf("next free = %s, want the unexpired one %s", id, rows[2].ID)
+	}
+
+	// A proxy that worked and then died keeps its exit but is marked.
+	s.CheckProxy = down
+	if n, err := s.CheckAllProxies(ctx); err != nil || n != 3 {
+		t.Fatalf("check all = %d %v, want 3 failed", n, err)
+	}
+	px, _ := s.Store.GetProxy(rows[2].ID)
+	if px.FailedAt == "" || px.ExitIP != "1.1.1.1" || px.Timezone != "America/New_York" {
+		t.Fatalf("after failure = %+v", px)
+	}
+	s.CheckProxy = good
+	if n, err := s.CheckAllProxies(ctx); err != nil || n != 0 {
+		t.Fatalf("check all = %d %v, want 0 failed", n, err)
+	}
+	if px, _ := s.Store.GetProxy(rows[0].ID); px.FailedAt != "" || px.ExitIP == "" {
+		t.Fatalf("a good check must clear the failure: %+v", px)
+	}
+}
+
 func TestOnboarding(t *testing.T) {
 	s, _ := newService(t)
 	if s.Onboarded() {

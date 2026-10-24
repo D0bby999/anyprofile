@@ -49,6 +49,8 @@ export default function App() {
   const { sites } = useSites()
 
   useEffect(() => applyTheme(theme), [theme])
+  // An error is about the screen it came from; leaving that screen drops it.
+  useEffect(() => toast.clearErrors(), [page, onboarded, toast])
   useEffect(() => {
     Api.StartupError().then(setStartupError)
     Api.Onboarded().then(setOnboarded).catch(() => setOnboarded(true))
@@ -142,7 +144,7 @@ export default function App() {
     { id: 'new', label: t.palette.newProfile, icon: 'plus', run: newProfile },
     { id: 'several', label: t.palette.createSeveral, icon: 'plus', run: () => setCreating(5) },
     { id: 'proxies', label: t.palette.addProxies, icon: 'proxy', run: () => { setPage('proxies'); setTimeout(() => document.getElementById('proxy-paste')?.focus(), 0) } },
-    { id: 'check', label: t.palette.checkProxies, icon: 'refresh', run: () => { toast.info(t.palette.checking); Api.CheckAllProxies().catch((e) => toast.error(errorText(e))) } },
+    { id: 'check', label: t.palette.checkProxies, icon: 'refresh', run: () => { toast.info(t.palette.checking); Api.CheckAllProxies().then((n) => n > 0 ? toast.error(t.proxies.failedCount(n)) : toast.success(t.proxies.allOk)).catch((e) => toast.error(errorText(e))) } },
     { id: 'settings', label: t.palette.openSettings, icon: 'settings', run: () => setPage('settings') },
     { id: 'arrange', label: t.palette.arrange, icon: 'monitor', run: () => { Api.ArrangeWindows().then((n) => toast.success(t.profiles.arranged(n))).catch((e) => toast.error(errorText(e))) } },
     { id: 'theme', label: t.palette.switchTheme, icon: 'moon', run: cycleTheme },

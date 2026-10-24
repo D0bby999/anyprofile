@@ -120,3 +120,25 @@ func TestCookieKeyOnlyWhenEngineUsesIt(t *testing.T) {
 		st.Close()
 	}
 }
+
+func TestStoppedCarriesNoDevToolsPort(t *testing.T) {
+	dirs := paths.Dirs{Root: t.TempDir()}
+	if err := dirs.Ensure(); err != nil {
+		t.Fatal(err)
+	}
+	st, err := store.Open(dirs.DB(), dirs.Backups())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer st.Close()
+	var got []Info
+	l := New(st, secrets.NewMemory(), dirs, nil, func(in Info) { got = append(got, in) }, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	p := &proc{info: Info{ProfileID: "p", State: Running, PID: 4242, CDPPort: 9333}, done: make(chan struct{})}
+	l.procs["p"] = p
+	exited := make(chan error, 1)
+	exited <- nil
+	l.watch(p, 4242, exited)
+	if len(got) != 1 || got[0].State != Stopped || got[0].CDPPort != 0 || got[0].PID != 0 {
+		t.Fatalf("events = %+v", got)
+	}
+}

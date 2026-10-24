@@ -27,19 +27,20 @@ type Proxy struct {
 	Lon       *float64 `json:"lon"`
 	Rotating  bool     `json:"rotating"`
 	CheckedAt string   `json:"checkedAt"`
+	FailedAt  string   `json:"failedAt"` // when the last check failed; "" if it passed
 	CreatedAt string   `json:"createdAt"`
 	Note      string   `json:"note"`
 	ExpiresOn string   `json:"expiresOn"` // YYYY-MM-DD, "" = no date
 }
 
 const proxyCols = `id, label, scheme, host, port, username, COALESCE(exit_ip, ''), COALESCE(country, ''),
-	COALESCE(timezone, ''), lat, lon, rotating, COALESCE(checked_at, ''), created_at, note, expires_on, exit_ip6, timezone6`
+	COALESCE(timezone, ''), lat, lon, rotating, COALESCE(checked_at, ''), created_at, note, expires_on, exit_ip6, timezone6, failed_at`
 
 func scanProxy(row interface{ Scan(...any) error }) (Proxy, error) {
 	var p Proxy
 	err := row.Scan(&p.ID, &p.Label, &p.Scheme, &p.Host, &p.Port, &p.Username, &p.ExitIP,
 		&p.Country, &p.Timezone, &p.Lat, &p.Lon, &p.Rotating, &p.CheckedAt, &p.CreatedAt, &p.Note, &p.ExpiresOn,
-		&p.ExitIP6, &p.Timezone6)
+		&p.ExitIP6, &p.Timezone6, &p.FailedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return p, ErrNotFound
 	}
@@ -86,8 +87,15 @@ func (s *Store) UpdateProxyMeta(id, label, note, expiresOn string) error {
 // SaveProxyCheck records where the proxy exits, as measured through it.
 func (s *Store) SaveProxyCheck(p Proxy) error {
 	res, err := s.db.Exec(`UPDATE proxies SET exit_ip=?, country=?, timezone=?, lat=?, lon=?, rotating=?,
-		exit_ip6=?, timezone6=?, checked_at=? WHERE id=?`,
+		exit_ip6=?, timezone6=?, checked_at=?, failed_at='' WHERE id=?`,
 		p.ExitIP, p.Country, p.Timezone, p.Lat, p.Lon, p.Rotating, p.ExitIP6, p.Timezone6, now(), p.ID)
+	return affected(res, err)
+}
+
+// SaveProxyFailure records a failed check. The last good exit stays.
+func (s *Store) SaveProxyFailure(id string) error {
+	t := now()
+	res, err := s.db.Exec(`UPDATE proxies SET checked_at=?, failed_at=? WHERE id=?`, t, t, id)
 	return affected(res, err)
 }
 

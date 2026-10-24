@@ -31,6 +31,14 @@ describe('toasts', () => {
     expect(screen.queryByText('Engine missing')).toBeNull()
   })
 
+  it('drops only the errors when the screen changes', () => {
+    mount()
+    act(() => { api.error('Proxy not answering'); api.info('Checking') })
+    act(() => api.clearErrors())
+    expect(screen.queryByText('Proxy not answering')).toBeNull()
+    expect(screen.getByText('Checking')).toBeTruthy()
+  })
+
   it('keeps at most three', () => {
     mount()
     act(() => { api.error('one'); api.error('two'); api.error('three'); api.error('four') })

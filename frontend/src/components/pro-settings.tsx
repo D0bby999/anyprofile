@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import { Api, onDataChanged, onProEvent, service } from '../api'
 import { t } from '../i18n'
-import { errorText } from '../lib/format'
+import { errorText, formatDate, formatDateTime } from '../lib/format'
 import { useConfirm } from './confirm'
 import { Icon } from './icons'
 import { useToast } from './toast'
@@ -80,7 +80,7 @@ export function ProSettings() {
     )
   }
 
-  const until = st.paidThrough ? new Date(st.paidThrough).toLocaleDateString() : ''
+  const until = st.paidThrough ? formatDate(st.paidThrough) : ''
   const chip = st.state === 'active' ? ['ok', t.pro.stateActive(until)]
     : st.state === 'past_due' ? ['warn', t.pro.statePastDue]
     : st.state === 'expired' ? ['warn', t.pro.stateExpired(until)]
@@ -94,7 +94,7 @@ export function ProSettings() {
       </span>
       <span>{st.version ? t.pro.pack(st.version) : t.pro.noPack}</span>
       {st.notes && <span className="updnotes">{st.notes}</span>}
-      {st.checkedAt && <span className="hint">{t.pro.checkedAt(new Date(st.checkedAt).toLocaleString())}</span>}
+      {st.checkedAt && <span className="hint">{t.pro.checkedAt(formatDateTime(st.checkedAt))}</span>}
       <span className="row" style={{ flexWrap: 'wrap' }}>
         <button type="button" className="btn sm" disabled={busy !== ''} onClick={check}>{busy === 'check' ? t.pro.checking : t.pro.check}</button>
         <button type="button" className="btn sm ghost" disabled={!st.version} onClick={() => run('scripts', () => Api.ProOpenScripts())}>{t.pro.openScripts}</button>

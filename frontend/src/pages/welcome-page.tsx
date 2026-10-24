@@ -2,7 +2,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { Api, main, onEngineProgress, service, type EngineProgress } from '../api'
 import { t, type Language } from '../i18n'
-import { errorText } from '../lib/format'
+import { errorText, proxyLineError } from '../lib/format'
 import { siteById, type Site } from '../lib/sites'
 import { Icon, LogoMark } from '../components/icons'
 import { InstallProgress } from '../components/install-progress'
@@ -52,13 +52,13 @@ export function WelcomePage({ sites, fileVaultOn, lang, onLanguage, onDone }: Pr
   const [site, setSite] = useState('other')
 
   const loadEngine = () => Api.Engines().then((list) => setEngine((list ?? []).find((e) => e.default) ?? null)).catch(() => {})
-  const loadProxies = () => Api.ListProxies().then((p) => { setProxies(p ?? []); if ((p ?? []).some((x) => x.exitIp)) setProxyConfirmed(true) })
+  const loadProxies = () => Api.ListProxies().then((p) => { setProxies(p ?? []); if ((p ?? []).some((x) => x.assignable)) setProxyConfirmed(true) })
     .catch(() => setProxies([]))
   useEffect(() => { loadEngine(); loadProxies() }, [])
   useEffect(() => onEngineProgress(setProgress), [])
 
   const engineDone = !!engine?.installed
-  const usable = (proxies ?? []).filter((p) => p.exitIp).length
+  const usable = (proxies ?? []).filter((p) => p.assignable).length
   const proxyDone = noProxy || (proxyConfirmed && usable > 0)
   const state = (n: number): StepState => {
     const done = [engineDone, proxyDone, false][n - 1]
@@ -88,7 +88,7 @@ export function WelcomePage({ sites, fileVaultOn, lang, onLanguage, onDone }: Pr
     try {
       const res = await Api.ImportProxies(text, '')
       setFailed([
-        ...(res.failed ?? []).map((f) => t.proxies.failedLine(f.line, f.err)),
+        ...(res.failed ?? []).map(proxyLineError),
         ...(res.unreachable ?? []).map((label) => `${label}: ${t.errors.proxy_unreachable}`),
       ])
       setText('') // pasted passwords should not linger on screen

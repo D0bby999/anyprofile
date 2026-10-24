@@ -35,8 +35,8 @@ export function MobileDialog({ row, onClose, onSaved }: Props) {
   useEffect(() => {
     Api.ListProxies().then((p) => {
       setProxies(p ?? [])
-      // Without a free sticky proxy, "auto" cannot pick one: fall back to choosing.
-      if (!row && !(p ?? []).some((x) => !x.rotating && x.usedBy.length === 0)) setProxyId('')
+      // Without an assignable proxy, "auto" cannot pick one: fall back to choosing.
+      if (!row && !(p ?? []).some((x) => x.assignable)) setProxyId('')
     }).catch(() => {})
   }, [row])
 

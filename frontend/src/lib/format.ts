@@ -1,5 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-import { t } from '../i18n'
+import { language, t } from '../i18n'
+
+/** A date in the app's language (23/11/2026 in Vietnamese), not the system's. */
+export const formatDate = (iso: string) => new Date(iso).toLocaleDateString(language)
+
+/** A date and time in the app's language. */
+export const formatDateTime = (iso: string, opts?: Intl.DateTimeFormatOptions) => new Date(iso).toLocaleString(language, opts)
 
 export function relativeTime(iso: string, now: Date = new Date()): string {
   if (!iso) return t.time.never
@@ -63,3 +69,7 @@ export function nameSeries(base: string, n: number): string[] {
   if (n === 1) return [base]
   return Array.from({ length: n }, (_, i) => `${base} ${i + 1}`)
 }
+
+/** A pasted proxy line that was not added, in the UI language when the problem is known. */
+export const proxyLineError = (f: { line: number; err: string; code?: string }) =>
+  t.proxies.failedLine(f.line, (f.code && t.proxies.parseErr[f.code]) || f.err)

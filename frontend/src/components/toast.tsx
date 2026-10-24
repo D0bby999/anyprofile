@@ -11,12 +11,14 @@ export type ToastApi = {
   success: (message: string, action?: ToastAction) => void
   info: (message: string, action?: ToastAction) => void
   error: (message: string, action?: ToastAction) => void
+  /** Drops the errors still shown: they were about the screen just left. */
+  clearErrors: () => void
 }
 
 const MAX = 3
 const LIFETIME = 4000
 const icons: Record<ToastKind, IconName> = { success: 'check', info: 'info', error: 'alert' }
-const noop: ToastApi = { success: () => {}, info: () => {}, error: () => {} }
+const noop: ToastApi = { success: () => {}, info: () => {}, error: () => {}, clearErrors: () => {} }
 const ToastContext = createContext<ToastApi>(noop)
 
 /** Transient feedback in the bottom-right corner. Lasting conditions stay as banners. */
@@ -37,6 +39,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     success: (m, a) => push('success', m, a),
     info: (m, a) => push('info', m, a),
     error: (m, a) => push('error', m, a),
+    clearErrors: () => setToasts((cur) => cur.filter((x) => x.kind !== 'error')),
   }), [push])
 
   return (

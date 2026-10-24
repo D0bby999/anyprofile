@@ -11,7 +11,7 @@ const sites = [
   site.Site.createFrom({ id: 'other', name: 'Other', group: 'other', domains: [], startUrl: '', icon: '', color: '#6B7280', custom: false }),
 ]
 
-const freeProxy = (id: string) => ({ id, label: `gw.example:${id}`, country: 'US', exitIp: '1.1.1.1', rotating: false, usedBy: [] })
+const freeProxy = (id: string) => ({ id, label: `gw.example:${id}`, country: 'US', exitIp: '1.1.1.1', rotating: false, usedBy: [], assignable: true })
 let proxyList: unknown[] = [freeProxy('10001')]
 const createProfile = vi.fn().mockResolvedValue({})
 const createProfiles = vi.fn().mockResolvedValue([])
@@ -156,7 +156,7 @@ describe('NewProfileDialog', () => {
   })
 
   it('starts on No proxy when Auto is the default but no proxy is free, and keeps Auto remembered', async () => {
-    proxyList = [{ ...freeProxy('10001'), usedBy: ['One'] }]
+    proxyList = [{ ...freeProxy('10001'), usedBy: ['One'], assignable: false }]
     localStorage.setItem('anyprofile.lastProxy', 'auto')
     const onCreated = vi.fn()
     dialog({ onCreated })
@@ -215,7 +215,7 @@ describe('NewProfileDialog', () => {
     expect(createProfile.mock.calls[0][0]).toMatchObject({ proxyId: '10002' })
     first.unmount()
 
-    proxyList = [freeProxy('10001'), { ...freeProxy('10002'), usedBy: ['One'] }]
+    proxyList = [freeProxy('10001'), { ...freeProxy('10002'), usedBy: ['One'], assignable: false }]
     dialog()
     // Sharing a proxy is a choice the user may make: no warning, the picker
     // only names the other profile.
