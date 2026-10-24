@@ -4,6 +4,9 @@ plans/
 /pro
 .DS_Store
 build/bin
+# Binaries built in the repo root (go build, GOOS=windows go vet …)
+/anyprofile
+/*.exe
 frontend/node_modules
 frontend/dist/*
 !frontend/dist/gitkeep
