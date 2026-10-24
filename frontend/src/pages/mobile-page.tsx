@@ -55,6 +55,8 @@ export function MobilePage({ mobile, onOpenPro, onOpenSettings }: Props) {
   useEffect(() => { Api.ListProxies().then((p) => setProxies(p ?? [])).catch(() => {}) }, [rows])
 
   const canUse = !!avail?.pro && !!avail?.ready
+  // Nothing installed and nothing in the signed list: the runtime is not out yet.
+  const unpublished = !!avail?.install && !avail.install.runtime.installed && !avail.install.runtime.latest
   const proxyLabel = (r: service.MobileRow) => {
     if (!r.proxyId) return <span className="faint">{t.common.direct}</span>
     const p = proxies.find((x) => x.id === r.proxyId)
@@ -99,7 +101,7 @@ export function MobilePage({ mobile, onOpenPro, onOpenSettings }: Props) {
 
   return (
     <>
-      <PageHead title={t.mobile.title} sub={t.mobile.total(rows.length)}>
+      <PageHead title={t.mobile.title} badge={t.mobile.beta} sub={t.mobile.total(rows.length)}>
         <button className="btn primary nodrag" disabled={!canUse} onClick={() => setEditing('new')}>
           <Icon name="plus" />{t.mobile.newDevice}
         </button>
@@ -116,8 +118,8 @@ export function MobilePage({ mobile, onOpenPro, onOpenSettings }: Props) {
         {avail?.pro && !avail.ready && installReasons.includes(avail.reason) && (
           <section className="card pad">
             <h2>{t.mobile.installTitle}</h2>
-            <p className="desc">{t.mobile.installText}</p>
-            {installing ? <InstallProgress progress={installing} /> : (
+            <p className="desc">{unpublished ? t.mobile.comingSoon : t.mobile.installText}</p>
+            {unpublished ? null : installing ? <InstallProgress progress={installing} /> : (
               <div className="row"><button className="btn primary" onClick={install}><Icon name="download" />{t.mobile.install}</button></div>
             )}
           </section>

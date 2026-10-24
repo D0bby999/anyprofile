@@ -4,10 +4,11 @@ import type { ReactNode } from 'react'
 /** Page title row. It doubles as the window's drag handle. A narrow page
  * centres its title over a reading-width column (see .narrow); a wide one over
  * that column plus a side list (see .wide). */
-export function PageHead({ title, sub, narrow, wide, children }: { title: string; sub?: string; narrow?: boolean; wide?: boolean; children?: ReactNode }) {
+export function PageHead({ title, badge, sub, narrow, wide, children }: { title: string; badge?: string; sub?: string; narrow?: boolean; wide?: boolean; children?: ReactNode }) {
   return (
     <header className={`pagehead drag${narrow ? ' narrow' : ''}${wide ? ' wide' : ''}`}>
       <h1>{title}</h1>
+      {badge && <span className="chip warn">{badge}</span>}
       {sub && <span className="sub">{sub}</span>}
       <span className="spacer" />
       {children}

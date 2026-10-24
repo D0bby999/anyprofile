@@ -271,7 +271,7 @@ export const en = {
   },
   tools: {
     title: 'Creator tools', sub: 'Apps that work well with AnyProfile. They open in your browser.',
-    proTitle: 'AnyProfile Pro:', proBody: 'separate Android devices with their own proxies, plus tested recipes and scripts to post videos and check accounts across profiles, kept up to date.', proOpen: 'See Pro',
+    proTitle: 'AnyProfile Pro:', proBody: 'separate Android devices with their own proxies (beta), plus tested recipes and scripts to post videos and check accounts across profiles, kept up to date.', proOpen: 'See Pro',
   },
   partners: {
     disclosure: 'Some of these are referral links: AnyProfile may earn a commission, and you pay the same price.',
@@ -316,7 +316,8 @@ export const en = {
     profilesTitle: 'Profiles', mobileTitle: 'Mobile devices',
   },
   mobile: {
-    title: 'Mobile', total: (n: number) => (n === 1 ? '1 device' : `${n} devices`), newDevice: 'New device',
+    title: 'Mobile', total: (n: number) => (n === 1 ? '1 device' : `${n} devices`), newDevice: 'New device', beta: 'Beta',
+    comingSoon: 'Coming soon. The Android runtime for macOS is being tested and is not out yet. Once it is, a Download button appears here; there is nothing to reinstall.',
     proTitle: 'Android devices come with AnyProfile Pro',
     proText: 'Each device is its own Android machine with its own apps, data and proxy, so mobile apps never see your real IP. On a Mac it runs as a virtual machine; on Windows it runs in LDPlayer.',
     proHonest: 'Apps can still tell that a virtual machine or an emulator is not a real phone.',
@@ -440,7 +441,7 @@ export const en = {
   pro: {
     title: 'AnyProfile Pro',
     pitch: 'Ready-made recipes and scripts, updated whenever a platform changes its pages:',
-    items: ['Separate Android devices (Mobile): each with its own apps, data and proxy, never leaking your real IP', 'Check which profiles are still signed in on YouTube, Gmail, TikTok, Facebook and Shopee', 'Upload to YouTube Studio and post on TikTok, Private by default', 'With an AI agent, or one command without AI'],
+    items: ['Separate Android devices (Mobile, beta): each with its own apps, data and proxy, never leaking your real IP', 'Check which profiles are still signed in on YouTube, Gmail, TikTok, Facebook and Shopee', 'Upload to YouTube Studio and post on TikTok, Private by default', 'With an AI agent, or one command without AI'],
     buyYear: 'Buy yearly', buyMonth: 'Buy monthly',
     buyHint: 'Opens the payment page with the prices in your browser (card, Apple Pay, Google Pay); yearly is about a third cheaper. When it is paid, the app activates by itself. Cancel any time; refund within 7 days.',
     waiting: 'Waiting for the payment in your browser…', stopWaiting: 'Stop waiting',
@@ -569,7 +570,7 @@ export const en = {
     mobile_missing: 'This device is no longer in LDPlayer: it was deleted there.',
     android_runtime_missing: 'The Android VM runtime is not installed yet.',
     android_image_missing: 'The Android image is not installed yet.',
-    android_runtime_unavailable: 'The Android VM runtime is not published for this version of AnyProfile yet. Update AnyProfile and try again.',
+    android_runtime_unavailable: 'The Android VM runtime is not out yet. Once it is, AnyProfile picks it up without a reinstall.',
     disk_full_image: 'Free at least 4 GB of disk space to download Android.',
     proxy_unreachable: 'The proxy did not answer. Check the address, port and password, or ask the provider.',
     cookie_key_lost: `This profile\u2019s cookie key is missing from ${vaultShort}. Opening it with a new key would sign it out of every site.`,

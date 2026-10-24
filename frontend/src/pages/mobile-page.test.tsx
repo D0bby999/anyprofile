@@ -96,6 +96,19 @@ describe('MobilePage', () => {
     await waitFor(() => expect(api.RestoreMobileDevice).toHaveBeenCalledWith('d1'))
   })
 
+  it('says Beta, and Coming soon instead of a Download that can only fail while the runtime is not out', () => {
+    const missing = { ready: false, reason: 'android_runtime_missing' }
+    const comp = (latest: string) => ({ runtime: { engine: 'android-vm', installed: '', latest }, image: { engine: 'android-vm-image', installed: '', latest: '' } })
+    page([], avail({ ...missing, install: comp('') }))
+    expect(screen.getByText(t.mobile.beta)).toBeTruthy()
+    expect(screen.getByText(t.mobile.comingSoon)).toBeTruthy()
+    expect(screen.queryByRole('button', { name: t.mobile.install })).toBeNull()
+    cleanup()
+    page([], avail({ ...missing, install: comp('1.0.0') }))
+    expect(screen.getByText(t.mobile.installText)).toBeTruthy()
+    expect(screen.getByRole('button', { name: t.mobile.install })).toBeTruthy()
+  })
+
   it('links to the guide for installing apps', () => {
     page([device()], avail())
     fireEvent.click(screen.getByRole('link', { name: t.mobile.apkGuide }))

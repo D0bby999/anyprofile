@@ -272,7 +272,7 @@ export const vi: Messages = {
   },
   tools: {
     title: 'Công cụ cho creator', sub: 'Ứng dụng dùng tốt cùng AnyProfile. Mở trong trình duyệt của bạn.',
-    proTitle: 'AnyProfile Pro:', proBody: 'máy Android riêng với proxy riêng, cùng recipe và script đã kiểm để đăng video, kiểm tài khoản trên nhiều profile, luôn được cập nhật.', proOpen: 'Xem Pro',
+    proTitle: 'AnyProfile Pro:', proBody: 'máy Android riêng với proxy riêng (beta), cùng recipe và script đã kiểm để đăng video, kiểm tài khoản trên nhiều profile, luôn được cập nhật.', proOpen: 'Xem Pro',
   },
   partners: {
     disclosure: 'Một số link là link giới thiệu: AnyProfile có thể nhận hoa hồng, giá bạn trả không đổi.',
@@ -317,7 +317,8 @@ export const vi: Messages = {
     profilesTitle: 'Profile', mobileTitle: 'Máy mobile',
   },
   mobile: {
-    title: 'Mobile', total: (n: number) => `${n} máy`, newDevice: 'Máy mới',
+    title: 'Mobile', total: (n: number) => `${n} máy`, newDevice: 'Máy mới', beta: 'Beta',
+    comingSoon: 'Sắp có. Bộ chạy Android cho macOS đang được thử và chưa phát hành. Khi phát hành, nút Tải về sẽ hiện ở đây; không cần cài lại AnyProfile.',
     proTitle: 'Máy Android có trong AnyProfile Pro',
     proText: 'Mỗi máy là một máy Android riêng, có app, dữ liệu và proxy riêng, nên app trên điện thoại không thấy IP thật của bạn. Trên Mac, máy chạy dưới dạng máy ảo; trên Windows, máy chạy trong LDPlayer.',
     proHonest: 'Ứng dụng vẫn nhận ra được máy ảo hay giả lập không phải điện thoại thật.',
@@ -441,7 +442,7 @@ export const vi: Messages = {
   pro: {
     title: 'AnyProfile Pro',
     pitch: 'Recipe và script làm sẵn, được cập nhật mỗi khi nền tảng đổi giao diện:',
-    items: ['Máy Android riêng (Mobile): mỗi máy có app, dữ liệu và proxy riêng, không rò IP thật', 'Kiểm profile nào còn đăng nhập YouTube, Gmail, TikTok, Facebook, Shopee', 'Đăng video lên YouTube Studio và TikTok, mặc định ở chế độ riêng tư', 'Dùng với AI agent, hoặc chạy một lệnh không cần AI'],
+    items: ['Máy Android riêng (Mobile, beta): mỗi máy có app, dữ liệu và proxy riêng, không rò IP thật', 'Kiểm profile nào còn đăng nhập YouTube, Gmail, TikTok, Facebook, Shopee', 'Đăng video lên YouTube Studio và TikTok, mặc định ở chế độ riêng tư', 'Dùng với AI agent, hoặc chạy một lệnh không cần AI'],
     buyYear: 'Mua theo năm', buyMonth: 'Mua theo tháng',
     buyHint: 'Mở trang thanh toán kèm giá trong trình duyệt (thẻ, Apple Pay, Google Pay); theo năm rẻ hơn khoảng một phần ba. Trả xong, app tự kích hoạt. Huỷ bất kỳ lúc nào; hoàn tiền trong 7 ngày.',
     waiting: 'Đang chờ bạn thanh toán trong trình duyệt…', stopWaiting: 'Thôi chờ',
@@ -570,7 +571,7 @@ export const vi: Messages = {
     mobile_missing: 'Máy này không còn trong LDPlayer: nó đã bị xoá ở đó.',
     android_runtime_missing: 'Chưa cài bộ chạy máy ảo Android.',
     android_image_missing: 'Chưa cài bản Android.',
-    android_runtime_unavailable: 'Bộ chạy máy ảo Android chưa được phát hành cho phiên bản AnyProfile này. Hãy cập nhật AnyProfile rồi thử lại.',
+    android_runtime_unavailable: 'Bộ chạy máy ảo Android chưa được phát hành. Khi phát hành, AnyProfile tự nhận mà không cần cài lại.',
     disk_full_image: 'Hãy giải phóng ít nhất 4 GB ổ đĩa để tải Android.',
     proxy_unreachable: 'Proxy không phản hồi. Kiểm tra địa chỉ, cổng và mật khẩu, hoặc hỏi nhà cung cấp.',
     cookie_key_lost: `Khoá cookie của profile này không còn trong ${vaultShort}. Mở bằng khoá mới sẽ đăng xuất mọi trang.`,

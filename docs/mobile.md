@@ -3,6 +3,9 @@
 Mỗi máy mobile là một máy Android riêng, có proxy riêng: app trong máy chỉ ra internet qua proxy đó, và mất proxy
 thì mất mạng chứ không lộ IP thật. Agent AI điều khiển được máy qua MCP (`docs/mcp.md`, mục "Máy mobile").
 
+**Beta.** Bộ chạy Android cho macOS chưa phát hành: trang Mobile ghi "Sắp có" cho tới khi nó có trong danh sách engine
+đã ký (không cần cập nhật app). Bản Windows (LDPlayer) chưa được kiểm trên máy thật.
+
 Máy mobile thuộc **AnyProfile Pro**. Không có key Pro thì trang Mobile vẫn hiện, nhưng không tạo hay mở được máy.
 Pro hết hạn thì máy và dữ liệu vẫn còn: vẫn xem, sửa, sao lưu và xoá được, chỉ không tạo hay mở được.
 
