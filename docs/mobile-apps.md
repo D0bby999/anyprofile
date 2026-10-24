@@ -87,7 +87,7 @@ lúc rồi thử lại.
 
 ## App phổ biến: chạy được không
 
-Kiểm trên máy mobile macOS ngày 23/10/2026, không có proxy:
+Kiểm trên máy mobile macOS ngày 23/10/2026 (không proxy) và 24/10/2026 (proxy datacenter Mỹ):
 
 | App | Kết quả |
 |---|---|
@@ -95,6 +95,8 @@ Kiểm trên máy mobile macOS ngày 23/10/2026, không có proxy:
 | **YouTube** (app chính thức) | **Không chạy.** App mở rồi tự đóng ngay, vì cần dịch vụ Google Play mà máy không có |
 | **YouTube trên trình duyệt** (`m.youtube.com`) | Chạy, phát được video |
 | **DuckDuckGo** (qua F-Droid) | Cài và mở được |
+| **TikTok trên trình duyệt** (`tiktok.com`) | Không dùng được: trang tải xong rồi tự chuyển sang mở app TikTok, chưa cài app thì trình duyệt báo "Webpage not available". Dùng app TikTok |
+| **Google tìm kiếm** trong Trình duyệt | Có proxy thì chạy bình thường, không hỏi captcha. Không proxy (IP nhà) thì bị hỏi "không phải robot" |
 
 App khác chưa kiểm. Quy tắc chung: app nào **bắt buộc** dịch vụ Google Play (YouTube, Gmail, Google Maps, một số app
 ngân hàng và game) sẽ không chạy, hoặc chạy nhưng thiếu tính năng như đăng nhập bằng Google, thông báo đẩy.

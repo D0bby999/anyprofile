@@ -112,6 +112,8 @@ Kết quả chạy thật trên máy mobile macOS. Chạy lại khi đổi image
 | TikTok `com.zhiliaoapp.musically` | Aurora Store | Cài, mở tới màn hình điều khoản. Đăng nhập chưa kiểm | 2026-10-23, 23.2.20261019 |
 | YouTube `com.google.android.youtube` | Aurora Store | Mở rồi tự đóng: "requires the Google Play Store, but it is missing" | 2026-10-23, 23.2.20261019 |
 | YouTube web `m.youtube.com` | Trình duyệt có sẵn | Chạy, phát video | 2026-10-23, 23.2.20261019 |
+| TikTok web `tiktok.com` | Trình duyệt có sẵn | Tải được qua proxy, rồi chuyển sang `snssdk1233://` (mở app); không có app thì lỗi | 2026-10-24, 23.2.20261019 |
+| Google tìm kiếm | Trình duyệt có sẵn | Proxy datacenter Mỹ: không captcha. IP nhà: có captcha | 2026-10-24, 23.2.20261019 |
 | F-Droid, Aurora Store | Nút Cài app (APK) | Cài, mở, tải được kho app | 2026-10-23, 23.2.20261019 |
 | DuckDuckGo | F-Droid | Cài, mở | 2026-10-23, 23.2.20261019 |
 
@@ -127,6 +129,7 @@ Kết quả đổi thì sửa luôn bảng "App phổ biến" trong `docs/mobile
 | RAM mặc định | 3 GB (2–6 GB) | `internal/service/mobile.go:25` | Chạy được 4 máy trên Mac 32 GB. Chưa đo app nặng như TikTok khi dùng lâu |
 | Chỗ trống để tải image | 4 GB | `internal/service/mobile.go:117` | Zip 1,1 GB cộng bản giải nén 2,3 GB |
 | Cổng server adb riêng | 5137 | `internal/mobile/adb/adb.go:24` | Không đụng adb của người dùng (5037) |
+| Thử proxy của máy đang chạy | 2 phút, 2 lần lỗi liền mới báo | `internal/service/mobile_watch.go:14` | Mỗi lần chỉ mở một kết nối TCP tới `1.1.1.1:443` qua proxy, không tốn dung lượng đáng kể; một lần chậm không báo nhầm |
 
 ## Những gì cố ý không làm
 

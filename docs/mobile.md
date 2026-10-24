@@ -68,6 +68,9 @@ Trang kiểm tra của Google (`google.com/sorry`) phụ thuộc vào **IP**. M�
 Google đang nghi IP đó thì trình duyệt thường trên máy tính cũng bị hỏi y như vậy. Gắn proxy riêng cho máy (tốt nhất
 là proxy dân cư hoặc 4G) và đăng nhập tài khoản Google trong máy thì ít bị hỏi hơn. AnyProfile không vượt captcha.
 
+Đã kiểm ngày 24/10/2026: cùng một máy, không proxy thì Google hỏi captcha; gắn một proxy datacenter Mỹ thì Google tìm
+kiếm chạy bình thường và nhận vị trí theo proxy.
+
 ## Proxy, múi giờ, ngôn ngữ
 
 - Chọn proxy khi tạo máy hoặc sửa sau (máy phải đóng). Không chọn proxy thì máy dùng IP của máy tính.
@@ -129,6 +132,7 @@ thuộc về người dùng.
 | Không cài được app | Xem mục "Khi có lỗi" của [Cài app trên máy mobile](mobile-apps.md#khi-có-lỗi) |
 | Google hay trang web hỏi "không phải robot" liên tục | Do IP: gắn proxy riêng cho máy (xem mục "Google hỏi…" ở trên) |
 | Máy mở nhưng không vào được mạng | Kiểm tra proxy ở trang Proxy (Check). Đây là cách máy báo proxy hỏng, không phải lỗi máy |
+| Cột Proxy ghi "Proxy không phản hồi: máy không có mạng" | Khi máy đang chạy, cứ 2 phút app thử nối qua proxy một lần; hai lần liền không được thì báo như vậy. Máy không bao giờ chuyển sang IP thật. Kiểm hoặc thay proxy ở trang Proxy; proxy chạy lại thì dòng báo tự mất |
 | "Không đủ chỗ trống" khi tạo hay tải | Dọn đĩa: tải image cần 4 GB, máy mới 3 GB |
 | Windows: "Máy tính này chưa cài LDPlayer 9" | Cài LDPlayer 9 từ ldplayer.net, rồi mở lại AnyProfile |
 | Windows: máy không mở, LDPlayer báo VT | Bật ảo hoá trong BIOS; tắt Hyper-V nếu LDPlayer yêu cầu |
