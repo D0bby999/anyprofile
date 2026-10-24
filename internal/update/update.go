@@ -33,7 +33,7 @@ import (
 
 // Current is this build's version. Release builds set it from the tag:
 // -ldflags "-X github.com/D0bby999/anyprofile/internal/update.Current=0.2.0".
-var Current = "0.1.1"
+var Current = "0.2.0"
 
 // ManifestURL is where the newest release is described. EnvManifestURL
 // overrides it, for tests and acceptance runs.

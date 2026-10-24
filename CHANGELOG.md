@@ -3,8 +3,24 @@
 The notes of each release tag are shown in the app's update prompt; this file
 keeps them together.
 
-## Unreleased
+## 0.2.0 (2026-10-24)
 
+- AnyProfile Pro: buy it by the month or the year in Settings (card, Apple
+  Pay, Google Pay); the key activates by itself. Pro brings tested recipes and
+  scripts (who is still signed in, posting to YouTube Studio and TikTok) and
+  keeps them up to date, for AI agents or one command.
+- Proxy status tells the truth: a proxy whose check fails shows "Not
+  answering" instead of "Working", Check all says how many did not answer, and
+  only proxies that answered are handed out as the next free one, so a dead
+  proxy no longer blocks first-run setup.
+- Mobile devices (beta): the Mac's Android runtime is not out yet, so the
+  Mobile page says "Coming soon"; it arrives in the signed engine list, with
+  no app update. While a device runs, its proxy is tried every two minutes and
+  the Mobile page says when the device has no network.
+- Smaller fixes: dates follow the app's language, proxy paste errors are
+  translated, an error leaves with the screen it was about, a closed profile
+  no longer warns that its DevTools port is open, trashing a mobile device
+  offers Undo, and downloads say when they are checking and unpacking.
 - Mobile devices, part of AnyProfile Pro: separate Android devices, each with
   its own apps, data and proxy. On a Mac they run as LineageOS (Android 16)
   virtual machines that the Mobile page downloads; on Windows, as LDPlayer 9
