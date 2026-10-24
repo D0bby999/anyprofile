@@ -2,6 +2,9 @@
 
 Danh sách mọi thành phần của máy mobile, nguồn và cách cập nhật: `docs/mobile-maintenance.md`.
 
+**Chưa phát hành được:** QEMU từ Homebrew hoặc đòi macOS 26, hoặc (bản cho Sonoma) không có HVF. Xem mục "Chặn phát
+hành" trong `docs/mobile-maintenance.md`; `scripts/build-android-vm-runtime.sh` cần dựng QEMU từ mã nguồn.
+
 Máy mobile trên macOS cần hai thứ tải về, cả hai đi qua danh sách engine có ký như Apostate và Fury
 (`internal/engine`, `docs/releasing.md`):
 

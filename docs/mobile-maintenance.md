@@ -12,12 +12,26 @@ Tài liệu liên quan:
 - `docs/manual-testing.md`, "Phần C: máy mobile": checklist test tay.
 - `docs/mcp.md`, mục "Máy mobile": tool cho agent.
 
+## Chặn phát hành: QEMU từ Homebrew không dùng được cho người dùng
+
+Phát hiện ngày 2026-10-24, khi đẩy tag `android-vm-v1.0.0` lần đầu (bản phát hành đã xoá):
+
+- Homebrew giờ chỉ dựng sẵn QEMU (11.1.2) cho macOS 26 (`arm64_tahoe`). Gói dựng trên máy macOS 26 có HVF nhưng các
+  thư viện đòi macOS 26 (`otool -l … | grep minos`), trong khi app hỗ trợ macOS 13 trở lên.
+- Runner `macos-14` của CI còn bottle QEMU 11.1.1 cho Sonoma, nhưng bản đó **không có HVF**:
+  `qemu-system-aarch64 -accel help` chỉ ra `tcg`, và máy không mở được (`-accel hvf: invalid accelerator hvf`).
+
+Việc cần làm: dựng QEMU và các thư viện của nó từ mã nguồn trong workflow, với `MACOSX_DEPLOYMENT_TARGET` bằng bản
+macOS thấp nhất máy mobile hỗ trợ, rồi kiểm ba điều trước khi phát hành: `-accel help` có `hvf`, `minos` của mọi file
+không vượt mức đó, và `TestVM`, `TestControl` đạt với gói tải từ bản phát hành. Nếu bản QEMU đang dùng không dựng được
+HVF cho macOS cũ, ghi rõ mức macOS tối thiểu của máy mobile trên trang Mobile và trong `docs/mobile.md`.
+
 ## Thành phần và nguồn
 
 | Thành phần | Dùng cho | Nguồn gốc | Giấy phép | Đang ghim | Ghim ở đâu |
 |---|---|---|---|---|---|
 | Image LineageOS (gói UTM) | Android của máy ảo macOS | [jqssun/android-lineage-qemu](https://github.com/jqssun/android-lineage-qemu/releases) | GPL-3.0 (bản dựng), LineageOS theo AOSP | 23.2, build 20261019, release `v2026.10.18` | `internal/mobile/vm/install.go:37` (`ImageBuiltin`), hoặc mục `android-vm-image` trong `engines.json` |
-| QEMU + EDK2 | Chạy máy ảo | Homebrew trên máy dựng ([formula](https://github.com/Homebrew/homebrew-core/blob/HEAD/Formula/q/qemu.rb)) | GPL-2.0 (QEMU), BSD (EDK2) | Bản Homebrew lúc dựng runtime; ghi trong `qemu/SOURCES.txt` của gói | `scripts/build-android-vm-runtime.sh:28` |
+| QEMU + EDK2 | Chạy máy ảo | Homebrew trên máy dựng ([formula](https://github.com/Homebrew/homebrew-core/blob/HEAD/Formula/q/qemu.rb)) | GPL-2.0 (QEMU), BSD (EDK2) | Bản Homebrew lúc dựng runtime; ghi trong `qemu/SOURCES.txt` của gói | `scripts/build-android-vm-runtime.sh:29` |
 | scrcpy + adb | Cửa sổ điện thoại, điều khiển | [Genymobile/scrcpy](https://github.com/Genymobile/scrcpy/releases) | Apache-2.0 | 5.0.1 | `scripts/build-android-vm-runtime.sh:23-24` (phiên bản, SHA256) |
 | gvisor-tap-vsock | Mạng ảo (vnet) của máy macOS | [containers/gvisor-tap-vsock](https://github.com/containers/gvisor-tap-vsock) | Apache-2.0 | v0.9.0 | `go.mod` |
 | gVisor (netstack) | Stack TCP/IP của vnet | [google/gvisor](https://github.com/google/gvisor) | Apache-2.0 | `v0.0.0-20260413194555-9680d69bf798` | `go.mod` |
