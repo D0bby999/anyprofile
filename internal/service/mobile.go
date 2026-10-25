@@ -12,6 +12,7 @@ import (
 	"sync"
 
 	"github.com/D0bby999/anyprofile/internal/apperr"
+	"github.com/D0bby999/anyprofile/internal/engine"
 	"github.com/D0bby999/anyprofile/internal/mobile"
 	"github.com/D0bby999/anyprofile/internal/mobile/control"
 	"github.com/D0bby999/anyprofile/internal/store"
@@ -116,8 +117,49 @@ func codeOf(err error) string {
 // the 2.3 GB it unpacks to, both on disk for a moment.
 const imageDiskNeed = 4 << 30
 
+// OfferMobileRuntime hands the mobile driver the runtimes the last Pro check
+// offered (none without Pro), as releases it can install.
+func (s *Service) OfferMobileRuntime() {
+	if s.Mobile == nil {
+		return
+	}
+	o, ok := s.Mobile.Driver().(mobile.RuntimeOfferer)
+	if !ok {
+		return
+	}
+	var rs []engine.Release
+	if s.mobileAllowed() == nil {
+		for _, r := range s.proSaved().Runtimes {
+			rs = append(rs, engine.Release{Engine: r.Engine, Version: r.Version, Chromium: r.QEMU, Platform: r.Platform,
+				URL: r.URL, SHA256: r.SHA256, Files: r.Files, Bin: r.Bin, Catalogue: r.Engine})
+		}
+	}
+	if err := o.OfferRuntime(rs); err != nil && s.Log != nil {
+		s.Log.Warn("mobile: runtime offer", "err", err)
+	}
+}
+
+// MobileRuntimeSourceURL links to the complete source of the Android runtime
+// Pro offers (QEMU, its libraries, the patches and build scripts), as the GPL
+// asks; the link is fresh from the license server.
+func (s *Service) MobileRuntimeSourceURL(ctx context.Context) (string, error) {
+	if err := s.mobileAllowed(); err != nil {
+		return "", err
+	}
+	if _, err := s.ProCheck(ctx, true); err != nil {
+		return "", err
+	}
+	for _, r := range s.proSaved().Runtimes {
+		if r.Platform == engine.HostPlatform() && r.SourceURL != "" {
+			return r.SourceURL, nil
+		}
+	}
+	return "", apperr.New("android_runtime_unavailable", "the Android VM runtime is not published for this computer yet")
+}
+
 // InstallMobileRuntime downloads the VM runtime and the Android image (macOS).
-// It is part of Pro, as the devices are.
+// It is part of Pro, as the devices are: the runtime comes from the license
+// server, asked again first because its links last minutes.
 func (s *Service) InstallMobileRuntime(ctx context.Context, progress func(engine string, done, total int64)) error {
 	if err := s.mobileAllowed(); err != nil {
 		return err
@@ -128,6 +170,11 @@ func (s *Service) InstallMobileRuntime(ctx context.Context, progress func(engine
 	in, ok := s.Mobile.Driver().(mobile.Installer)
 	if !ok {
 		return apperr.New("mobile_nothing_to_install", "this computer has nothing to download for mobile devices")
+	}
+	if _, ok := in.(mobile.RuntimeOfferer); ok {
+		if _, err := s.ProCheck(ctx, true); err != nil {
+			return err
+		}
 	}
 	if st := in.InstallStatus(); st.Image.Installed == "" {
 		if err := os.MkdirAll(s.Dirs.MobileRuntime(), 0o700); err != nil {

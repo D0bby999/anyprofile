@@ -26,16 +26,17 @@ import (
 
 // fakePro is the license server in a few lines: one good key, packs by version.
 type fakePro struct {
-	mu      sync.Mutex
-	priv    ed25519.PrivateKey
-	key     string
-	state   string
-	revoked bool
-	packs   map[string][]byte
-	latest  string
-	claims  map[string]string
-	removed []string
-	asks    int
+	mu       sync.Mutex
+	priv     ed25519.PrivateKey
+	key      string
+	state    string
+	revoked  bool
+	packs    map[string][]byte
+	latest   string
+	claims   map[string]string
+	removed  []string
+	asks     int
+	runtimes []pro.Runtime
 }
 
 func newFakePro(t *testing.T, s *Service) *fakePro {
@@ -93,7 +94,7 @@ func (f *fakePro) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			fail(401, "revoked")
 			return
 		}
-		out := pro.Answer{State: f.state, PaidThrough: 1_900_000_000}
+		out := pro.Answer{State: f.state, PaidThrough: 1_900_000_000, Runtimes: f.runtimes}
 		if b := f.packs[f.latest]; b != nil && f.latest != in.Have {
 			sum := sha256.Sum256(b)
 			h := hex.EncodeToString(sum[:])

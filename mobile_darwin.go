@@ -11,7 +11,7 @@ import (
 	"github.com/D0bby999/anyprofile/internal/paths"
 )
 
-// mobileBuiltin is the pinned Android image; the runtime arrives in the signed list.
+// mobileBuiltin is the pinned Android image; the runtime comes with Pro (Service.OfferMobileRuntime).
 func mobileBuiltin() []engine.Release { return vm.ImageBuiltin() }
 
 // mobileDriver: on macOS a device is a QEMU virtual machine.

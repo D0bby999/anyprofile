@@ -43,8 +43,8 @@ func TestImageBuiltinIsValid(t *testing.T) {
 	}
 }
 
-// Install fetches the runtime and the image from the catalog and lays them
-// out where Locate finds them.
+// Install fetches the runtime Pro offers and the image from the catalog and
+// lays them out where Locate finds them.
 func TestInstall(t *testing.T) {
 	runtimeFiles := map[string][]byte{}
 	for _, f := range []string{"bin/qemu-system-aarch64", "bin/qemu-img", "share/edk2-aarch64-code.fd",
@@ -66,16 +66,25 @@ func TestInstall(t *testing.T) {
 		}
 		return out
 	}
-	cat := engine.NewCatalog("",
-		engine.Release{Engine: RuntimeEngine, Version: "0.1.0", Chromium: "11.1.2", Platform: engine.HostPlatform(),
-			URL: srv.URL + "/runtime.zip", SHA256: hexSum(archives["/runtime.zip"]), Files: sums(runtimeFiles),
-			Bin: "bin/qemu-system-aarch64", Catalogue: RuntimeEngine},
+	runtime := engine.Release{Engine: RuntimeEngine, Version: "0.1.0", Chromium: "11.1.2", Platform: engine.HostPlatform(),
+		URL: srv.URL + "/runtime.zip", SHA256: hexSum(archives["/runtime.zip"]), Files: sums(runtimeFiles),
+		Bin: "bin/qemu-system-aarch64", Catalogue: RuntimeEngine}
+	// The engine list never brings the runtime: only Pro does.
+	listed := runtime
+	listed.Version = "9.0.0"
+	cat := engine.NewCatalog("", listed,
 		engine.Release{Engine: ImageEngine, Version: "23.2.1", Chromium: "16.0", Platform: engine.HostPlatform(),
 			URL: srv.URL + "/image.zip", SHA256: hexSum(archives["/image.zip"]), Files: sums(imageFiles),
 			Bin: utmData + "/vda.qcow2", Catalogue: ImageEngine})
 	root := t.TempDir()
 	d := New(root, t.TempDir(), slog.New(slog.NewTextHandler(io.Discard, nil)))
 	d.SetCatalog(cat)
+	if st := d.InstallStatus(); st.Runtime.Latest != "" {
+		t.Fatalf("offered by the engine list: %+v", st)
+	}
+	if err := d.OfferRuntime([]engine.Release{runtime}); err != nil {
+		t.Fatal(err)
+	}
 	if st := d.InstallStatus(); st.Runtime.Installed != "" || st.Image.Installed != "" || st.Runtime.Latest != "0.1.0" {
 		t.Fatalf("before: %+v", st)
 	}
@@ -104,6 +113,13 @@ func TestInstall(t *testing.T) {
 	archives["/image.zip"] = nil
 	if err := d.Install(context.Background(), func(string, int64, int64) {}); err != nil {
 		t.Fatal(err)
+	}
+	// Pro gone: nothing is offered, what is installed stays.
+	if err := d.OfferRuntime(nil); err != nil {
+		t.Fatal(err)
+	}
+	if st := d.InstallStatus(); st.Runtime.Latest != "" || st.Runtime.Installed != "0.1.0" {
+		t.Fatalf("after Pro: %+v", st)
 	}
 }
 

@@ -230,6 +230,10 @@ export function OpenAgentFolder(arg1) {
   return window['go']['main']['App']['OpenAgentFolder'](arg1);
 }
 
+export function OpenMobileRuntimeSource() {
+  return window['go']['main']['App']['OpenMobileRuntimeSource']();
+}
+
 export function Personas() {
   return window['go']['main']['App']['Personas']();
 }

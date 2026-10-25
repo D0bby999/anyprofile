@@ -4,15 +4,20 @@ package service
 
 import (
 	"context"
+	"crypto/ed25519"
+	"encoding/base64"
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"testing"
 
 	"github.com/D0bby999/anyprofile/internal/apperr"
+	"github.com/D0bby999/anyprofile/internal/engine"
 	"github.com/D0bby999/anyprofile/internal/mobile"
 	"github.com/D0bby999/anyprofile/internal/netproxy"
+	"github.com/D0bby999/anyprofile/internal/pro"
 	"github.com/D0bby999/anyprofile/internal/store"
 )
 
@@ -348,5 +353,69 @@ func TestWatchMobileProxies(t *testing.T) {
 	}
 	if pings != 3 {
 		t.Fatalf("pings = %d, want 3", pings)
+	}
+}
+
+// fakeInstaller is a driver that downloads its runtime, as the macOS VM does.
+type fakeInstaller struct {
+	*fakeMobile
+	offered  []engine.Release
+	installs int
+}
+
+func (f *fakeInstaller) InstallStatus() mobile.InstallStatus {
+	return mobile.InstallStatus{Image: mobile.Component{Installed: "23.2"}}
+}
+
+func (f *fakeInstaller) Install(ctx context.Context, progress func(string, int64, int64)) error {
+	f.installs++
+	return nil
+}
+
+func (f *fakeInstaller) OfferRuntime(rs []engine.Release) error {
+	f.offered = rs
+	return nil
+}
+
+func TestMobileRuntimeComesWithPro(t *testing.T) {
+	s, _ := newService(t)
+	f := newFakePro(t, s)
+	rt := pro.Runtime{Engine: "android-vm", Version: "1.0.0", Platform: engine.HostPlatform(), QEMU: "11.1.2",
+		SHA256: strings.Repeat("a", 64), Files: map[string]string{"bin/qemu-system-aarch64": strings.Repeat("b", 64)},
+		Bin: "bin/qemu-system-aarch64", URL: "https://pro.test/v1/runtime/1/t/android-vm-1.0.0-darwin-arm64.tar.xz",
+		SourceURL: "https://pro.test/v1/runtime/1/t/android-vm-1.0.0-source.tar"}
+	rt.Sig = base64.StdEncoding.EncodeToString(ed25519.Sign(f.priv, pro.RuntimeMessage(rt.Engine, rt.Platform, rt.Version, rt.SHA256)))
+	forged := rt
+	forged.Version, forged.Sig = "9.9.9", base64.StdEncoding.EncodeToString(make([]byte, 64))
+	f.runtimes = []pro.Runtime{forged, rt}
+	inst := &fakeInstaller{fakeMobile: &fakeMobile{running: map[string]chan struct{}{}}}
+	s.Mobile = mobile.NewManager(inst, s.Store, s.Log, nil)
+	ctx := context.Background()
+
+	s.OfferMobileRuntime()
+	if len(inst.offered) != 0 {
+		t.Fatalf("offered without Pro: %+v", inst.offered)
+	}
+	if _, err := s.ProActivate(ctx, f.key); err != nil {
+		t.Fatal(err)
+	}
+	if len(inst.offered) != 1 || inst.offered[0].Version != "1.0.0" || inst.offered[0].Chromium != "11.1.2" ||
+		inst.offered[0].Validate() != nil {
+		t.Fatalf("offered %+v", inst.offered)
+	}
+	// Installing asks the server again: the links last minutes.
+	asks := f.asks
+	if err := s.InstallMobileRuntime(ctx, func(string, int64, int64) {}); err != nil || inst.installs != 1 || f.asks != asks+1 {
+		t.Fatalf("install: %v, %d installs, %d asks", err, inst.installs, f.asks-asks)
+	}
+	if u, err := s.MobileRuntimeSourceURL(ctx); err != nil || u != rt.SourceURL {
+		t.Fatalf("source %q %v", u, err)
+	}
+	f.revoked = true
+	if _, err := s.ProCheck(ctx, true); code(err) != "pro_revoked" {
+		t.Fatalf("revoked: %v", err)
+	}
+	if len(inst.offered) != 0 {
+		t.Fatalf("offered after revoking: %+v", inst.offered)
 	}
 }

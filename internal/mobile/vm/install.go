@@ -16,11 +16,13 @@ import (
 	"github.com/D0bby999/anyprofile/internal/mobile"
 )
 
-// The runtime comes in two downloads, both through the signed engine list
-// (internal/engine): "android-vm", built and signed by AnyProfile
-// (scripts/build-android-vm-runtime.sh), and "android-vm-image", LineageOS
-// as jqssun/android-lineage-qemu publishes it, never redistributed by
+// The runtime comes in two downloads. "android-vm" is QEMU as AnyProfile
+// builds it (android-vm/ in the Pro repo), offered by the license server to
+// a key that may use Pro, signed with the Pro key (internal/pro): the service
+// passes the offer on with OfferRuntime. "android-vm-image" is LineageOS as
+// jqssun/android-lineage-qemu publishes it, never redistributed by
 // AnyProfile: the app downloads it from there and checks the pinned hashes.
+// How to update either: docs/mobile-maintenance.md.
 const (
 	RuntimeEngine = "android-vm"
 	ImageEngine   = "android-vm-image"
@@ -58,8 +60,12 @@ func imageDisks(dir string) string {
 	return dir
 }
 
-// SetCatalog gives the driver the releases it may install.
+// SetCatalog gives the driver the image releases it may install.
 func (v *Driver) SetCatalog(c *engine.Catalog) { v.cat = c }
+
+// OfferRuntime replaces the runtime releases Pro offers; an invalid one is
+// dropped and reported.
+func (v *Driver) OfferRuntime(rs []engine.Release) error { return v.offered.SetListed(rs) }
 
 func (v *Driver) installedVersion(file string) string {
 	b, _ := os.ReadFile(filepath.Join(v.runtime, file))
@@ -81,10 +87,10 @@ func (v *Driver) InstallStatus() mobile.InstallStatus {
 	if err == nil {
 		st.Image.Installed = rt.ImageVersion
 	}
+	if rs := v.offered.For(RuntimeEngine); len(rs) > 0 {
+		st.Runtime.Latest = rs[0].Version
+	}
 	if v.cat != nil {
-		if rs := v.cat.For(RuntimeEngine); len(rs) > 0 {
-			st.Runtime.Latest = rs[0].Version
-		}
 		if rs := v.cat.For(ImageEngine); len(rs) > 0 {
 			st.Image.Latest = rs[0].Version
 		}
@@ -102,7 +108,7 @@ func (v *Driver) Install(ctx context.Context, progress func(engine string, done,
 	}
 	st := v.InstallStatus()
 	if st.Runtime.Installed == "" || (st.Runtime.Latest != "" && st.Runtime.Installed != "dev" && engine.NewerVersion(st.Runtime.Latest, st.Runtime.Installed)) {
-		rs := v.cat.For(RuntimeEngine)
+		rs := v.offered.For(RuntimeEngine)
 		if len(rs) == 0 {
 			return errNoRelease
 		}

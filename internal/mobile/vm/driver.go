@@ -52,7 +52,8 @@ type Driver struct {
 	runtime string // the mobile runtime folder (see Runtime)
 	devices string // one folder per device
 	log     *slog.Logger
-	cat     *engine.Catalog
+	cat     *engine.Catalog // the image's releases
+	offered *engine.Catalog // the runtime's, as Pro offers them (OfferRuntime)
 
 	mu    sync.Mutex
 	procs map[string]*proc
@@ -71,7 +72,7 @@ type proc struct {
 }
 
 func New(runtimeDir, devicesDir string, log *slog.Logger) *Driver {
-	return &Driver{runtime: runtimeDir, devices: devicesDir, log: log, procs: map[string]*proc{}}
+	return &Driver{runtime: runtimeDir, devices: devicesDir, log: log, offered: engine.NewCatalog(""), procs: map[string]*proc{}}
 }
 
 func (v *Driver) Name() string { return "vm" }

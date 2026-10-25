@@ -62,11 +62,38 @@ type Release struct {
 	URL     string `json:"url"`
 }
 
-// Answer is the server's word on a key: its state and the pack to install, if any.
+// RuntimeMessage is what a runtime signature covers; its first line keeps it
+// apart from a pack's and an app update's.
+func RuntimeMessage(engine, platform, version, sha256hex string) []byte {
+	return []byte("anyprofile-runtime\n" + engine + "\n" + platform + "\n" + version + "\n" + sha256hex)
+}
+
+// Runtime is a runtime Pro brings along, offered while the key may use Pro:
+// today the Android VM (QEMU) for mobile devices. The archive's hash is
+// signed; the files are checked against the record after unpacking. The
+// links last minutes, so a download asks the server again first.
+type Runtime struct {
+	Engine    string            `json:"engine"`
+	Version   string            `json:"version"`
+	Platform  string            `json:"platform"`
+	QEMU      string            `json:"qemu"`
+	MinOS     string            `json:"min_os"`
+	SHA256    string            `json:"sha256"`
+	Size      int64             `json:"size"`
+	Sig       string            `json:"sig"`
+	Files     map[string]string `json:"files"`
+	Bin       string            `json:"bin"`
+	URL       string            `json:"url"`
+	SourceURL string            `json:"source_url"` // its complete source, as the GPL asks
+}
+
+// Answer is the server's word on a key: its state, the pack to install, if
+// any, and the runtimes it may use.
 type Answer struct {
-	State       string   `json:"state"` // pending | active | past_due | expired
-	PaidThrough int64    `json:"paid_through"`
-	Release     *Release `json:"release"`
+	State       string    `json:"state"` // pending | active | past_due | expired
+	PaidThrough int64     `json:"paid_through"`
+	Release     *Release  `json:"release"`
+	Runtimes    []Runtime `json:"runtimes"`
 }
 
 // Ask is what the app tells the server when it checks.
@@ -185,8 +212,28 @@ func (c Client) Claim(ctx context.Context, ref string) (string, error) {
 // Check asks for the key's state and a newer pack.
 func (c Client) Check(ctx context.Context, a Ask) (Answer, error) {
 	var out Answer
-	_, err := c.do(ctx, http.MethodPost, "/v1/pack", a, &out)
-	return out, err
+	if _, err := c.do(ctx, http.MethodPost, "/v1/pack", a, &out); err != nil {
+		return out, err
+	}
+	// A runtime whose signature fails is dropped, as if not offered.
+	ok := out.Runtimes[:0]
+	for _, r := range out.Runtimes {
+		if c.verifyRuntime(r) {
+			ok = append(ok, r)
+		}
+	}
+	out.Runtimes = ok
+	return out, nil
+}
+
+func (c Client) verifyRuntime(r Runtime) bool {
+	pub := c.Key
+	if pub == nil {
+		pub = publicKey
+	}
+	sig, err := base64.StdEncoding.DecodeString(r.Sig)
+	return err == nil && len(pub) == ed25519.PublicKeySize && len(r.SHA256) == 64 && versionOK(r.Version) &&
+		ed25519.Verify(pub, RuntimeMessage(r.Engine, r.Platform, r.Version, r.SHA256), sig)
 }
 
 // RemoveDevice frees this computer's place on the key.

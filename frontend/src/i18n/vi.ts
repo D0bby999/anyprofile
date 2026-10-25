@@ -338,6 +338,7 @@ export const vi: Messages = {
     ramTight: 'Đang chạy nhiều máy so với bộ nhớ của máy tính này. Mọi thứ có thể chậm lại.',
     apkHint: 'Muốn cài app, bấm Cài app trên máy đang chạy rồi chọn file APK, hoặc kéo file APK vào cửa sổ của máy.',
     apkWhere: 'Máy không có Google Play.', apkGuide: 'Hướng dẫn cài app: Aurora Store, F-Droid, file APK',
+    runtimeGpl: 'Bộ chạy Android dùng QEMU (giấy phép GPL-2.0).', runtimeSource: 'Tải mã nguồn',
     installApps: 'Cài app', appsInstalled: (n: number) => `Đã cài ${n} app.`,
     realIpWarning: 'Máy này sẽ cho mọi app và trang web thấy IP và vị trí thật của bạn.',
     proxyDown: 'Proxy không phản hồi: máy không có mạng (không dùng IP thật). Kiểm proxy ở trang Proxy.',

@@ -55,6 +55,8 @@ export function MobilePage({ mobile, onOpenPro, onOpenSettings }: Props) {
   useEffect(() => { Api.ListProxies().then((p) => setProxies(p ?? [])).catch(() => {}) }, [rows])
 
   const canUse = !!avail?.pro && !!avail?.ready
+  // The runtime downloaded from Pro (not a dev build) carries QEMU: its source is a click away, as the GPL asks.
+  const shipped = !!avail?.install?.runtime.installed && avail.install.runtime.installed !== 'dev'
   // Nothing installed and nothing in the signed list: the runtime is not out yet.
   const unpublished = !!avail?.install && !avail.install.runtime.installed && !avail.install.runtime.latest
   const proxyLabel = (r: service.MobileRow) => {
@@ -202,6 +204,12 @@ export function MobilePage({ mobile, onOpenPro, onOpenSettings }: Props) {
         {rows.length > 0 && canUse && (
           <p className="hint">{t.mobile.apkHint} {t.mobile.apkWhere}{' '}
             <a href="#" onClick={(e) => { e.preventDefault(); openExternal(MOBILE_APPS_GUIDE) }}>{t.mobile.apkGuide}</a>.
+          </p>
+        )}
+        {canUse && shipped && (
+          <p className="hint">{t.mobile.runtimeGpl}{' '}
+            <a href="#" onClick={(e) => { e.preventDefault(); Api.OpenMobileRuntimeSource().catch((err) => toast.error(errorText(err))) }}>
+              {t.mobile.runtimeSource}</a>.
           </p>
         )}
       </div>

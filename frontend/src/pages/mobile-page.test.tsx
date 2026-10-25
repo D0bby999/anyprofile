@@ -16,6 +16,7 @@ const api = {
   CreateMobileDevice: vi.fn(() => Promise.resolve({ id: 'n' })),
   TrashMobileDevice: vi.fn(() => Promise.resolve()),
   RestoreMobileDevice: vi.fn(() => Promise.resolve()),
+  OpenMobileRuntimeSource: vi.fn(() => Promise.resolve()),
 }
 const openExternal = vi.fn()
 vi.mock('../api', async (orig) => ({
@@ -107,6 +108,16 @@ describe('MobilePage', () => {
     page([], avail({ ...missing, install: comp('1.0.0') }))
     expect(screen.getByText(t.mobile.installText)).toBeTruthy()
     expect(screen.getByRole('button', { name: t.mobile.install })).toBeTruthy()
+  })
+
+  it('links to the runtime\u2019s source code once it came from Pro, not for a dev build', () => {
+    const comp = (installed: string) => ({ runtime: { engine: 'android-vm', installed, latest: '1.0.0' }, image: { engine: 'android-vm-image', installed: '23.2', latest: '' } })
+    page([device()], avail({ install: comp('1.0.0') }))
+    fireEvent.click(screen.getByRole('link', { name: t.mobile.runtimeSource }))
+    expect(api.OpenMobileRuntimeSource).toHaveBeenCalled()
+    cleanup()
+    page([device()], avail({ install: comp('dev') }))
+    expect(screen.queryByRole('link', { name: t.mobile.runtimeSource })).toBeNull()
   })
 
   it('links to the guide for installing apps', () => {

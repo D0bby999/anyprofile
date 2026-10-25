@@ -3,6 +3,9 @@
 package main
 
 import (
+	"context"
+	"time"
+
 	"github.com/D0bby999/anyprofile/internal/service"
 	"github.com/D0bby999/anyprofile/internal/store"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
@@ -59,6 +62,21 @@ func (a *App) RestoreMobileDevice(id string) error {
 
 func (a *App) PurgeMobileDevice(id string) error {
 	return a.must(func() error { return a.svc.PurgeMobileDevice(a.ctx, id) })
+}
+
+// OpenMobileRuntimeSource opens the Android runtime's complete source (GPL)
+// in the default browser.
+func (a *App) OpenMobileRuntimeSource() error {
+	return a.must(func() error {
+		ctx, cancel := context.WithTimeout(a.ctx, 30*time.Second)
+		defer cancel()
+		u, err := a.svc.MobileRuntimeSourceURL(ctx)
+		if err != nil {
+			return err
+		}
+		runtime.BrowserOpenURL(a.ctx, u)
+		return nil
+	})
 }
 
 // InstallMobileRuntime downloads the Android VM runtime and image, emitting

@@ -43,6 +43,9 @@ type proSaved struct {
 	CheckedAt   string `json:"checkedAt"`
 	Notes       string `json:"notes"`
 	Error       string `json:"error"`
+	// Runtimes are what the server offered at the last check, signatures
+	// checked; their links expire within minutes.
+	Runtimes []pro.Runtime `json:"runtimes,omitempty"`
 }
 
 func (s *Service) proClient() pro.Client {
@@ -161,10 +164,11 @@ func (s *Service) ProCheck(ctx context.Context, force bool) (ProStatus, error) {
 		var ae *apperr.Error
 		if errors.As(err, &ae) && (ae.Code == "pro_revoked" || ae.Code == "pro_bad_key") {
 			// Refunded or disputed: the pack goes with the money.
-			p.State = "revoked"
+			p.State, p.Runtimes = "revoked", nil
 			_ = pro.Remove(s.Dirs.Pro())
 		}
 		_ = s.saveProState(p)
+		s.OfferMobileRuntime()
 		s.notify("pro")
 		return s.ProStatus(), err
 	}
@@ -176,7 +180,9 @@ func (s *Service) ProCheck(ctx context.Context, force bool) (ProStatus, error) {
 func (s *Service) applyPro(ctx context.Context, ans pro.Answer) error {
 	p := s.proSaved()
 	p.State, p.PaidThrough, p.CheckedAt, p.Error = ans.State, ans.PaidThrough, s.now().UTC().Format(time.RFC3339), ""
+	p.Runtimes = ans.Runtimes
 	defer s.notify("pro")
+	defer s.OfferMobileRuntime()
 	if ans.Release == nil {
 		return s.saveProState(p)
 	}
@@ -215,6 +221,7 @@ func (s *Service) ProDeactivate(ctx context.Context) error {
 		return err
 	}
 	_ = s.Store.SetSetting("pro_state", "")
+	s.OfferMobileRuntime()
 	defer s.notify("pro")
 	return pro.Remove(s.Dirs.Pro())
 }

@@ -337,6 +337,7 @@ export const en = {
     ramTight: 'Many devices are running for this computer\u2019s memory. Everything may slow down.',
     apkHint: 'To install apps, press Install apps on a running device and choose APK files, or drag them onto the device\u2019s window.',
     apkWhere: 'Devices have no Google Play.', apkGuide: 'How to install apps: Aurora Store, F-Droid, APK files',
+    runtimeGpl: 'The Android runtime uses QEMU (GPL-2.0 license).', runtimeSource: 'Download its source code',
     installApps: 'Install apps', appsInstalled: (n: number) => (n === 1 ? 'App installed.' : `${n} apps installed.`),
     realIpWarning: 'This device will show your real IP address and location to every app and site.',
     proxyDown: 'The proxy is not answering: the device has no network (it never uses your real IP). Check the proxy on the Proxies page.',

@@ -17,9 +17,10 @@ published; what they had is listed under them below and is all in this one.
   answering" instead of "Working", Check all says how many did not answer, and
   only proxies that answered are handed out as the next free one, so a dead
   proxy no longer blocks first-run setup.
-- Mobile devices (beta): the Mac's Android runtime is not out yet, so the
-  Mobile page says "Coming soon"; it arrives in the signed engine list, with
-  no app update. While a device runs, its proxy is tried every two minutes and
+- Mobile devices (beta): the Mac's Android runtime comes with Pro, from the
+  license server, signed with the Pro key, its source a click away on the
+  Mobile page (QEMU is GPL-2.0). Until it is out, the Mobile page says
+  "Coming soon"; it arrives with no app update. While a device runs, its proxy is tried every two minutes and
   the Mobile page says when the device has no network.
 - Smaller fixes: dates follow the app's language, proxy paste errors are
   translated, an error leaves with the screen it was about, a closed profile

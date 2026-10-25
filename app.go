@@ -128,6 +128,7 @@ func (a *App) init() error {
 	if drv := mobileDriver(dirs, log, cat); drv != nil {
 		a.svc.Mobile = mobile.NewManager(drv, st, log,
 			func(in mobile.Info) { runtime.EventsEmit(a.ctx, "mobile:changed", in) })
+		a.svc.OfferMobileRuntime()
 	}
 	l.BeforeStart, l.AfterExit = a.svc.BeforeLaunch, a.svc.AfterExit
 	a.svc.LoadEngineList()

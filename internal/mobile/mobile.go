@@ -14,6 +14,7 @@ import (
 	"sync"
 
 	"github.com/D0bby999/anyprofile/internal/apperr"
+	"github.com/D0bby999/anyprofile/internal/engine"
 	"github.com/D0bby999/anyprofile/internal/mobile/adb"
 	"github.com/D0bby999/anyprofile/internal/netproxy"
 	"github.com/D0bby999/anyprofile/internal/store"
@@ -121,6 +122,12 @@ type InstallStatus struct {
 type Installer interface {
 	InstallStatus() InstallStatus
 	Install(ctx context.Context, progress func(engine string, done, total int64)) error
+}
+
+// RuntimeOfferer is an Installer whose runtime comes with Pro: the service
+// hands it the releases the license server offers this key, nil for none.
+type RuntimeOfferer interface {
+	OfferRuntime(rs []engine.Release) error
 }
 
 // Launches stores what runs; *store.Store outside tests.

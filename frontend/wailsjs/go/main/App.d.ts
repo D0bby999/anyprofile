@@ -121,6 +121,8 @@ export function Onboarded():Promise<boolean>;
 
 export function OpenAgentFolder(arg1:string):Promise<void>;
 
+export function OpenMobileRuntimeSource():Promise<void>;
+
 export function Personas():Promise<Array<fury.Persona>>;
 
 export function PickBackup():Promise<string>;

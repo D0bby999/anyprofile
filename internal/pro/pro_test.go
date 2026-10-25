@@ -187,3 +187,24 @@ func TestServerErrorsBecomeCodes(t *testing.T) {
 		t.Errorf("offline: %v", err)
 	}
 }
+
+func TestCheckKeepsOnlySignedRuntimes(t *testing.T) {
+	priv := testKey(t)
+	good := Runtime{Engine: "android-vm", Version: "1.0.0", Platform: "darwin-arm64", SHA256: hex.EncodeToString(make([]byte, 32))}
+	good.Sig = base64.StdEncoding.EncodeToString(ed25519.Sign(priv, RuntimeMessage(good.Engine, good.Platform, good.Version, good.SHA256)))
+	moved := good
+	moved.Platform = "windows-amd64" // signed for another computer
+	pack := good
+	pack.Sig = base64.StdEncoding.EncodeToString(ed25519.Sign(priv, SignedMessage(good.Version, good.SHA256)))
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		json.NewEncoder(w).Encode(Answer{State: "active", Runtimes: []Runtime{moved, good, pack}})
+	}))
+	defer srv.Close()
+	ans, err := Client{Base: srv.URL, HTTP: srv.Client()}.Check(context.Background(), Ask{Key: "k", InstallID: "i"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(ans.Runtimes) != 1 || ans.Runtimes[0].Platform != "darwin-arm64" {
+		t.Fatalf("runtimes = %+v", ans.Runtimes)
+	}
+}
