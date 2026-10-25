@@ -182,7 +182,8 @@ func (b *Browser) sendKey(ctx context.Context, t *tab, k key, mods int, commands
 const perKey = 300
 
 // Type clicks the element (when ref is given), clears it with replace, types
-// text key by key, and presses Enter with submit.
+// text key by key, and presses Enter with submit. A line break is an Enter:
+// Input.insertText drops it in a contenteditable box (YouTube's description).
 func (b *Browser) Type(ctx context.Context, id, ref, text string, replace, submit bool) (Tab, error) {
 	t, err := b.tab(ctx, id)
 	if err != nil {
@@ -209,11 +210,13 @@ func (b *Browser) Type(ctx context.Context, id, ref, text string, replace, submi
 			return Tab{}, err
 		}
 	}
-	rest := text
+	rest := strings.ReplaceAll(text, "\r\n", "\n")
 	for n := 0; rest != "" && n < perKey; n++ {
 		r, size := utf8.DecodeRuneInString(rest)
 		rest = rest[size:]
-		if k, ok := keyFor(r); ok {
+		if r == '\n' {
+			err = b.sendKey(ctx, t, named["Enter"], 0, nil)
+		} else if k, ok := keyFor(r); ok {
 			err = b.sendKey(ctx, t, k, 0, nil)
 		} else {
 			err = b.call(ctx, t.session, "Input.insertText", map[string]any{"text": string(r)}, nil)
@@ -223,8 +226,16 @@ func (b *Browser) Type(ctx context.Context, id, ref, text string, replace, submi
 		}
 		pause(25*time.Millisecond, 80*time.Millisecond)
 	}
-	if rest != "" {
-		if err := b.call(ctx, t.session, "Input.insertText", map[string]any{"text": rest}, nil); err != nil {
+	for i, line := range strings.Split(rest, "\n") {
+		if i > 0 {
+			if err := b.sendKey(ctx, t, named["Enter"], 0, nil); err != nil {
+				return Tab{}, err
+			}
+		}
+		if line == "" {
+			continue
+		}
+		if err := b.call(ctx, t.session, "Input.insertText", map[string]any{"text": line}, nil); err != nil {
 			return Tab{}, err
 		}
 	}
