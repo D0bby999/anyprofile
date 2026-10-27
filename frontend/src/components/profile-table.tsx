@@ -53,6 +53,7 @@ function LastOpened({ row, now }: { row: service.ProfileRow; now: Date }) {
   if (row.state === 'running') {
     return <span className="lastopen running"><span className="live on" />{t.profiles.runningFor(sinceSpan(row.lastOpenAt, now))}</span>
   }
+  if (row.state === 'queued') return <span className="lastopen">{t.profiles.queued}</span>
   if (row.state === 'starting') return <span className="lastopen">{t.profiles.opening}…</span>
   if (row.state === 'stopping') return <span className="lastopen">{t.profiles.stopping}…</span>
   return <span className="lastopen muted">{relativeTime(row.lastOpenAt, now)}</span>
@@ -129,6 +130,7 @@ export function ProfileTable(p: Props) {
       <tbody ref={body}>
         {p.rows.map((r, i) => {
           const running = r.state === 'running'
+          const queued = r.state === 'queued'
           const busy = r.state === 'starting' || r.state === 'stopping'
           const agent = !!p.agents?.has(r.id)
           // An agent's row is tinted instead of a chip, so the status cell keeps only the health.
@@ -137,7 +139,7 @@ export function ProfileTable(p: Props) {
             <tr key={r.id} data-id={r.id} className={cls || undefined}
               onPointerDown={(e) => { if (!(e.target as HTMLElement).closest(CONTROLS) || (e.target as HTMLElement).closest('.grip')) press(e, r.id) }} aria-current={p.activeId === r.id ? 'true' : undefined} title={agent ? t.agent.title : undefined}
               onClick={(e) => { if (e.detail <= 1 && !(e.target as HTMLElement).closest(CONTROLS)) p.onSelectRow?.(r.id) }}
-              onDoubleClick={(e) => { if (!(e.target as HTMLElement).closest(CONTROLS)) (running ? p.onFocus(r.id) : !busy && p.onStart(r.id)) }}>
+              onDoubleClick={(e) => { if (!(e.target as HTMLElement).closest(CONTROLS)) (running ? p.onFocus(r.id) : !busy && !queued && p.onStart(r.id)) }}>
               <td className="col-check"><input type="checkbox" checked={p.selected.has(r.id)}
                 onClick={(e) => p.onToggle(r.id, e.shiftKey)} onChange={() => {}} aria-label={r.name} /></td>
               <td className="col-no">
@@ -179,10 +181,10 @@ export function ProfileTable(p: Props) {
                   </button>
                   <RowMenu row={r} sites={p.sites} onEdit={() => p.onEdit(r)} onDuplicate={() => p.onDuplicate(r)}
                     onTrash={() => p.onTrash(r)} onMessage={p.onMessage} onError={p.onError} />
-                  {running || r.state === 'stopping' ? (
+                  {running || queued || r.state === 'stopping' ? (
                     <button className={`btn sm stop actbtn${busy ? ' busy' : ''}`} aria-busy={busy} disabled={busy} onClick={() => p.onStop(r.id)}
-                      aria-label={busy ? t.profiles.stopping : undefined} title={busy ? t.profiles.stopping : undefined}>
-                      <Icon name={busy ? 'refresh' : 'stop'} className="icon sm" /><ActLabel shown={t.profiles.stop} />
+                      aria-label={queued ? t.profiles.cancelQueued : busy ? t.profiles.stopping : undefined} title={queued ? t.profiles.cancelQueued : busy ? t.profiles.stopping : undefined}>
+                      <Icon name={busy ? 'refresh' : queued ? 'x' : 'stop'} className="icon sm" /><ActLabel shown={queued ? t.common.cancel : t.profiles.stop} />
                     </button>
                   ) : (
                     // Outlined until the row is hovered, picked or focused: one blue button at a time, not one per row.
@@ -204,7 +206,7 @@ export function ProfileTable(p: Props) {
 /** The Open/Close button's label, as wide as the longer of the two, so the button never resizes.
     While it works, the icon spins and the status cell says Opening…/Closing…; the label stays the action. */
 function ActLabel({ shown }: { shown: string }) {
-  const all = [t.profiles.open, t.profiles.stop]
+  const all = [...new Set([t.profiles.open, t.profiles.stop, shown])]
   return (
     <span className="actlabel">
       {all.map((x) => <span key={x} aria-hidden={x === shown ? undefined : true} className={x === shown ? undefined : 'off'}>{x}</span>)}

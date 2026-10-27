@@ -18,10 +18,16 @@ import (
 )
 
 func (l *Launcher) start(ctx context.Context, p *proc) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	if l.BeforeStart != nil {
 		if err := l.BeforeStart(p.info.ProfileID); err != nil {
 			return err
 		}
+	}
+	if err := ctx.Err(); err != nil {
+		return err
 	}
 	prof, err := l.st.GetProfile(p.info.ProfileID)
 	if err != nil {
@@ -88,25 +94,37 @@ func (l *Launcher) start(ctx context.Context, p *proc) error {
 		return err
 	}
 	spec.Args = append(spec.Args, l.TestArgs...)
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	front := frontPID()
 	pid, wait, conn, err := spawn(spec, udd, filepath.Join(l.dirs.Logs(), "browser-"+prof.ID+".log"))
 	if err != nil {
 		return err
 	}
+	started := false
+	defer func() {
+		if started {
+			return
+		}
+		if conn != nil {
+			conn.Close()
+		}
+		killTree(pid)
+		_ = l.st.DeleteLaunch(prof.ID)
+		if p.sessionID > 0 {
+			_ = l.st.EndSession(p.sessionID)
+		}
+	}()
 	if p.behind {
 		go l.keepBehind(pid, front, 6*time.Second)
 	}
 	p.cdp = conn
-	if err := l.waitReady(udd, pid, wait); err != nil {
-		if p.cdp != nil {
-			p.cdp.Close()
-		}
-		killTree(pid)
+	if err := l.waitReady(ctx, udd, pid, wait); err != nil {
 		return err
 	}
 	startTime, err := pidStartTime(pid)
 	if err != nil {
-		killTree(pid)
 		return err
 	}
 	cdp := 0
@@ -115,7 +133,6 @@ func (l *Launcher) start(ctx context.Context, p *proc) error {
 	}
 	if err := l.st.PutLaunch(store.Launch{ProfileID: prof.ID, PID: pid, PIDStartTime: startTime,
 		RelayPort: rt.RelayPort, CDPPort: cdp}); err != nil {
-		killTree(pid)
 		return err
 	}
 	_ = l.st.MarkOpened(prof.ID)
@@ -132,9 +149,16 @@ func (l *Launcher) start(ctx context.Context, p *proc) error {
 		_ = l.st.UpdateProfile(prof)
 	}
 	l.mu.Lock()
+	if err := ctx.Err(); err != nil {
+		l.mu.Unlock()
+		return err
+	}
 	p.info.PID, p.info.CDPPort, p.started = pid, cdp, time.Now()
+	p.info.State = Running
+	info := p.info
+	started = true
 	l.mu.Unlock()
-	l.set(p, Running, "")
+	l.onChange(info)
 	if p.cdp != nil {
 		go l.capture(prof, eng, p.cdp, p.sessionID)
 		go l.quitWithLastWindow(prof.ID, p.cdp)
@@ -163,10 +187,12 @@ func (l *Launcher) upstream(proxyID string) (netproxy.Upstream, error) {
 }
 
 // waitReady returns once the browser holds its SingletonLock, or fails if it exits first.
-func (l *Launcher) waitReady(udd string, pid int, wait <-chan error) error {
+func (l *Launcher) waitReady(ctx context.Context, udd string, pid int, wait <-chan error) error {
 	deadline := time.Now().Add(l.readyTimeout)
 	for time.Now().Before(deadline) {
 		select {
+		case <-ctx.Done():
+			return ctx.Err()
 		case err := <-wait:
 			return fmt.Errorf("browser exited during startup (%v); see logs/browser-*.log", err)
 		case <-time.After(100 * time.Millisecond):

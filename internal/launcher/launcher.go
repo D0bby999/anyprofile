@@ -23,6 +23,7 @@ import (
 type State string
 
 const (
+	Queued   State = "queued"
 	Starting State = "starting"
 	Running  State = "running"
 	Stopping State = "stopping"
@@ -49,6 +50,10 @@ type proc struct {
 	started time.Time
 	// behind: started for a script or an agent, so it must not take the focus.
 	behind bool
+	// gated includes adopted browsers; every counted browser releases once.
+	gated bool
+	// cancel aborts admission/startup, but never kills an already running browser.
+	cancel context.CancelFunc
 }
 
 type Launcher struct {
@@ -59,8 +64,11 @@ type Launcher struct {
 	onChange func(Info)
 	log      *slog.Logger
 
-	mu    sync.Mutex
-	procs map[string]*proc
+	mu          sync.Mutex
+	procs       map[string]*proc
+	gate        *launchGate
+	stoppingAll bool
+	stopAllDone chan struct{}
 
 	readyTimeout, termGrace time.Duration
 	// TestArgs are added to every launch. Only integration tests set them,
@@ -92,8 +100,20 @@ func New(st *store.Store, sec secrets.Store, dirs paths.Dirs, engines []engine.E
 		onChange = func(Info) {}
 	}
 	return &Launcher{st: st, sec: sec, dirs: dirs, engines: m, onChange: onChange, log: log,
-		procs: map[string]*proc{}, readyTimeout: 15 * time.Second, termGrace: 8 * time.Second}
+		procs: map[string]*proc{}, gate: newLaunchGate(), readyTimeout: 15 * time.Second, termGrace: 8 * time.Second}
 }
+
+// SetMaxRunning sets how many browsers may be starting or running at
+// once; 0 means unlimited (the default). Starts beyond the ceiling wait
+// inside open() until a browser exits. The app sets this from its
+// settings; nothing changes until it does.
+func (l *Launcher) SetMaxRunning(n int) { l.gate.SetMax(n) }
+
+// MaxRunning reports the current launch ceiling, 0 for unlimited.
+func (l *Launcher) MaxRunning() int { return l.gate.Max() }
+
+// WaitingLaunches reports how many starts are queued at the ceiling.
+func (l *Launcher) WaitingLaunches() int { return l.gate.Waiting() }
 
 // List returns every profile that is not stopped.
 func (l *Launcher) List() []Info {
@@ -138,7 +158,14 @@ func (l *Launcher) StartBehind(ctx context.Context, profileID string) error {
 }
 
 func (l *Launcher) open(ctx context.Context, profileID string, behind bool) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	l.mu.Lock()
+	if l.stoppingAll {
+		l.mu.Unlock()
+		return fmt.Errorf("launcher is stopping all profiles")
+	}
 	if p, ok := l.procs[profileID]; ok {
 		pid, state := p.info.PID, p.info.State
 		l.mu.Unlock()
@@ -150,19 +177,42 @@ func (l *Launcher) open(ctx context.Context, profileID string, behind bool) erro
 		}
 		return fmt.Errorf("profile is %s", state)
 	}
-	p := &proc{info: Info{ProfileID: profileID, State: Starting}, done: make(chan struct{}), behind: behind}
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	p := &proc{info: Info{ProfileID: profileID, State: Queued}, done: make(chan struct{}), behind: behind, cancel: cancel}
+	// Reserve the profile before waiting so duplicate requests cannot queue a
+	// second launch, and Stop/Trash can find and cancel the pending request.
 	l.procs[profileID] = p
 	l.mu.Unlock()
-	l.onChange(p.info)
+	l.onChange(Info{ProfileID: profileID, State: Queued})
 
-	if err := l.start(ctx, p); err != nil {
+	err := l.gate.Acquire(ctx)
+	if err == nil {
+		l.mu.Lock()
+		p.gated = true
+		l.mu.Unlock()
+		l.set(p, Starting, "")
+		err = l.start(ctx, p)
+	}
+	if err != nil {
 		if p.relay != nil {
 			p.relay.Close()
 		}
+		if p.cdp != nil {
+			p.cdp.Close()
+		}
 		l.mu.Lock()
 		delete(l.procs, profileID)
+		if p.gated {
+			l.gate.Release()
+		}
 		l.mu.Unlock()
-		l.onChange(Info{ProfileID: profileID, State: Stopped, Error: err.Error()})
+		msg := err.Error()
+		if ctx.Err() != nil {
+			msg = ""
+		}
+		l.set(p, Stopped, msg)
+		close(p.done)
 		return err
 	}
 	return nil

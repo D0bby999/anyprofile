@@ -98,6 +98,7 @@ export const vi: Messages = {
     title: 'Profile', total: (n: number) => `${n} profile`,
     search: 'Tìm tên, tag, ghi chú, login, IP hoặc #12',
     open: 'Mở', opening: 'Đang mở', stop: 'Đóng', stopping: 'Đang đóng',
+    queued: 'Đang chờ', cancelQueued: 'Hủy mở đang chờ',
     edit: 'Sửa profile', focus: 'Đưa cửa sổ lên trước', trash: 'Bỏ vào thùng rác',
     selected: (n: number) => `Đã chọn ${n}`,
     selectAll: (n: number) => `Chọn cả ${n} profile`,

@@ -62,6 +62,7 @@ export function ProfileDrawer({ row, sites, knownTags, onClose, onStart, onStop,
   }
 
   const running = row.state !== 'stopped'
+  const queued = row.state === 'queued'
   const busy = row.state === 'starting' || row.state === 'stopping'
   const engine = `${t.engines.names[row.engine] ?? row.engine} ${row.engineVersion}`
 
@@ -117,7 +118,7 @@ export function ProfileDrawer({ row, sites, knownTags, onClose, onStart, onStop,
           <span className="spacer" />
           {running || row.state === 'stopping' ? (
             <button type="button" className="btn sm stop actbtn" disabled={busy} onClick={() => onStop(row.id)}>
-              <Icon name="stop" className="icon sm" />{busy ? t.profiles.stopping : t.profiles.stop}
+              <Icon name={queued ? 'x' : 'stop'} className="icon sm" />{queued ? t.profiles.cancelQueued : busy ? t.profiles.stopping : t.profiles.stop}
             </button>
           ) : (
             <button type="button" className={`btn sm primary actbtn${busy ? ' busy' : ''}`} aria-busy={busy} disabled={busy} onClick={() => onStart(row.id)}>

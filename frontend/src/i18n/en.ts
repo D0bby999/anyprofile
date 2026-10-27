@@ -97,6 +97,7 @@ export const en = {
     title: 'Profiles', total: (n: number) => `${n} profiles`,
     search: 'Search name, tag, note, login, IP or #12',
     open: 'Open', opening: 'Opening', stop: 'Close', stopping: 'Closing',
+    queued: 'Queued', cancelQueued: 'Cancel queued launch',
     edit: 'Edit profile', focus: 'Bring window to front', trash: 'Move to trash',
     selected: (n: number) => `${n} selected`,
     selectAll: (n: number) => `Select all ${n} profiles`,

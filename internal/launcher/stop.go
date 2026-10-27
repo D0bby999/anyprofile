@@ -33,6 +33,10 @@ func (l *Launcher) watch(p *proc, pid int, wait <-chan error) {
 	}
 	l.mu.Lock()
 	delete(l.procs, p.info.ProfileID)
+	if p.gated {
+		// The browser is gone: hand its launch slot to a queued start.
+		l.gate.Release()
+	}
 	// The browser and its DevTools port are gone; the Stopped event must not
 	// carry the old port, or the list keeps warning that it is open.
 	p.info.PID, p.info.CDPPort = 0, 0
@@ -53,12 +57,24 @@ func (l *Launcher) watch(p *proc, pid int, wait <-chan error) {
 func (l *Launcher) Stop(profileID string) error {
 	l.mu.Lock()
 	p, ok := l.procs[profileID]
-	if !ok || p.info.State != Running {
+	if !ok {
 		l.mu.Unlock()
-		if !ok {
+		return nil
+	}
+	state := p.info.State
+	if (state == Queued || state == Starting) && p.cancel != nil {
+		p.cancel()
+		l.mu.Unlock()
+		select {
+		case <-p.done:
 			return nil
+		case <-time.After(l.readyTimeout + l.termGrace):
+			return fmt.Errorf("profile startup did not cancel in time")
 		}
-		return fmt.Errorf("profile is %s", p.info.State)
+	}
+	if state != Running {
+		l.mu.Unlock()
+		return fmt.Errorf("profile is %s", state)
 	}
 	pid, cdp := p.info.PID, p.cdp
 	l.mu.Unlock()
@@ -96,15 +112,40 @@ func (l *Launcher) Focus(profileID string) bool {
 	l.mu.Lock()
 	p, ok := l.procs[profileID]
 	l.mu.Unlock()
-	return ok && p.info.State == Running && activate(p.info.PID)
+	if !ok {
+		return false
+	}
+	l.mu.Lock()
+	state, pid := p.info.State, p.info.PID
+	l.mu.Unlock()
+	return state == Running && activate(pid)
 }
 
 // StopAll stops every running browser in parallel.
 func (l *Launcher) StopAll() {
+	l.mu.Lock()
+	if l.stoppingAll {
+		done := l.stopAllDone
+		l.mu.Unlock()
+		<-done
+		return
+	}
+	l.stoppingAll = true
+	l.stopAllDone = make(chan struct{})
+	ids := make([]string, 0, len(l.procs))
+	// Cancel queued/starting requests before releasing any running slots.
+	for id, p := range l.procs {
+		ids = append(ids, id)
+		if (p.info.State == Queued || p.info.State == Starting) && p.cancel != nil {
+			p.cancel()
+		}
+	}
+	l.mu.Unlock()
+	defer func() { l.mu.Lock(); l.stoppingAll = false; close(l.stopAllDone); l.mu.Unlock() }()
 	var wg sync.WaitGroup
-	for _, in := range l.List() {
+	for _, id := range ids {
 		wg.Add(1)
-		go func(id string) { defer wg.Done(); _ = l.Stop(id) }(in.ProfileID)
+		go func(id string) { defer wg.Done(); _ = l.Stop(id) }(id)
 	}
 	wg.Wait()
 }

@@ -155,11 +155,23 @@ func TestLifecycleFiveProfiles(t *testing.T) {
 
 	// Simulated crash: a fresh launcher on the same store adopts all five.
 	l2 := r.launcher(t)
+	l2.SetMaxRunning(2)
 	l2.Adopt()
+	if got := l2.gate.Running(); got != 5 {
+		t.Fatalf("adopted gate count = %d, want 5", got)
+	}
+	blocked, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+	defer cancel()
+	if err := l2.gate.Acquire(blocked); err == nil {
+		t.Fatal("adopted browsers did not enforce launch ceiling")
+	}
 	if n := len(l2.List()); n != 5 {
 		t.Fatalf("adopted = %d", n)
 	}
 	l2.StopAll()
+	if got := l2.gate.Running(); got != 0 {
+		t.Fatalf("adopted slots left after StopAll: %d", got)
+	}
 	time.Sleep(time.Second)
 	for _, in := range infos {
 		if alive(in.PID) {

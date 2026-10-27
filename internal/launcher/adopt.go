@@ -46,6 +46,8 @@ func (l *Launcher) Adopt() {
 			}
 		}
 		l.mu.Lock()
+		l.gate.Adopt()
+		p.gated = true
 		l.procs[ln.ProfileID] = p
 		l.mu.Unlock()
 		l.onChange(p.info)

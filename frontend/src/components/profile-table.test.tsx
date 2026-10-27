@@ -126,6 +126,19 @@ describe('ProfileTable', () => {
     expect(rows[0].querySelector('.col-status .chip.accent')).toBeNull()
   })
 
+  it('shows a queued launch and cancels it without allowing another open', () => {
+    const p = props([row({ state: 'queued' })])
+    render(<ProfileTable {...p} />)
+    expect(screen.getByText(t.profiles.queued)).toBeTruthy()
+    fireEvent.doubleClick(screen.getByText('Kênh A'))
+    expect(p.onStart).not.toHaveBeenCalled()
+    const cancel = screen.getByRole('button', { name: t.profiles.cancelQueued }) as HTMLButtonElement
+    expect(cancel.disabled).toBe(false)
+    fireEvent.click(cancel)
+    expect(p.onStop).toHaveBeenCalledWith('a')
+    expect(screen.queryByRole('button', { name: t.profiles.open })).toBeNull()
+  })
+
   it('disables the action while a profile is starting', () => {
     render(<ProfileTable {...props([row({ state: 'starting' })])} />)
     expect((screen.getByRole('button', { name: new RegExp(t.profiles.opening) }) as HTMLButtonElement).disabled).toBe(true)

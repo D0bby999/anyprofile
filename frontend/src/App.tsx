@@ -164,6 +164,7 @@ export default function App() {
   const openProfile = (id: string) => { setPage('profiles'); setActiveId(id) }
   const openSettings = (id?: string) => { setPage('settings'); if (id) setTimeout(() => scrollSettingsTo(id), 50) }
   const launchProfile = (row: service.ProfileRow) => {
+    if (row.state !== 'running' && row.state !== 'stopped') return
     const go = row.state === 'running' ? Api.FocusProfile(row.id) : Api.StartProfile(row.id)
     Promise.resolve(go).catch((e: unknown) => toast.error(errorText(e)))
   }
