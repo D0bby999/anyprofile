@@ -13,6 +13,11 @@ const SettingOnOpen = "on_open"
 // JSON array of profile IDs.
 const SettingProfileOrder = "profile_order"
 
+// SettingMaxConcurrentLaunches is the launch ceiling: how many browsers
+// may be starting or running at once, as a decimal integer. Unset or "0"
+// means unlimited.
+const SettingMaxConcurrentLaunches = "max_concurrent_launches"
+
 // GetSetting returns the stored value for key, or "" and nil when unset.
 func (s *Store) GetSetting(key string) (string, error) {
 	var v string

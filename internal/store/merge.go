@@ -33,6 +33,8 @@ type MergeResult struct {
 	Extensions []string
 	Sites      []string
 	Accounts   []MergedAccount
+	Folders    []string
+	Templates  []string
 
 	ProfilesHere int // in both databases: left as they are here
 	ProxiesHere  int
@@ -107,6 +109,12 @@ func (s *Store) Merge(ctx context.Context, path string, beforeCommit func(MergeR
 		}
 	}
 
+	folderIDs, folders, templates, err := mergeOrganization(ctx, tx)
+	if err != nil {
+		return res, err
+	}
+	res.Folders, res.Templates = folders, templates
+
 	// Profiles one by one: each takes the next serial, and brings its accounts
 	// and extensions.
 	res.Profiles, err = strs(ctx, tx, `SELECT id FROM bak.profiles WHERE id NOT IN (SELECT id FROM main.profiles) ORDER BY serial`)
@@ -118,13 +126,17 @@ func (s *Store) Merge(ctx context.Context, path string, beforeCommit func(MergeR
 		return res, err
 	}
 	res.ProfilesHere = all - len(res.Profiles)
-	cols, err := sharedCols(ctx, tx, "profiles", "serial")
+	cols, err := sharedCols(ctx, tx, "profiles", "serial", "folder_id")
 	if err != nil {
 		return res, err
 	}
 	for _, id := range res.Profiles {
-		if _, err := tx.ExecContext(ctx, `INSERT INTO main.profiles (`+cols+`, serial) SELECT `+cols+
-			`, (SELECT COALESCE(MAX(serial), 0) + 1 FROM main.profiles) FROM bak.profiles WHERE id = ?`, id); err != nil {
+		var folderID string
+		if err := tx.QueryRowContext(ctx, `SELECT COALESCE(folder_id, '') FROM bak.profiles WHERE id = ?`, id).Scan(&folderID); err != nil {
+			return res, err
+		}
+		if _, err := tx.ExecContext(ctx, `INSERT INTO main.profiles (`+cols+`, folder_id, serial) SELECT `+cols+
+			`, ?, (SELECT COALESCE(MAX(serial), 0) + 1 FROM main.profiles) FROM bak.profiles WHERE id = ?`, nullStr(folderIDs[folderID]), id); err != nil {
 			return res, fmt.Errorf("merge profile %s: %w", id, err)
 		}
 		if err := copyRows("accounts", `profile_id = ?`, id); err != nil {
