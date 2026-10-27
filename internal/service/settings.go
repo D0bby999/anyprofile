@@ -4,6 +4,7 @@ package service
 
 import (
 	"sort"
+	"strconv"
 
 	"github.com/D0bby999/anyprofile/internal/apperr"
 	"github.com/D0bby999/anyprofile/internal/engine"
@@ -140,4 +141,43 @@ func (s *Service) FinishOnboarding() error {
 	}
 	s.notify("settings")
 	return nil
+}
+
+// MaxConcurrentLaunches is the launch ceiling: how many browsers may be
+// starting or running at once. 0 means unlimited — the default, and also
+// the fallback when the saved value is missing or unreadable, so a bad
+// value can never lock the user out of opening profiles.
+func (s *Service) MaxConcurrentLaunches() int {
+	if v, err := s.Store.GetSetting(store.SettingMaxConcurrentLaunches); err == nil {
+		if n, err := strconv.Atoi(v); err == nil && n >= 0 {
+			return n
+		}
+	}
+	return 0
+}
+
+// SetMaxConcurrentLaunches persists the launch ceiling and applies it to
+// the launcher at once: starts beyond the new ceiling queue, and raising
+// it lets queued starts through.
+func (s *Service) SetMaxConcurrentLaunches(n int) error {
+	if n < 0 {
+		return apperr.Newf("bad_max_concurrent_launches", "max concurrent launches must not be negative, got %d", n)
+	}
+	if err := s.Store.SetSetting(store.SettingMaxConcurrentLaunches, strconv.Itoa(n)); err != nil {
+		return err
+	}
+	if s.Launcher != nil {
+		s.Launcher.SetMaxRunning(n)
+	}
+	s.notify("settings")
+	return nil
+}
+
+// ApplyLaunchCeiling pushes the saved launch ceiling into the launcher.
+// The app calls it once at startup, after the service exists; the ceiling
+// only takes effect from here (or from SetMaxConcurrentLaunches).
+func (s *Service) ApplyLaunchCeiling() {
+	if s.Launcher != nil {
+		s.Launcher.SetMaxRunning(s.MaxConcurrentLaunches())
+	}
 }

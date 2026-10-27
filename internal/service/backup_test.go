@@ -52,6 +52,17 @@ func backupSource(t *testing.T) (*Service, string) {
 
 func TestBackupToANewComputer(t *testing.T) {
 	src, id := backupSource(t)
+	folder, err := src.CreateFolder("Khách A", "blue")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := src.SetProfileFolder(id, folder.ID); err != nil {
+		t.Fatal(err)
+	}
+	tpl, err := src.CreateTemplate(store.Template{Name: "TikTok VN", Sites: []string{"tiktok"}, Languages: "vi-VN,vi", UILocale: "vi-VN", FolderID: folder.ID})
+	if err != nil {
+		t.Fatal(err)
+	}
 	file := filepath.Join(t.TempDir(), "all.apbackup")
 	res, err := src.ExportBackup(file, pw)
 	if err != nil {
@@ -84,8 +95,14 @@ func TestBackupToANewComputer(t *testing.T) {
 		t.Fatalf("import = %+v", got)
 	}
 	p, err := dst.Store.GetProfile(id)
-	if err != nil || p.Name != "Kênh A" || p.ProxyID != "px1" {
+	if err != nil || p.Name != "Kênh A" || p.ProxyID != "px1" || p.FolderID != folder.ID {
 		t.Fatalf("profile = %+v, %v", p, err)
+	}
+	if f, err := dst.Store.GetFolder(folder.ID); err != nil || f.Name != folder.Name {
+		t.Fatalf("folder=%+v err=%v", f, err)
+	}
+	if restored, err := dst.Store.GetTemplate(tpl.ID); err != nil || restored.FolderID != folder.ID || restored.Languages != tpl.Languages {
+		t.Fatalf("template=%+v err=%v", restored, err)
 	}
 	if got := read(t, filepath.Join(dst.Dirs.Profile(id), "Default", "Cookies")); got != "cookies" {
 		t.Fatalf("cookies file = %q", got)

@@ -113,6 +113,38 @@ export namespace main {
 	        this.default = source["default"];
 	    }
 	}
+	export class FolderList {
+	    folders: service.FolderRow[];
+	    unfiled: number;
+
+	    static createFrom(source: any = {}) {
+	        return new FolderList(source);
+	    }
+
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.folders = this.convertValues(source["folders"], service.FolderRow);
+	        this.unfiled = source["unfiled"];
+	    }
+
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 
 }
 
@@ -392,6 +424,28 @@ export namespace service {
 	        this.params = source["params"];
 	    }
 	}
+	export class FolderRow {
+	    id: string;
+	    name: string;
+	    color: string;
+	    sortOrder: number;
+	    createdAt: string;
+	    count: number;
+
+	    static createFrom(source: any = {}) {
+	        return new FolderRow(source);
+	    }
+
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.name = source["name"];
+	        this.color = source["color"];
+	        this.sortOrder = source["sortOrder"];
+	        this.createdAt = source["createdAt"];
+	        this.count = source["count"];
+	    }
+	}
 	export class ImportResult {
 	    added: number;
 	    failed: netproxy.ParsedLine[];
@@ -652,6 +706,7 @@ export namespace service {
 	    updatedAt: string;
 	    lastOpenAt: string;
 	    deletedAt: string;
+	    folderId: string;
 	    state: string;
 	    stateError: string;
 	    cdpPort: number;
@@ -701,6 +756,7 @@ export namespace service {
 	        this.updatedAt = source["updatedAt"];
 	        this.lastOpenAt = source["lastOpenAt"];
 	        this.deletedAt = source["deletedAt"];
+	        this.folderId = source["folderId"];
 	        this.state = source["state"];
 	        this.stateError = source["stateError"];
 	        this.cdpPort = source["cdpPort"];
@@ -732,6 +788,39 @@ export namespace service {
 		    return a;
 		}
 	}
+	export class ProfilePage {
+	    rows: ProfileRow[];
+	    total: number;
+
+	    static createFrom(source: any = {}) {
+	        return new ProfilePage(source);
+	    }
+
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.rows = this.convertValues(source["rows"], ProfileRow);
+	        this.total = source["total"];
+	    }
+
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+
 	export class ProxyMeta {
 	    label: string;
 	    note: string;
@@ -1014,6 +1103,26 @@ export namespace store {
 	        this.profiles = source["profiles"];
 	    }
 	}
+	export class Folder {
+	    id: string;
+	    name: string;
+	    color: string;
+	    sortOrder: number;
+	    createdAt: string;
+
+	    static createFrom(source: any = {}) {
+	        return new Folder(source);
+	    }
+
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.name = source["name"];
+	        this.color = source["color"];
+	        this.sortOrder = source["sortOrder"];
+	        this.createdAt = source["createdAt"];
+	    }
+	}
 	export class MobileDevice {
 	    id: string;
 	    name: string;
@@ -1092,6 +1201,7 @@ export namespace store {
 	    updatedAt: string;
 	    lastOpenAt: string;
 	    deletedAt: string;
+	    folderId: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new Profile(source);
@@ -1130,6 +1240,7 @@ export namespace store {
 	        this.updatedAt = source["updatedAt"];
 	        this.lastOpenAt = source["lastOpenAt"];
 	        this.deletedAt = source["deletedAt"];
+	        this.folderId = source["folderId"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -1154,6 +1265,10 @@ export namespace store {
 	    query: string;
 	    tag: string;
 	    trashed: boolean;
+	    limit: number;
+	    offset: number;
+	    folderId: string;
+	    unfiled: boolean;
 	
 	    static createFrom(source: any = {}) {
 	        return new ProfileFilter(source);
@@ -1164,6 +1279,10 @@ export namespace store {
 	        this.query = source["query"];
 	        this.tag = source["tag"];
 	        this.trashed = source["trashed"];
+	        this.limit = source["limit"];
+	        this.offset = source["offset"];
+	        this.folderId = source["folderId"];
+	        this.unfiled = source["unfiled"];
 	    }
 	}
 	export class Proxy {
@@ -1272,6 +1391,46 @@ export namespace store {
 	        this.reason = source["reason"];
 	        this.bytes = source["bytes"];
 	        this.file = source["file"];
+	    }
+	}
+	export class Template {
+	    id: string;
+	    name: string;
+	    site: string;
+	    sites: string[];
+	    proxyNote: string;
+	    languages: string;
+	    uiLocale: string;
+	    engine: string;
+	    startUrl: string;
+	    notes: string;
+	    tags: string[];
+	    folderId: string;
+	    builtin: boolean;
+	    createdAt: string;
+	    updatedAt: string;
+
+	    static createFrom(source: any = {}) {
+	        return new Template(source);
+	    }
+
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.name = source["name"];
+	        this.site = source["site"];
+	        this.sites = source["sites"];
+	        this.proxyNote = source["proxyNote"];
+	        this.languages = source["languages"];
+	        this.uiLocale = source["uiLocale"];
+	        this.engine = source["engine"];
+	        this.startUrl = source["startUrl"];
+	        this.notes = source["notes"];
+	        this.tags = source["tags"];
+	        this.folderId = source["folderId"];
+	        this.builtin = source["builtin"];
+	        this.createdAt = source["createdAt"];
+	        this.updatedAt = source["updatedAt"];
 	    }
 	}
 

@@ -70,6 +70,10 @@ export function CopyMCPSetup(arg1) {
   return window['go']['main']['App']['CopyMCPSetup'](arg1);
 }
 
+export function CreateFolder(arg1, arg2) {
+  return window['go']['main']['App']['CreateFolder'](arg1, arg2);
+}
+
 export function CreateMobileDevice(arg1) {
   return window['go']['main']['App']['CreateMobileDevice'](arg1);
 }
@@ -78,12 +82,20 @@ export function CreateProfile(arg1) {
   return window['go']['main']['App']['CreateProfile'](arg1);
 }
 
+export function CreateProfileFromTemplate(arg1, arg2, arg3) {
+  return window['go']['main']['App']['CreateProfileFromTemplate'](arg1, arg2, arg3);
+}
+
 export function CreateProfiles(arg1) {
   return window['go']['main']['App']['CreateProfiles'](arg1);
 }
 
 export function CreateSite(arg1) {
   return window['go']['main']['App']['CreateSite'](arg1);
+}
+
+export function CreateTemplate(arg1) {
+  return window['go']['main']['App']['CreateTemplate'](arg1);
 }
 
 export function Defaults() {
@@ -96,6 +108,10 @@ export function DeleteAllSnapshots() {
 
 export function DeleteExtension(arg1) {
   return window['go']['main']['App']['DeleteExtension'](arg1);
+}
+
+export function DeleteFolder(arg1, arg2) {
+  return window['go']['main']['App']['DeleteFolder'](arg1, arg2);
 }
 
 export function DeleteOrphans(arg1) {
@@ -114,8 +130,16 @@ export function DeleteSnapshot(arg1) {
   return window['go']['main']['App']['DeleteSnapshot'](arg1);
 }
 
+export function DeleteTemplate(arg1) {
+  return window['go']['main']['App']['DeleteTemplate'](arg1);
+}
+
 export function DuplicateProfile(arg1) {
   return window['go']['main']['App']['DuplicateProfile'](arg1);
+}
+
+export function DuplicateTemplate(arg1) {
+  return window['go']['main']['App']['DuplicateTemplate'](arg1);
 }
 
 export function EngineReleases(arg1) {
@@ -198,6 +222,10 @@ export function ListExtensions() {
   return window['go']['main']['App']['ListExtensions']();
 }
 
+export function ListFolders() {
+  return window['go']['main']['App']['ListFolders']();
+}
+
 export function ListMobileDevices(arg1) {
   return window['go']['main']['App']['ListMobileDevices'](arg1);
 }
@@ -206,16 +234,32 @@ export function ListProfiles(arg1) {
   return window['go']['main']['App']['ListProfiles'](arg1);
 }
 
+export function ListProfilesPage(arg1, arg2, arg3) {
+  return window['go']['main']['App']['ListProfilesPage'](arg1, arg2, arg3);
+}
+
 export function ListProxies() {
   return window['go']['main']['App']['ListProxies']();
+}
+
+export function ListTemplates() {
+  return window['go']['main']['App']['ListTemplates']();
 }
 
 export function MatchExit(arg1) {
   return window['go']['main']['App']['MatchExit'](arg1);
 }
 
+export function MaxConcurrentLaunches() {
+  return window['go']['main']['App']['MaxConcurrentLaunches']();
+}
+
 export function MobileAvailability() {
   return window['go']['main']['App']['MobileAvailability']();
+}
+
+export function MoveProfilesToFolder(arg1, arg2) {
+  return window['go']['main']['App']['MoveProfilesToFolder'](arg1, arg2);
 }
 
 export function NewAPIToken() {
@@ -290,6 +334,14 @@ export function RemoveEngineVersion(arg1, arg2) {
   return window['go']['main']['App']['RemoveEngineVersion'](arg1, arg2);
 }
 
+export function RenameFolder(arg1, arg2) {
+  return window['go']['main']['App']['RenameFolder'](arg1, arg2);
+}
+
+export function ReorderFolders(arg1) {
+  return window['go']['main']['App']['ReorderFolders'](arg1);
+}
+
 export function ResetFingerprint(arg1) {
   return window['go']['main']['App']['ResetFingerprint'](arg1);
 }
@@ -334,12 +386,24 @@ export function SetExtensionMany(arg1, arg2, arg3) {
   return window['go']['main']['App']['SetExtensionMany'](arg1, arg2, arg3);
 }
 
+export function SetFolderColor(arg1, arg2) {
+  return window['go']['main']['App']['SetFolderColor'](arg1, arg2);
+}
+
 export function SetLanguage(arg1) {
   return window['go']['main']['App']['SetLanguage'](arg1);
 }
 
+export function SetMaxConcurrentLaunches(arg1) {
+  return window['go']['main']['App']['SetMaxConcurrentLaunches'](arg1);
+}
+
 export function SetPinnedMany(arg1, arg2) {
   return window['go']['main']['App']['SetPinnedMany'](arg1, arg2);
+}
+
+export function SetProfileFolder(arg1, arg2) {
+  return window['go']['main']['App']['SetProfileFolder'](arg1, arg2);
 }
 
 export function SetProfileOrder(arg1) {
@@ -448,4 +512,8 @@ export function UpdateSite(arg1, arg2) {
 
 export function UpdateStatus() {
   return window['go']['main']['App']['UpdateStatus']();
+}
+
+export function UpdateTemplate(arg1) {
+  return window['go']['main']['App']['UpdateTemplate'](arg1);
 }

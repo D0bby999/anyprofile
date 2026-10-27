@@ -131,6 +131,7 @@ func (a *App) init() error {
 		a.svc.OfferMobileRuntime()
 	}
 	l.BeforeStart, l.AfterExit = a.svc.BeforeLaunch, a.svc.AfterExit
+	a.svc.ApplyLaunchCeiling()
 	a.svc.LoadEngineList()
 	go a.svc.PruneEngines(context.Background())
 	l.Adopt()

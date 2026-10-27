@@ -177,6 +177,11 @@ func normalizeStartURLs(s string) (string, error) {
 }
 
 func (s *Service) CreateProfile(ctx context.Context, in NewProfile) (store.Profile, error) {
+	return s.createProfile(ctx, in, nil)
+}
+
+// configure applies template defaults before the only insert/notification.
+func (s *Service) createProfile(ctx context.Context, in NewProfile, configure func(*store.Profile) error) (store.Profile, error) {
 	in.Name = strings.TrimSpace(in.Name)
 	if in.Name == "" {
 		return store.Profile{}, apperr.New("name_required", "profile name is required")
@@ -212,6 +217,11 @@ func (s *Service) CreateProfile(ctx context.Context, in NewProfile) (store.Profi
 		return store.Profile{}, err
 	}
 	s.regionStartURLs(&p)
+	if configure != nil {
+		if err := configure(&p); err != nil {
+			return store.Profile{}, err
+		}
+	}
 	if err := s.Store.CreateProfile(&p); err != nil {
 		return store.Profile{}, err
 	}

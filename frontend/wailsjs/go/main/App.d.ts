@@ -41,19 +41,27 @@ export function CopyDiagnostics():Promise<void>;
 
 export function CopyMCPSetup(arg1:string):Promise<void>;
 
+export function CreateFolder(arg1:string,arg2:string):Promise<store.Folder>;
+
 export function CreateMobileDevice(arg1:service.MobileInput):Promise<store.MobileDevice>;
 
 export function CreateProfile(arg1:service.NewProfile):Promise<store.Profile>;
 
+export function CreateProfileFromTemplate(arg1:string,arg2:string,arg3:string):Promise<store.Profile>;
+
 export function CreateProfiles(arg1:service.BulkCreate):Promise<Array<store.Profile>>;
 
 export function CreateSite(arg1:service.SiteInput):Promise<site.Site>;
+
+export function CreateTemplate(arg1:store.Template):Promise<store.Template>;
 
 export function Defaults():Promise<service.Defaults>;
 
 export function DeleteAllSnapshots():Promise<void>;
 
 export function DeleteExtension(arg1:string):Promise<void>;
+
+export function DeleteFolder(arg1:string,arg2:string):Promise<void>;
 
 export function DeleteOrphans(arg1:Array<string>):Promise<void>;
 
@@ -63,7 +71,11 @@ export function DeleteSite(arg1:string):Promise<void>;
 
 export function DeleteSnapshot(arg1:number):Promise<void>;
 
+export function DeleteTemplate(arg1:string):Promise<void>;
+
 export function DuplicateProfile(arg1:service.DuplicateInput):Promise<Array<store.Profile>>;
+
+export function DuplicateTemplate(arg1:string):Promise<store.Template>;
 
 export function EngineReleases(arg1:string):Promise<Array<service.EngineRelease>>;
 
@@ -105,15 +117,25 @@ export function Language():Promise<string>;
 
 export function ListExtensions():Promise<Array<store.Extension>>;
 
+export function ListFolders():Promise<main.FolderList>;
+
 export function ListMobileDevices(arg1:store.ProfileFilter):Promise<Array<service.MobileRow>>;
 
 export function ListProfiles(arg1:store.ProfileFilter):Promise<Array<service.ProfileRow>>;
 
+export function ListProfilesPage(arg1:store.ProfileFilter,arg2:number,arg3:number):Promise<service.ProfilePage>;
+
 export function ListProxies():Promise<Array<service.ProxyRow>>;
+
+export function ListTemplates():Promise<Array<store.Template>>;
 
 export function MatchExit(arg1:string):Promise<void>;
 
+export function MaxConcurrentLaunches():Promise<number>;
+
 export function MobileAvailability():Promise<service.MobileAvailability>;
+
+export function MoveProfilesToFolder(arg1:Array<string>,arg2:string):Promise<number>;
 
 export function NewAPIToken():Promise<void>;
 
@@ -151,6 +173,10 @@ export function QuickCreate(arg1:string):Promise<store.Profile>;
 
 export function RemoveEngineVersion(arg1:string,arg2:string):Promise<void>;
 
+export function RenameFolder(arg1:string,arg2:string):Promise<void>;
+
+export function ReorderFolders(arg1:Array<string>):Promise<void>;
+
 export function ResetFingerprint(arg1:string):Promise<void>;
 
 export function RestoreMobileBackup(arg1:string):Promise<void>;
@@ -173,9 +199,15 @@ export function SetDefaults(arg1:service.Defaults):Promise<void>;
 
 export function SetExtensionMany(arg1:Array<string>,arg2:string,arg3:boolean):Promise<void>;
 
+export function SetFolderColor(arg1:string,arg2:string):Promise<void>;
+
 export function SetLanguage(arg1:string):Promise<void>;
 
+export function SetMaxConcurrentLaunches(arg1:number):Promise<void>;
+
 export function SetPinnedMany(arg1:Array<string>,arg2:boolean):Promise<void>;
+
+export function SetProfileFolder(arg1:string,arg2:string):Promise<void>;
 
 export function SetProfileOrder(arg1:Array<string>):Promise<void>;
 
@@ -230,3 +262,5 @@ export function UpdateProxy(arg1:string,arg2:service.ProxyMeta):Promise<void>;
 export function UpdateSite(arg1:string,arg2:service.SiteInput):Promise<void>;
 
 export function UpdateStatus():Promise<service.UpdateStatus>;
+
+export function UpdateTemplate(arg1:store.Template):Promise<void>;

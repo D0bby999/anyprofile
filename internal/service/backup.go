@@ -395,7 +395,7 @@ func (s *Service) ImportBackup(ctx context.Context, path, password string) (Back
 	res = BackupResult{Profiles: len(merged.Profiles), Proxies: len(merged.Proxies), Accounts: len(merged.Accounts),
 		Extensions: len(merged.Extensions), ProfilesHere: merged.ProfilesHere, ProxiesHere: merged.ProxiesHere}
 	s.Log.Info("backup restored", "profiles", res.Profiles, "proxies", res.Proxies, "profilesHere", res.ProfilesHere)
-	for _, kind := range []string{"profiles", "proxies", "sites", "extensions"} {
+	for _, kind := range []string{"profiles", "proxies", "sites", "extensions", "settings"} {
 		s.notify(kind)
 	}
 	return res, nil
