@@ -53,6 +53,8 @@ type Profile struct {
 	UpdatedAt     string   `json:"updatedAt"`
 	LastOpenAt    string   `json:"lastOpenAt"`
 	DeletedAt     string   `json:"deletedAt"`
+	// FolderID is the folder the profile is filed in; "" means unfiled.
+	FolderID string `json:"folderId"`
 }
 
 // EngineMeta holds what an engine pins at creation. Zero values mean "not pinned".
@@ -66,13 +68,20 @@ type ProfileFilter struct {
 	Query   string `json:"query"` // substring of the name, case-insensitive
 	Tag     string `json:"tag"`
 	Trashed bool   `json:"trashed"` // list the trash instead of live profiles
+	// Limit and Offset page the result; Limit 0 means the whole list.
+	Limit  int `json:"limit"`
+	Offset int `json:"offset"`
+	// FolderID narrows to one folder; Unfiled narrows to profiles with
+	// no folder. Both empty means folders do not narrow the list.
+	FolderID string `json:"folderId"`
+	Unfiled  bool   `json:"unfiled"`
 }
 
 const profileCols = `id, name, engine, engine_version, persona_id, seed_hex, platform,
 	COALESCE(proxy_id, ''), timezone, languages, ui_locale, lat, lon, sites, start_url,
 	notes, tags, cdp_next_launch, pinned, created_at, updated_at, COALESCE(last_open_at, ''),
 	COALESCE(deleted_at, ''), serial,
-	fp_verdict, fp_diff, fp_checked_at, engine_meta, fp_baseline`
+	fp_verdict, fp_diff, fp_checked_at, engine_meta, fp_baseline, COALESCE(folder_id, '')`
 
 func scanProfile(row interface{ Scan(...any) error }) (Profile, error) {
 	var p Profile
@@ -82,7 +91,7 @@ func scanProfile(row interface{ Scan(...any) error }) (Profile, error) {
 		&p.Platform, &p.ProxyID, &p.Timezone, &p.Languages, &p.UILocale, &p.Lat, &p.Lon,
 		&sites, &p.StartURL, &p.Notes, &tags, &p.CDPNextLaunch, &p.Pinned,
 		&p.CreatedAt, &p.UpdatedAt, &p.LastOpenAt, &p.DeletedAt, &p.Serial,
-		&p.FPVerdict, &fpDiff, &p.FPCheckedAt, &meta, &baseline)
+		&p.FPVerdict, &fpDiff, &p.FPCheckedAt, &meta, &baseline, &p.FolderID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return p, ErrNotFound
 	}
@@ -165,11 +174,11 @@ func (s *Store) CreateProfile(p *Profile) error {
 	p.CreatedAt, p.UpdatedAt = now(), now()
 	_, err := s.db.Exec(`INSERT INTO profiles (id, name, engine, engine_version, persona_id, seed_hex,
 		platform, proxy_id, timezone, languages, ui_locale, lat, lon, site, sites, start_url, notes,
-		tags, cdp_next_launch, pinned, created_at, updated_at, engine_meta, serial)
-		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,(SELECT COALESCE(MAX(serial), 0) + 1 FROM profiles))`,
+		tags, cdp_next_launch, pinned, created_at, updated_at, engine_meta, folder_id, serial)
+		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,(SELECT COALESCE(MAX(serial), 0) + 1 FROM profiles))`,
 		p.ID, p.Name, p.Engine, p.EngineVersion, p.PersonaID, p.SeedHex, p.Platform, nullStr(p.ProxyID),
 		p.Timezone, p.Languages, p.UILocale, p.Lat, p.Lon, p.Sites[0], tagsJSON(p.Sites), p.StartURL, p.Notes,
-		tagsJSON(p.Tags), p.CDPNextLaunch, p.Pinned, p.CreatedAt, p.UpdatedAt, metaJSON(p.EngineMeta))
+		tagsJSON(p.Tags), p.CDPNextLaunch, p.Pinned, p.CreatedAt, p.UpdatedAt, metaJSON(p.EngineMeta), nullStr(p.FolderID))
 	if err != nil {
 		return err
 	}
@@ -255,7 +264,9 @@ func (s *Store) ResetFingerprint(id string) error {
 	return affected(res, err)
 }
 
-func (s *Store) ListProfiles(f ProfileFilter) ([]Profile, error) {
+// profileWhere builds the WHERE clause shared by ListProfiles and
+// CountProfiles, so a page and its total can never disagree.
+func profileWhere(f ProfileFilter) (string, []any) {
 	where := []string{"deleted_at IS NULL"}
 	if f.Trashed {
 		where[0] = "deleted_at IS NOT NULL"
@@ -276,8 +287,32 @@ func (s *Store) ListProfiles(f ProfileFilter) ([]Profile, error) {
 		where = append(where, "EXISTS (SELECT 1 FROM json_each(profiles.tags) WHERE value = ?)")
 		args = append(args, f.Tag)
 	}
-	rows, err := s.db.Query(`SELECT `+profileCols+` FROM profiles WHERE `+strings.Join(where, " AND ")+
-		` ORDER BY pinned DESC, sort_order, created_at`, args...)
+	if f.Unfiled {
+		where = append(where, "folder_id IS NULL")
+	} else if f.FolderID != "" {
+		where = append(where, "folder_id = ?")
+		args = append(args, f.FolderID)
+	}
+	return strings.Join(where, " AND "), args
+}
+
+// CountProfiles counts the profiles a filter matches, ignoring paging.
+func (s *Store) CountProfiles(f ProfileFilter) (int, error) {
+	where, args := profileWhere(f)
+	var n int
+	err := s.db.QueryRow(`SELECT COUNT(*) FROM profiles WHERE `+where, args...).Scan(&n)
+	return n, err
+}
+
+func (s *Store) ListProfiles(f ProfileFilter) ([]Profile, error) {
+	where, args := profileWhere(f)
+	q := `SELECT ` + profileCols + ` FROM profiles WHERE ` + where +
+		` ORDER BY pinned DESC, sort_order, created_at`
+	if f.Limit > 0 {
+		q += ` LIMIT ? OFFSET ?`
+		args = append(args, f.Limit, max(f.Offset, 0))
+	}
+	rows, err := s.db.Query(q, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -293,11 +328,18 @@ func (s *Store) ListProfiles(f ProfileFilter) ([]Profile, error) {
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
-	accs, err := s.accountsByProfile("")
+	if len(out) == 0 {
+		return out, nil
+	}
+	ids := make([]string, len(out))
+	for i := range out {
+		ids[i] = out[i].ID
+	}
+	accs, err := s.accountsByIDs(ids)
 	if err != nil {
 		return nil, err
 	}
-	exts, err := s.extensionsByProfile("")
+	exts, err := s.extensionsByIDs(ids)
 	if err != nil {
 		return nil, err
 	}
