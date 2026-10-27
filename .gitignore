@@ -1,5 +1,7 @@
 research/
-plans/
+# Keep local plans private; version only the accepted upgrade roadmap.
+/plans/*
+!/plans/261027-1406-anyprofile-upgrade-roadmap/
 # The paid recipe pack: kept beside the code, never pushed
 /pro
 .DS_Store
