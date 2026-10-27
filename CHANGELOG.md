@@ -3,6 +3,45 @@
 The notes of each release tag are shown in the app's update prompt; this file
 keeps them together.
 
+## Unreleased
+
+Corrective review (261027):
+
+- Restore folders and user templates with encrypted backups, remapping same-name
+  folders before restoring profiles; failed imports still roll back atomically.
+- Launch queue is FIFO, cancellable and deduplicated; adopted browsers count
+  toward the ceiling, and StopAll cancels pending starts before freeing slots.
+  Queued profiles now show a cancel action in the table and drawer.
+- Folder bulk moves are atomic; partial folder ordering and concurrent name
+  uniqueness are enforced. Template defaults are validated and applied before
+  the profile-created notification.
+- Profile paging has a stable tie-breaker and order index; backend search folds
+  Vietnamese accents. An in-repo benchmark harness measures a 50-row
+  page at ~0.44 ms on the development M2 (not an end-to-end UI measurement).
+
+Upgrade round 261027 (backend and API first; the matching screens land
+separately, so some of this is not visible in the app yet):
+
+- Launch ceiling: the app can cap how many browsers start or run at once
+  (setting `max_concurrent_launches`, 0 = unlimited); extra starts queue
+  instead of overwhelming the machine. Set it from Settings once the
+  settings section ships; the API binding is `SetMaxConcurrentLaunches`.
+- Faster profile lists: listing now loads accounts and extensions only
+  for the profiles it returns, and the list API can page
+  (`ListProfilesPage`). On the benchmark machine a 50-row page costs the
+  same ~1.4 ms and ~0.22 MB whether the database holds 100 or 500
+  profiles; a full 500-profile list still costs ~2.1 MB per call.
+- Folders (backend and API): file each profile in at most one folder,
+  filter the list by folder or by unfiled, move profiles in bulk, and
+  delete a folder without ever losing a profile — its profiles move to
+  another folder or to unfiled, and a profile restored from the Trash
+  keeps its folder.
+- Profile templates (backend and API): built-in presets for TikTok,
+  YouTube, Facebook and a blank one, plus user templates that can be
+  created, edited, duplicated and deleted. A template carries a site,
+  start page, language, notes, tags, engine and folder, plus a proxy
+  recommendation note — never a proxy, a secret or a cookie.
+
 ## 0.1.0 (2026-10-24)
 
 The first public release. Earlier builds numbered 0.1.0 and 0.1.1 were never

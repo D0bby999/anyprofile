@@ -240,3 +240,53 @@ phát hành: chưa đạt thì không phát hành. Cách máy mobile chạy: `do
 
 14. Trong 2 tuần, dùng vài tài khoản TikTok phụ như người thật trên máy ảo Mac, trên LDPlayer và trên điện thoại
     thật, cùng loại proxy. So lượt xem và tình trạng tài khoản (bị hạn chế, bị đòi xác minh).
+
+## Phần D: đợt nâng cấp 261027 (kịch bản mới — chưa chạy, bổ sung 2026-10-27)
+
+Các kịch bản dưới đây viết cho các tính năng của đợt nâng cấp
+`261027-1406-anyprofile-upgrade-roadmap`. Phần backend/API đã có test tự
+động; phần màn hình tương ứng có thể chưa có trong bản dựng — khi chạy,
+ghi rõ bản dựng nào, đạt hay không đạt, và giữ nguyên văn kết quả lỗi.
+
+### D1. Trần mở đồng thời và hàng đợi
+
+1. Đặt trần 2 qua binding `SetMaxConcurrentLaunches(2)` (mục Settings chưa có).
+2. Chọn 5 profile, Mở tất cả: tối đa 2 browser chạy cùng lúc, 3 yêu cầu
+   còn lại hiện "Đang chờ"; bấm Hủy ở một dòng đang chờ phải hủy hẳn yêu cầu đó.
+3. Đóng một browser đang chạy: yêu cầu chờ đầu tiên còn lại tự mở. Profile vừa
+   hủy không được tự mở lại. Nút hủy cũng có trong drawer của profile.
+4. Thoát app khi có browser chạy và yêu cầu chờ: không mở thêm browser trong lúc
+   thoát, không còn cây tiến trình profile sau khi đóng xong.
+5. Đặt lại trần 0: mở tất cả không còn bị chặn. Binding mở trả kết quả khi đã mở
+   hoặc hủy, chưa trả ngay vị trí hàng đợi.
+
+### D2. Danh sách 500 profile
+
+1. Chuẩn bị bộ mẫu 500 profile trong thư mục riêng, mở trang Profiles. Công cụ
+   ở Phần A hiện chỉ tạo khoảng 65 profile; fixture 500 dòng trong test Go không
+   tự trở thành dữ liệu cho app. Chưa có generator UI 500 dòng thì ghi "chưa chạy".
+2. Gõ tìm kiếm từng ký tự: danh sách lọc đúng, không giật rõ rệt.
+3. Cuộn nhanh xuống cuối và quay lên đầu: không mất dòng, không trùng dòng.
+
+### D3. Folders
+
+1. Tạo folder "Khách A" (chọn một màu), tạo folder trùng tên với khác hoa
+   thường: bị từ chối.
+2. Tạo 1 profile khi đang xem folder "Khách A": profile thuộc folder đó.
+3. Chọn 5 profile, dùng bulk "Chuyển vào folder" sang "Khách A": cả 5 đổi.
+4. Xoá folder "Khách A" khi còn profile: app bắt chọn folder đích hoặc
+   "Chưa phân loại" trước; xoá xong không mất profile nào.
+5. Đưa 1 profile có folder vào Trash rồi khôi phục: về đúng folder cũ.
+6. Export backup mã hóa có folder, profile thuộc folder và template chỉ tới
+   folder; import vào bộ dữ liệu test khác. Phải giữ đủ profile/template, không
+   báo lỗi khóa ngoại. Nếu bộ đích có folder khác ID nhưng cùng tên (khác hoa
+   thường), tái dùng folder đích và remap đúng các tham chiếu.
+
+### D4. Templates
+
+1. Tạo profile từ template TikTok: site TikTok, trang mở đầu tiktok.com,
+   ngôn ngữ vi-VN.
+2. Nhân bản template TikTok, sửa bản sao (đổi tag), xoá bản sao: template
+   gốc còn nguyên; xoá template đóng gói sẵn bị từ chối.
+3. Gán proxy Việt Nam cho profile tạo ở bước 1, mở lần đầu: kiểm tra nhất
+   quán không có mục danger do ngôn ngữ/múi giờ của template gây ra.
