@@ -5,6 +5,14 @@ keeps them together.
 
 ## Unreleased
 
+Proxy affiliate links (261027):
+
+- "Buy proxies" now opens our affiliate referral links for IPRoyal, NodeMaven,
+  Decodo, Proxy-Seller, MarsProxies, Evomi, ProxyEmpire, Infatica, 9Proxy,
+  Coronium and LTESocks. SOAX, Massive and Froxy still open their home pages
+  until their referral links arrive. The dialog already discloses that some
+  links are referral links and that the price you pay does not change.
+
 Corrective review (261027):
 
 - Restore folders and user templates with encrypted backups, remapping same-name

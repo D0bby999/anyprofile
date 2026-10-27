@@ -27,24 +27,25 @@ export const proxyTypes: ProxyType[] = ['residential', 'isp', 'mobile', 'datacen
 export const toolGroups: ToolGroup[] = ['publish', 'video', 'record', 'audio', 'image']
 
 // Providers are the ones on hidemyacc.com/partners that suit long-lived accounts: established,
-// with static ISP, sticky residential or real mobile IPs. Links are their home pages until the
-// affiliate accounts exist; swap in each referral link as it arrives. Best fit first.
+// with static ISP, sticky residential or real mobile IPs. Links are our affiliate referral
+// links where an account exists; SOAX, Massive and Froxy still link to their home pages
+// until theirs arrive. Best fit first.
 const all = ['residential', 'isp', 'mobile', 'datacenter'] satisfies ProxyType[]
 export const partners: Partner[] = [
-  { id: 'iproyal', name: 'IPRoyal', kind: 'proxy', url: 'https://iproyal.com/', types: all },
-  { id: 'nodemaven', name: 'NodeMaven', kind: 'proxy', url: 'https://nodemaven.com/', types: ['residential', 'isp', 'mobile'] },
-  { id: 'decodo', name: 'Decodo', kind: 'proxy', url: 'https://decodo.com/', types: all },
+  { id: 'iproyal', name: 'IPRoyal', kind: 'proxy', url: 'https://iproyal.com/?r=1734020', types: all },
+  { id: 'nodemaven', name: 'NodeMaven', kind: 'proxy', url: 'https://nodemaven.com/?a_aid=anyprofile', types: ['residential', 'isp', 'mobile'] },
+  { id: 'decodo', name: 'Decodo', kind: 'proxy', url: 'https://dashboard.decodo.com/register?referral_code=2973fec4bd68c176365c5cf1ef80bade6eaccdde', types: all },
   { id: 'soax', name: 'SOAX', kind: 'proxy', url: 'https://soax.com/', types: all },
-  { id: 'proxyseller', name: 'Proxy-Seller', kind: 'proxy', url: 'https://proxy-seller.com/', types: all },
-  { id: 'marsproxies', name: 'MarsProxies', kind: 'proxy', url: 'https://marsproxies.com/', types: all },
-  { id: 'evomi', name: 'Evomi', kind: 'proxy', url: 'https://evomi.com/', types: all },
-  { id: 'proxyempire', name: 'ProxyEmpire', kind: 'proxy', url: 'https://proxyempire.io/', types: all },
-  { id: 'infatica', name: 'Infatica', kind: 'proxy', url: 'https://infatica.io/', types: ['residential', 'isp', 'datacenter'] },
+  { id: 'proxyseller', name: 'Proxy-Seller', kind: 'proxy', url: 'https://proxy-seller.com/?partner=JUJ9ZRI3NSJI1N', types: all },
+  { id: 'marsproxies', name: 'MarsProxies', kind: 'proxy', url: 'https://marsproxies.com/r/152375', types: all },
+  { id: 'evomi', name: 'Evomi', kind: 'proxy', url: 'https://evomi.com/?p=5Z7DMFN3ME', types: all },
+  { id: 'proxyempire', name: 'ProxyEmpire', kind: 'proxy', url: 'https://proxyempire.io/?ref=oddhngm', types: all },
+  { id: 'infatica', name: 'Infatica', kind: 'proxy', url: 'https://dashboard.infatica.io/aff.php?aff=902', types: ['residential', 'isp', 'datacenter'] },
   { id: 'massive', name: 'Massive', kind: 'proxy', url: 'https://www.joinmassive.com/', types: ['residential', 'isp'] },
   { id: 'froxy', name: 'Froxy', kind: 'proxy', url: 'https://froxy.com/', types: ['residential', 'mobile', 'datacenter'] },
-  { id: '9proxy', name: '9Proxy', kind: 'proxy', url: 'https://9proxy.com/', types: ['residential'] },
-  { id: 'coronium', name: 'Coronium', kind: 'proxy', url: 'https://www.coronium.io/', types: ['mobile'] },
-  { id: 'ltesocks', name: 'LTESocks', kind: 'proxy', url: 'https://ltesocks.io/', types: ['mobile'] },
+  { id: '9proxy', name: '9Proxy', kind: 'proxy', url: 'https://9proxy.com/sign-up?inviteCode=9P_mXH5nLuQ', types: ['residential'] },
+  { id: 'coronium', name: 'Coronium', kind: 'proxy', url: 'https://dashboard.coronium.io/en/sign-up#765b230d864e88ca7c0d800d4fd17c3b', types: ['mobile'] },
+  { id: 'ltesocks', name: 'LTESocks', kind: 'proxy', url: 'https://my.ltesocks.io/register?referrerToken=KSFSK9JQHEFK0KFL&referrer=01a17d5a-f6f2-7125-a17a-9dd8e2d583e3', types: ['mobile'] },
 
   // postclaw.io is another company with the same name.
   { id: 'postclaw', name: 'PostClaw', kind: 'tool', url: 'https://postclaw.fun/', urlVi: 'https://postclaw.fun/vi/', own: true, group: 'publish' },

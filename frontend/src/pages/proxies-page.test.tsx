@@ -71,7 +71,7 @@ describe('ProxiesPage', () => {
     for (const p of partnersOf('proxy')) expect(within(dialog).getByText(p.name)).toBeTruthy()
     expect(within(dialog).queryByText('PostClaw')).toBeNull()
     fireEvent.click(within(dialog).getByRole('button', { name: /IPRoyal/ }))
-    expect(openExternal).toHaveBeenCalledWith('https://iproyal.com/')
+    expect(openExternal).toHaveBeenCalledWith('https://iproyal.com/?r=1734020')
   })
 
   it('narrows Buy proxies to one proxy type', async () => {
