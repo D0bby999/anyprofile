@@ -33,6 +33,10 @@ func (l *Launcher) watch(p *proc, pid int, wait <-chan error) {
 	}
 	l.mu.Lock()
 	delete(l.procs, p.info.ProfileID)
+	if p.gated {
+		// The browser is gone: hand its launch slot to a queued start.
+		l.gate.Release()
+	}
 	// The browser and its DevTools port are gone; the Stopped event must not
 	// carry the old port, or the list keeps warning that it is open.
 	p.info.PID, p.info.CDPPort = 0, 0

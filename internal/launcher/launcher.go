@@ -49,6 +49,10 @@ type proc struct {
 	started time.Time
 	// behind: started for a script or an agent, so it must not take the focus.
 	behind bool
+	// gated: this launch took a launchGate slot, released exactly once
+	// when the proc leaves the launcher's map. Adopted browsers never
+	// took a slot, so they never release one.
+	gated bool
 }
 
 type Launcher struct {
@@ -61,6 +65,7 @@ type Launcher struct {
 
 	mu    sync.Mutex
 	procs map[string]*proc
+	gate  *launchGate
 
 	readyTimeout, termGrace time.Duration
 	// TestArgs are added to every launch. Only integration tests set them,
@@ -92,8 +97,20 @@ func New(st *store.Store, sec secrets.Store, dirs paths.Dirs, engines []engine.E
 		onChange = func(Info) {}
 	}
 	return &Launcher{st: st, sec: sec, dirs: dirs, engines: m, onChange: onChange, log: log,
-		procs: map[string]*proc{}, readyTimeout: 15 * time.Second, termGrace: 8 * time.Second}
+		procs: map[string]*proc{}, gate: newLaunchGate(), readyTimeout: 15 * time.Second, termGrace: 8 * time.Second}
 }
+
+// SetMaxRunning sets how many browsers may be starting or running at
+// once; 0 means unlimited (the default). Starts beyond the ceiling wait
+// inside open() until a browser exits. The app sets this from its
+// settings; nothing changes until it does.
+func (l *Launcher) SetMaxRunning(n int) { l.gate.SetMax(n) }
+
+// MaxRunning reports the current launch ceiling, 0 for unlimited.
+func (l *Launcher) MaxRunning() int { return l.gate.Max() }
+
+// WaitingLaunches reports how many starts are queued at the ceiling.
+func (l *Launcher) WaitingLaunches() int { return l.gate.Waiting() }
 
 // List returns every profile that is not stopped.
 func (l *Launcher) List() []Info {
@@ -137,20 +154,46 @@ func (l *Launcher) StartBehind(ctx context.Context, profileID string) error {
 	return l.open(ctx, profileID, true)
 }
 
-func (l *Launcher) open(ctx context.Context, profileID string, behind bool) error {
+// existing reports whether the profile is already in the map and, if so,
+// what a new open should do about it: focus a running browser, or refuse
+// because it is between states.
+func (l *Launcher) existing(profileID string, behind bool) (bool, error) {
 	l.mu.Lock()
-	if p, ok := l.procs[profileID]; ok {
-		pid, state := p.info.PID, p.info.State
+	p, ok := l.procs[profileID]
+	if !ok {
 		l.mu.Unlock()
-		if state == Running {
-			if !behind {
-				activate(pid)
-			}
-			return nil
-		}
-		return fmt.Errorf("profile is %s", state)
+		return false, nil
 	}
-	p := &proc{info: Info{ProfileID: profileID, State: Starting}, done: make(chan struct{}), behind: behind}
+	pid, state := p.info.PID, p.info.State
+	l.mu.Unlock()
+	if state == Running {
+		if !behind {
+			activate(pid)
+		}
+		return true, nil
+	}
+	return true, fmt.Errorf("profile is %s", state)
+}
+
+func (l *Launcher) open(ctx context.Context, profileID string, behind bool) error {
+	if handled, err := l.existing(profileID, behind); handled {
+		return err
+	}
+	// The launch ceiling queues here, before the profile shows as
+	// starting: a queued start has no proc yet, and a cancelled context
+	// leaves nothing behind. With no ceiling set this never blocks.
+	if err := l.gate.Acquire(ctx); err != nil {
+		return err
+	}
+	l.mu.Lock()
+	if _, ok := l.procs[profileID]; ok {
+		// Another open admitted the same profile while this one queued.
+		l.mu.Unlock()
+		l.gate.Release()
+		_, err := l.existing(profileID, behind)
+		return err
+	}
+	p := &proc{info: Info{ProfileID: profileID, State: Starting}, done: make(chan struct{}), behind: behind, gated: true}
 	l.procs[profileID] = p
 	l.mu.Unlock()
 	l.onChange(p.info)
@@ -162,6 +205,7 @@ func (l *Launcher) open(ctx context.Context, profileID string, behind bool) erro
 		l.mu.Lock()
 		delete(l.procs, profileID)
 		l.mu.Unlock()
+		l.gate.Release()
 		l.onChange(Info{ProfileID: profileID, State: Stopped, Error: err.Error()})
 		return err
 	}
