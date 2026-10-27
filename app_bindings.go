@@ -118,6 +118,105 @@ func (a *App) ListProfiles(f store.ProfileFilter) ([]service.ProfileRow, error) 
 	return a.svc.ListProfiles(f)
 }
 
+func (a *App) ListProfilesPage(f store.ProfileFilter, limit, offset int) (service.ProfilePage, error) {
+	if err := a.ready(); err != nil {
+		return service.ProfilePage{}, err
+	}
+	return a.svc.ListProfilesPage(f, limit, offset)
+}
+
+// Folders
+
+// FolderList is the sidebar's folder data: every folder with its count,
+// and how many profiles are unfiled.
+type FolderList struct {
+	Folders []service.FolderRow `json:"folders"`
+	Unfiled int                 `json:"unfiled"`
+}
+
+func (a *App) ListFolders() (FolderList, error) {
+	if err := a.ready(); err != nil {
+		return FolderList{}, err
+	}
+	rows, unfiled, err := a.svc.ListFolders()
+	if err != nil {
+		return FolderList{}, err
+	}
+	return FolderList{Folders: rows, Unfiled: unfiled}, nil
+}
+
+func (a *App) CreateFolder(name, color string) (store.Folder, error) {
+	if err := a.ready(); err != nil {
+		return store.Folder{}, err
+	}
+	return a.svc.CreateFolder(name, color)
+}
+
+func (a *App) RenameFolder(id, name string) error {
+	return a.must(func() error { return a.svc.RenameFolder(id, name) })
+}
+
+func (a *App) SetFolderColor(id, color string) error {
+	return a.must(func() error { return a.svc.SetFolderColor(id, color) })
+}
+
+func (a *App) ReorderFolders(ids []string) error {
+	return a.must(func() error { return a.svc.ReorderFolders(ids) })
+}
+
+func (a *App) DeleteFolder(id, moveTo string) error {
+	return a.must(func() error { return a.svc.DeleteFolder(id, moveTo) })
+}
+
+func (a *App) SetProfileFolder(profileID, folderID string) error {
+	return a.must(func() error { return a.svc.SetProfileFolder(profileID, folderID) })
+}
+
+func (a *App) MoveProfilesToFolder(ids []string, folderID string) (int, error) {
+	if err := a.ready(); err != nil {
+		return 0, err
+	}
+	return a.svc.MoveProfilesToFolder(ids, folderID)
+}
+
+// Templates
+
+func (a *App) ListTemplates() ([]store.Template, error) {
+	if err := a.ready(); err != nil {
+		return nil, err
+	}
+	return a.svc.ListTemplates()
+}
+
+func (a *App) CreateTemplate(t store.Template) (store.Template, error) {
+	if err := a.ready(); err != nil {
+		return store.Template{}, err
+	}
+	return a.svc.CreateTemplate(t)
+}
+
+func (a *App) UpdateTemplate(t store.Template) error {
+	return a.must(func() error { return a.svc.UpdateTemplate(t) })
+}
+
+func (a *App) DeleteTemplate(id string) error {
+	return a.must(func() error { return a.svc.DeleteTemplate(id) })
+}
+
+func (a *App) DuplicateTemplate(id string) (store.Template, error) {
+	if err := a.ready(); err != nil {
+		return store.Template{}, err
+	}
+	return a.svc.DuplicateTemplate(id)
+}
+
+func (a *App) CreateProfileFromTemplate(templateID, name, proxyID string) (store.Profile, error) {
+	if err := a.ready(); err != nil {
+		return store.Profile{}, err
+	}
+	return a.svc.CreateProfileFromTemplate(a.ctx, templateID, name, proxyID)
+}
+
 // Bulk
 
 func (a *App) CreateProfiles(in service.BulkCreate) ([]store.Profile, error) {
@@ -635,6 +734,18 @@ func (a *App) SetLanguage(lang string) error {
 		a.setMenuLanguage(lang)
 		return nil
 	})
+}
+
+// MaxConcurrentLaunches is the launch ceiling, 0 for unlimited.
+func (a *App) MaxConcurrentLaunches() int {
+	if a.svc == nil {
+		return 0
+	}
+	return a.svc.MaxConcurrentLaunches()
+}
+
+func (a *App) SetMaxConcurrentLaunches(n int) error {
+	return a.must(func() error { return a.svc.SetMaxConcurrentLaunches(n) })
 }
 
 func (a *App) must(fn func() error) error {
