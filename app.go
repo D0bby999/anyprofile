@@ -16,7 +16,7 @@ import (
 
 	"github.com/D0bby999/anyprofile/internal/agent"
 	"github.com/D0bby999/anyprofile/internal/engine"
-	"github.com/D0bby999/anyprofile/internal/engine/apostate"
+	"github.com/D0bby999/anyprofile/internal/engine/anybrowser"
 	"github.com/D0bby999/anyprofile/internal/engine/fury"
 	"github.com/D0bby999/anyprofile/internal/launcher"
 	"github.com/D0bby999/anyprofile/internal/mobile"
@@ -88,16 +88,16 @@ func (a *App) init() error {
 	if err := a.fury.CleanStale(); err != nil {
 		log.Warn("clean stale engine files", "err", err)
 	}
-	ap := apostate.New(dirs)
+	ap := anybrowser.New(dirs)
 	if err := ap.CleanStale(); err != nil {
-		log.Warn("clean stale engine files", "engine", "apostate", "err", err)
+		log.Warn("clean stale engine files", "engine", "anybrowser", "err", err)
 	}
 	// One catalog for both: the compiled-in releases, and the signed list
 	// from latest.json once LoadEngineList or an update check adds it.
-	cat := engine.NewCatalog(update.Current, append(append(apostate.Builtin(), fury.Builtin()...), mobileBuiltin()...)...)
+	cat := engine.NewCatalog(update.Current, append(append(anybrowser.Builtin(), fury.Builtin()...), mobileBuiltin()...)...)
 	ap.SetCatalog(cat)
 	a.fury.SetCatalog(cat)
-	a.engines = map[string]engine.Engine{"apostate": ap}
+	a.engines = map[string]engine.Engine{"anybrowser": ap}
 	if furyRuns {
 		a.engines["fury"] = a.fury
 	}
@@ -118,7 +118,7 @@ func (a *App) init() error {
 	l.CheckExit = netproxy.Check
 	l.OnData = func(kind string) { runtime.EventsEmit(a.ctx, "data:changed", kind) }
 	a.svc = &service.Service{Dirs: dirs, Store: st, Secrets: sec, Launcher: l, Log: log,
-		Engines: a.engines, Preferred: "apostate", Catalog: cat,
+		Engines: a.engines, Preferred: "anybrowser", Catalog: cat,
 		OnChange:   func(kind string) { runtime.EventsEmit(a.ctx, "data:changed", kind) },
 		CheckProxy: netproxy.Check,
 		Locale: func(ctx context.Context, cc string) (string, []string, error) {

@@ -15,7 +15,7 @@ import (
 	"time"
 
 	"github.com/D0bby999/anyprofile/internal/agent"
-	"github.com/D0bby999/anyprofile/internal/engine/apostate"
+	"github.com/D0bby999/anyprofile/internal/engine/anybrowser"
 	"github.com/D0bby999/anyprofile/internal/store"
 )
 
@@ -39,7 +39,7 @@ const innerPage = `<!doctype html><title>Inner</title>
 <label>Inner field <input aria-label="Inner field"></label>`
 
 func TestAgentHandlesDialogsSelectsAndFrames(t *testing.T) {
-	r := newApostateRig(t)
+	r := newAnyBrowserRig(t)
 	l := r.launcher(t)
 	l.Capture = true
 	other := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) { w.Write([]byte(innerPage)) }))
@@ -59,8 +59,8 @@ func TestAgentHandlesDialogsSelectsAndFrames(t *testing.T) {
 	}))
 	defer srv.Close()
 	const id = "cases"
-	if err := r.st.CreateProfile(&store.Profile{ID: id, Name: "Cases", Engine: "apostate",
-		EngineVersion: apostate.Version, PersonaID: apostate.HostPersona, Platform: apostate.HostPlatform,
+	if err := r.st.CreateProfile(&store.Profile{ID: id, Name: "Cases", Engine: "anybrowser",
+		EngineVersion: anybrowser.Version, PersonaID: anybrowser.HostPersona, Platform: anybrowser.HostPlatform,
 		SeedHex: "00000000000ca5e5", Timezone: "UTC", Languages: "en-US,en", UILocale: "en-US",
 		StartURL: srv.URL + "/"}); err != nil {
 		t.Fatal(err)

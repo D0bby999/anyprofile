@@ -9,13 +9,13 @@ func cleanSample() Sample {
 		TZ: "Asia/Taipei", Langs: "zh-TW", ChromeH: 87, Geo: "denied", ICE: []string{"1f2e.local"}}
 }
 
-func apostateExpect() Expect {
-	return Expect{Engine: "apostate", Timezone: "Asia/Taipei", Languages: "zh-TW,zh,en", ChromiumMajor: 155,
+func anybrowserExpect() Expect {
+	return Expect{Engine: "anybrowser", Timezone: "Asia/Taipei", Languages: "zh-TW,zh,en", ChromiumMajor: 155,
 		Proxied: true, HWC: 8, PrimaryLangOnly: true}
 }
 
 func TestChecksAllPass(t *testing.T) {
-	got := Checks(cleanSample(), apostateExpect())
+	got := Checks(cleanSample(), anybrowserExpect())
 	want := []string{"webdriver", "webrtc_ip", "tz_profile", "langs", "ua_version", "platform", "chrome_height", "geolocation", "hwc_pin"}
 	if len(got) != len(want) {
 		t.Fatalf("checks = %+v", got)
@@ -45,7 +45,7 @@ func TestChecksEachFailure(t *testing.T) {
 	for id, c := range cases {
 		s := cleanSample()
 		c.bend(&s)
-		for _, ch := range Checks(s, apostateExpect()) {
+		for _, ch := range Checks(s, anybrowserExpect()) {
 			if ch.ID == id && (ch.OK || ch.Level != c.level || ch.Got == "") {
 				t.Errorf("%s = %+v, want failed at %s", id, ch, c.level)
 			}
@@ -57,7 +57,7 @@ func TestChecksEachFailure(t *testing.T) {
 }
 
 func TestChecksApplyByEngineAndProxy(t *testing.T) {
-	e := apostateExpect()
+	e := anybrowserExpect()
 	e.Engine, e.Proxied, e.PrimaryLangOnly = "fury", false, false
 	s := cleanSample()
 	s.Langs, s.ChromeH = "zh-TW,zh,en", -1
@@ -86,7 +86,7 @@ func TestPlatformFollowsProfileOS(t *testing.T) {
 		s    Sample
 		pass bool
 	}{{"macos", cleanSample(), true}, {"", cleanSample(), true}, {"windows", win, true}, {"windows", cleanSample(), false}, {"macos", win, false}} {
-		e := apostateExpect()
+		e := anybrowserExpect()
 		e.OS = c.os
 		for _, ch := range Checks(c.s, e) {
 			if ch.ID == "platform" && ch.OK != c.pass {

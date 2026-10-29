@@ -48,7 +48,7 @@ describe('ProfileTable', () => {
   })
 
   it('leaves out a machine that is not known yet', () => {
-    render(<ProfileTable {...props([row({ engine: 'apostate', personaId: '', machine: '' })])} />)
+    render(<ProfileTable {...props([row({ engine: 'anybrowser', personaId: '', machine: '' })])} />)
     expect(screen.queryByText(t.engines.machinePending)).toBeNull()
   })
 

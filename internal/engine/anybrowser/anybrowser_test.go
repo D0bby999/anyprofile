@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-package apostate
+package anybrowser
 
 import (
 	"context"
@@ -18,11 +18,11 @@ import (
 )
 
 var (
-	_ engine.Engine               = (*Apostate)(nil)
-	_ engine.PrimaryLanguageProbe = (*Apostate)(nil)
+	_ engine.Engine               = (*AnyBrowser)(nil)
+	_ engine.PrimaryLanguageProbe = (*AnyBrowser)(nil)
 )
 
-func testEngine(t *testing.T) *Apostate {
+func testEngine(t *testing.T) *AnyBrowser {
 	a := New(paths.Dirs{Root: t.TempDir()})
 	a.host = func() (int, int) { return 8, 16 }
 	return a
@@ -62,12 +62,16 @@ func TestBuildLaunchProxy(t *testing.T) {
 			}
 		}
 	}
-	wantEnv := []string{"GOOGLE_API_KEY=no", "GOOGLE_DEFAULT_CLIENT_ID=no", "GOOGLE_DEFAULT_CLIENT_SECRET=no"}
+	var wantEnv []string
 	if setsTZ {
 		wantEnv = append([]string{"TZ=Asia/Taipei"}, wantEnv...)
 	}
 	if !slices.Equal(spec.Env, wantEnv) {
 		t.Fatalf("env = %v", spec.Env)
+	}
+	wantUnset := []string{"GOOGLE_API_KEY", "GOOGLE_DEFAULT_CLIENT_ID", "GOOGLE_DEFAULT_CLIENT_SECRET"}
+	if !slices.Equal(spec.EnvUnset, wantUnset) {
+		t.Fatalf("unset env = %v, want %v", spec.EnvUnset, wantUnset)
 	}
 	if len(spec.Pipes) != 0 || !spec.CDPPipe || !strings.HasSuffix(spec.Binary, filepath.FromSlash(binRel)) {
 		t.Fatalf("spec = %+v", spec)

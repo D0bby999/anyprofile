@@ -9,20 +9,20 @@ import (
 	"testing"
 	"time"
 
-	"github.com/D0bby999/anyprofile/internal/engine/apostate"
+	"github.com/D0bby999/anyprofile/internal/engine/anybrowser"
 	"github.com/D0bby999/anyprofile/internal/store"
 )
 
-func TestApostateAdoptedBrowserCountsTowardCeiling(t *testing.T) {
-	r := newApostateRig(t)
+func TestAnyBrowserAdoptedBrowserCountsTowardCeiling(t *testing.T) {
+	r := newAnyBrowserRig(t)
 	original := r.launcher(t)
 	original.Capture = true
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	defer original.StopAll()
 	for _, id := range []string{"adopted", "pending"} {
-		if err := r.st.CreateProfile(&store.Profile{ID: id, Name: id, Engine: "apostate", EngineVersion: apostate.Version,
-			PersonaID: apostate.HostPersona, Platform: apostate.HostPlatform, SeedHex: "00000000000a11ce", Timezone: "UTC", Languages: "en-US,en", UILocale: "en-US", EngineMeta: store.EngineMeta{HWC: 4, MemGiB: 8}}); err != nil {
+		if err := r.st.CreateProfile(&store.Profile{ID: id, Name: id, Engine: "anybrowser", EngineVersion: anybrowser.Version,
+			PersonaID: anybrowser.HostPersona, Platform: anybrowser.HostPlatform, SeedHex: "00000000000a11ce", Timezone: "UTC", Languages: "en-US,en", UILocale: "en-US", EngineMeta: store.EngineMeta{HWC: 4, MemGiB: 8}}); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -54,8 +54,8 @@ func TestApostateAdoptedBrowserCountsTowardCeiling(t *testing.T) {
 
 // Uses throwaway profile directories, the verified installed engine and a mock
 // keychain. No user profiles, real proxies or credentials are touched.
-func TestApostateLaunchCeilingQueue(t *testing.T) {
-	r := newApostateRig(t)
+func TestAnyBrowserLaunchCeilingQueue(t *testing.T) {
+	r := newAnyBrowserRig(t)
 	l := r.launcher(t)
 	l.Capture = true
 	l.SetMaxRunning(2)
@@ -64,7 +64,7 @@ func TestApostateLaunchCeilingQueue(t *testing.T) {
 	defer l.StopAll()
 	for i := 0; i < 4; i++ {
 		id := fmt.Sprintf("cap%d", i)
-		if err := r.st.CreateProfile(&store.Profile{ID: id, Name: id, Engine: "apostate", EngineVersion: apostate.Version, PersonaID: apostate.HostPersona, Platform: apostate.HostPlatform, SeedHex: fmt.Sprintf("%016x", i+123), Timezone: "UTC", Languages: "en-US,en", UILocale: "en-US", EngineMeta: store.EngineMeta{HWC: 4, MemGiB: 8}}); err != nil {
+		if err := r.st.CreateProfile(&store.Profile{ID: id, Name: id, Engine: "anybrowser", EngineVersion: anybrowser.Version, PersonaID: anybrowser.HostPersona, Platform: anybrowser.HostPlatform, SeedHex: fmt.Sprintf("%016x", i+123), Timezone: "UTC", Languages: "en-US,en", UILocale: "en-US", EngineMeta: store.EngineMeta{HWC: 4, MemGiB: 8}}); err != nil {
 			t.Fatal(err)
 		}
 	}

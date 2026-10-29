@@ -7,5 +7,5 @@ package main
 const furyRuns = true
 
 // bundledConfigRel is the fury-config helper inside the app bundle, relative
-// to the executable. It also serves Apostate profiles (locale per country).
+// to the executable. It also serves AnyBrowser profiles (locale per country).
 const bundledConfigRel = "../Resources/fury-config"

@@ -40,12 +40,12 @@ func (fakeEngine) Status(_ context.Context, v string) engine.Status {
 // fakeEngine2 stands in for a second engine that pins hardware values.
 type fakeEngine2 struct{ engine.Engine }
 
-func (fakeEngine2) ID() string { return "apostate" }
+func (fakeEngine2) ID() string { return "anybrowser" }
 func (fakeEngine2) Releases() []engine.Release {
-	return []engine.Release{{Engine: "apostate", Version: "0.5.1", Catalogue: "c"}}
+	return []engine.Release{{Engine: "anybrowser", Version: "0.5.1", Catalogue: "c"}}
 }
 func (fakeEngine2) Status(_ context.Context, v string) engine.Status {
-	return engine.Status{Version: engine.Version{Engine: "apostate", Version: v}}
+	return engine.Status{Version: engine.Version{Engine: "anybrowser", Version: v}}
 }
 func (fakeEngine2) NewIdentity(context.Context, uint64) (engine.Identity, error) {
 	return engine.Identity{PersonaID: "macos", Platform: "macos", Meta: store.EngineMeta{HWC: 4, MemGiB: 8}}, nil
@@ -430,10 +430,10 @@ func TestDefaultEngine(t *testing.T) {
 	if got := s.DefaultEngine(); got != "fury" {
 		t.Fatalf("default with fury only = %q", got)
 	}
-	s.Engines["apostate"] = fakeEngine2{}
-	s.Preferred = "apostate"
-	if got := s.DefaultEngine(); got != "apostate" {
-		t.Fatalf("default with preferred apostate = %q", got)
+	s.Engines["anybrowser"] = fakeEngine2{}
+	s.Preferred = "anybrowser"
+	if got := s.DefaultEngine(); got != "anybrowser" {
+		t.Fatalf("default with preferred anybrowser = %q", got)
 	}
 	d := s.Defaults()
 	d.Engine = "fury"
@@ -451,14 +451,14 @@ func TestDefaultEngine(t *testing.T) {
 
 func TestCreateProfileEngine(t *testing.T) {
 	s, _ := newService(t)
-	s.Engines["apostate"] = fakeEngine2{}
-	s.Preferred = "apostate"
+	s.Engines["anybrowser"] = fakeEngine2{}
+	s.Preferred = "anybrowser"
 	ctx := context.Background()
 	p, err := s.CreateProfile(ctx, NewProfile{Name: "A", Sites: []string{"other"}})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if p.Engine != "apostate" || p.EngineVersion != "0.5.1" || p.EngineMeta != (store.EngineMeta{HWC: 4, MemGiB: 8}) {
+	if p.Engine != "anybrowser" || p.EngineVersion != "0.5.1" || p.EngineMeta != (store.EngineMeta{HWC: 4, MemGiB: 8}) {
 		t.Fatalf("default-engine profile = %+v", p)
 	}
 	got, _ := s.Store.GetProfile(p.ID)
@@ -486,10 +486,10 @@ func TestDuplicateUsesDefaultEngine(t *testing.T) {
 	if err != nil || src.Engine != "fury" {
 		t.Fatalf("source = %+v %v", src, err)
 	}
-	s.Engines["apostate"] = fakeEngine2{}
-	s.Preferred = "apostate"
+	s.Engines["anybrowser"] = fakeEngine2{}
+	s.Preferred = "anybrowser"
 	out, err := s.DuplicateProfile(ctx, DuplicateInput{SourceID: src.ID, Count: 1, Proxy: "none"})
-	if err != nil || len(out) != 1 || out[0].Engine != "apostate" {
+	if err != nil || len(out) != 1 || out[0].Engine != "anybrowser" {
 		t.Fatalf("copy = %+v %v", out, err)
 	}
 }

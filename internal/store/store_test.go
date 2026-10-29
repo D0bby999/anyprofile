@@ -525,7 +525,7 @@ func TestSessions(t *testing.T) {
 		t.Fatal(err)
 	}
 	for i := 0; i < 52; i++ {
-		if err := s.StartSession(&Session{ProfileID: "p1", Engine: "apostate", EngineVersion: "0.5.1"}); err != nil {
+		if err := s.StartSession(&Session{ProfileID: "p1", Engine: "anybrowser", EngineVersion: "0.5.1"}); err != nil {
 			t.Fatal(err)
 		}
 	}

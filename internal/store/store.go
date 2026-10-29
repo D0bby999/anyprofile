@@ -26,6 +26,10 @@ var migrationFS embed.FS
 
 var ErrNotFound = errors.New("not found")
 
+// ErrLegacyEngineMigrationBlocked prevents an irreversible hard cut-over until
+// the old engine, profile data and rollback path have been verified together.
+var ErrLegacyEngineMigrationBlocked = errors.New("legacy Apostate data requires a verified AnyBrowser migration; database was not migrated")
+
 type Store struct {
 	db *sql.DB
 }
@@ -75,6 +79,35 @@ func (s *Store) migrate(path, backupDir string, existed bool, maxVer int) error 
 		return err
 	}
 	sort.Slice(names, func(i, j int) bool { return names[i].Name() < names[j].Name() })
+	// Migration 21 rewrites engine identities without preserving the release
+	// origin or a browser-data rollback snapshot. Fail before any pending
+	// migration changes an existing legacy database; do not silently strand it.
+	if cur > 0 && cur < 21 && maxVer >= 21 {
+		var legacy int
+		if err := s.db.QueryRow(`SELECT COUNT(*) FROM profiles WHERE engine = 'apostate' OR persona_id IN ('apostate-macos', 'apostate-windows')`).Scan(&legacy); err != nil {
+			return err
+		}
+		checks := []struct {
+			version int
+			query   string
+		}{
+			{2, `SELECT COUNT(*) FROM settings WHERE key = 'default_engine' AND value = 'apostate'`},
+			{10, `SELECT COUNT(*) FROM sessions WHERE engine = 'apostate'`},
+			{19, `SELECT COUNT(*) FROM templates WHERE engine = 'apostate'`},
+		}
+		for _, check := range checks {
+			if cur >= check.version {
+				var count int
+				if err := s.db.QueryRow(check.query).Scan(&count); err != nil {
+					return err
+				}
+				legacy += count
+			}
+		}
+		if legacy > 0 {
+			return ErrLegacyEngineMigrationBlocked
+		}
+	}
 	backedUp := false
 	for i, f := range names {
 		ver, err := strconv.Atoi(strings.SplitN(f.Name(), "_", 2)[0])

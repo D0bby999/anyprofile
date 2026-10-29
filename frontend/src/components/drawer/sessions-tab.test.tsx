@@ -13,7 +13,7 @@ vi.mock('../../api', async (orig) => ({
 const { SessionsTab } = await import('./sessions-tab')
 
 const s = (id: number, ip: string, cc: string, stopped = true) => ({
-  id, profileId: 'a', engine: 'apostate', engineVersion: '0.5.1', proxyId: 'px', startedAt: '2026-10-13T10:00:00Z',
+  id, profileId: 'a', engine: 'anybrowser', engineVersion: '0.5.1', proxyId: 'px', startedAt: '2026-10-13T10:00:00Z',
   stoppedAt: stopped ? '2026-10-13T10:30:00Z' : '', exitIp: ip, exitCountry: cc, exitTz: '', exitError: '', checks: [],
 })
 

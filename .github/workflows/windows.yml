@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
-# Tests AnyProfile on Windows with the real Apostate browser, then builds the
+# Tests AnyProfile on Windows with the real AnyBrowser browser, then builds the
 # x64 installer. The browser tests need a desktop session, which the hosted
 # Windows runners have.
 name: windows
@@ -21,8 +21,8 @@ jobs:
       run:
         shell: bash
     env:
-      APOSTATE_ZIP: apostate-155.0.8059.31-windows-x64.zip
-      APOSTATE_SHA256: 8e55e44fb7f58619461e1d42a947446dcc08a2b46493c420c8e62ae27ab9c7e5
+      ANYBROWSER_ZIP: anybrowser-155.0.8059.31-windows-x64.zip
+      ANYBROWSER_SHA256: 8e55e44fb7f58619461e1d42a947446dcc08a2b46493c420c8e62ae27ab9c7e5
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -43,20 +43,20 @@ jobs:
       - name: Windows Credential Manager round trip
         run: go test -tags keychain ./internal/secrets -count=1 -v
 
-      - name: Download the pinned Apostate release
+      - name: Download the pinned AnyBrowser release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release download v0.5.1 -R heretic-tech/apostate -p "$APOSTATE_ZIP" -D "$RUNNER_TEMP"
-          echo "$APOSTATE_SHA256  $RUNNER_TEMP/$APOSTATE_ZIP" | sha256sum -c
-          7z x -y -o"$RUNNER_TEMP/apostate" "$RUNNER_TEMP/$APOSTATE_ZIP" > /dev/null
+          gh release download v0.5.1 -R heretic-tech/apostate -p "$ANYBROWSER_ZIP" -D "$RUNNER_TEMP"
+          echo "$ANYBROWSER_SHA256  $RUNNER_TEMP/$ANYBROWSER_ZIP" | sha256sum -c
+          7z x -y -o"$RUNNER_TEMP/anybrowser" "$RUNNER_TEMP/$ANYBROWSER_ZIP" > /dev/null
       - name: Install and verify it the way the app does
         env:
-          ANYPROFILE_APOSTATE_ZIP: ${{ runner.temp }}\apostate-155.0.8059.31-windows-x64.zip
-        run: go test -tags network -run TestInstallRealRelease ./internal/engine/apostate -count=1 -v
+          ANYPROFILE_ANYBROWSER_ZIP: ${{ runner.temp }}\anybrowser-155.0.8059.31-windows-x64.zip
+        run: go test -tags network -run TestInstallRealRelease ./internal/engine/anybrowser -count=1 -v
       - name: Integration tests with the real browser
         env:
-          ANYPROFILE_TEST_APOSTATE_APP: ${{ runner.temp }}\apostate\apostate-155.0.8059.31-windows-x64
+          ANYPROFILE_TEST_ANYBROWSER_APP: ${{ runner.temp }}\anybrowser\anybrowser-155.0.8059.31-windows-x64
         run: go test -tags integration ./internal/launcher ./internal/service -count=1 -v -timeout 30m
 
       - name: Build the app and the installer

@@ -15,7 +15,7 @@ import (
 	"time"
 
 	"github.com/D0bby999/anyprofile/internal/bookmarks"
-	"github.com/D0bby999/anyprofile/internal/engine/apostate"
+	"github.com/D0bby999/anyprofile/internal/engine/anybrowser"
 	"github.com/D0bby999/anyprofile/internal/engine/fury"
 	"github.com/D0bby999/anyprofile/internal/store"
 )
@@ -24,14 +24,14 @@ import (
 func TestExtensionLoads(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.Write([]byte("<title>ok</title>")) }))
 	defer srv.Close()
-	for _, name := range []string{"apostate", "fury"} {
+	for _, name := range []string{"anybrowser", "fury"} {
 		t.Run(name, func(t *testing.T) {
 			var r *rig
 			p := &store.Profile{ID: "ext-" + name, Name: "Ext", SeedHex: "00000000000e0e0e", Timezone: "UTC",
 				Languages: "en-US,en", UILocale: "en-US", StartURL: srv.URL + "/"}
-			if name == "apostate" {
-				r = newApostateRig(t)
-				p.Engine, p.EngineVersion, p.PersonaID, p.Platform = "apostate", apostate.Version, apostate.HostPersona, apostate.HostPlatform
+			if name == "anybrowser" {
+				r = newAnyBrowserRig(t)
+				p.Engine, p.EngineVersion, p.PersonaID, p.Platform = "anybrowser", anybrowser.Version, anybrowser.HostPersona, anybrowser.HostPlatform
 			} else {
 				r = newRig(t)
 				ident, err := r.eng.NewIdentity(context.Background(), 7)
@@ -137,11 +137,11 @@ func markIn(t *testing.T, c interface {
 
 // Chromium reads the Bookmarks file the importer writes.
 func TestImportedBookmarksShowInChromium(t *testing.T) {
-	r := newApostateRig(t)
+	r := newAnyBrowserRig(t)
 	l := r.launcher(t)
 	l.Capture = true
-	p := &store.Profile{ID: "bm1", Name: "Bm", Engine: "apostate", EngineVersion: apostate.Version, PersonaID: apostate.HostPersona,
-		Platform: apostate.HostPlatform, SeedHex: "00000000000f0f0f", Timezone: "UTC", Languages: "en-US,en", UILocale: "en-US"}
+	p := &store.Profile{ID: "bm1", Name: "Bm", Engine: "anybrowser", EngineVersion: anybrowser.Version, PersonaID: anybrowser.HostPersona,
+		Platform: anybrowser.HostPlatform, SeedHex: "00000000000f0f0f", Timezone: "UTC", Languages: "en-US,en", UILocale: "en-US"}
 	if err := r.st.CreateProfile(p); err != nil {
 		t.Fatal(err)
 	}

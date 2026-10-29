@@ -6,7 +6,7 @@
 // on 127.0.0.1:51627. Closing stdin stops it.
 // Developer tool, not part of the app.
 //
-//	ANYPROFILE_TOKEN=… go run ./tools/bench/mcp-serve -app <Chromium.app of Apostate>
+//	ANYPROFILE_TOKEN=… go run ./tools/bench/mcp-serve -app <Chromium.app of AnyBrowser>
 //	claude mcp add --transport http anyprofile-bench http://127.0.0.1:51626/mcp \
 //	  --header "Authorization: Bearer ${ANYPROFILE_TOKEN}"
 package main
@@ -27,7 +27,7 @@ import (
 	"github.com/D0bby999/anyprofile/internal/agent"
 	"github.com/D0bby999/anyprofile/internal/api"
 	"github.com/D0bby999/anyprofile/internal/engine"
-	"github.com/D0bby999/anyprofile/internal/engine/apostate"
+	"github.com/D0bby999/anyprofile/internal/engine/anybrowser"
 	"github.com/D0bby999/anyprofile/internal/launcher"
 	"github.com/D0bby999/anyprofile/internal/paths"
 	"github.com/D0bby999/anyprofile/internal/secrets"
@@ -84,7 +84,7 @@ func (b backend) Pipe(id string) (agent.Conn, bool) {
 }
 
 func main() {
-	app := flag.String("app", "", "Chromium.app of Apostate")
+	app := flag.String("app", "", "Chromium.app of AnyBrowser")
 	port := flag.Int("port", 51626, "API port")
 	headless := flag.Bool("headless", false, "run the browsers without a window")
 	profiles := flag.Int("profiles", 1, "how many test profiles to make")
@@ -141,7 +141,7 @@ func run(app string, port int, headless bool, profiles int, extra []string) erro
 	if err := dirs.Ensure(); err != nil {
 		return err
 	}
-	eng := apostate.New(dirs)
+	eng := anybrowser.New(dirs)
 	os.MkdirAll(filepath.Dir(eng.AppPath()), 0o700)
 	if err := os.Symlink(app, eng.AppPath()); err != nil {
 		return err
@@ -164,7 +164,7 @@ func run(app string, port int, headless bool, profiles int, extra []string) erro
 	}
 	l.TestArgs = append(l.TestArgs, extra...)
 	svc := &service.Service{Dirs: dirs, Store: st, Secrets: sec, Launcher: l, Log: log,
-		Engines: map[string]engine.Engine{"apostate": eng}, Preferred: "apostate",
+		Engines: map[string]engine.Engine{"anybrowser": eng}, Preferred: "anybrowser",
 		Locale: func(context.Context, string) (string, []string, error) { return "en-US", []string{"en-US", "en"}, nil }}
 	l.BeforeStart, l.AfterExit = svc.BeforeLaunch, svc.AfterExit
 	ctx := context.Background()

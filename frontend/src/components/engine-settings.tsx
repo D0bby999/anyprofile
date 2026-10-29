@@ -69,7 +69,7 @@ export function EngineSettings({ engines, counts, defaults, onChanged }: Props) 
           <div key={e.engine} className="engine" aria-busy={busy}>
             <div className="engine-head">
               <b>{engineName(e.engine)}</b>
-              {e.engine === 'apostate' && <span className="chip accent">{t.engines.recommended}</span>}
+              {e.engine === 'anybrowser' && <span className="chip accent">{t.engines.recommended}</span>}
               <span className="grow" />
               {e.problem
                 ? <span className="chip danger"><span className="dot" />{t.engines.notInstalled}</span>
@@ -77,7 +77,7 @@ export function EngineSettings({ engines, counts, defaults, onChanged }: Props) 
                   ? <span className="chip ok"><span className="dot" />{t.engines.installed}</span>
                   : <span className="chip">{t.engines.notInstalled}</span>}
             </div>
-            <p className="desc">{e.engine === 'apostate' ? t.engines.apostateDesc : t.engines.furyDesc}</p>
+            <p className="desc">{e.engine === 'anybrowser' ? t.engines.anybrowserDesc : t.engines.furyDesc}</p>
             <div className="engine-facts">
               <span>{t.engines.version(e.version)}</span>
               <span>{t.engines.chromium(e.chromium)}</span>

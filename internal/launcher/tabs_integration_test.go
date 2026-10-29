@@ -14,21 +14,21 @@ import (
 	"time"
 
 	"github.com/D0bby999/anyprofile/internal/cdppipe"
-	"github.com/D0bby999/anyprofile/internal/engine/apostate"
+	"github.com/D0bby999/anyprofile/internal/engine/anybrowser"
 	"github.com/D0bby999/anyprofile/internal/store"
 )
 
 // The bug this guards: closing the window before Stop left Chromium with an
 // empty session, so the next launch showed only a new tab.
-func TestApostateReopensTabsAfterWindowClosed(t *testing.T) {
-	r := newApostateRig(t)
+func TestAnyBrowserReopensTabsAfterWindowClosed(t *testing.T) {
+	r := newAnyBrowserRig(t)
 	l := r.launcher(t)
 	l.Capture = true
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.Write([]byte("<title>ok</title>")) }))
 	defer srv.Close()
 	const id = "ap3"
-	if err := r.st.CreateProfile(&store.Profile{ID: id, Name: "Tabs", Engine: "apostate",
-		EngineVersion: apostate.Version, PersonaID: apostate.HostPersona, Platform: apostate.HostPlatform,
+	if err := r.st.CreateProfile(&store.Profile{ID: id, Name: "Tabs", Engine: "anybrowser",
+		EngineVersion: anybrowser.Version, PersonaID: anybrowser.HostPersona, Platform: anybrowser.HostPlatform,
 		SeedHex: "00000000000c0c0c", Timezone: "UTC", Languages: "en-US,en", UILocale: "en-US",
 		StartURL: srv.URL + "/start"}); err != nil {
 		t.Fatal(err)

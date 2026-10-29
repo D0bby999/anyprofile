@@ -13,7 +13,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/D0bby999/anyprofile/internal/engine/apostate"
+	"github.com/D0bby999/anyprofile/internal/engine/anybrowser"
 	"github.com/D0bby999/anyprofile/internal/engine/fury"
 	"github.com/D0bby999/anyprofile/internal/store"
 )
@@ -23,14 +23,14 @@ import (
 func TestLastWindowClosedQuits(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.Write([]byte("<title>ok</title>")) }))
 	defer srv.Close()
-	for _, name := range []string{"apostate", "fury"} {
+	for _, name := range []string{"anybrowser", "fury"} {
 		t.Run(name, func(t *testing.T) {
 			var r *rig
 			p := &store.Profile{ID: "lw-" + name, Name: "Last window", SeedHex: "00000000000d0d0d", Timezone: "UTC",
 				Languages: "en-US,en", UILocale: "en-US", StartURL: srv.URL + "/"}
-			if name == "apostate" {
-				r = newApostateRig(t)
-				p.Engine, p.EngineVersion, p.PersonaID, p.Platform = "apostate", apostate.Version, apostate.HostPersona, apostate.HostPlatform
+			if name == "anybrowser" {
+				r = newAnyBrowserRig(t)
+				p.Engine, p.EngineVersion, p.PersonaID, p.Platform = "anybrowser", anybrowser.Version, anybrowser.HostPersona, anybrowser.HostPlatform
 			} else {
 				r = newRig(t)
 				ident, err := r.eng.NewIdentity(context.Background(), 7)
@@ -83,10 +83,10 @@ func TestLastWindowClosedQuits(t *testing.T) {
 				c.Call(ctx, "", "Target.closeTarget", map[string]any{"targetId": tg.TargetID})
 			}
 			// Fury's core quits by itself with its last window (since 0.3.8);
-			// only Apostate is left to the launcher. On Windows the browser
+			// only AnyBrowser is left to the launcher. On Windows the browser
 			// quits with its last window, as Chrome does there: no desktop
 			// jumps, so nothing waits for the user.
-			if name == "apostate" && runtime.GOOS == "darwin" {
+			if name == "anybrowser" && runtime.GOOS == "darwin" {
 				time.Sleep((emptyChecks + 2) * windowsEvery)
 				if in, ok := l.Info(p.ID); !ok || in.State != Running {
 					t.Fatalf("browser quit while it was the app in front: %+v %v", in, ok)

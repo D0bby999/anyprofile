@@ -12,7 +12,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/D0bby999/anyprofile/internal/engine/apostate"
+	"github.com/D0bby999/anyprofile/internal/engine/anybrowser"
 	"github.com/D0bby999/anyprofile/internal/store"
 )
 
@@ -20,15 +20,15 @@ import (
 // their windows laid out in the order the list asks for, without coming to
 // the front.
 func TestArrangeFollowsTheListOrder(t *testing.T) {
-	r := newApostateRig(t)
+	r := newAnyBrowserRig(t)
 	l := r.launcher(t)
 	l.Capture = true                                       // the pipe, as in the app
 	l.log = slog.New(slog.NewTextHandler(testLog{t}, nil)) // why a window was not placed
 	ids := make([]string, 4)
 	for i := range ids {
 		ids[i] = fmt.Sprintf("arr%d", i)
-		if err := r.st.CreateProfile(&store.Profile{ID: ids[i], Name: ids[i], Engine: "apostate",
-			EngineVersion: apostate.Version, PersonaID: apostate.HostPersona, Platform: apostate.HostPlatform,
+		if err := r.st.CreateProfile(&store.Profile{ID: ids[i], Name: ids[i], Engine: "anybrowser",
+			EngineVersion: anybrowser.Version, PersonaID: anybrowser.HostPersona, Platform: anybrowser.HostPlatform,
 			SeedHex: fmt.Sprintf("00000000000a11c%d", i), Timezone: "UTC", Languages: "en-US,en", UILocale: "en-US",
 			EngineMeta: store.EngineMeta{HWC: 4, MemGiB: 8}}); err != nil {
 			t.Fatal(err)

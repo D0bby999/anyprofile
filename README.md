@@ -12,7 +12,7 @@ Website: [anytools.world/anyprofile](https://anytools.world/en/anyprofile)
 
 ## How it works
 
-- **Engines:** [Apostate](https://github.com/heretic-tech/apostate) (default,
+- **Engines:** [AnyBrowser](https://github.com/heretic-tech/apostate) (default,
   macOS and Windows) and the [Fury](https://github.com/furyteamtop/fury-antidetect-browser)
   core (macOS only), both patched Chromium 155. AnyProfile downloads the pinned
   release on first use, verifies it and runs it as-is.
@@ -61,7 +61,7 @@ make build-windows     # on Windows: build/bin/AnyProfile-amd64-installer.exe
 make dev               # live-reload development
 make test              # Go unit tests, TypeScript check, Vitest
 make lint              # SPDX headers, gofmt, vet (also for Windows), govulncheck, npm audit, clippy
-ANYPROFILE_TEST_APOSTATE_APP=/path/to/Chromium.app make test-integration
+ANYPROFILE_TEST_ANYBROWSER_APP=/path/to/Chromium.app make test-integration
 ```
 
 ## Help

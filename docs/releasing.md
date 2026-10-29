@@ -91,14 +91,14 @@ danh sách này khi kiểm tra cập nhật, kiểm chữ ký, rồi hiện các
 request nào: đây vẫn là file `latest.json` app đã đọc.
 
 - **Biết khi có bản mới:** workflow `Engine watch` chạy mỗi ngày và mở issue "Engine: … is out" kèm SHA256SUMS và
-  ghi chú phát hành khi Apostate hoặc Fury có bản AnyProfile chưa biết.
+  ghi chú phát hành khi AnyBrowser hoặc Fury có bản AnyProfile chưa biết.
 - **Thêm một bản:**
-  1. Tải file nén, so `shasum -a 256` với SHA256SUMS của bản đó. Giải nén, lấy hash các file cần kiểm (Apostate:
+  1. Tải file nén, so `shasum -a 256` với SHA256SUMS của bản đó. Giải nén, lấy hash các file cần kiểm (AnyBrowser:
      `Chromium` và `Chromium Framework`, hoặc `chrome.exe` và `chrome.dll`; Fury: `Fury.app/Contents/MacOS/Fury`,
      khớp `core sha256` trong REPORT.md). macOS: `codesign -dv` phải ra đúng team.
-  2. Chạy integration test với bản đó (`ANYPROFILE_TEST_APOSTATE_APP` hoặc `ANYPROFILE_TEST_FURY_APP`).
+  2. Chạy integration test với bản đó (`ANYPROFILE_TEST_ANYBROWSER_APP` hoặc `ANYPROFILE_TEST_FURY_APP`).
   3. Thêm một mục vào `engines.json` (cùng dạng `engine.Release` trong `internal/engine/release.go`).
-     `catalogue`: giữ giá trị của bản trước nếu cùng seed vẫn ra cùng máy giả lập (Apostate: digest của
+     `catalogue`: giữ giá trị của bản trước nếu cùng seed vẫn ra cùng máy giả lập (AnyBrowser: digest của
      `--fingerprint-explain` không đổi; Fury: `fury-config`, vì máy giả lập do app sinh). Khác thì đặt giá trị mới:
      profile cũ khi đó giữ bản cũ. `minApp`: bản AnyProfile thấp nhất chạy được nó.
   4. Commit `engines.json`, rồi ký vào `latest.json` của bản phát hành mới nhất và tải lên lại:

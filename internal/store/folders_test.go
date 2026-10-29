@@ -22,7 +22,7 @@ func seedFolderTest(t *testing.T) *Store {
 
 func mkProfile(t *testing.T, s *Store, id string) {
 	t.Helper()
-	p := &Profile{ID: id, Name: "Kenh " + id, Engine: "apostate", PersonaID: "macos-m4",
+	p := &Profile{ID: id, Name: "Kenh " + id, Engine: "anybrowser", PersonaID: "macos-m4",
 		SeedHex: "0123456789abcdef", Platform: "macos", Timezone: "Asia/Ho_Chi_Minh",
 		Languages: "vi-VN,vi", UILocale: "vi-VN", Sites: []string{"tiktok"}}
 	if err := s.CreateProfile(p); err != nil {
@@ -41,7 +41,7 @@ func TestFoldersMigrationLeavesOldProfilesUnfiled(t *testing.T) {
 		t.Fatal(err)
 	}
 	// Insert using the old schema, before folder_id exists.
-	if _, err := s.db.Exec(`INSERT INTO profiles (id,name,engine,engine_version,persona_id,seed_hex,platform,timezone,languages,ui_locale,created_at,updated_at,serial) VALUES ('old1','Old','apostate','0.5.1','macos','0123456789abcdef','macos','UTC','en-US','en-US','2026-01-01','2026-01-01',1)`); err != nil {
+	if _, err := s.db.Exec(`INSERT INTO profiles (id,name,engine,engine_version,persona_id,seed_hex,platform,timezone,languages,ui_locale,created_at,updated_at,serial) VALUES ('old1','Old','anybrowser','0.5.1','macos','0123456789abcdef','macos','UTC','en-US','en-US','2026-01-01','2026-01-01',1)`); err != nil {
 		t.Fatal(err)
 	}
 	if err := s.Close(); err != nil {

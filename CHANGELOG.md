@@ -49,6 +49,14 @@ separately, so some of this is not visible in the app yet):
   created, edited, duplicated and deleted. A template carries a site,
   start page, language, notes, tags, engine and folder, plus a proxy
   recommendation note — never a proxy, a secret or a cookie.
+- Engine renamed: the default engine is now AnyBrowser, the project's own
+  Chromium fork build (pro/chrome), replacing the upstream Apostate
+  download. Existing profiles and templates are rebound automatically
+  (migration 0021); seeds and personas do not change, so profiles keep
+  their machines. The placeholder Google API key variables are no longer
+  exported at launch — AnyBrowser builds are keyless. The first
+  AnyBrowser build is not hosted yet, so engine installs stay unavailable
+  until it is published.
 
 ## 0.1.0 (2026-10-24)
 

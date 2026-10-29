@@ -14,7 +14,7 @@ vi.mock('../../api', async (orig) => ({
 const { IdentityGroup } = await import('./identity-group')
 
 const now = new Date().toISOString()
-const row = { id: 'a', name: 'AI', sites: [], serial: 3, engine: 'apostate', engineVersion: '0.5.1', personaId: 'macos-m3pro-1728x1117',
+const row = { id: 'a', name: 'AI', sites: [], serial: 3, engine: 'anybrowser', engineVersion: '0.5.1', personaId: 'macos-m3pro-1728x1117',
   seedHex: '1d669920771a0e2b', createdAt: now, fpCheckedAt: now, fpVerdict: 'baseline', fpDiff: [], state: 'stopped', proxyId: 'px', lastOpenAt: now }
 
 afterEach(cleanup)

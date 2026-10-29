@@ -14,6 +14,27 @@ import (
 	"github.com/D0bby999/anyprofile/internal/engine"
 )
 
+// filteredEnv drops requested names case-insensitively, including on Windows.
+func filteredEnv(env, unset []string) []string {
+	out := make([]string, 0, len(env))
+	for _, entry := range env {
+		name, _, ok := strings.Cut(entry, "=")
+		drop := false
+		if ok {
+			for _, key := range unset {
+				if strings.EqualFold(name, key) {
+					drop = true
+					break
+				}
+			}
+		}
+		if !drop {
+			out = append(out, entry)
+		}
+	}
+	return out
+}
+
 // spawn execs the browser in its own process group. Each spec.Pipes[i] is
 // written into a pipe the child reads; the data never touches disk, argv or
 // the environment. When spec.CDPPipe is set, the returned conn speaks to the
@@ -30,7 +51,7 @@ func spawn(spec engine.LaunchSpec, udd, logPath string) (int, <-chan error, *cdp
 	defer logf.Close()
 
 	cmd := exec.Command(spec.Binary, spec.Args...)
-	cmd.Env = append(os.Environ(), spec.Env...)
+	cmd.Env = append(filteredEnv(os.Environ(), spec.EnvUnset), spec.Env...)
 	cmd.Stdout, cmd.Stderr = logf, logf
 	cmd.SysProcAttr = procAttr()
 

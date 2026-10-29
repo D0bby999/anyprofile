@@ -251,7 +251,7 @@ Mẫu miễn phí: `examples/recipes/check-login.md`. Template script Playwright
 - `logs/anyprofile.log` ghi mỗi lần gọi tool một dòng: tên tool, id profile, thời gian, thành công hay không.
   Không ghi nội dung trang, chữ đã gõ hay body.
 
-Đã đo ngày 17/10/2026 trên Apostate 0.5.1, macOS, với Claude Code điều khiển qua MCP:
+Đã đo ngày 17/10/2026 trên AnyBrowser 0.5.1, macOS, với Claude Code điều khiển qua MCP:
 `deviceandbrowserinfo.com/are_you_a_bot` báo "You are human!" (`isAutomatedWithCDP: false`, 22/22 mục `false`).
 Bẫy `Runtime.enable` trong test tích hợp không bị kích hoạt. Trang đó không đo hành vi (nhịp chuột, tốc độ gõ).
 
@@ -320,5 +320,5 @@ trang shop thử ở `127.0.0.1:51627`:
 
 ```bash
 export ANYPROFILE_TOKEN=$(openssl rand -hex 24)
-go run ./tools/bench/mcp-serve -app "<Chromium.app của Apostate>"   # cổng 51626
+go run ./tools/bench/mcp-serve -app "<Chromium.app của AnyBrowser>"   # cổng 51626
 ```

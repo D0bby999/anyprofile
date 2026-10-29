@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { t } from '../i18n'
 
-let saved = { engine: 'apostate', site: 'other', proxy: 'auto', onOpen: 'start' }
+let saved = { engine: 'anybrowser', site: 'other', proxy: 'auto', onOpen: 'start' }
 const setDefaults = vi.fn(async (d: typeof saved) => { saved = { ...d } })
 vi.mock('../api', async (orig) => ({
   ...(await orig<typeof import('../api')>()),
@@ -15,7 +15,7 @@ vi.mock('../api', async (orig) => ({
 }))
 const { OnOpenSettings } = await import('./defaults-settings')
 
-afterEach(() => { cleanup(); setDefaults.mockClear(); saved = { engine: 'apostate', site: 'other', proxy: 'auto', onOpen: 'start' } })
+afterEach(() => { cleanup(); setDefaults.mockClear(); saved = { engine: 'anybrowser', site: 'other', proxy: 'auto', onOpen: 'start' } })
 
 describe('OnOpenSettings', () => {
   it('opens the start pages by default, and saves the choice to reopen last tabs', async () => {

@@ -93,7 +93,7 @@ func TestCatalog(t *testing.T) {
 	if r, _ := c.Find("fury", "0.4.5"); r.Notes != "builtin" {
 		t.Fatal("a listed release replaced the compiled-in one")
 	}
-	if _, ok := c.Find("apostate", "0.4.5"); ok {
+	if _, ok := c.Find("anybrowser", "0.4.5"); ok {
 		t.Fatal("found under another engine")
 	}
 	c.SetListed(nil)

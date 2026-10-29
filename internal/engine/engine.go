@@ -44,11 +44,12 @@ type Runtime struct {
 // LaunchSpec is everything needed to exec the browser. Pipes[i] is written to
 // a pipe the child inherits as fd 3+i, or 5+i when CDPPipe is set.
 type LaunchSpec struct {
-	Binary  string
-	Args    []string
-	Env     []string // appended to the parent's environment
-	Pipes   [][]byte
-	CDPPipe bool
+	Binary   string
+	Args     []string
+	Env      []string // appended to the parent's environment
+	EnvUnset []string // names removed from the inherited environment before Env is applied
+	Pipes    [][]byte
+	CDPPipe  bool
 }
 
 // Identity is what an engine fixes for a new profile.
@@ -67,7 +68,7 @@ func WindowName(p store.Profile) string {
 }
 
 // PrimaryLanguageProbe is implemented by engines whose hidden measuring tab
-// reports only the primary language: Apostate applies --fingerprint-locale to
+// reports only the primary language: AnyBrowser applies --fingerprint-locale to
 // the tabs a user sees, while a hidden tab gets the browser's UI locale. The
 // fingerprint check then compares the primary language subtag only.
 type PrimaryLanguageProbe interface {

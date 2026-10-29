@@ -4,10 +4,10 @@
 
 package launcher
 
-// Runs the real Fury core and Apostate. Needs:
+// Runs the real Fury core and AnyBrowser. Needs:
 //   ANYPROFILE_TEST_FURY_APP      path to an extracted, verified Fury.app (fury.Version)
 //   tools/fury-config built       (make fury-config)
-//   ANYPROFILE_TEST_APOSTATE_APP  path to Apostate 0.5.1: its Chromium.app on
+//   ANYPROFILE_TEST_ANYBROWSER_APP  path to AnyBrowser 0.5.1: its Chromium.app on
 //                                 macOS, the folder holding chrome.exe on Windows
 // Fury runs on macOS only; its tests skip without ANYPROFILE_TEST_FURY_APP.
 
@@ -31,7 +31,7 @@ import (
 
 	"github.com/D0bby999/anyprofile/internal/cookies"
 	"github.com/D0bby999/anyprofile/internal/engine"
-	"github.com/D0bby999/anyprofile/internal/engine/apostate"
+	"github.com/D0bby999/anyprofile/internal/engine/anybrowser"
 	"github.com/D0bby999/anyprofile/internal/engine/fury"
 	"github.com/D0bby999/anyprofile/internal/fingerprint"
 	"github.com/D0bby999/anyprofile/internal/paths"
@@ -328,10 +328,10 @@ func TestCookieKeyAndDiagnostics(t *testing.T) {
 	}
 }
 
-func newApostateRig(t *testing.T) *rig {
-	app := os.Getenv("ANYPROFILE_TEST_APOSTATE_APP")
+func newAnyBrowserRig(t *testing.T) *rig {
+	app := os.Getenv("ANYPROFILE_TEST_ANYBROWSER_APP")
 	if app == "" {
-		t.Skip("ANYPROFILE_TEST_APOSTATE_APP not set")
+		t.Skip("ANYPROFILE_TEST_ANYBROWSER_APP not set")
 	}
 	root, err := os.MkdirTemp(shortTemp(), "apit")
 	if err != nil {
@@ -342,7 +342,7 @@ func newApostateRig(t *testing.T) *rig {
 	if err := dirs.Ensure(); err != nil {
 		t.Fatal(err)
 	}
-	eng := apostate.New(dirs)
+	eng := anybrowser.New(dirs)
 	os.MkdirAll(filepath.Dir(eng.AppPath()), 0o700)
 	if err := os.Symlink(app, eng.AppPath()); err != nil {
 		t.Fatal(err)
@@ -359,13 +359,13 @@ func newApostateRig(t *testing.T) *rig {
 	return &rig{dirs: dirs, st: st, sec: secrets.NewMemory(), eng: eng}
 }
 
-func TestApostateLifecycle(t *testing.T) {
-	r := newApostateRig(t)
+func TestAnyBrowserLifecycle(t *testing.T) {
+	r := newAnyBrowserRig(t)
 	l := r.launcher(t)
 	l.Capture = true
 	const id = "ap1"
-	if err := r.st.CreateProfile(&store.Profile{ID: id, Name: "Apostate", Engine: "apostate",
-		EngineVersion: apostate.Version, PersonaID: apostate.HostPersona, Platform: apostate.HostPlatform,
+	if err := r.st.CreateProfile(&store.Profile{ID: id, Name: "AnyBrowser", Engine: "anybrowser",
+		EngineVersion: anybrowser.Version, PersonaID: anybrowser.HostPersona, Platform: anybrowser.HostPlatform,
 		SeedHex: "00000000000a11ce", Timezone: "Asia/Taipei", Languages: "zh-TW,zh,en", UILocale: "zh-TW",
 		EngineMeta: store.EngineMeta{HWC: 4, MemGiB: 8}}); err != nil {
 		t.Fatal(err)
@@ -409,10 +409,10 @@ func TestApostateLifecycle(t *testing.T) {
 	}
 	// HWC is pinned at 4 and clamped to the host's cores, as the app does.
 	if s.HWC != min(4, runtime.NumCPU()) || s.TZ != "Asia/Taipei" || !fingerprint.LangsMatch(s.Langs, "zh-TW,zh,en", true) ||
-		s.Platform != fingerprint.NavPlatform(apostate.HostPlatform) || !strings.Contains(s.UA, "Chrome/155.") {
+		s.Platform != fingerprint.NavPlatform(anybrowser.HostPlatform) || !strings.Contains(s.UA, "Chrome/155.") {
 		t.Fatalf("sample = %+v", s)
 	}
-	if ss, _ := r.st.Sessions(id, 10); len(ss) != 1 || ss[0].StoppedAt != "" || ss[0].Engine != "apostate" {
+	if ss, _ := r.st.Sessions(id, 10); len(ss) != 1 || ss[0].StoppedAt != "" || ss[0].Engine != "anybrowser" {
 		t.Fatalf("sessions after launch 1 = %+v", ss)
 	}
 	requireChecksPass(t, r.st, id)
@@ -447,7 +447,7 @@ func TestApostateLifecycle(t *testing.T) {
 	}
 
 	// The browser survives the app closing its pipe ends (keep-alive copies
-	// sit on fds 5 and 6: Apostate has no data pipes).
+	// sit on fds 5 and 6: AnyBrowser has no data pipes).
 	p2.cdp.Close()
 	time.Sleep(3 * time.Second)
 	if !alive(pid) {
@@ -482,13 +482,13 @@ func requireChecksPass(t *testing.T, st *store.Store, id string) {
 	t.Logf("%d checks passed", len(checks))
 }
 
-func TestApostateCookiesInAndOut(t *testing.T) {
-	r := newApostateRig(t)
+func TestAnyBrowserCookiesInAndOut(t *testing.T) {
+	r := newAnyBrowserRig(t)
 	l := r.launcher(t)
 	l.Capture = true
 	const id = "ap2"
-	if err := r.st.CreateProfile(&store.Profile{ID: id, Name: "Cookies", Engine: "apostate",
-		EngineVersion: apostate.Version, PersonaID: apostate.HostPersona, Platform: apostate.HostPlatform,
+	if err := r.st.CreateProfile(&store.Profile{ID: id, Name: "Cookies", Engine: "anybrowser",
+		EngineVersion: anybrowser.Version, PersonaID: anybrowser.HostPersona, Platform: anybrowser.HostPlatform,
 		SeedHex: "00000000000b0b0b", Timezone: "UTC", Languages: "en-US,en", UILocale: "en-US"}); err != nil {
 		t.Fatal(err)
 	}

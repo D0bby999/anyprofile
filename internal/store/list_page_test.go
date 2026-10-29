@@ -23,7 +23,7 @@ func seedPageTest(t testing.TB, n int) *Store {
 		p := &Profile{
 			ID:        fmt.Sprintf("p%03d", i),
 			Name:      fmt.Sprintf("Kenh %03d", i),
-			Engine:    "apostate",
+			Engine:    "anybrowser",
 			PersonaID: "macos-m4",
 			SeedHex:   "0123456789abcdef",
 			Platform:  "macos",

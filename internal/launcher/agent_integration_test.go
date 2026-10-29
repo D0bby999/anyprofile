@@ -22,7 +22,7 @@ import (
 
 	"github.com/D0bby999/anyprofile/internal/agent"
 	"github.com/D0bby999/anyprofile/internal/cdppipe"
-	"github.com/D0bby999/anyprofile/internal/engine/apostate"
+	"github.com/D0bby999/anyprofile/internal/engine/anybrowser"
 	"github.com/D0bby999/anyprofile/internal/store"
 )
 
@@ -58,8 +58,8 @@ async function go(ev) {
 }
 </script>`
 
-func TestAgentDrivesApostateOverThePipe(t *testing.T) {
-	r := newApostateRig(t)
+func TestAgentDrivesAnyBrowserOverThePipe(t *testing.T) {
+	r := newAnyBrowserRig(t)
 	l := r.launcher(t)
 	l.Capture = true
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
@@ -76,8 +76,8 @@ func TestAgentDrivesApostateOverThePipe(t *testing.T) {
 	}))
 	defer srv.Close()
 	const id = "ag1"
-	if err := r.st.CreateProfile(&store.Profile{ID: id, Name: "Agent", Engine: "apostate",
-		EngineVersion: apostate.Version, PersonaID: apostate.HostPersona, Platform: apostate.HostPlatform,
+	if err := r.st.CreateProfile(&store.Profile{ID: id, Name: "Agent", Engine: "anybrowser",
+		EngineVersion: anybrowser.Version, PersonaID: anybrowser.HostPersona, Platform: anybrowser.HostPlatform,
 		SeedHex: "00000000000a9e47", Timezone: "UTC", Languages: "en-US,en", UILocale: "en-US",
 		StartURL: srv.URL + "/"}); err != nil {
 		t.Fatal(err)

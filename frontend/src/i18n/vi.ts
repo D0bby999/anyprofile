@@ -70,8 +70,8 @@ export const vi: Messages = {
   },
   engines: {
     title: 'Engine trình duyệt', recommended: 'Khuyên dùng',
-    names: { apostate: 'Apostate', fury: 'Fury' } as Record<string, string>,
-    apostateDesc: 'Trình duyệt nhân Chromium, trang web nhìn vào thấy như một máy tính bình thường. Dùng cho profile mới.',
+    names: { anybrowser: 'AnyBrowser', fury: 'Fury' } as Record<string, string>,
+    anybrowserDesc: 'Trình duyệt nhân Chromium, trang web nhìn vào thấy như một máy tính bình thường. Dùng cho profile mới.',
     furyDesc: 'Engine cũ, cho các profile tạo trước tháng 10/2026. Giữ lại để fingerprint của chúng không bao giờ đổi.',
     older: 'Engine cũ',
     version: (v: string) => `Phiên bản ${v}`, chromium: (v: string) => `Chromium ${v}`,
@@ -162,8 +162,8 @@ export const vi: Messages = {
   welcome: {
     title: 'Thiết lập AnyProfile', sub: 'Ba bước, khoảng hai phút.', skip: 'Bỏ qua thiết lập', step: (n: number) => `Bước ${n}`,
     engineTitle: 'Cài trình duyệt',
-    engineText: 'AnyProfile chạy mỗi profile trong Apostate, một bản Chromium đã vá. Bản tải về dưới 200 MB và được kiểm chữ ký của nhà phát hành trước lần dùng đầu.',
-    engineDone: (v: string) => `Đã cài Apostate ${v}`,
+    engineText: 'AnyProfile chạy mỗi profile trong AnyBrowser, một bản Chromium đã vá. Bản tải về dưới 200 MB và được kiểm chữ ký của nhà phát hành trước lần dùng đầu.',
+    engineDone: (v: string) => `Đã cài AnyBrowser ${v}`,
     install: 'Cài đặt', fileVault: `Bật ${disk} để đăng nhập đã lưu được mã hoá trên ổ đĩa.`,
     proxyTitle: 'Thêm proxy', proxyText: 'Cho mỗi tài khoản một IP riêng bằng proxy sticky: loại proxy giữ nguyên một IP trong nhiều giờ hoặc nhiều ngày.',
     proxyPlaceholder: 'host:port:user:password\nhttp://user:password@host:port',

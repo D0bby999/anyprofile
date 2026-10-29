@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/D0bby999/anyprofile/internal/engine/apostate"
+	"github.com/D0bby999/anyprofile/internal/engine/anybrowser"
 	"github.com/D0bby999/anyprofile/internal/store"
 )
 
@@ -19,11 +19,11 @@ import (
 // next launch: its token request fails (no real OAuth client), and the
 // account reconcilor then clears the web sign-in to match. So the browser
 // must never take part in Google sign-in; the web sign-in is all there is.
-func TestApostateStaysOutOfChromeSignIn(t *testing.T) {
-	r := newApostateRig(t)
+func TestAnyBrowserStaysOutOfChromeSignIn(t *testing.T) {
+	r := newAnyBrowserRig(t)
 	const id = "si1"
-	if err := r.st.CreateProfile(&store.Profile{ID: id, Name: "Signin", Engine: "apostate",
-		EngineVersion: apostate.Version, PersonaID: apostate.HostPersona, Platform: apostate.HostPlatform,
+	if err := r.st.CreateProfile(&store.Profile{ID: id, Name: "Signin", Engine: "anybrowser",
+		EngineVersion: anybrowser.Version, PersonaID: anybrowser.HostPersona, Platform: anybrowser.HostPlatform,
 		SeedHex: "00000000005191e1", Timezone: "UTC", Languages: "en-US,en", UILocale: "en-US"}); err != nil {
 		t.Fatal(err)
 	}

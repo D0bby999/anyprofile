@@ -26,7 +26,7 @@ Trong các bảng dưới, "IP proxy" là IP ra mà trang Proxies hiện cho pro
 | `https://iphey.com` | "Trustworthy"; múi giờ, vị trí và IP khớp nhau |
 
 "Canvas Tampering" và "WebGL exception" là hai lỗi engine Fury bị BrowserScan bắt ở mọi lượt đo;
-Apostate không bị. Profile Apostate mà thấy hai dòng này là có vấn đề cần báo lại.
+AnyBrowser không bị. Profile AnyBrowser mà thấy hai dòng này là có vấn đề cần báo lại.
 
 ## 3. Kiểm từng phần
 

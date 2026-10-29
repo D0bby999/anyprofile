@@ -12,7 +12,7 @@ vi.mock('../api', async (orig) => ({
   ...(await orig<typeof import('../api')>()),
   onEngineProgress: () => () => {},
   Api: {
-    Engines: () => Promise.resolve([{ engine: 'apostate', version: '0.5.1', chromium: '155', installed: state.installed, problem: '', default: true }]),
+    Engines: () => Promise.resolve([{ engine: 'anybrowser', version: '0.5.1', chromium: '155', installed: state.installed, problem: '', default: true }]),
     ListProxies: () => Promise.resolve(state.proxies),
     CreateProfiles: (...a: unknown[]) => createProfiles(...a),
     FinishOnboarding: () => finish(),

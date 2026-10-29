@@ -22,7 +22,7 @@ vi.mock('../api', async (orig) => ({
     CreateProfiles: (...a: unknown[]) => createProfiles(...a),
     ListProxies: () => Promise.resolve(proxyList),
     Engines: () => Promise.resolve([
-      { engine: 'apostate', version: '0.5.1', chromium: '155', installed: true, problem: '', default: true },
+      { engine: 'anybrowser', version: '0.5.1', chromium: '155', installed: true, problem: '', default: true },
       { engine: 'fury', version: '0.3.5', chromium: '155', installed: true, problem: '', default: false },
     ]),
     Sites: () => Promise.resolve(sites),

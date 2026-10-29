@@ -18,8 +18,8 @@ describe('personaLabel', () => {
 describe('machineLabel', () => {
   it('uses the persona for Fury and the measured machine for other engines', () => {
     expect(machineLabel({ engine: 'fury', personaId: 'macos-m5-1470x956', machine: '' })).toBe('Mac M5 · 1470×956')
-    expect(machineLabel({ engine: 'apostate', personaId: 'apostate-macos', machine: 'Apple M3 Pro · 2560×1440' })).toBe('Apple M3 Pro · 2560×1440')
-    expect(machineLabel({ engine: 'apostate', personaId: 'apostate-macos', machine: '' })).toBe(t.engines.machinePending)
+    expect(machineLabel({ engine: 'anybrowser', personaId: 'anybrowser-macos', machine: 'Apple M3 Pro · 2560×1440' })).toBe('Apple M3 Pro · 2560×1440')
+    expect(machineLabel({ engine: 'anybrowser', personaId: 'anybrowser-macos', machine: '' })).toBe(t.engines.machinePending)
   })
 })
 

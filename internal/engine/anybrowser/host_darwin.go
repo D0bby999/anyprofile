@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-package apostate
+package anybrowser
 
 import "golang.org/x/sys/unix"
 

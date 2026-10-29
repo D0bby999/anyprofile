@@ -1,7 +1,10 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
-# Opens an issue when Apostate or Fury publishes a release AnyProfile does not
+# Opens an issue when Fury publishes a release AnyProfile does not
 # know yet (neither compiled in nor in engines.json), with its notes and
 # checksums, so it can be tested and offered (docs/releasing.md).
+# AnyBrowser is built from the project's own fork (pro/chrome), so there
+# is no upstream release feed to watch for it; its Chromium rebase
+# cadence lives in pro/chrome/docs/rebase-checklist.md.
 name: Engine watch
 
 on:
@@ -48,10 +51,7 @@ jobs:
             gh issue create --title "$title" --body-file body.md
           }
           listed() { jq -r --arg e "$1" '.[] | select(.engine == $e) | .version' engines.json; }
-          apostate=$(sed -n 's/^\tVersion  *= "\(.*\)"/\1/p' internal/engine/apostate/release.go)
           fury=$(grep -o 'rel("[0-9.]*"' internal/engine/fury/release.go | grep -o '[0-9.]*' | tr '\n' ' ')
           # The known versions are meant to split into arguments.
-          # shellcheck disable=SC2046,SC2086
-          check Apostate heretic-tech/apostate $apostate $(listed apostate)
           # shellcheck disable=SC2046,SC2086
           check Fury furyteamtop/fury-antidetect-browser $fury $(listed fury)

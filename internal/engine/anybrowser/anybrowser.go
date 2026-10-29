@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-package apostate
+package anybrowser
 
 import (
 	"context"
@@ -18,8 +18,8 @@ import (
 	"github.com/D0bby999/anyprofile/internal/store"
 )
 
-// Apostate implements engine.Engine.
-type Apostate struct {
+// AnyBrowser implements engine.Engine.
+type AnyBrowser struct {
 	dirs paths.Dirs
 	mu   sync.Mutex
 	// MockKeychain adds --use-mock-keychain. Integration tests only: the app
@@ -32,23 +32,23 @@ type Apostate struct {
 
 // New returns the engine with the pinned release only; SetCatalog adds the
 // signed list.
-func New(dirs paths.Dirs) *Apostate {
-	return &Apostate{dirs: dirs, cat: engine.NewCatalog("", Builtin()...)}
+func New(dirs paths.Dirs) *AnyBrowser {
+	return &AnyBrowser{dirs: dirs, cat: engine.NewCatalog("", Builtin()...)}
 }
 
-func (a *Apostate) ID() string { return "apostate" }
+func (a *AnyBrowser) ID() string { return "anybrowser" }
 
-// UsesCookieKey is false: Apostate keeps its cookie key itself, in the
+// UsesCookieKey is false: AnyBrowser keeps its cookie key itself, in the
 // Keychain item "Chromium Safe Storage" on macOS and DPAPI-encrypted in the
 // profile's Local State on Windows, and never reads one from AnyProfile.
-func (a *Apostate) UsesCookieKey() bool { return false }
+func (a *AnyBrowser) UsesCookieKey() bool { return false }
 
 // ProbeSeesPrimaryLanguageOnly is true: measured 2026-10-14, a hidden tab
 // reports "vi" for --fingerprint-locale=vi-VN,vi,en-US,en while visible tabs
 // report the whole list.
-func (a *Apostate) ProbeSeesPrimaryLanguageOnly() bool { return true }
+func (a *AnyBrowser) ProbeSeesPrimaryLanguageOnly() bool { return true }
 
-func (a *Apostate) hostInfo() (int, int) {
+func (a *AnyBrowser) hostInfo() (int, int) {
 	if a.host != nil {
 		return a.host()
 	}
@@ -59,17 +59,16 @@ func (a *Apostate) hostInfo() (int, int) {
 // itself comes from the profile's seed (seed_hex), drawn by the service, so
 // roll is unused. The persona is the host's own OS (release_<os>.go): another
 // OS's persona renders with the host's fonts, which detection sites notice.
-func (a *Apostate) NewIdentity(ctx context.Context, roll uint64) (engine.Identity, error) {
+func (a *AnyBrowser) NewIdentity(ctx context.Context, roll uint64) (engine.Identity, error) {
 	cores, mem := a.hostInfo()
 	return engine.Identity{PersonaID: personaID, Platform: platform,
 		Meta: store.EngineMeta{HWC: cores, MemGiB: mem}}, nil
 }
 
-// PrepareProfile blocks geolocation before the first launch: Apostate has no
+// PrepareProfile blocks geolocation before the first launch: AnyBrowser has no
 // flag to fake a position, so a site that asks would get the real one. It
-// also keeps the browser out of Google sign-in (engine.StayOutOfChromeSignIn):
-// the Google keys set in BuildLaunch make Chromium act as Chrome there.
-func (a *Apostate) PrepareProfile(p store.Profile, rt engine.Runtime) error {
+// also keeps the browser out of Google sign-in (engine.StayOutOfChromeSignIn).
+func (a *AnyBrowser) PrepareProfile(p store.Profile, rt engine.Runtime) error {
 	return engine.EditPrefs(filepath.Join(rt.UserDataDir, "Default", "Preferences"), func(m map[string]any) bool {
 		geo := blockGeolocation(m)
 		return engine.StayOutOfChromeSignIn(m) || geo
@@ -90,7 +89,7 @@ var seedRe = regexp.MustCompile(`^[0-9a-f]{16}$`)
 // ErrOtherOS refuses a profile created on another operating system.
 var ErrOtherOS = errors.New("this profile opens only on the operating system it was created on")
 
-func (a *Apostate) BuildLaunch(ctx context.Context, p store.Profile, rt engine.Runtime) (engine.LaunchSpec, error) {
+func (a *AnyBrowser) BuildLaunch(ctx context.Context, p store.Profile, rt engine.Runtime) (engine.LaunchSpec, error) {
 	if !seedRe.MatchString(p.SeedHex) {
 		return engine.LaunchSpec{}, fmt.Errorf("profile %s has an invalid seed", p.ID)
 	}
@@ -102,9 +101,12 @@ func (a *Apostate) BuildLaunch(ctx context.Context, p store.Profile, rt engine.R
 	if err != nil {
 		return engine.LaunchSpec{}, err
 	}
-	// Without these three, Chromium shows a "Google API keys are missing" bar
-	// on the first tab; the page can measure the lost height.
-	env := []string{"GOOGLE_API_KEY=no", "GOOGLE_DEFAULT_CLIENT_ID=no", "GOOGLE_DEFAULT_CLIENT_SECRET=no"}
+	// AnyBrowser builds are keyless: no placeholder Google API keys are
+	// exported. The fork suppresses the "Google API keys are missing" bar
+	// itself (patch 0159 in pro/chrome); the upstream build needed these
+	// three variables to keep that bar — and the window height it eats —
+	// away from pages.
+	var env []string
 	args := []string{
 		"--user-data-dir=" + rt.UserDataDir,
 		"--no-default-browser-check",
@@ -130,18 +132,18 @@ func (a *Apostate) BuildLaunch(ctx context.Context, p store.Profile, rt engine.R
 		"--fingerprint-platform="+platform,
 	)
 	if p.Timezone != "" {
-		// Apostate's own default is the host zone even behind a proxy.
+		// AnyBrowser's own default is the host zone even behind a proxy.
 		args = append(args, "--fingerprint-timezone="+p.Timezone)
 		if setsTZ {
 			env = append([]string{"TZ=" + p.Timezone}, env...)
 		}
 	}
 	if p.Languages != "" {
-		// --lang has no effect on navigator.languages in Apostate; this does.
+		// --lang has no effect on navigator.languages in AnyBrowser; this does.
 		args = append(args, "--fingerprint-locale="+p.Languages)
 	}
 	// Pinned at creation so the seed keeps the same values on another host or
-	// after a persona-table change. Apostate refuses values above the host's.
+	// after a persona-table change. AnyBrowser refuses values above the host's.
 	cores, mem := a.hostInfo()
 	if p.EngineMeta.HWC > 0 {
 		args = append(args, "--fingerprint-hardware-concurrency="+strconv.Itoa(min(p.EngineMeta.HWC, cores)))
@@ -150,7 +152,7 @@ func (a *Apostate) BuildLaunch(ctx context.Context, p store.Profile, rt engine.R
 		args = append(args, "--fingerprint-device-memory="+strconv.Itoa(min(p.EngineMeta.MemGiB, mem)))
 	}
 	if rt.RelayPort > 0 {
-		// The local relay holds the proxy credentials; Apostate's own proxy
+		// The local relay holds the proxy credentials; AnyBrowser's own proxy
 		// auth would hand them to child processes in argv.
 		args = append(args,
 			"--proxy-server=http://127.0.0.1:"+strconv.Itoa(rt.RelayPort),
@@ -174,5 +176,7 @@ func (a *Apostate) BuildLaunch(ctx context.Context, p store.Profile, rt engine.R
 	}
 	args = append(args, rt.StartURLs...)
 	bin := filepath.Join(a.dir(r.Version), filepath.FromSlash(r.Bin))
-	return engine.LaunchSpec{Binary: bin, Args: args, Env: env, CDPPipe: rt.CDPPipe}, nil
+	return engine.LaunchSpec{Binary: bin, Args: args, Env: env, EnvUnset: []string{
+		"GOOGLE_API_KEY", "GOOGLE_DEFAULT_CLIENT_ID", "GOOGLE_DEFAULT_CLIENT_SECRET",
+	}, CDPPipe: rt.CDPPipe}, nil
 }

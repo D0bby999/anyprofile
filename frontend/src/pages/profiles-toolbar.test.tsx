@@ -18,7 +18,7 @@ const { ProfilesPage } = await import('./profiles-page')
 
 const sites = [site.Site.createFrom({ id: 'other', name: 'Other', group: 'other', domains: [], startUrl: '', icon: '', color: '#6B7280', custom: false })]
 const rows = [service.ProfileRow.createFrom({
-  id: 'a', name: 'Kênh A', sites: ['other'], serial: 1, engine: 'apostate', personaId: 'apostate-macos', machine: '', proxyId: '',
+  id: 'a', name: 'Kênh A', sites: ['other'], serial: 1, engine: 'anybrowser', personaId: 'anybrowser-macos', machine: '', proxyId: '',
   state: 'stopped', cdpPort: 0, tags: ['shop-us'], notes: '', login: '', lastOpenAt: '', fpVerdict: '', fpDiff: [], pinned: false,
 })]
 const page = (view: View = 'all', onClearView = vi.fn(), list = rows) => render(<ToastProvider>

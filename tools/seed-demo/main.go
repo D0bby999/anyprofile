@@ -29,7 +29,7 @@ import (
 	_ "modernc.org/sqlite"
 
 	"github.com/D0bby999/anyprofile/internal/engine"
-	"github.com/D0bby999/anyprofile/internal/engine/apostate"
+	"github.com/D0bby999/anyprofile/internal/engine/anybrowser"
 	"github.com/D0bby999/anyprofile/internal/engine/fury"
 	"github.com/D0bby999/anyprofile/internal/fingerprint"
 	"github.com/D0bby999/anyprofile/internal/paths"
@@ -83,7 +83,7 @@ func run(dir, cfg string, reset bool) error {
 		return err
 	}
 	// APFS clones: the installed engines appear without a download or extra disk.
-	for _, id := range []string{"apostate", "fury"} {
+	for _, id := range []string{"anybrowser", "fury"} {
 		if src := filepath.Join(real.Engines(), id); exists(src) {
 			if out, err := exec.Command("cp", "-cR", src, dirs.Engines()+"/").CombinedOutput(); err != nil {
 				return fmt.Errorf("copy engine %s: %v: %s", id, err, out)
@@ -97,7 +97,7 @@ func run(dir, cfg string, reset bool) error {
 	}
 	fu := fury.New(dirs, cfg)
 	svc := &service.Service{Dirs: dirs, Store: st, Log: slog.New(slog.NewTextHandler(io.Discard, nil)),
-		Engines: map[string]engine.Engine{"fury": fu, "apostate": apostate.New(dirs)}, Preferred: "apostate",
+		Engines: map[string]engine.Engine{"fury": fu, "anybrowser": anybrowser.New(dirs)}, Preferred: "anybrowser",
 		Locale: func(ctx context.Context, cc string) (string, []string, error) {
 			loc, err := fu.LocaleFor(ctx, cc)
 			return loc.UILocale, loc.Languages, err
@@ -159,7 +159,7 @@ func (s *seeder) ago(d time.Duration) string { return s.now.Add(-d).Format(time.
 func days(n float64) time.Duration           { return time.Duration(n * 24 * float64(time.Hour)) }
 
 func (s *seeder) seed() error {
-	if err := s.st.SetSetting("default_engine", "apostate"); err != nil {
+	if err := s.st.SetSetting("default_engine", "anybrowser"); err != nil {
 		return err
 	}
 	if err := s.seedProxies(); err != nil {
@@ -220,7 +220,7 @@ func (s *seeder) seed() error {
 	add(5, func(i int) spec {
 		return spec{name: fmt.Sprintf("Fury cũ %d", i), engine: "fury", site: []string{"tiktok", "youtube", "gmail", "other", "tiktok"}[i-1],
 			country: []string{"US", "TW", "JP", "US", "VN"}[i-1], tags: []string{"Cũ"}, sessions: 4,
-			notes: map[bool]string{true: "Tạo trước khi đổi sang Apostate. Nhân bản để chuyển engine.", false: ""}[i == 1]}
+			notes: map[bool]string{true: "Tạo trước khi đổi sang AnyBrowser. Nhân bản để chuyển engine.", false: ""}[i == 1]}
 	})
 	add(3, func(i int) spec {
 		return spec{name: fmt.Sprintf("Partner %d", i), site: partner.ID, country: "SG", tags: []string{"Khách A"}}
@@ -429,7 +429,7 @@ func (s *seeder) history(p store.Profile, n int, last *exit) error {
 
 func (s *seeder) expect(p store.Profile) fingerprint.Expect {
 	e := fingerprint.Expect{Engine: p.Engine, Timezone: p.Timezone, Languages: p.Languages, ChromiumMajor: 155,
-		Proxied: p.ProxyID != "", PrimaryLangOnly: p.Engine == "apostate"}
+		Proxied: p.ProxyID != "", PrimaryLangOnly: p.Engine == "anybrowser"}
 	if p.Engine == "fury" {
 		e.ChromiumMajor = 145
 	} else {

@@ -12,7 +12,7 @@ const setDefaults = vi.fn().mockResolvedValue(undefined)
 const rel = (engine: string, version: string, installed: boolean, profiles = 0) => service.EngineRelease.createFrom({
   engine, version, chromium: '155.0.8059.39', installed, problem: '', date: '2026-10-15', notes: '', profiles })
 const releases: Record<string, service.EngineRelease[]> = {
-  apostate: [rel('apostate', '0.5.1', false)],
+  anybrowser: [rel('anybrowser', '0.5.1', false)],
   fury: [rel('fury', '0.4.5', false), rel('fury', '0.3.5', true, 2)],
 }
 vi.mock('../api', async (orig) => ({
@@ -31,17 +31,17 @@ const { EngineSettings } = await import('./engine-settings')
 const { ConfirmProvider } = await import('./confirm')
 
 const engines = [
-  main.EngineInfo.createFrom({ engine: 'apostate', version: '0.5.1', chromium: '155.0.8059.31', installed: false, problem: '', default: true }),
+  main.EngineInfo.createFrom({ engine: 'anybrowser', version: '0.5.1', chromium: '155.0.8059.31', installed: false, problem: '', default: true }),
   main.EngineInfo.createFrom({ engine: 'fury', version: '0.3.5', chromium: '155.0.8059.39', installed: true, problem: '', default: false }),
 ]
-const defaults = service.Defaults.createFrom({ engine: 'apostate', site: 'other', proxy: 'auto' })
+const defaults = service.Defaults.createFrom({ engine: 'anybrowser', site: 'other', proxy: 'auto' })
 
 afterEach(() => { cleanup(); vi.clearAllMocks() })
 
 describe('EngineSettings', () => {
-  it('shows both engines and recommends only Apostate', () => {
+  it('shows both engines and recommends only AnyBrowser', () => {
     render(<EngineSettings engines={engines} counts={{ fury: 2 }} defaults={defaults} onChanged={vi.fn()} />)
-    expect(screen.getByText('Apostate')).toBeTruthy()
+    expect(screen.getByText('AnyBrowser')).toBeTruthy()
     expect(screen.getByText('Fury')).toBeTruthy()
     expect(screen.getAllByText(t.engines.recommended)).toHaveLength(1)
     expect(screen.getByText(t.engines.usedBy(2))).toBeTruthy()
@@ -69,13 +69,13 @@ describe('EngineSettings', () => {
     render(<EngineSettings engines={engines} counts={{}} defaults={defaults} onChanged={onChanged} />)
     fireEvent.click(screen.getByRole('button', { name: t.engines.install }))
     await waitFor(() => expect(onChanged).toHaveBeenCalled())
-    expect(installEngine).toHaveBeenCalledWith('apostate')
+    expect(installEngine).toHaveBeenCalledWith('anybrowser')
   })
 
   it('offers a newer version and lists every version', async () => {
     const onChanged = vi.fn()
     render(<ConfirmProvider><EngineSettings engines={engines} counts={{}} defaults={defaults} onChanged={onChanged} /></ConfirmProvider>)
-    // Fury has 0.3.5 installed and 0.4.5 not yet: offered. Apostate has none installed: no banner.
+    // Fury has 0.3.5 installed and 0.4.5 not yet: offered. AnyBrowser has none installed: no banner.
     expect(await screen.findByText(t.engines.newer('0.4.5'))).toBeTruthy()
     expect(screen.queryByText(t.engines.newer('0.5.1'))).toBeNull()
     expect(screen.getByText(t.engines.versions(2))).toBeTruthy()

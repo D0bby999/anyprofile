@@ -35,7 +35,7 @@ từ bộ thật (bản sao APFS, gần như không tốn thêm ổ đĩa), nên
 | TikTok US 01–10, TikTok VN 01–06 | 16 | Tag "Kênh chính" và "Nuôi"; 3 kênh US được ghim; TikTok VN 01–02 có ba nền tảng (TikTok, YouTube, Gmail) |
 | YouTube Studio, Facebook Ads, Seller, Instagram, X, Amazon… | 27 | Nhiều nền tảng, tag "Khách A", "Khách B", "Shop" |
 | Partner 1–3 | 3 | Nền tảng tự tạo "Partner portal" |
-| Fury cũ 1–5 | 5 | Engine Fury; dùng để thử nhân bản sang Apostate |
+| Fury cũ 1–5 | 5 | Engine Fury; dùng để thử nhân bản sang AnyBrowser |
 | Thử trực tiếp 1–4 | 4 | **Không có proxy, mở được thật**; dùng cho ảnh chụp, cookie, mật khẩu, 2FA; số 4 có hai nền tảng (YouTube, Gmail) |
 | Mẫu: … | 10 | Mỗi profile minh hoạ một trạng thái sức khỏe (xem bảng dưới) |
 | Đã bỏ 1–3 | 3 | Nằm trong thùng rác |
@@ -77,7 +77,7 @@ Mỗi mục ghi điều phải thấy. Thử ở cả giao diện sáng và tố
 7. **Sức khỏe.** Đi qua 10 profile "Mẫu" và so với bảng trên. Ở "Mẫu: lệch múi giờ", bấm "Match the IP": app sẽ báo lỗi proxy, vì proxy mẫu không kết nối được.
 8. **Thao tác hàng loạt.** Chọn 5 hàng, thêm tag, đổi nền tảng.
 9. **Tạo profile.** Tạo hàng loạt 3 profile với proxy "auto": mỗi profile nhận một trong 3 proxy trống. Tạo lần thứ tư phải bị chặn vì hết proxy trống.
-10. **Engine.** Mở "Fury cũ 1", chọn Duplicate. Bản sao phải là Apostate. Settings → Browser engines hiện cả hai engine, Apostate là mặc định.
+10. **Engine.** Mở "Fury cũ 1", chọn Duplicate. Bản sao phải là AnyBrowser. Settings → Browser engines hiện cả hai engine, AnyBrowser là mặc định.
 11. **Proxy.** Trang Proxies có huy hiệu sắp hết hạn và đã hết hạn, và cổng xoay bị đánh dấu không gán được.
 12. **Thùng rác.** Khôi phục "Đã bỏ 1". Xoá vĩnh viễn "Đã bỏ 2" (có hộp xác nhận).
 13. **Mở thật một profile.** Mở "Thử trực tiếp 1", chờ cửa sổ trình duyệt hiện, rồi đóng. Tab Sessions có thêm một hàng; nhóm Checks báo kết quả đo thật.
@@ -140,7 +140,7 @@ Làm trên bộ **thật**. Thoát app mẫu trước, rồi mở `build/bin/Any
   đổi proxy.
 - Với DataImpulse, dùng port sticky **10000 trở lên**. Port 823 đổi IP mỗi lần kết nối; app sẽ từ chối.
 - Không đổi quốc gia proxy của một profile đã đăng nhập. Muốn đổi thì tạo profile mới.
-- Không đăng nhập cùng một tài khoản trên cả Fury và Apostate.
+- Không đăng nhập cùng một tài khoản trên cả Fury và AnyBrowser.
 - File cookie xuất ra cho phép người khác đăng nhập tài khoản. Giữ kín và xoá sau khi dùng.
 
 ### Trước khi bắt đầu

@@ -24,7 +24,7 @@ import (
 	"github.com/D0bby999/anyprofile/internal/agent"
 	"github.com/D0bby999/anyprofile/internal/api"
 	"github.com/D0bby999/anyprofile/internal/engine"
-	"github.com/D0bby999/anyprofile/internal/engine/apostate"
+	"github.com/D0bby999/anyprofile/internal/engine/anybrowser"
 	"github.com/D0bby999/anyprofile/internal/launcher"
 	"github.com/D0bby999/anyprofile/internal/paths"
 	"github.com/D0bby999/anyprofile/internal/secrets"
@@ -66,9 +66,9 @@ func shortTemp() string {
 }
 
 func TestAPIDrivesARealBrowser(t *testing.T) {
-	app := os.Getenv("ANYPROFILE_TEST_APOSTATE_APP")
+	app := os.Getenv("ANYPROFILE_TEST_ANYBROWSER_APP")
 	if app == "" {
-		t.Skip("ANYPROFILE_TEST_APOSTATE_APP not set")
+		t.Skip("ANYPROFILE_TEST_ANYBROWSER_APP not set")
 	}
 	root, _ := os.MkdirTemp(shortTemp(), "apapi")
 	t.Cleanup(func() { os.RemoveAll(root) })
@@ -76,7 +76,7 @@ func TestAPIDrivesARealBrowser(t *testing.T) {
 	if err := dirs.Ensure(); err != nil {
 		t.Fatal(err)
 	}
-	eng := apostate.New(dirs)
+	eng := anybrowser.New(dirs)
 	os.MkdirAll(filepath.Dir(eng.AppPath()), 0o700)
 	if err := os.Symlink(app, eng.AppPath()); err != nil {
 		t.Fatal(err)
@@ -98,9 +98,9 @@ func TestAPIDrivesARealBrowser(t *testing.T) {
 		l.TestArgs = []string{"--headless=new"} // no window on the screen
 	}
 	s := &Service{Dirs: dirs, Store: st, Secrets: sec, Log: log, Launcher: l,
-		Engines: map[string]engine.Engine{"apostate": eng}, Preferred: "apostate"}
-	if err := st.CreateProfile(&store.Profile{ID: "api1", Name: "API", Engine: "apostate",
-		EngineVersion: apostate.Version, PersonaID: apostate.HostPersona, Platform: apostate.HostPlatform,
+		Engines: map[string]engine.Engine{"anybrowser": eng}, Preferred: "anybrowser"}
+	if err := st.CreateProfile(&store.Profile{ID: "api1", Name: "API", Engine: "anybrowser",
+		EngineVersion: anybrowser.Version, PersonaID: anybrowser.HostPersona, Platform: anybrowser.HostPlatform,
 		SeedHex: "00000000000d0d0d", Timezone: "UTC", Languages: "en-US,en", UILocale: "en-US"}); err != nil {
 		t.Fatal(err)
 	}

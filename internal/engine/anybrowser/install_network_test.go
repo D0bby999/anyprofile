@@ -2,7 +2,7 @@
 
 //go:build network
 
-package apostate
+package anybrowser
 
 import (
 	"context"
@@ -36,6 +36,6 @@ func TestInstallRealRelease(t *testing.T) {
 	}
 	entries, _ := os.ReadDir(filepath.Dir(a.dir(Version)))
 	if len(entries) != 1 || entries[0].Name() != Version {
-		t.Fatalf("engines/apostate holds %v", entries)
+		t.Fatalf("engines/anybrowser holds %v", entries)
 	}
 }

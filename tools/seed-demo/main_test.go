@@ -77,7 +77,7 @@ func TestSeedShowsEveryState(t *testing.T) {
 	}
 	for _, want := range []string{"flag:direct", "flag:country_changed", "flag:ip_changed", "flag:tz_mismatch",
 		"flag:exit_failed", "check:webrtc_ip", "check:langs", "verdict:drift", "verdict:match", "verdict:baseline",
-		"verdict:unchecked", "verdict:", "expiry:soon", "expiry:expired", "engine:fury", "engine:apostate", "pinned"} {
+		"verdict:unchecked", "verdict:", "expiry:soon", "expiry:expired", "engine:fury", "engine:anybrowser", "pinned"} {
 		if !seen[want] {
 			t.Errorf("no profile shows %s", want)
 		}

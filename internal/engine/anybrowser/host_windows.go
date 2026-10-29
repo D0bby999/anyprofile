@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-package apostate
+package anybrowser
 
 import (
 	"bytes"
@@ -37,7 +37,7 @@ func hostMemBytes() uint64 {
 // versionManifest is Chromium's version_assembly_manifest.template for a
 // release. chrome.exe names the assembly "155.0.8059.31" as a dependency, and
 // Windows refuses to start it ("side-by-side configuration is incorrect")
-// without this file beside it. Apostate 0.5.1 does not ship it
+// without this file beside it. AnyBrowser 0.5.1 does not ship it
 // (github.com/heretic-tech/apostate/issues/2); the workaround there is this
 // file. The release files themselves are not touched.
 func versionManifest(chromium string) []byte {
