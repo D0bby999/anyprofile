@@ -11,34 +11,36 @@ import (
 	"github.com/D0bby999/anyprofile/internal/engine"
 )
 
-func (a *AnyBrowser) dir(version string) string { return a.dirs.Engine("anybrowser", version) }
+func (a *AnyBrowser) dir(version string) string { return a.dirs.Engine(a.ID(), version) }
 
 // SetCatalog makes the engine use c, which holds the signed list as well as
 // the pinned release.
 func (a *AnyBrowser) SetCatalog(c *engine.Catalog) { a.cat = c }
 
-func (a *AnyBrowser) Releases() []engine.Release { return a.cat.For("anybrowser") }
+func (a *AnyBrowser) Releases() []engine.Release { return a.cat.For(a.ID()) }
 
 func (a *AnyBrowser) release(version string) (engine.Release, error) {
-	r, ok := a.cat.Find("anybrowser", version)
+	r, ok := a.cat.Find(a.ID(), version)
 	if !ok {
-		return r, fmt.Errorf("%w: anybrowser %s", engine.ErrUnknownRelease, version)
+		return r, fmt.Errorf("%w: %s %s", engine.ErrUnknownRelease, a.ID(), version)
 	}
 	return r, nil
 }
 
 // AppPath is the pinned release's app: Chromium.app on macOS, the folder
 // holding chrome.exe on Windows. Test rigs link an extracted release there.
-func (a *AnyBrowser) AppPath() string { return filepath.Join(a.dir(Version), appRel) }
+func (a *AnyBrowser) AppPath() string {
+	return filepath.Join(a.dir(a.pinned.Version), filepath.FromSlash(a.pinned.App))
+}
 
 // Complete adds what the pinned release lacks on this OS to AppPath (see
 // completeApp); test rigs that link an extracted release call it.
-func (a *AnyBrowser) Complete() error { return completeApp(a.AppPath(), Chromium) }
+func (a *AnyBrowser) Complete() error { return completeApp(a.AppPath(), a.pinned.Chromium) }
 
 func (a *AnyBrowser) Status(ctx context.Context, version string) engine.Status {
 	r, err := a.release(version)
 	if err != nil {
-		return engine.Status{Version: engine.Version{Engine: "anybrowser", Version: version}, Problem: err.Error()}
+		return engine.Status{Version: engine.Version{Engine: a.ID(), Version: version}, Problem: err.Error()}
 	}
 	a.mu.Lock()
 	defer a.mu.Unlock()
@@ -84,5 +86,5 @@ func (a *AnyBrowser) Remove(version string) error {
 func (a *AnyBrowser) CleanStale() error {
 	a.mu.Lock() // never while Install runs
 	defer a.mu.Unlock()
-	return engine.CleanStaging(filepath.Dir(a.dir(Version)))
+	return engine.CleanStaging(filepath.Dir(a.dir(a.pinned.Version)))
 }

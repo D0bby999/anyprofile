@@ -12,7 +12,12 @@ import (
 func TestMergeRejectsLegacyIdentityBeforeSideEffects(t *testing.T) {
 	for _, kind := range []string{"profile", "template"} {
 		t.Run(kind, func(t *testing.T) {
-			src, _ := openTemp(t)
+			dir := t.TempDir()
+			src, err := openUpTo(filepath.Join(dir, "legacy.db"), dir, 21)
+			if err != nil {
+				t.Fatal(err)
+			}
+			t.Cleanup(func() { src.Close() })
 			if kind == "profile" {
 				p := sample("legacy")
 				p.Engine = "apostate"
@@ -30,7 +35,7 @@ func TestMergeRejectsLegacyIdentityBeforeSideEffects(t *testing.T) {
 			}
 			dst, _ := openTemp(t)
 			called := false
-			_, err := dst.Merge(context.Background(), backup, func(MergeResult) error { called = true; return nil })
+			_, err = dst.Merge(context.Background(), backup, func(MergeResult) error { called = true; return nil })
 			if !errors.Is(err, ErrLegacyEngineMigrationBlocked) || called {
 				t.Fatalf("error = %v, callback = %v", err, called)
 			}

@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"path/filepath"
 	"regexp"
 	"runtime"
@@ -20,8 +21,11 @@ import (
 
 // AnyBrowser implements engine.Engine.
 type AnyBrowser struct {
-	dirs paths.Dirs
-	mu   sync.Mutex
+	dirs       paths.Dirs
+	mu         sync.Mutex
+	pinned     engine.Release
+	persona    string
+	legacyKeys bool
 	// MockKeychain adds --use-mock-keychain. Integration tests only: the app
 	// never sets it, because the mock key is public (decision 3 in the plan).
 	MockKeychain bool
@@ -33,10 +37,19 @@ type AnyBrowser struct {
 // New returns the engine with the pinned release only; SetCatalog adds the
 // signed list.
 func New(dirs paths.Dirs) *AnyBrowser {
-	return &AnyBrowser{dirs: dirs, cat: engine.NewCatalog("", Builtin()...)}
+	return NewWithRelease(dirs, Builtin()[0], personaID, legacyGoogleKeyEnv)
 }
 
-func (a *AnyBrowser) ID() string { return "anybrowser" }
+// NewWithRelease shares the Chromium launch/install implementation with the
+// upstream Apostate engine. Its identity, release pins and install tree stay
+// separate. legacyKeys enables the non-secret Google infobar workaround only
+// for this exact pinned release, never for a future catalog entry.
+func NewWithRelease(dirs paths.Dirs, pinned engine.Release, persona string, legacyKeys bool) *AnyBrowser {
+	return &AnyBrowser{dirs: dirs, pinned: pinned, persona: persona, legacyKeys: legacyKeys,
+		cat: engine.NewCatalog("", pinned)}
+}
+
+func (a *AnyBrowser) ID() string { return a.pinned.Engine }
 
 // UsesCookieKey is false: AnyBrowser keeps its cookie key itself, in the
 // Keychain item "Chromium Safe Storage" on macOS and DPAPI-encrypted in the
@@ -61,7 +74,7 @@ func (a *AnyBrowser) hostInfo() (int, int) {
 // OS's persona renders with the host's fonts, which detection sites notice.
 func (a *AnyBrowser) NewIdentity(ctx context.Context, roll uint64) (engine.Identity, error) {
 	cores, mem := a.hostInfo()
-	return engine.Identity{PersonaID: personaID, Platform: platform,
+	return engine.Identity{PersonaID: a.persona, Platform: platform,
 		Meta: store.EngineMeta{HWC: cores, MemGiB: mem}}, nil
 }
 
@@ -101,13 +114,14 @@ func (a *AnyBrowser) BuildLaunch(ctx context.Context, p store.Profile, rt engine
 	if err != nil {
 		return engine.LaunchSpec{}, err
 	}
-	// The macOS fork is keyless (patch 0159). Only the exact retained Windows
-	// upstream pin needs the legacy non-secret infobar workaround. Always strip
-	// inherited real keys; never enable this for a future/unrecognized release.
+	// The macOS fork is keyless (patch 0159); upstream Apostate needs the
+	// non-secret infobar workaround. Always strip inherited real keys and
+	// never enable the workaround for a future/unrecognized release.
 	var env []string
-	if legacyGoogleKeyEnv && r.Version == Version && r.Chromium == Chromium &&
-		r.URL == zipURL && r.SHA256 == zipSHA256 && r.Catalogue == Catalogue &&
-		r.Files[r.Bin] == binarySHA256 && r.Files[frameworkRel] == frameworkSHA {
+	pin := a.pinned
+	if a.legacyKeys && r.Version == pin.Version && r.Chromium == pin.Chromium &&
+		r.URL == pin.URL && r.SHA256 == pin.SHA256 && r.Catalogue == pin.Catalogue &&
+		r.Bin == pin.Bin && r.App == pin.App && r.TeamID == pin.TeamID && maps.Equal(r.Files, pin.Files) {
 		env = append(env, "GOOGLE_API_KEY=no", "GOOGLE_DEFAULT_CLIENT_ID=no", "GOOGLE_DEFAULT_CLIENT_SECRET=no")
 	}
 	args := []string{

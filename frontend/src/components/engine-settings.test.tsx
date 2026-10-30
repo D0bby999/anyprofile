@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { t } from '../i18n'
 import { main, service } from '../api'
 
@@ -13,6 +13,7 @@ const rel = (engine: string, version: string, installed: boolean, profiles = 0) 
   engine, version, chromium: '155.0.8059.39', installed, problem: '', date: '2026-10-15', notes: '', profiles })
 const releases: Record<string, service.EngineRelease[]> = {
   anybrowser: [rel('anybrowser', '0.5.1', false)],
+  apostate: [rel('apostate', '0.5.1', false)],
   fury: [rel('fury', '0.4.5', false), rel('fury', '0.3.5', true, 2)],
 }
 vi.mock('../api', async (orig) => ({
@@ -45,6 +46,32 @@ describe('EngineSettings', () => {
     expect(screen.getByText('Fury')).toBeTruthy()
     expect(screen.getAllByText(t.engines.recommended)).toHaveLength(1)
     expect(screen.getByText(t.engines.usedBy(2))).toBeTruthy()
+  })
+
+  it('shows Apostate as a visible optional engine without changing the AnyBrowser default', async () => {
+    const apostate = main.EngineInfo.createFrom({ engine: 'apostate', version: '0.5.1', chromium: '155.0.8059.31', installed: false, problem: '', default: false })
+    const onChanged = vi.fn()
+    render(<EngineSettings engines={[...engines, apostate]} counts={{}} defaults={defaults} onChanged={onChanged} />)
+    const block = screen.getByText('Apostate').closest('.engine') as HTMLElement
+    expect(block.closest('details')).toBeNull()
+    expect(within(block).getByText(t.engines.apostateDesc)).toBeTruthy()
+    expect(screen.getAllByText(t.engines.recommended)).toHaveLength(1)
+    const selected = screen.getAllByRole('radio').filter((r) => (r as HTMLInputElement).checked)
+    expect(selected).toHaveLength(1)
+    expect(selected[0].closest('.engine')?.textContent).toContain('AnyBrowser')
+    expect((within(block).getByRole('radio') as HTMLInputElement).disabled).toBe(true)
+    fireEvent.click(within(block).getByRole('button', { name: t.engines.install }))
+    await waitFor(() => expect(onChanged).toHaveBeenCalled())
+    expect(installEngine).toHaveBeenCalledWith('apostate')
+    expect(setDefaults).not.toHaveBeenCalled()
+  })
+
+  it('can explicitly choose an installed Apostate as the new-profile default', async () => {
+    const apostate = main.EngineInfo.createFrom({ engine: 'apostate', version: '0.5.1', chromium: '155.0.8059.31', installed: true, problem: '', default: false })
+    render(<EngineSettings engines={[...engines, apostate]} counts={{}} defaults={defaults} onChanged={vi.fn()} />)
+    const block = screen.getByText('Apostate').closest('.engine') as HTMLElement
+    fireEvent.click(within(block).getByRole('radio'))
+    await waitFor(() => expect(setDefaults).toHaveBeenCalledWith(expect.objectContaining({ engine: 'apostate' })))
   })
 
   it('folds away an engine that is not installed, not chosen and not used', () => {

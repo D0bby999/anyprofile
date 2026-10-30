@@ -12,10 +12,14 @@ Website: [anytools.world/anyprofile](https://anytools.world/en/anyprofile)
 
 ## How it works
 
-- **Engines:** [AnyBrowser](https://github.com/heretic-tech/apostate) (default,
-  macOS and Windows) and the [Fury](https://github.com/furyteamtop/fury-antidetect-browser)
-  core (macOS only), both patched Chromium 155. AnyProfile downloads the pinned
-  release on first use, verifies it and runs it as-is.
+- **Engines:** AnyBrowser (default, macOS and Windows), the official upstream
+  [Apostate](https://github.com/heretic-tech/apostate) v0.5.1 (optional, macOS and
+  Windows), and [Fury](https://github.com/furyteamtop/fury-antidetect-browser)
+  (macOS only). Each engine has its own verified releases and install directory.
+  Choose Apostate in Settings → Browser engines or under Advanced when creating
+  a profile; installing it does not change the AnyBrowser default. AnyBrowser's
+  macOS fork release is not hosted yet; its Windows build still uses the pinned
+  upstream Chromium 155 release.
 - **Identity:** a profile gets a persona of the computer's own operating system
   and its own random seed at creation, fixed for the profile's life. A profile
   opens only on the OS that created it: another OS's persona would render with

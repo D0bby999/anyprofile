@@ -37,6 +37,12 @@ func TestLegacyEngineMigrationFailsClosed(t *testing.T) {
 				t.Fatal(err)
 			}
 		}},
+		{"pre-option schema", 21, func(t *testing.T, s *Store) {
+			insertV1Profile(t, s, "old", "other", "2026-01-01")
+			if _, err := s.db.Exec(`UPDATE profiles SET engine='apostate', persona_id='apostate-macos' WHERE id='old'`); err != nil {
+				t.Fatal(err)
+			}
+		}},
 		{"old schema", 1, func(t *testing.T, s *Store) {
 			insertV1Profile(t, s, "old", "other", "2026-01-01")
 			if _, err := s.db.Exec(`UPDATE profiles SET engine='apostate' WHERE id='old'`); err != nil {

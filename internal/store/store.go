@@ -79,10 +79,11 @@ func (s *Store) migrate(path, backupDir string, existed bool, maxVer int) error 
 		return err
 	}
 	sort.Slice(names, func(i, j int) bool { return names[i].Name() < names[j].Name() })
-	// Migration 21 rewrites engine identities without preserving the release
-	// origin or a browser-data rollback snapshot. Fail before any pending
-	// migration changes an existing legacy database; do not silently strand it.
-	if cur > 0 && cur < 21 && maxVer >= 21 {
+	// Migration 21 rewrites engine identities without preserving release origin
+	// or rollback data. Schema 22 reintroduces Apostate as an explicit choice;
+	// older Apostate rows must still fail closed, not be relabeled or mistaken
+	// for profiles created with that new option.
+	if cur > 0 && cur < 22 && maxVer >= 21 && maxVer > cur {
 		var legacy int
 		if err := s.db.QueryRow(`SELECT COUNT(*) FROM profiles WHERE engine = 'apostate' OR persona_id IN ('apostate-macos', 'apostate-windows')`).Scan(&legacy); err != nil {
 			return err

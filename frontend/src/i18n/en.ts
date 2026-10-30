@@ -69,8 +69,9 @@ export const en = {
   },
   engines: {
     title: 'Browser engines', recommended: 'Recommended',
-    names: { anybrowser: 'AnyBrowser', fury: 'Fury' } as Record<string, string>,
+    names: { anybrowser: 'AnyBrowser', apostate: 'Apostate', fury: 'Fury' } as Record<string, string>,
     anybrowserDesc: 'A Chromium browser that looks to websites like an ordinary computer. Used for new profiles.',
+    apostateDesc: 'The official upstream Apostate browser. An optional alternative to AnyBrowser.',
     furyDesc: 'The older engine, for profiles created before October 2026. Kept so their fingerprint never changes.',
     older: 'Older engine',
     version: (v: string) => `Version ${v}`, chromium: (v: string) => `Chromium ${v}`,

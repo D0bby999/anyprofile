@@ -17,6 +17,7 @@ import (
 	"github.com/D0bby999/anyprofile/internal/agent"
 	"github.com/D0bby999/anyprofile/internal/engine"
 	"github.com/D0bby999/anyprofile/internal/engine/anybrowser"
+	"github.com/D0bby999/anyprofile/internal/engine/apostate"
 	"github.com/D0bby999/anyprofile/internal/engine/fury"
 	"github.com/D0bby999/anyprofile/internal/launcher"
 	"github.com/D0bby999/anyprofile/internal/mobile"
@@ -92,12 +93,19 @@ func (a *App) init() error {
 	if err := ap.CleanStale(); err != nil {
 		log.Warn("clean stale engine files", "engine", "anybrowser", "err", err)
 	}
-	// One catalog for both: the compiled-in releases, and the signed list
+	upstream := apostate.New(dirs)
+	if err := upstream.CleanStale(); err != nil {
+		log.Warn("clean stale engine files", "engine", "apostate", "err", err)
+	}
+	// One catalog for all engines: compiled-in releases plus the signed list
 	// from latest.json once LoadEngineList or an update check adds it.
-	cat := engine.NewCatalog(update.Current, append(append(anybrowser.Builtin(), fury.Builtin()...), mobileBuiltin()...)...)
+	builtins := append(anybrowser.Builtin(), apostate.Builtin()...)
+	builtins = append(builtins, fury.Builtin()...)
+	cat := engine.NewCatalog(update.Current, append(builtins, mobileBuiltin()...)...)
 	ap.SetCatalog(cat)
+	upstream.SetCatalog(cat)
 	a.fury.SetCatalog(cat)
-	a.engines = map[string]engine.Engine{"anybrowser": ap}
+	a.engines = map[string]engine.Engine{"anybrowser": ap, "apostate": upstream}
 	if furyRuns {
 		a.engines["fury"] = a.fury
 	}

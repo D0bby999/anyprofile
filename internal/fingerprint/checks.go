@@ -67,7 +67,7 @@ func Checks(s Sample, e Expect) []Check {
 	if s.ChromeH >= 0 {
 		add("chrome_height", "warn", s.ChromeH <= maxChromeHeight, strconv.Itoa(s.ChromeH), "≤ "+strconv.Itoa(maxChromeHeight))
 	}
-	if e.Engine == "anybrowser" {
+	if e.Engine == "anybrowser" || e.Engine == "apostate" {
 		add("geolocation", "warn", s.Geo == "denied" || s.Geo == "prompt", s.Geo, "denied")
 		if e.HWC > 0 {
 			add("hwc_pin", "warn", s.HWC == e.HWC, strconv.Itoa(s.HWC), strconv.Itoa(e.HWC))

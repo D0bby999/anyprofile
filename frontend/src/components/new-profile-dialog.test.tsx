@@ -23,6 +23,7 @@ vi.mock('../api', async (orig) => ({
     ListProxies: () => Promise.resolve(proxyList),
     Engines: () => Promise.resolve([
       { engine: 'anybrowser', version: '0.5.1', chromium: '155', installed: true, problem: '', default: true },
+      { engine: 'apostate', version: '0.5.1', chromium: '155', installed: true, problem: '', default: false },
       { engine: 'fury', version: '0.3.5', chromium: '155', installed: true, problem: '', default: false },
     ]),
     Sites: () => Promise.resolve(sites),
@@ -143,6 +144,22 @@ describe('NewProfileDialog', () => {
     fireEvent.submit(name.closest('form')!)
     await waitFor(() => expect(onCreated).toHaveBeenCalled())
     expect(createProfiles.mock.calls[0][0]).toMatchObject({ engine: 'fury', baseName: 'Shop', count: 2 })
+  })
+
+  it.each([1, 2])('offers Apostate for %i profile(s) while initially selecting AnyBrowser', async (count) => {
+    const onCreated = vi.fn()
+    dialog({ onCreated, initialCount: count })
+    const name = screen.getByPlaceholderText(t.create.namePlaceholder)
+    fireEvent.change(name, { target: { value: 'Upstream' } })
+    fireEvent.click(screen.getByRole('button', { name: t.engines.advanced }))
+    const select = await screen.findByRole('combobox', { name: new RegExp(t.engines.engineLabel) }) as HTMLSelectElement
+    await screen.findByRole('option', { name: 'Apostate' })
+    expect(select.value).toBe('anybrowser')
+    fireEvent.change(select, { target: { value: 'apostate' } })
+    fireEvent.submit(name.closest('form')!)
+    await waitFor(() => expect(onCreated).toHaveBeenCalled())
+    const create = count === 1 ? createProfile : createProfiles
+    expect(create.mock.calls[0][0]).toMatchObject({ engine: 'apostate' })
   })
 
   it('leaves the engine empty when Advanced stays closed', async () => {

@@ -53,7 +53,7 @@ func (l *Launcher) saveChecks(prof store.Profile, eng engine.Engine, s fingerpri
 	e := fingerprint.Expect{Engine: prof.Engine, Timezone: prof.Timezone, Languages: prof.Languages, OS: prof.Platform,
 		ChromiumMajor: fingerprint.MajorVersion(releaseChromium(eng, prof.EngineVersion)), Proxied: prof.ProxyID != "",
 		PrimaryLangOnly: primaryOnly}
-	if prof.Engine == "anybrowser" && prof.EngineMeta.HWC > 0 {
+	if (prof.Engine == "anybrowser" || prof.Engine == "apostate") && prof.EngineMeta.HWC > 0 {
 		e.HWC = min(prof.EngineMeta.HWC, runtime.NumCPU()) // the engine clamps to the host the same way
 	}
 	b, _ := json.Marshal(fingerprint.Checks(s, e))

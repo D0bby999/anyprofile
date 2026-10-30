@@ -56,6 +56,22 @@ func TestChecksEachFailure(t *testing.T) {
 	}
 }
 
+func TestApostateChecksHardwareAndGeolocation(t *testing.T) {
+	e := anybrowserExpect()
+	e.Engine = "apostate"
+	s := cleanSample()
+	s.Geo, s.HWC = "granted", 4
+	failed := map[string]bool{}
+	for _, c := range Checks(s, e) {
+		if !c.OK {
+			failed[c.ID] = true
+		}
+	}
+	if len(failed) != 2 || !failed["geolocation"] || !failed["hwc_pin"] {
+		t.Fatalf("Apostate failures = %v", failed)
+	}
+}
+
 func TestChecksApplyByEngineAndProxy(t *testing.T) {
 	e := anybrowserExpect()
 	e.Engine, e.Proxied, e.PrimaryLangOnly = "fury", false, false

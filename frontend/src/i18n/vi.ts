@@ -70,8 +70,9 @@ export const vi: Messages = {
   },
   engines: {
     title: 'Engine trình duyệt', recommended: 'Khuyên dùng',
-    names: { anybrowser: 'AnyBrowser', fury: 'Fury' } as Record<string, string>,
+    names: { anybrowser: 'AnyBrowser', apostate: 'Apostate', fury: 'Fury' } as Record<string, string>,
     anybrowserDesc: 'Trình duyệt nhân Chromium, trang web nhìn vào thấy như một máy tính bình thường. Dùng cho profile mới.',
+    apostateDesc: 'Trình duyệt Apostate bản chính thức từ upstream. Lựa chọn bổ sung bên cạnh AnyBrowser.',
     furyDesc: 'Engine cũ, cho các profile tạo trước tháng 10/2026. Giữ lại để fingerprint của chúng không bao giờ đổi.',
     older: 'Engine cũ',
     version: (v: string) => `Phiên bản ${v}`, chromium: (v: string) => `Chromium ${v}`,

@@ -70,14 +70,17 @@ func (s *Store) Merge(ctx context.Context, path string, beforeCommit func(MergeR
 	if theirs > mine {
 		return res, ErrNewerDatabase
 	}
-	// A same-schema backup can still contain legacy identities. Reject it
-	// before the transaction and before copying any files or secrets.
-	var legacy int
-	if err := conn.QueryRowContext(ctx, `SELECT (SELECT COUNT(*) FROM bak.profiles WHERE engine = 'apostate' OR persona_id IN ('apostate-macos', 'apostate-windows')) + (SELECT COUNT(*) FROM bak.templates WHERE engine = 'apostate')`).Scan(&legacy); err != nil {
-		return res, err
-	}
-	if legacy > 0 {
-		return res, ErrLegacyEngineMigrationBlocked
+	// Apostate is an explicit engine from schema 22 onward. Earlier backups
+	// can contain unverified legacy identities: reject them before copying
+	// any files or secrets, but allow backups made with the new option.
+	if theirs < 22 {
+		var legacy int
+		if err := conn.QueryRowContext(ctx, `SELECT (SELECT COUNT(*) FROM bak.profiles WHERE engine = 'apostate' OR persona_id IN ('apostate-macos', 'apostate-windows')) + (SELECT COUNT(*) FROM bak.templates WHERE engine = 'apostate')`).Scan(&legacy); err != nil {
+			return res, err
+		}
+		if legacy > 0 {
+			return res, ErrLegacyEngineMigrationBlocked
+		}
 	}
 	tx, err := conn.BeginTx(ctx, nil)
 	if err != nil {
