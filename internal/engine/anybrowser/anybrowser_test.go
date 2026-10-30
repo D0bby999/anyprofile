@@ -63,6 +63,9 @@ func TestBuildLaunchProxy(t *testing.T) {
 		}
 	}
 	var wantEnv []string
+	if legacyGoogleKeyEnv {
+		wantEnv = append(wantEnv, "GOOGLE_API_KEY=no", "GOOGLE_DEFAULT_CLIENT_ID=no", "GOOGLE_DEFAULT_CLIENT_SECRET=no")
+	}
 	if setsTZ {
 		wantEnv = append([]string{"TZ=Asia/Taipei"}, wantEnv...)
 	}

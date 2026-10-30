@@ -11,7 +11,12 @@ package anybrowser
 // URL and hashes; until then installing this release fails closed at
 // download/verification instead of fetching the old upstream build.
 const (
-	platform = "macos"
+	Version  = "0.5.1.156"
+	Chromium = "156.0.8078.48"
+
+	releaseDate        = "2026-10-24"
+	legacyGoogleKeyEnv = false
+	platform           = "macos"
 	// hostPlat is the release's platform in the engine catalog.
 	hostPlat  = "darwin-arm64"
 	personaID = "anybrowser-macos"

@@ -7,8 +7,10 @@ package launcher
 // Runs the real Fury core and AnyBrowser. Needs:
 //   ANYPROFILE_TEST_FURY_APP      path to an extracted, verified Fury.app (fury.Version)
 //   tools/fury-config built       (make fury-config)
-//   ANYPROFILE_TEST_ANYBROWSER_APP  path to AnyBrowser 0.5.1: its Chromium.app on
-//                                 macOS, the folder holding chrome.exe on Windows
+//   ANYPROFILE_TEST_ANYBROWSER_APP  path to the candidate app on macOS, or
+//                                  the folder holding chrome.exe on Windows
+//   ANYPROFILE_TEST_ANYBROWSER_RELEASE  path to its test-only release descriptor,
+//                                      including independently recorded file hashes
 // Fury runs on macOS only; its tests skip without ANYPROFILE_TEST_FURY_APP.
 
 import (
@@ -77,6 +79,7 @@ func newRig(t *testing.T) *rig {
 func (r *rig) launcher(t *testing.T) *Launcher {
 	l := New(r.st, r.sec, r.dirs, []engine.Engine{r.eng}, nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
 	l.TestArgs = headlessArgs()
+	t.Cleanup(l.StopAll)
 	return l
 }
 
@@ -333,6 +336,33 @@ func newAnyBrowserRig(t *testing.T) *rig {
 	if app == "" {
 		t.Skip("ANYPROFILE_TEST_ANYBROWSER_APP not set")
 	}
+	descriptor := os.Getenv("ANYPROFILE_TEST_ANYBROWSER_RELEASE")
+	if descriptor == "" {
+		t.Fatal("ANYPROFILE_TEST_ANYBROWSER_RELEASE is required with the candidate app")
+	}
+	raw, err := os.ReadFile(descriptor)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var rel engine.Release
+	if err := json.Unmarshal(raw, &rel); err != nil {
+		t.Fatal(err)
+	}
+	if err := rel.Validate(); err != nil {
+		t.Fatal(err)
+	}
+	builtin := anybrowser.Builtin()[0]
+	if rel.Engine != builtin.Engine || rel.Version != builtin.Version || rel.Chromium != builtin.Chromium || rel.Platform != engine.HostPlatform() || rel.App != builtin.App || rel.Bin != builtin.Bin || rel.Catalogue != builtin.Catalogue {
+		t.Fatal("test descriptor does not match the supported candidate identity, layout and platform")
+	}
+	if len(rel.Files) != len(builtin.Files) {
+		t.Fatal("test descriptor must cover every expected core file")
+	}
+	for name := range builtin.Files {
+		if hash := rel.Files[name]; len(hash) != 64 || strings.Trim(hash, "0") == "" {
+			t.Fatalf("test descriptor missing a nonzero core hash for %q", name)
+		}
+	}
 	root, err := os.MkdirTemp(shortTemp(), "apit")
 	if err != nil {
 		t.Fatal(err)
@@ -343,6 +373,7 @@ func newAnyBrowserRig(t *testing.T) *rig {
 		t.Fatal(err)
 	}
 	eng := anybrowser.New(dirs)
+	eng.SetCatalog(engine.NewCatalog("", rel))
 	os.MkdirAll(filepath.Dir(eng.AppPath()), 0o700)
 	if err := os.Symlink(app, eng.AppPath()); err != nil {
 		t.Fatal(err)
@@ -409,7 +440,7 @@ func TestAnyBrowserLifecycle(t *testing.T) {
 	}
 	// HWC is pinned at 4 and clamped to the host's cores, as the app does.
 	if s.HWC != min(4, runtime.NumCPU()) || s.TZ != "Asia/Taipei" || !fingerprint.LangsMatch(s.Langs, "zh-TW,zh,en", true) ||
-		s.Platform != fingerprint.NavPlatform(anybrowser.HostPlatform) || !strings.Contains(s.UA, "Chrome/155.") {
+		s.Platform != fingerprint.NavPlatform(anybrowser.HostPlatform) || !strings.Contains(s.UA, "Chrome/"+strings.Split(anybrowser.Chromium, ".")[0]+".") {
 		t.Fatalf("sample = %+v", s)
 	}
 	if ss, _ := r.st.Sessions(id, 10); len(ss) != 1 || ss[0].StoppedAt != "" || ss[0].Engine != "anybrowser" {

@@ -2,14 +2,17 @@
 
 package anybrowser
 
-// The Windows x64 build of AnyBrowser, the project's own Chromium fork
-// (pro/chrome). No Windows build exists yet — it needs a Windows build
-// machine — so, as on macOS, zipURL is a placeholder and the hashes are
-// zero: the publish step pins the real values and installing fails closed
-// until then. A Windows host gets the Windows persona, whose fonts and GPU
-// are the machine's own.
+// Keep the working upstream Windows x64 release until the project's Windows
+// fork exists and passes native acceptance. Pins match the pre-rename release;
+// the archive SHA was rechecked against the public upstream manifest 2026-10-29.
+// No profile IDs, seeds, directories or installed data are migrated here.
 const (
-	platform = "windows"
+	Version  = "0.5.1"
+	Chromium = "155.0.8059.31"
+
+	releaseDate        = "2026-09-30"
+	legacyGoogleKeyEnv = true
+	platform           = "windows"
 	// hostPlat is the release's platform in the engine catalog.
 	hostPlat = "windows-amd64"
 	// teamID is empty: the build is not signed.
@@ -19,13 +22,13 @@ const (
 	// "EST5EDT" and would misread an IANA name. --fingerprint-timezone is enough.
 	setsTZ = false
 
-	zipName      = "anybrowser-156.0.8078.48-windows-x64.zip"
-	zipURL       = "https://example.invalid/anybrowser/" + zipName
-	zipSHA256    = "0000000000000000000000000000000000000000000000000000000000000000"
-	binarySHA256 = "0000000000000000000000000000000000000000000000000000000000000000"
-	frameworkSHA = "0000000000000000000000000000000000000000000000000000000000000000"
+	zipName      = "apostate-155.0.8059.31-windows-x64.zip"
+	zipURL       = "https://github.com/heretic-tech/apostate/releases/download/v0.5.1/" + zipName
+	zipSHA256    = "8e55e44fb7f58619461e1d42a947446dcc08a2b46493c420c8e62ae27ab9c7e5"
+	binarySHA256 = "5b4e065110a8a24bb35448d2716d26427a91618b0ee1f4b33723c4d25722de67"
+	frameworkSHA = "200e51e059e774e3f1674b7e143a769f111c9ba412b50303e025f2fe7dbc2360"
 
-	rootDir = "anybrowser-156.0.8078.48-windows-x64"
+	rootDir = "apostate-155.0.8059.31-windows-x64"
 	appRel  = rootDir
 	binRel  = rootDir + "/chrome.exe"
 	// frameworkRel holds the browser's code; chrome.exe is a stub.

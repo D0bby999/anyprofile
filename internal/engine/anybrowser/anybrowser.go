@@ -101,12 +101,15 @@ func (a *AnyBrowser) BuildLaunch(ctx context.Context, p store.Profile, rt engine
 	if err != nil {
 		return engine.LaunchSpec{}, err
 	}
-	// AnyBrowser builds are keyless: no placeholder Google API keys are
-	// exported. The fork suppresses the "Google API keys are missing" bar
-	// itself (patch 0159 in pro/chrome); the upstream build needed these
-	// three variables to keep that bar — and the window height it eats —
-	// away from pages.
+	// The macOS fork is keyless (patch 0159). Only the exact retained Windows
+	// upstream pin needs the legacy non-secret infobar workaround. Always strip
+	// inherited real keys; never enable this for a future/unrecognized release.
 	var env []string
+	if legacyGoogleKeyEnv && r.Version == Version && r.Chromium == Chromium &&
+		r.URL == zipURL && r.SHA256 == zipSHA256 && r.Catalogue == Catalogue &&
+		r.Files[r.Bin] == binarySHA256 && r.Files[frameworkRel] == frameworkSHA {
+		env = append(env, "GOOGLE_API_KEY=no", "GOOGLE_DEFAULT_CLIENT_ID=no", "GOOGLE_DEFAULT_CLIENT_SECRET=no")
+	}
 	args := []string{
 		"--user-data-dir=" + rt.UserDataDir,
 		"--no-default-browser-check",

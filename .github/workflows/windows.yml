@@ -21,7 +21,8 @@ jobs:
       run:
         shell: bash
     env:
-      ANYBROWSER_ZIP: anybrowser-155.0.8059.31-windows-x64.zip
+      # Preserve the real upstream asset name/layout, not the app adapter's label.
+      ANYBROWSER_ZIP: apostate-155.0.8059.31-windows-x64.zip
       ANYBROWSER_SHA256: 8e55e44fb7f58619461e1d42a947446dcc08a2b46493c420c8e62ae27ab9c7e5
     steps:
       - uses: actions/checkout@v4
@@ -52,11 +53,14 @@ jobs:
           7z x -y -o"$RUNNER_TEMP/anybrowser" "$RUNNER_TEMP/$ANYBROWSER_ZIP" > /dev/null
       - name: Install and verify it the way the app does
         env:
-          ANYPROFILE_ANYBROWSER_ZIP: ${{ runner.temp }}\anybrowser-155.0.8059.31-windows-x64.zip
+          ANYPROFILE_ANYBROWSER_ZIP: ${{ runner.temp }}\apostate-155.0.8059.31-windows-x64.zip
         run: go test -tags network -run TestInstallRealRelease ./internal/engine/anybrowser -count=1 -v
+      - name: Export the verified platform pin for integration fixtures
+        run: go run ./tools/bench/builtin-release > "$RUNNER_TEMP/anybrowser-release.json"
       - name: Integration tests with the real browser
         env:
-          ANYPROFILE_TEST_ANYBROWSER_APP: ${{ runner.temp }}\anybrowser\anybrowser-155.0.8059.31-windows-x64
+          ANYPROFILE_TEST_ANYBROWSER_APP: ${{ runner.temp }}\anybrowser\apostate-155.0.8059.31-windows-x64
+          ANYPROFILE_TEST_ANYBROWSER_RELEASE: ${{ runner.temp }}\anybrowser-release.json
         run: go test -tags integration ./internal/launcher ./internal/service -count=1 -v -timeout 30m
 
       - name: Build the app and the installer
