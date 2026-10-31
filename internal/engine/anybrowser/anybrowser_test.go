@@ -136,6 +136,21 @@ func TestBuildLaunchClampsHost(t *testing.T) {
 	if !slices.Contains(spec.Args, "--fingerprint-hardware-concurrency=8") || !slices.Contains(spec.Args, "--fingerprint-device-memory=16") {
 		t.Fatalf("args = %v", spec.Args)
 	}
+	if !strings.Contains(spec.Warning, "16 cores") || !strings.Contains(spec.Warning, "64 GiB") {
+		t.Fatalf("warning = %q, want both clamps named", spec.Warning)
+	}
+}
+
+func TestBuildLaunchCanvasNoise(t *testing.T) {
+	p := testProfile()
+	p.EngineMeta.CanvasNoise = true
+	spec, err := testEngine(t).BuildLaunch(context.Background(), p, engine.Runtime{UserDataDir: "/u"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !slices.Contains(spec.Args, "--fingerprint-noise") {
+		t.Fatalf("args = %v, want the readback noise switch", spec.Args)
+	}
 }
 
 func TestBuildLaunchBadSeed(t *testing.T) {

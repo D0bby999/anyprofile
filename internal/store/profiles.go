@@ -61,6 +61,10 @@ type Profile struct {
 type EngineMeta struct {
 	HWC    int `json:"hwc,omitempty"`    // navigator.hardwareConcurrency
 	MemGiB int `json:"memGiB,omitempty"` // installed memory in GiB
+	// CanvasNoise pins the engine's profile-seeded canvas/WebGL readback noise
+	// (patch 0120) for this profile. Off unless the profile was created after
+	// the canvas policy approved it, so an existing profile keeps its pixels.
+	CanvasNoise bool `json:"canvasNoise,omitempty"`
 }
 
 // ProfileFilter narrows ListProfiles.

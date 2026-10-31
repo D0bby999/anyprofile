@@ -34,6 +34,11 @@ func TestIndependentEngine(t *testing.T) {
 	if err != nil || id.PersonaID != HostPersona || id.Platform != HostPlatform || id.Meta.HWC <= 0 || id.Meta.MemGiB <= 0 {
 		t.Fatalf("identity = %+v, error = %v", id, err)
 	}
+	// Upstream Apostate shares the AnyBrowser driver but keeps drawing its own
+	// seed: only the fork composes a servable machine.
+	if id.SeedHex != "" {
+		t.Fatalf("apostate identity drew seed %q, want the caller to draw it", id.SeedHex)
+	}
 	p := store.Profile{ID: "p", Engine: "apostate", EngineVersion: Version, PersonaID: id.PersonaID,
 		Platform: id.Platform, SeedHex: "00000000000a11ce", Timezone: "Asia/Taipei", Languages: "zh-TW,zh,en", EngineMeta: id.Meta}
 	spec, err := a.BuildLaunch(ctx, p, engine.Runtime{UserDataDir: "/profiles/p", RelayPort: 41000, CDPPipe: true})

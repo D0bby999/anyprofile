@@ -93,6 +93,9 @@ func (l *Launcher) start(ctx context.Context, p *proc) error {
 	if err != nil {
 		return err
 	}
+	if spec.Warning != "" && l.log != nil {
+		l.log.Warn("profile identity clamped for this machine", "profile", prof.ID, "detail", spec.Warning)
+	}
 	spec.Args = append(spec.Args, l.TestArgs...)
 	if err := ctx.Err(); err != nil {
 		return err

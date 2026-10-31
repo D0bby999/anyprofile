@@ -32,12 +32,17 @@ type AnyBrowser struct {
 	// host reports logical cores and installed GiB; nil means the real machine.
 	host func() (cores, memGiB int)
 	cat  *engine.Catalog
+	// composeSeeds is set on AnyBrowser only: upstream Apostate shares this
+	// driver but must keep creating profiles exactly as it did.
+	composeSeeds bool
 }
 
 // New returns the engine with the pinned release only; SetCatalog adds the
 // signed list.
 func New(dirs paths.Dirs) *AnyBrowser {
-	return NewWithRelease(dirs, Builtin()[0], personaID, legacyGoogleKeyEnv)
+	a := NewWithRelease(dirs, Builtin()[0], personaID, legacyGoogleKeyEnv)
+	a.composeSeeds = true
+	return a
 }
 
 // NewWithRelease shares the Chromium launch/install implementation with the
@@ -73,9 +78,7 @@ func (a *AnyBrowser) hostInfo() (int, int) {
 // roll is unused. The persona is the host's own OS (release_<os>.go): another
 // OS's persona renders with the host's fonts, which detection sites notice.
 func (a *AnyBrowser) NewIdentity(ctx context.Context, roll uint64) (engine.Identity, error) {
-	cores, mem := a.hostInfo()
-	return engine.Identity{PersonaID: a.persona, Platform: platform,
-		Meta: store.EngineMeta{HWC: cores, MemGiB: mem}}, nil
+	return a.ComposeIdentity(ctx, a.pinned.Version, roll)
 }
 
 // PrepareProfile blocks geolocation before the first launch: AnyBrowser has no
@@ -162,10 +165,17 @@ func (a *AnyBrowser) BuildLaunch(ctx context.Context, p store.Profile, rt engine
 	// Pinned at creation so the seed keeps the same values on another host or
 	// after a persona-table change. AnyBrowser refuses values above the host's.
 	cores, mem := a.hostInfo()
+	var warn []string
 	if p.EngineMeta.HWC > 0 {
+		if p.EngineMeta.HWC > cores {
+			warn = append(warn, fmt.Sprintf("%d cores pinned, this machine has %d", p.EngineMeta.HWC, cores))
+		}
 		args = append(args, "--fingerprint-hardware-concurrency="+strconv.Itoa(min(p.EngineMeta.HWC, cores)))
 	}
 	if p.EngineMeta.MemGiB > 0 {
+		if p.EngineMeta.MemGiB > mem {
+			warn = append(warn, fmt.Sprintf("%d GiB pinned, this machine has %d", p.EngineMeta.MemGiB, mem))
+		}
 		args = append(args, "--fingerprint-device-memory="+strconv.Itoa(min(p.EngineMeta.MemGiB, mem)))
 	}
 	if rt.RelayPort > 0 {
@@ -178,6 +188,10 @@ func (a *AnyBrowser) BuildLaunch(ctx context.Context, p store.Profile, rt engine
 			"--force-webrtc-ip-handling-policy=disable_non_proxied_udp",
 			"--fingerprint-webrtc-udp=block",
 		)
+	}
+	if p.EngineMeta.CanvasNoise {
+		// Deterministic, profile-seeded, alpha-preserving; see patch 0120.
+		args = append(args, "--fingerprint-noise")
 	}
 	if a.MockKeychain {
 		args = append(args, "--use-mock-keychain")
@@ -195,5 +209,5 @@ func (a *AnyBrowser) BuildLaunch(ctx context.Context, p store.Profile, rt engine
 	bin := filepath.Join(a.dir(r.Version), filepath.FromSlash(r.Bin))
 	return engine.LaunchSpec{Binary: bin, Args: args, Env: env, EnvUnset: []string{
 		"GOOGLE_API_KEY", "GOOGLE_DEFAULT_CLIENT_ID", "GOOGLE_DEFAULT_CLIENT_SECRET",
-	}, CDPPipe: rt.CDPPipe}, nil
+	}, CDPPipe: rt.CDPPipe, Warning: strings.Join(warn, "; ")}, nil
 }

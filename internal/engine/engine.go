@@ -50,6 +50,10 @@ type LaunchSpec struct {
 	EnvUnset []string // names removed from the inherited environment before Env is applied
 	Pipes    [][]byte
 	CDPPipe  bool
+	// Warning is a non-fatal note about a launch that keeps its profile usable
+	// while changing part of its identity (a machine with fewer cores than the
+	// profile was composed with). The launcher logs it; an empty value is normal.
+	Warning string
 }
 
 // Identity is what an engine fixes for a new profile.
@@ -57,6 +61,18 @@ type Identity struct {
 	PersonaID string
 	Platform  string
 	Meta      store.EngineMeta // engine-specific values pinned at creation
+	// SeedHex, when set, is the seed this identity was composed from. An engine
+	// that can only serve some seeds draws and checks one itself; an empty value
+	// means the caller draws it.
+	SeedHex string
+}
+
+// SeedComposer is implemented by an engine whose identity comes from a seed and
+// whose composition can be checked before a profile exists. version is the
+// release the new profile will launch, because a newer catalogue can change
+// what the same seed composes.
+type SeedComposer interface {
+	ComposeIdentity(ctx context.Context, version string, roll uint64) (Identity, error)
 }
 
 // WindowName prefixes the table number so windows of many profiles are told apart.

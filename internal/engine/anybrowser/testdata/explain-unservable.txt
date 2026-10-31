@@ -1,0 +1,45 @@
+anybrowser fingerprint composition
+
+  chromium            156.0.8078.48
+  profile schema      3
+  catalogue           v2 (tables 5f370fc43d5cd92980bfa5362be36151f451c98866345de176edec2ec018c8c3)
+  platform persona    macos
+  host platform       macos
+  host cores          8
+  host memory         17179869184 bytes
+  host backend        swiftshader (--disable-gpu)
+  seed                00000000000003e8
+  seed source         --fingerprint (pinned by flag, identical on any machine)
+  reproduce with      --fingerprint=00000000000003e8
+  root                e93916d393d245e5a8633e787af27e318a42280cfeda4c02d19b10bac9a2395c
+
+surface                   layer             evidence               value
+anchor                    anchor            physical-ground-truth  macos-metal-apple-850a91233555
+os_release                dispersion        catalogue-value        macos-26-5-0
+gpu_identity              dispersion        catalogue-value        metal-apple-m2-pro
+webgpu                    anchor            physical-ground-truth  Apple M2 Pro
+machine_class             dispersion        catalogue-value        mac-mbp16
+cpu                       host-inherited    host-inherited         (inherited)
+  ! no option is servable on this host, so the surface is left inherited rather than raising a claim the host cannot serve
+memory                    dispersion        catalogue-value        gib-16
+panel                     dispersion        physical-ground-truth  mbp16-default
+furniture                 dispersion        catalogue-value        menubar-dock-autohide
+font_packs/platform-core  dispersion        physical-ground-truth  core
+media_topology            dispersion        catalogue-value        mbp-builtin-airpods
+audio                     dispersion        physical-ground-truth  coreaudio-256
+network                   dispersion        catalogue-value        4g-typical
+battery                   dispersion        catalogue-value        discharging-mid
+locale.application        composed-default  native-derived         en-US
+  ! the application locale this launch presents, on every platform. l10n_util resolves it ahead of every platform candidate -- ahead of glib's LANGUAGE/LC_*/LANG on linux, of NSBundle's preferredLocalizations on macOS, and of both --lang and the Windows preferred-UI-language list on windows -- and LANGUAGE, LC_ALL, LC_MESSAGES and LANG are written to it in the browser before the first child is forked, so the C library agrees with ICU and every process agrees with the browser. It decides Intl.DateTimeFormat, NumberFormat and Collator, the calendar and hour cycle they report, the default Accept-Language list, collation order, and Blink's locale-dependent font fallback -- and the rendered width of a <input type=date>, which is how a page reads it with no Intl call at all; no launch layer named a locale, so the composed default is presented rather than the operator's shell
+locale.accept_languages   composed-default  native-derived         (the en-US bundle's default)
+  ! no launch layer named a list, so no override is composed for locale.accept_languages and the list a page reads is the one the en-US resource bundle declares, which is the list a real user of that locale has -- not the host's, because the application locale is pinned (see locale.application). A single --fingerprint-locale tag, which is what the Python and Node packages pass from GeoIP of the effective egress, names only the application locale; pass a comma-separated list to name the list itself
+locale.timezone           host-inherited    host-inherited         (inherited)
+  ! no launch layer named locale.timezone, so the host's own is served unchanged and nothing is composed for it. On a direct egress that matches; behind a proxy it is the host's and not the exit's. Pass --fingerprint-timezone to pin it, or launch through the Python or Node package, which resolves it from GeoIP of the effective egress and passes that same switch
+voices                    dispersion        physical-ground-truth  macos-bundled
+extensions                dispersion        physical-ground-truth  absent
+theme                     dispersion        catalogue-value        contrast
+
+limitations
+  - anchor macos-metal-apple-850a91233555 is a metal cluster on a swiftshader host: the identity is served as composed, while a method-bearing extension name this host's GL stack lacks is absent from the list
+  - anchor macos-metal-apple-850a91233555 serves 44 numeric GL capability limits, composed rather than this host's, to every WebGL context on every backend; the backend underneath may still clamp or refuse an operation taken to one of them, and docs/KNOWN_GAPS.md says which
+  - cpu: no option is servable on this host, so the surface is left inherited rather than raising a claim the host cannot serve
