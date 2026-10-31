@@ -39,6 +39,17 @@ import (
 
 const marker = ".anyprofile-demo"
 
+// demoAnyBrowser keeps seeding independent of an installed browser: these are
+// synthetic fixtures for screenshots, so a fixed machine and a drawn seed are
+// enough. The app itself refuses to create a profile before the engine is
+// installed; this wrapper exists only for the demo data.
+type demoAnyBrowser struct{ engine.Engine }
+
+func (demoAnyBrowser) ComposeIdentity(context.Context, string, uint64) (engine.Identity, error) {
+	return engine.Identity{PersonaID: "demo-macos", Platform: anybrowser.HostPlatform,
+		Meta: store.EngineMeta{HWC: 8, MemGiB: 16}, SeedHex: fmt.Sprintf("%016x", rand.Uint64())}, nil
+}
+
 func main() {
 	dir := flag.String("dir", "", "absolute path of the demo data directory")
 	reset := flag.Bool("reset", false, "delete an earlier demo directory first")
@@ -97,7 +108,7 @@ func run(dir, cfg string, reset bool) error {
 	}
 	fu := fury.New(dirs, cfg)
 	svc := &service.Service{Dirs: dirs, Store: st, Log: slog.New(slog.NewTextHandler(io.Discard, nil)),
-		Engines: map[string]engine.Engine{"fury": fu, "anybrowser": anybrowser.New(dirs)}, Preferred: "anybrowser",
+		Engines: map[string]engine.Engine{"fury": fu, "anybrowser": demoAnyBrowser{anybrowser.New(dirs)}}, Preferred: "anybrowser",
 		Locale: func(ctx context.Context, cc string) (string, []string, error) {
 			loc, err := fu.LocaleFor(ctx, cc)
 			return loc.UILocale, loc.Languages, err

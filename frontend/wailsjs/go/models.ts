@@ -116,17 +116,17 @@ export namespace main {
 	export class FolderList {
 	    folders: service.FolderRow[];
 	    unfiled: number;
-
+	
 	    static createFrom(source: any = {}) {
 	        return new FolderList(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.folders = this.convertValues(source["folders"], service.FolderRow);
 	        this.unfiled = source["unfiled"];
 	    }
-
+	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
 		    if (!a) {
 		        return a;
@@ -431,11 +431,11 @@ export namespace service {
 	    sortOrder: number;
 	    createdAt: string;
 	    count: number;
-
+	
 	    static createFrom(source: any = {}) {
 	        return new FolderRow(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.id = source["id"];
@@ -791,17 +791,17 @@ export namespace service {
 	export class ProfilePage {
 	    rows: ProfileRow[];
 	    total: number;
-
+	
 	    static createFrom(source: any = {}) {
 	        return new ProfilePage(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.rows = this.convertValues(source["rows"], ProfileRow);
 	        this.total = source["total"];
 	    }
-
+	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
 		    if (!a) {
 		        return a;
@@ -820,7 +820,7 @@ export namespace service {
 		    return a;
 		}
 	}
-
+	
 	export class ProxyMeta {
 	    label: string;
 	    note: string;
@@ -1072,6 +1072,7 @@ export namespace store {
 	export class EngineMeta {
 	    hwc?: number;
 	    memGiB?: number;
+	    canvasNoise?: boolean;
 	
 	    static createFrom(source: any = {}) {
 	        return new EngineMeta(source);
@@ -1081,6 +1082,7 @@ export namespace store {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.hwc = source["hwc"];
 	        this.memGiB = source["memGiB"];
+	        this.canvasNoise = source["canvasNoise"];
 	    }
 	}
 	export class Extension {
@@ -1109,11 +1111,11 @@ export namespace store {
 	    color: string;
 	    sortOrder: number;
 	    createdAt: string;
-
+	
 	    static createFrom(source: any = {}) {
 	        return new Folder(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.id = source["id"];
@@ -1409,11 +1411,11 @@ export namespace store {
 	    builtin: boolean;
 	    createdAt: string;
 	    updatedAt: string;
-
+	
 	    static createFrom(source: any = {}) {
 	        return new Template(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.id = source["id"];

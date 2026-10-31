@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/D0bby999/anyprofile/internal/apperr"
+	"github.com/D0bby999/anyprofile/internal/engine"
 	"github.com/D0bby999/anyprofile/internal/fingerprint"
 	"github.com/D0bby999/anyprofile/internal/launcher"
 	"github.com/D0bby999/anyprofile/internal/secrets"
@@ -176,6 +177,16 @@ func normalizeStartURLs(s string) (string, error) {
 	return strings.Join(keep, "\n"), nil
 }
 
+// composeIdentity lets an engine that can only serve some seeds draw its own,
+// checked against the release the new profile will launch. Engines without that
+// capability keep drawing their identity from the host as before.
+func composeIdentity(ctx context.Context, eng engine.Engine, version string) (engine.Identity, error) {
+	if c, ok := eng.(engine.SeedComposer); ok {
+		return c.ComposeIdentity(ctx, version, randomU64())
+	}
+	return eng.NewIdentity(ctx, randomU64())
+}
+
 func (s *Service) CreateProfile(ctx context.Context, in NewProfile) (store.Profile, error) {
 	return s.createProfile(ctx, in, nil)
 }
@@ -200,7 +211,8 @@ func (s *Service) createProfile(ctx context.Context, in NewProfile, configure fu
 		}
 		in.ProxyID = id
 	}
-	id, err := eng.NewIdentity(ctx, randomU64())
+	version := s.newProfileVersion(ctx, eng)
+	id, err := composeIdentity(ctx, eng, version)
 	if err != nil {
 		return store.Profile{}, err
 	}
@@ -208,9 +220,13 @@ func (s *Service) createProfile(ctx context.Context, in NewProfile, configure fu
 	if err != nil {
 		return store.Profile{}, err
 	}
+	seed := id.SeedHex
+	if seed == "" {
+		seed = randomHex(8)
+	}
 	p := store.Profile{
-		ID: randomHex(8), Name: in.Name, Engine: eng.ID(), EngineVersion: s.newProfileVersion(ctx, eng),
-		EngineMeta: id.Meta, PersonaID: id.PersonaID, SeedHex: randomHex(8), Platform: id.Platform, ProxyID: in.ProxyID,
+		ID: randomHex(8), Name: in.Name, Engine: eng.ID(), EngineVersion: version,
+		EngineMeta: id.Meta, PersonaID: id.PersonaID, SeedHex: seed, Platform: id.Platform, ProxyID: in.ProxyID,
 		Sites: in.Sites, StartURL: startURL, Notes: in.Notes, Tags: in.Tags,
 	}
 	if err := s.applyNetwork(ctx, &p); err != nil {

@@ -6,13 +6,24 @@ import (
 	"context"
 	"testing"
 
+	"github.com/D0bby999/anyprofile/internal/engine"
 	"github.com/D0bby999/anyprofile/internal/engine/anybrowser"
 	"github.com/D0bby999/anyprofile/internal/engine/apostate"
+	"github.com/D0bby999/anyprofile/internal/store"
 )
+
+// testComposer stands in for an installed AnyBrowser: this test checks engine
+// selection, not the composition of a real seed.
+type testComposer struct{ engine.Engine }
+
+func (testComposer) ComposeIdentity(context.Context, string, uint64) (engine.Identity, error) {
+	return engine.Identity{PersonaID: "anybrowser-macos", Platform: anybrowser.HostPlatform,
+		Meta: store.EngineMeta{HWC: 4, MemGiB: 8}, SeedHex: "0000000000000001"}, nil
+}
 
 func TestApostateOptionKeepsAnyBrowserDefault(t *testing.T) {
 	s, _ := newService(t)
-	s.Engines["anybrowser"] = anybrowser.New(s.Dirs)
+	s.Engines["anybrowser"] = testComposer{anybrowser.New(s.Dirs)}
 	s.Engines["apostate"] = apostate.New(s.Dirs)
 	s.Preferred = "anybrowser"
 	ctx := context.Background()

@@ -102,7 +102,7 @@ export function WelcomePage({ sites, fileVaultOn, lang, onLanguage, onDone }: Pr
   }
 
   const create = async () => {
-    if (!name.trim() || busy) return
+    if (!engineDone || !name.trim() || busy) return
     setBusy('create')
     try {
       const made = await Api.CreateProfiles(service.BulkCreate.createFrom({
@@ -187,7 +187,7 @@ export function WelcomePage({ sites, fileVaultOn, lang, onLanguage, onDone }: Pr
             <SitePicker value={site} onChange={setSite} sites={sites} />
           </div>
           <p className="wnote"><Icon name="key" className="icon sm" />{t.welcome.keychain}</p>
-          <button type="button" className="btn primary wbtn" disabled={!name.trim() || !!busy} onClick={create}>
+          <button type="button" className="btn primary wbtn" disabled={!engineDone || !name.trim() || !!busy} onClick={create}>
             {busy === 'create' ? t.welcome.creating : t.welcome.create}
           </button>
         </Step>
