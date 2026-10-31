@@ -5,6 +5,37 @@ keeps them together.
 
 ## Unreleased
 
+Security rebase (261031):
+
+- The macOS engine is now Chromium 156.0.8078.74 (the 28–29 October stable
+  update: 52 fixes, four critical) instead of .48. All 119 patches applied
+  cleanly and the persona catalogue now declares build .74. This is a local
+  ad-hoc build: the built-in download URL is still a placeholder and no
+  Developer ID/notarization is attached, so installing from the catalog still
+  fails closed.
+- Two profiles are now compared by Visitor ID and the rest of the composite
+  identity; a shared canvas hash on one machine is no longer treated as a
+  failure, as real Chrome on the same Mac behaves the same. The manual test
+  guide was updated; canvas readback noise stays off.
+
+AnyBrowser identity (261030):
+
+- New profiles now draw a seed the installed AnyBrowser can serve in full. On a
+  machine with fewer cores than the chip a seed claims, the engine refuses to
+  raise the core count, which used to produce a machine that cannot exist (an
+  Apple M4 with eight cores). Profile creation asks the engine for the
+  composition, keeps drawing until the chip fits this machine, and pins the
+  cores and memory it composed. It costs about 0.1 s per profile. Profiles
+  created before this change keep their identity.
+- A profile moved to a machine with fewer cores than it was composed with is
+  still clamped so it stays usable, but the launch now records a warning naming
+  the pinned and the available values instead of changing it silently.
+- If AnyBrowser is installed but cannot report what a seed composes, profile
+  creation now fails with an error instead of silently pinning this computer's
+  machine. Creating a profile before the engine is installed is refused with an
+  "install it first" message, and the welcome screen keeps Create disabled until
+  the engine is installed.
+
 Proxy affiliate links (261027):
 
 - "Buy proxies" now opens our affiliate referral links for IPRoyal, NodeMaven,

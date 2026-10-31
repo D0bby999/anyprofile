@@ -45,8 +45,10 @@ Dùng khi một trang ở phần 2 báo lỗi, để tìm đúng chỗ hỏng.
 ## 4. Ba phép so quan trọng nhất
 
 1. **Hai profile với nhau.** Mở 2 profile cùng lúc, vào `fingerprint.com/demo` và
-   `browserleaks.com/canvas`. Mã của hai profile phải **khác** nhau. Giống nhau nghĩa là các trang có
-   thể liên kết hai tài khoản.
+   `browserleaks.com/canvas`. **Visitor ID và các thuộc tính máy (UA-CH, màn hình, GPU,
+   font, múi giờ/ngôn ngữ) phải khác nhau.** Mã canvas **có thể trùng** giữa hai profile
+   trên cùng một máy — Chrome thật cũng vậy; chỉ canvas trùng mà Visitor ID khác thì
+   không phải lỗi.
 2. **Một profile qua hai lần mở.** Đóng rồi mở lại cùng profile. Mã canvas và Visitor ID phải **giữ
    nguyên**. Đổi nghĩa là nền tảng thấy "thiết bị lạ" mỗi lần đăng nhập.
 3. **Với kết quả của app.** Ngăn chi tiết của profile, nhóm Checks, phải khớp với BrowserScan và
