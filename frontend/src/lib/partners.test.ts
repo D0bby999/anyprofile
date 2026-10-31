@@ -41,6 +41,13 @@ describe('partners', () => {
     expect(vi.searchParams.get('utm_source')).toBe('anyprofile')
   })
 
+  it('uses the MarsProxies affiliate URL in both app languages', () => {
+    const mars = partners.find((p) => p.id === 'marsproxies')!
+    for (const lang of ['en', 'vi']) {
+      expect(partnerLink(mars, lang)).toBe('https://marsproxies.sjv.io/bkJz7g')
+    }
+  })
+
   it('leave provider links as they are', () => {
     for (const p of partnersOf('proxy')) expect(partnerLink(p, 'vi')).toBe(p.url)
   })

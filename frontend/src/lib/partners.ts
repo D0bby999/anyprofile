@@ -37,7 +37,7 @@ export const partners: Partner[] = [
   { id: 'decodo', name: 'Decodo', kind: 'proxy', url: 'https://dashboard.decodo.com/register?referral_code=2973fec4bd68c176365c5cf1ef80bade6eaccdde', types: all },
   { id: 'soax', name: 'SOAX', kind: 'proxy', url: 'https://soax.com/', types: all },
   { id: 'proxyseller', name: 'Proxy-Seller', kind: 'proxy', url: 'https://proxy-seller.com/?partner=JUJ9ZRI3NSJI1N', types: all },
-  { id: 'marsproxies', name: 'MarsProxies', kind: 'proxy', url: 'https://marsproxies.com/r/152375', types: all },
+  { id: 'marsproxies', name: 'MarsProxies', kind: 'proxy', url: 'https://marsproxies.sjv.io/bkJz7g', types: all },
   { id: 'evomi', name: 'Evomi', kind: 'proxy', url: 'https://evomi.com/?p=5Z7DMFN3ME', types: all },
   { id: 'proxyempire', name: 'ProxyEmpire', kind: 'proxy', url: 'https://proxyempire.io/?ref=oddhngm', types: all },
   { id: 'infatica', name: 'Infatica', kind: 'proxy', url: 'https://dashboard.infatica.io/aff.php?aff=902', types: ['residential', 'isp', 'datacenter'] },

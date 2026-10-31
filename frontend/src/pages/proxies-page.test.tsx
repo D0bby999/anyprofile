@@ -63,15 +63,18 @@ describe('ProxiesPage', () => {
     expect(screen.getAllByTitle(/IPv6/)).toHaveLength(1)
   })
 
-  it('lists every provider under Buy proxies and opens one in the browser', async () => {
+  it.each([
+    ['IPRoyal', 'https://iproyal.com/?r=1734020'],
+    ['MarsProxies', 'https://marsproxies.sjv.io/bkJz7g'],
+  ])('lists every provider under Buy proxies and opens %s in the browser', async (provider, url) => {
     render(<ConfirmProvider><ToastProvider><ProxiesPage onChanged={vi.fn()} /></ToastProvider></ConfirmProvider>)
     await screen.findByText('1.2.3.4')
     fireEvent.click(screen.getByRole('button', { name: t.proxies.buy }))
     const dialog = screen.getByRole('dialog', { name: t.proxies.buy })
     for (const p of partnersOf('proxy')) expect(within(dialog).getByText(p.name)).toBeTruthy()
     expect(within(dialog).queryByText('PostClaw')).toBeNull()
-    fireEvent.click(within(dialog).getByRole('button', { name: /IPRoyal/ }))
-    expect(openExternal).toHaveBeenCalledWith('https://iproyal.com/?r=1734020')
+    fireEvent.click(within(dialog).getByRole('button', { name: new RegExp(provider) }))
+    expect(openExternal).toHaveBeenCalledWith(url)
   })
 
   it('narrows Buy proxies to one proxy type', async () => {
