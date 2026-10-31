@@ -50,7 +50,10 @@ func TestArrangeFollowsTheListOrder(t *testing.T) {
 			l.Stop(id)
 		}
 	}()
-	area := Rect{0, 25, 1600, 975}
+	// Below the menu bar: macOS refuses to place a window above it (30 pt on
+	// current macOS), so an area starting at 25 would be clamped and the test
+	// would measure the window server, not the grid.
+	area := Rect{0, 60, 1600, 900}
 	screenArea = func() (Rect, bool) { return area, true }
 	defer func() { screenArea = workArea }()
 	order := []string{ids[2], ids[0], ids[3], ids[1]}
