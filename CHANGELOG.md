@@ -124,6 +124,21 @@ AnyMobile (261031):
   Apostate 0.5.1 (`0.5.1.156`). Unknown or post-option Apostate rows still
   fail closed. Launch history no longer blocks the migration.
 
+Geolocation from the profile (261102):
+
+- A profile that has a position — copied from the proxy exit — now answers
+  geolocation with that position instead of blocking it, and the permission is
+  allowed so a page that asks gets an answer. A profile without a position is
+  still denied, so no site ever gets this computer's real location. The engine
+  answers once a second, so `watchPosition` keeps working.
+- The engine needed three pieces, not one: the provider, a system-layer source
+  that answers kAllowed (macOS never granted this binary Location Services, so
+  the page stayed at `prompt` with a provider installed), and installing that
+  manager where the platform one is, because the permission layer and the
+  device service both read the process singleton.
+- Measured on the rebuilt engine: no flag → `prompt`, deny preference →
+  `denied`, flag with the preference allowed → `granted` and 52.5200/13.4050.
+
 Canvas readback policy (261102):
 
 - The engine is rebuilt from `156.0.8078.74` with the same 119 patches plus one
