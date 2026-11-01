@@ -19,6 +19,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/D0bby999/anyprofile/internal/agent"
@@ -73,6 +74,10 @@ type Server struct {
 	// Mobile serves the device tools to agents; nil leaves them out.
 	Mobile  MobileBackend
 	prompts promptSet
+	// Traces is where the MCP tool trace JSONL is written; "" disables it.
+	Traces  string
+	traceMu sync.Mutex
+	leases  leaseStore
 }
 
 func New(b Backend, log *slog.Logger, port int, token string) *Server {
@@ -108,6 +113,14 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /v1/profiles/{id}", s.get)
 	mux.HandleFunc("POST /v1/profiles/{id}/start", s.start)
 	mux.HandleFunc("POST /v1/profiles/{id}/stop", s.stop)
+	mux.HandleFunc("POST /v1/act", s.act)
+	mux.HandleFunc("POST /v1/run", s.run)
+	mux.HandleFunc("GET /v1/find", s.findAct)
+	mux.HandleFunc("GET /v1/trace", s.traceTail)
+	mux.HandleFunc("POST /v1/sessions", s.createSession)
+	mux.HandleFunc("POST /v1/sessions/{id}/heartbeat", s.sessionHeartbeat)
+	mux.HandleFunc("DELETE /v1/sessions/{id}", s.releaseSession)
+	mux.HandleFunc("GET /v1/sessions/{id}/record", s.sessionRecord)
 	if s.Agent != nil {
 		mux.Handle("/mcp", s.mcpHandler())
 	}

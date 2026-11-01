@@ -79,6 +79,9 @@ func (b *Browser) Click(ctx context.Context, id, ref string) (Tab, error) {
 	if err := b.activate(ctx, t); err != nil {
 		return Tab{}, err
 	}
+	if err := b.ensureClickable(ctx, t, ref); err != nil {
+		return Tab{}, err
+	}
 	if err := b.clickRef(ctx, t, ref); err != nil {
 		return Tab{}, err
 	}

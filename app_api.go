@@ -6,6 +6,7 @@ import (
 	"context"
 	"os"
 	"os/exec"
+	"path/filepath"
 	goruntime "runtime"
 	"sync"
 	"time"
@@ -14,6 +15,7 @@ import (
 
 	"github.com/D0bby999/anyprofile/internal/agent"
 	"github.com/D0bby999/anyprofile/internal/api"
+	"github.com/D0bby999/anyprofile/internal/mobile"
 	"github.com/D0bby999/anyprofile/internal/pro"
 	"github.com/D0bby999/anyprofile/internal/service"
 	"github.com/D0bby999/anyprofile/internal/store"
@@ -84,19 +86,31 @@ func (m apiMobile) MobileDevices() ([]api.MobileDevice, error) {
 	out := make([]api.MobileDevice, 0, len(rows))
 	for _, r := range rows {
 		out = append(out, api.MobileDevice{ID: r.ID, Serial: r.Serial, Name: r.Name, State: string(r.State),
-			Platform: r.Platform, Tags: r.Tags, Country: countries[r.ProxyID]})
+			Platform: r.Platform, Tags: r.Tags, Country: countries[r.ProxyID], Preset: r.Preset, ADBPort: r.ADBPort})
 	}
 	return out, nil
 }
 
 func (m apiMobile) StartMobile(ctx context.Context, id string) error {
-	m.svc.Log.Info("api asked to start", "device", id)
-	_, err := m.svc.StartMobileDevice(ctx, id)
+	m.svc.Log.Info("api asked to start", "device", id, "headless", true)
+	_, err := m.svc.StartMobileDeviceHeadless(ctx, id)
 	return err
 }
 
 func (m apiMobile) StopMobile(ctx context.Context, id string) error {
 	return m.svc.StopMobileDevice(ctx, id)
+}
+
+func (m apiMobile) ShowMobile(ctx context.Context, id string) error {
+	return m.svc.ShowMobileDevice(ctx, id)
+}
+
+func (m apiMobile) ResetMobile(ctx context.Context, id, mode string) error {
+	return m.svc.ResetMobileDevice(ctx, id, mode)
+}
+
+func (m apiMobile) MobileMetrics(id string) (mobile.Metrics, error) {
+	return m.svc.MobileMetrics(id)
 }
 
 func (m apiMobile) MobileControl(id string) (api.DeviceControl, error) {
@@ -129,6 +143,7 @@ func (a *App) restartAPI() {
 	srv.Agent = a.agent
 	srv.Uploads, srv.Recipes = a.svc.Dirs.Uploads(), a.svc.Dirs.Recipes()
 	srv.ProRecipes = pro.Recipes(a.svc.Dirs.Pro())
+	srv.Traces = filepath.Join(a.svc.Dirs.Logs(), "traces")
 	if a.svc.Mobile != nil {
 		srv.Mobile = apiMobile{a.svc}
 	}

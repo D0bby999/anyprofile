@@ -1,0 +1,9 @@
+{
+  "device": "Phone 1",
+  "steps": [
+    { "action": "launch", "package": "com.android.settings" },
+    { "action": "find", "target": { "text": "Network" } },
+    { "action": "tap_text", "text": "Network" },
+    { "action": "screenshot" }
+  ]
+}

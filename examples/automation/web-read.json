@@ -1,0 +1,7 @@
+{
+  "profile": "Shop VN 01",
+  "steps": [
+    { "action": "navigate", "url": "https://example.com" },
+    { "action": "read" }
+  ]
+}

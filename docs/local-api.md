@@ -30,6 +30,13 @@ n8n chạy cục bộ… API **tắt mặc định**.
 | `GET /v1/profiles/{id}` | `Profile` |
 | `POST /v1/profiles/{id}/start` với `{"devtools": true}` hoặc không có body | `Profile` sau khi mở |
 | `POST /v1/profiles/{id}/stop` | `Profile` sau khi đóng |
+| `POST /v1/act` | một hành động automation (xem `docs/automation.md`) |
+| `POST /v1/run` | một danh sách bước, trả kết quả từng bước |
+| `GET /v1/find` | tìm phần tử theo text/role/name/testId |
+| `GET /v1/trace` | các dòng trace MCP gần nhất |
+| `POST /v1/sessions` | khoá một profile/device trong TTL |
+| `POST /v1/sessions/{id}/heartbeat` | gia hạn khoá |
+| `DELETE /v1/sessions/{id}` | trả khoá |
 
 `Profile`:
 

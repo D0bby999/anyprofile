@@ -1,0 +1,8 @@
+{
+  "name": "@anyprofile/automation",
+  "version": "0.0.1",
+  "type": "module",
+  "main": "src/client.ts",
+  "bin": { "anyprofile": "bin/anyprofile.mjs" },
+  "private": true
+}

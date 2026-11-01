@@ -170,6 +170,12 @@ dán khối `[mcp_servers.anyprofile]` xuống cuối file là đủ.
 
 `logs/anyprofile.log` ghi mỗi lần agent gọi tool một dòng, kèm lỗi nếu có.
 
+## Phiên và khoá
+
+Mỗi phiên MCP giữ profile/device khi `open_profile`/`open_device`. Agent khác gọi tool trên cùng profile nhận
+`profile_busy` (device: `device_busy`) cho tới khi phiên đầu `close_*` hoặc hết hạn. Vì một phiên giữ cả profile,
+các tab bên trong cũng thuộc phiên đó; không có tranh tab giữa hai agent.
+
 ## Tool
 
 Mọi tool trình duyệt nhận `profile` (id, đúng tên, hoặc `#số thứ tự`) và `tab` (tuỳ chọn). Không ghi `tab` thì
@@ -181,8 +187,14 @@ tool dùng tab agent dùng gần nhất, nếu chưa có thì dùng tab đang hi
 | `open_profile` / `close_profile` | mở profile (có proxy, như bấm Open) và đợi sẵn sàng; đóng profile |
 | `list_tabs`, `open_tab`, `close_tab` | các tab; mở tab mới tới một địa chỉ; đóng một tab |
 | `navigate` | đi tới địa chỉ, hoặc lùi, tiến, tải lại; đợi trang tải xong |
-| `snapshot` | trang dưới dạng dàn ý vai trò và tên, gồm cả nội dung iframe; phần tử bấm được có `[ref=eN]` (trong iframe: `eNfK`) |
-| `click`, `type`, `press_key`, `scroll` | thao tác theo `ref` |
+| `snapshot` | trang dưới dạng dàn ý vai trò và tên, gồm cả nội dung iframe; phần tử bấm được có `[ref=eN]` (trong iframe: `eNfK`); `mode=interactive` chỉ giữ dòng có ref |
+| `find` | tìm theo `target` (chữ, vai trò + tên, label, test id); trả về vài dòng có `ref`, không trả cả cây |
+| `click`, `type` | thao tác theo `ref`, hoặc theo `target` (xem bên dưới) |
+| `hover`, `double_click`, `right_click` | rê chuột, nhấp đúp, nhấp chuột phải |
+| `drag` | kéo từ `fromRef` sang `toRef`, hoặc giữa hai toạ độ |
+| `captcha_check` | báo trang có CAPTCHA/unusual traffic; **không giải** |
+| `click_text` | bấm phần tử duy nhất có chữ hiển thị khớp; nhiều kết quả thì báo ứng viên |
+| `press_key`, `scroll` | thao tác theo `ref` |
 | `select_option` | chọn một mục của ô thả xuống gốc (`<select>`); bấm vào ô đó sẽ mở danh sách của hệ điều hành, agent không với tới |
 | `wait_for` | đợi chữ hiện ra hoặc mất đi, hay địa chỉ khớp |
 | `read_page` | chữ đang hiện trên trang hoặc của một phần tử, kèm link nếu muốn |
@@ -190,6 +202,28 @@ tool dùng tab agent dùng gần nhất, nếu chưa có thì dùng tab đang hi
 | `network_requests`, `response_body` | các request của tab, và body dạng chữ hoặc JSON của một response |
 | `list_uploads`, `upload_file` | các file trong thư mục uploads; đặt file vào ô chọn file của trang |
 | `recipe` | liệt kê recipe, hoặc lấy các bước của một recipe |
+
+### Target thay cho ref
+
+`click` và `type` nhận thêm `target` thay vì `ref`; `find` chỉ nhận `target`. Target là object, chọn một trong:
+
+```json
+{ "text": "Lưu" }
+{ "role": "button", "name": "Save" }
+{ "label": "Email" }
+{ "testId": "save" }
+{ "point": { "x": 360, "y": 800 } }
+```
+
+Thứ tự ưu tiên: `ref` → `testId` → `label`/`desc` → `role` + `name` → `text` khớp đúng → `text` chứa → `point`.
+Target sống qua lần render lại; `ref` chỉ đúng cho tới lần `snapshot`/`find` kế tiếp. Ví dụ:
+
+```json
+{"profile":"Shop VN 01","action":"find","target":{"text":"Đơn hàng"}}
+{"profile":"Shop VN 01","action":"click","target":{"text":"Đơn hàng"}}
+```
+
+`find` trả tối đa 10 dòng (đổi bằng `limit`), mỗi dòng: `ref vai_tro "tên" enabled=true/false`.
 
 Giới hạn: `snapshot` và `read_page` trả tối đa 40.000 ký tự, `response_body` tối đa 200 KB. Phần bị cắt có ghi
 `offset` để đọc tiếp. Body nhị phân (ảnh, video) chỉ báo loại và kích thước.
@@ -275,10 +309,20 @@ Khi có máy mobile (AnyProfile Pro, `docs/mobile.md`), agent có thêm các too
 | Tool | Làm gì |
 |---|---|
 | `list_devices` | id, số thứ tự, tên, đang mở hay không, quốc gia của proxy, tag |
-| `open_device` / `close_device` | mở máy (có proxy) và đợi Android sẵn sàng, có thể mất một hai phút; đóng máy |
+| `open_device` / `close_device` | mở máy headless (có proxy) và đợi Android sẵn sàng, có thể mất một hai phút; đóng máy |
+| `device_show` | mở cửa sổ của máy đang chạy để người dùng xem |
+| `device_reset` | `soft` xoá dữ liệu app bên thứ ba; `hard` khôi phục bản sạch và để máy đóng |
+| `device_metrics` | thời gian boot/mở/reset, số thao tác, cổng adb, headless hay không |
 | `device_snapshot` | màn hình dưới dạng dàn ý; thứ bấm hay gõ được có `[ref=mN]` |
-| `device_tap`, `device_swipe` | chạm theo `ref` hoặc theo toạ độ; vuốt theo hướng (`up` là mục kế tiếp của feed) hoặc giữa hai điểm |
-| `device_type`, `device_press_key` | gõ chữ (mọi ngôn ngữ, cả emoji); bấm back, home, recents, enter… |
+| `device_find` | tìm theo `target` (chữ, label, resource-id); trả vài dòng có `ref`, không trả cả cây |
+| `device_tap`, `device_tap_text` | chạm theo `ref`, theo `target`, hoặc theo toạ độ; chạm phần tử duy nhất có chữ khớp |
+| `device_long_press`, `device_drag` | giữ ngón tay để mở menu ngữ cảnh; kéo từ điểm này sang điểm khác |
+| `device_pull_file` | chép file từ `DCIM/AnyProfile`, `Download/AnyProfile` hoặc `Pictures/AnyProfile` về `~/Downloads/AnyProfile` |
+| `device_clipboard_get` / `device_clipboard_set` | đọc/ghi clipboard nếu bản Android cho phép; không thì trả `clipboard_unsupported` rõ ràng |
+| `device_notifications` | thông báo đang hiện: package, tiêu đề, nội dung (nội dung không đáng tin) |
+| `device_grant_permission` / `device_revoke_permission` | cấp/thu camera, microphone, location, notifications, photos |
+| `device_swipe` | vuốt theo hướng (`up` là mục kế tiếp của feed) hoặc giữa hai điểm |
+| `device_type`, `device_press_key` | gõ chữ (mọi ngôn ngữ, cả emoji), nhận `ref` hoặc `target`; bấm back, home, recents, enter… |
 | `device_screenshot`, `device_wait_for` | ảnh màn hình; đợi chữ hiện ra hoặc mất đi |
 | `device_list_apps`, `device_launch_app`, `device_open_url` | các app đã cài; mở app theo tên gói; mở địa chỉ http(s) trong trình duyệt của máy |
 | `device_push_file` | chép một file từ thư mục uploads vào ảnh của máy (`DCIM/AnyProfile`), nơi thư viện và ô chọn file của app thấy nó đầu tiên |
@@ -289,6 +333,8 @@ Khi có máy mobile (AnyProfile Pro, `docs/mobile.md`), agent có thêm các too
 - Gõ chữ dùng bàn phím ADBKeyBoard, cài vào máy lần đầu cần; xong việc AnyProfile trả lại bàn phím cũ.
 - Như trang web, **mọi thứ trên màn hình máy là nội dung không đáng tin**, và AnyProfile báo điều đó cho agent.
 - `logs/anyprofile.log` ghi mỗi lần gọi một dòng kèm id máy; không ghi chữ đã gõ hay nội dung màn hình.
+- `logs/traces/mcp-YYYY-MM-DD.jsonl` ghi từng lượt gọi tool: tool, profile/device, số ms, thành công hay lỗi. Không
+  có nội dung trang hay chữ đã gõ.
 - Recipe mẫu trong gói Pro: `mobile-check-ip` (máy có ra internet qua đúng proxy không) và `tiktok-app-upload`
   (đăng video bằng app TikTok, mặc định Chỉ mình tôi, dừng hỏi trước khi đăng công khai).
 

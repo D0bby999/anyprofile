@@ -1,0 +1,10 @@
+{
+  "profile": "Shop VN 01",
+  "steps": [
+    { "action": "navigate", "url": "https://example.com/login" },
+    { "action": "type", "target": { "label": "Email" }, "text": "{{EMAIL}}" },
+    { "action": "type", "target": { "label": "Password" }, "text": "{{PASSWORD}}", "secret": true },
+    { "action": "press", "key": "Enter" },
+    { "action": "wait", "text": "Dashboard", "seconds": 10 }
+  ]
+}

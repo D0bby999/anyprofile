@@ -1,0 +1,9 @@
+{
+  "profile": "Shop VN 01",
+  "steps": [
+    { "action": "navigate", "url": "https://seller.shopee.vn/portal/order" },
+    { "action": "click", "target": { "text": "Đơn hàng" } },
+    { "action": "find", "target": { "text": "Chờ lấy hàng" }, "limit": 10 },
+    { "action": "read" }
+  ]
+}

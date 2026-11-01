@@ -19,6 +19,7 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
 	"github.com/D0bby999/anyprofile/internal/agent"
+	"github.com/D0bby999/anyprofile/internal/automation"
 	"github.com/D0bby999/anyprofile/internal/cdppipe"
 )
 
@@ -185,11 +186,90 @@ func TestMCPTools(t *testing.T) {
 		}
 	}
 	slices.Sort(names)
-	want := []string{"click", "close_profile", "close_tab", "list_profiles", "list_tabs", "list_uploads", "navigate", "network_requests",
-		"open_profile", "open_tab", "press_key", "read_page", "recipe", "response_body", "screenshot", "scroll", "select_option", "snapshot", "type",
+	want := []string{"captcha_check", "click", "click_text", "close_profile", "close_tab", "double_click", "drag", "find", "hover", "list_profiles", "list_tabs", "list_uploads", "navigate", "network_requests",
+		"open_profile", "open_tab", "press_key", "read_page", "recipe", "record_start", "record_stop", "response_body", "right_click", "screenshot", "scroll", "select_option", "snapshot", "type",
 		"upload_file", "wait_for"}
 	if !slices.Equal(names, want) {
 		t.Fatalf("tools = %v", names)
+	}
+}
+
+func TestMCPFindReturnsARef(t *testing.T) {
+	_, _, srv := mcpSetup(t)
+	cs, err := connect(t, srv, rewrite{token: token})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer cs.Close()
+	if out, isErr := call(t, cs, "open_profile", map[string]any{"profile": "Kênh"}); isErr {
+		t.Fatalf("open_profile: %v %s", isErr, out)
+	}
+	out, isErr := call(t, cs, "find", map[string]any{"profile": "Kênh", "target": map[string]any{"text": "Go"}})
+	if isErr || !strings.Contains(out, "e5 button \"Go\"") {
+		t.Fatalf("find = %q (err %v)", out, isErr)
+	}
+}
+
+func TestMCPRecording(t *testing.T) {
+	_, s, srv := mcpSetup(t)
+	cs, err := connect(t, srv, rewrite{token: token})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer cs.Close()
+	if out, isErr := call(t, cs, "open_profile", map[string]any{"profile": "Kênh"}); isErr {
+		t.Fatalf("open: %v %s", isErr, out)
+	}
+	if out, isErr := call(t, cs, "record_start", map[string]any{"profile": "Kênh"}); isErr {
+		t.Fatalf("record_start: %v %s", isErr, out)
+	}
+	// recordMCP is exercised by tool calls; append one directly so the test
+	// does not depend on a real DevTools click.
+	s.leases.appendForOwner("mcp:"+mcpSessionID(t, cs), actRequest{Action: "click", Target: &automation.Target{Text: "Lưu"}})
+	out, isErr := call(t, cs, "record_stop", map[string]any{})
+	if isErr || !strings.Contains(out, `"profile": "Kênh"`) || !strings.Contains(out, `"click"`) {
+		t.Fatalf("record_stop = %q (err %v)", out, isErr)
+	}
+}
+
+func mcpSessionID(t *testing.T, cs interface{ ID() string }) string {
+	t.Helper()
+	id := cs.ID()
+	if id == "" {
+		t.Fatal("MCP session id is empty")
+	}
+	return id
+}
+
+func TestMCPLeaseAcrossSessions(t *testing.T) {
+	_, _, srv := mcpSetup(t)
+	one, err := connect(t, srv, rewrite{token: token})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer one.Close()
+	if out, isErr := call(t, one, "open_profile", map[string]any{"profile": "Kênh"}); isErr {
+		t.Fatalf("first open: %v %s", isErr, out)
+	}
+	if out, isErr := call(t, one, "open_profile", map[string]any{"profile": "Kênh"}); isErr {
+		t.Fatalf("same session reopen: %v %s", isErr, out)
+	}
+	two, err := connect(t, srv, rewrite{token: token})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer two.Close()
+	if out, isErr := call(t, two, "open_profile", map[string]any{"profile": "Kênh"}); !isErr || !strings.Contains(out, "profile_busy") {
+		t.Fatalf("second session = %q (err %v), want profile_busy", out, isErr)
+	}
+	if out, isErr := call(t, two, "snapshot", map[string]any{"profile": "Kênh"}); !isErr || !strings.Contains(out, "profile_busy") {
+		t.Fatalf("foreign snapshot = %q (err %v), want profile_busy", out, isErr)
+	}
+	if out, isErr := call(t, one, "close_profile", map[string]any{"profile": "Kênh"}); isErr {
+		t.Fatalf("close: %v %s", isErr, out)
+	}
+	if out, isErr := call(t, two, "open_profile", map[string]any{"profile": "Kênh"}); isErr {
+		t.Fatalf("open after release: %v %s", isErr, out)
 	}
 }
 
