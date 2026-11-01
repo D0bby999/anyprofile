@@ -105,12 +105,12 @@ function probe() {
 
 const PROBE_SRC = probe.toString();
 
-function page(port) {
-  const origin = `http://127.0.0.1:${port}`;
-  const other = `http://localhost:${port}`;
+function page(ports) {
+  const origin = `http://127.0.0.1:${ports.main}`;
+  const other = `http://127.0.0.1:${ports.other}`;
   return `<!doctype html><meta charset="utf-8"><title>context gate</title>
 <body><pre id="log"></pre><script>
-const NONCE = ${JSON.stringify(NONCE)}, PORT = ${port};
+const NONCE = ${JSON.stringify(NONCE)}, PORT = ${ports.main};
 const OTHER = ${JSON.stringify(other)};
 const debug = [];
 const log = (m) => { debug.push(m); document.getElementById('log').textContent += m + '\\n'; };
@@ -162,8 +162,9 @@ function frameContext(kind) {
     const run = async () => {
       try {
         if (kind === 'cross-origin') {
-          // A different host name on the same port is a different site, which
-          // is what makes Chrome give the frame its own renderer process.
+          // A second port is a different origin, not a different site: the
+          // frame is third-party and unreadable from here, which is what the
+          // OOPIF case is about; site isolation itself is not asserted.
           const nonce = NONCE + ':' + kind;
           const onMessage = (e) => {
             if (e.data?.nonce !== nonce || !e.data.result) return;
@@ -250,11 +251,12 @@ function args(argv) {
   return out;
 }
 
-function serve(port) {
+function serve() {
   const state = { resolve: null, reject: null };
   const done = new Promise((resolve, reject) => { state.resolve = resolve; state.reject = reject; });
-  const server = http.createServer((req, res) => {
-    const url = new URL(req.url, `http://127.0.0.1:${port}`);
+  const ports = { main: 0, other: 0 };
+  const handle = (req, res) => {
+    const url = new URL(req.url, `http://127.0.0.1:${ports.main}`);
     if (process.env.GATE_DEBUG) console.error('gate request', req.method, url.pathname + url.search);
     if (req.method === 'POST' && url.pathname === '/result') {
       let body = '';
@@ -272,9 +274,21 @@ function serve(port) {
       const nonce = encodeURIComponent(url.searchParams.get('nonce') || '');
       return send('text/html', `<!doctype html><meta charset="utf-8"><script src="/probe.js?nonce=${nonce}"></script>`);
     }
-    return send('text/html', page(port));
+    return send('text/html', page(ports));
+  };
+  const listen = () => new Promise((resolve) => {
+    const server = http.createServer(handle);
+    server.listen(0, '::', () => resolve(server));
   });
-  return new Promise((resolve) => server.listen(port, '::', () => resolve({ server, done })));
+  return (async () => {
+    const main = await listen();
+    ports.main = main.address().port;
+    // A second port on the same host is a different origin: readable only
+    // through postMessage, like any third-party frame.
+    const other = await listen();
+    ports.other = other.address().port;
+    return { servers: [main, other], done, ports };
+  })();
 }
 
 async function main() {
@@ -292,9 +306,8 @@ async function main() {
     process.exit(2);
   }
   const profile = opts.profile || fs.mkdtempSync(path.join(os.tmpdir(), 'context-gate-'));
-  const { server, done } = await serve(0);
-  const port = server.address().port;
-  const url = `http://127.0.0.1:${port}/`;
+  const { servers, done, ports } = await serve();
+  const url = `http://127.0.0.1:${ports.main}/`;
   const browser = spawn(opts.binary, [
     `--user-data-dir=${profile}`, '--no-first-run', '--no-default-browser-check',
     '--hide-crash-restore-bubble', '--use-mock-keychain', '--lang=en-US',
@@ -323,7 +336,7 @@ async function main() {
     console.error('gate failed:', e.message);
     process.exit(1);
   } finally {
-    server.close();
+    for (const server of servers) server.close();
     browser.kill('SIGTERM');
     if (!opts.profile) fs.rmSync(profile, { recursive: true, force: true });
   }

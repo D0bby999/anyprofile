@@ -11,7 +11,11 @@
 
 // Fields every context can answer (Window, dedicated Worker, SharedWorker,
 // ServiceWorker and iframes all expose them).
-export const COMMON = ['ua', 'platform', 'languages', 'hwc', 'mem', 'tz', 'locale', 'webdriver', 'canvas', 'webgl'];
+export const COMMON = ['ua', 'platform', 'languages', 'hwc', 'mem', 'tz', 'locale', 'canvas', 'webgl'];
+
+// navigator.webdriver is not exposed to every context, so it is checked where
+// it is answered: a Window that says true is a driven browser, and the whole
+// point of the build is that a page cannot tell.
 
 // Fields only a Window can answer. A Worker's absence here is expected.
 export const WINDOW_ONLY = ['screen', 'window', 'dpr', 'voices', 'audio', 'permissions', 'notification'];
@@ -74,6 +78,8 @@ export function evaluate(run) {
     }
   }
   for (const [name, ctx] of contexts) {
+    const wd = normalize(ctx).values.webdriver;
+    if (wd !== undefined && wd !== false) disagreements.push({ field: 'webdriver', values: [{ context: name, value: wd }] });
     for (const error of ctx?.errors || []) errors.push({ context: name, error });
   }
   return {

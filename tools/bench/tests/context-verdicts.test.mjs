@@ -68,6 +68,14 @@ test('a probe error fails the gate even when values agree', () => {
   assert.deepEqual(v.errors, [{ context: 'serviceworker', error: 'canvas: tainted' }]);
 });
 
+test('a window that says webdriver true fails the gate', () => {
+  const r = four();
+  r.main.webdriver = true;
+  const v = evaluate(run(r));
+  assert.equal(v.pass, false);
+  assert.deepEqual(v.disagreements, [{ field: 'webdriver', values: [{ context: 'main', value: true }] }]);
+});
+
 test('fewer than four contexts is a failure', () => {
   const v = evaluate(run({ main: windowCtx(), worker: workerCtx(), 'iframe-same-origin': windowCtx() }));
   assert.equal(v.pass, false);
