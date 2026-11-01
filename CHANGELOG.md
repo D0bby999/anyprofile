@@ -124,6 +124,28 @@ AnyMobile (261031):
   Apostate 0.5.1 (`0.5.1.156`). Unknown or post-option Apostate rows still
   fail closed. Launch history no longer blocks the migration.
 
+Canvas readback policy (261102):
+
+- The engine is rebuilt from `156.0.8078.74` with the same 119 patches plus one
+  more (0163). Two surfaces every machine renders identically no longer move
+  when the opt-in readback noise is on: a canvas holding only pixel-aligned
+  solid rectangles, and a smooth WebGL ramp. Measured with the new
+  `tools/bench/canvas-routes.mjs`, which decodes every route in Node: 15.13 % of
+  the solid-rect canvas and 91.11 % of the WebGL ramp moved before, both are 0 %
+  now, two seeds still render different text canvases, and all seven readback
+  routes still return one answer for one canvas.
+- New `tools/bench/context-gate.mjs` asks one browser the same questions in
+  eight execution contexts (main frame, Worker, SharedWorker, ServiceWorker and
+  four iframe kinds) and passes on this build, with a spoofed identity and
+  across two launches of one profile. It also passes real Chrome on this host,
+  so the checks are calibrated on a browser that is not ours.
+- The noise switch is still off for new profiles: the detector run that would
+  decide it (pixelscan, fv.pro) needs a proxy.
+- Rebuilt on Xcode 27.2. The pinned macOS SDK 26.5 is gone, so this build used
+  Command Line Tools 26.2, and `scripts/configure.sh` now names the missing SDK
+  instead of dying silently; Xcode 27 also splits out the Metal toolchain, which
+  the build downloads once (`xcodebuild -downloadComponent MetalToolchain`).
+
 Security rebase (261031):
 
 - The macOS engine is now Chromium 156.0.8078.74 (the 28–29 October stable
