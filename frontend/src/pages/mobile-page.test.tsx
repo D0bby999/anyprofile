@@ -17,6 +17,16 @@ const api = {
   TrashMobileDevice: vi.fn(() => Promise.resolve()),
   RestoreMobileDevice: vi.fn(() => Promise.resolve()),
   OpenMobileRuntimeSource: vi.fn(() => Promise.resolve()),
+  MobileFastStart: vi.fn(() => Promise.resolve(true)),
+  SetMobileFastStart: vi.fn(() => Promise.resolve()),
+  ScreenshotMobileDevice: vi.fn(() => Promise.resolve('/tmp/shot.jpg')),
+  MobilePreviewFrame: vi.fn(() => Promise.resolve('abc')),
+  TapMobileDevice: vi.fn(() => Promise.resolve()),
+  PressMobileKey: vi.fn(() => Promise.resolve()),
+  StartMobileRecording: vi.fn(() => Promise.resolve()),
+  StopMobileRecording: vi.fn(() => Promise.resolve('/tmp/clip.mp4')),
+  MobileWindowOnTop: vi.fn(() => Promise.resolve(false)),
+  SetMobileWindowOnTop: vi.fn(() => Promise.resolve()),
 }
 const openExternal = vi.fn()
 vi.mock('../api', async (orig) => ({
@@ -35,6 +45,7 @@ const device = (extra = {}) => ({
   imageVersion: '', notes: '', tags: ['jp'], pinned: false, serial: 1, createdAt: '', updatedAt: '', lastOpenAt: '',
   backedUpAt: '', deletedAt: '', state: 'stopped', error: '', ...extra,
 })
+const openRowMenu = async () => fireEvent.click(screen.getByRole('button', { name: t.menu.more }))
 const avail = (extra = {}) => ({ supported: true, driver: 'vm', pro: true, ready: true, reason: '', message: '', ...extra })
 
 function page(rows: object[], a: object, onOpenPro = vi.fn()) {
@@ -57,12 +68,36 @@ describe('MobilePage', () => {
     page([device()], avail({ pro: false }))
     expect(screen.getByText(t.mobile.proLapsed)).toBeTruthy()
     expect((screen.getByRole('button', { name: t.mobile.open }) as HTMLButtonElement).disabled).toBe(true)
-    fireEvent.click(screen.getByRole('button', { name: t.mobile.backup }))
+    await openRowMenu()
+    fireEvent.click(screen.getByRole('menuitem', { name: t.mobile.backup }))
     await waitFor(() => expect(api.BackupMobileDevice).toHaveBeenCalledWith('d1'))
   })
 
+  it('toggles fast start and saves the setting', async () => {
+    page([device()], avail())
+    const box = screen.getByRole('checkbox', { name: t.mobile.fastStart }) as HTMLInputElement
+    expect(box.checked).toBe(true)
+    fireEvent.click(box)
+    await waitFor(() => expect(api.SetMobileFastStart).toHaveBeenCalledWith(false))
+  })
+
+  it('opens the in-app viewer', async () => {
+    page([device({ state: 'running' })], avail())
+    await openRowMenu()
+    fireEvent.click(screen.getByRole('menuitem', { name: t.mobile.viewInApp }))
+    await waitFor(() => expect(api.MobilePreviewFrame).toHaveBeenCalledWith('d1'))
+    expect(await screen.findByRole('dialog')).toBeTruthy()
+  })
+
+  it('takes a screenshot from the row menu', async () => {
+    page([device({ state: 'running' })], avail())
+    await openRowMenu()
+    fireEvent.click(screen.getByRole('menuitem', { name: t.mobile.screenshot }))
+    await waitFor(() => expect(api.ScreenshotMobileDevice).toHaveBeenCalledWith('d1'))
+  })
+
   it('downloads Android when the runtime is missing', async () => {
-    page([], avail({ ready: false, reason: 'android_runtime_missing', message: '' }))
+    page([], avail({ ready: false, reason: 'anymobile_runtime_missing', message: '' }))
     fireEvent.click(screen.getByRole('button', { name: t.mobile.install }))
     await waitFor(() => expect(api.InstallMobileRuntime).toHaveBeenCalled())
   })
@@ -91,15 +126,16 @@ describe('MobilePage', () => {
 
   it('moves a device to the trash with Undo', async () => {
     page([device()], avail())
-    fireEvent.click(screen.getByRole('button', { name: t.mobile.trash }))
+    await openRowMenu()
+    fireEvent.click(screen.getByRole('menuitem', { name: t.mobile.trash }))
     await waitFor(() => expect(api.TrashMobileDevice).toHaveBeenCalledWith('d1'))
     fireEvent.click(await screen.findByRole('button', { name: t.common.undo }))
     await waitFor(() => expect(api.RestoreMobileDevice).toHaveBeenCalledWith('d1'))
   })
 
   it('says Beta, and Coming soon instead of a Download that can only fail while the runtime is not out', () => {
-    const missing = { ready: false, reason: 'android_runtime_missing' }
-    const comp = (latest: string) => ({ runtime: { engine: 'android-vm', installed: '', latest }, image: { engine: 'android-vm-image', installed: '', latest: '' } })
+    const missing = { ready: false, reason: 'anymobile_runtime_missing' }
+    const comp = (latest: string) => ({ runtime: { engine: 'anymobile', installed: '', latest }, image: { engine: 'anymobile-image', installed: '', latest: '' } })
     page([], avail({ ...missing, install: comp('') }))
     expect(screen.getByText(t.mobile.beta)).toBeTruthy()
     expect(screen.getByText(t.mobile.comingSoon)).toBeTruthy()
@@ -110,25 +146,23 @@ describe('MobilePage', () => {
     expect(screen.getByRole('button', { name: t.mobile.install })).toBeTruthy()
   })
 
-  it('links to the runtime\u2019s source code once it came from Pro, not for a dev build', () => {
-    const comp = (installed: string) => ({ runtime: { engine: 'android-vm', installed, latest: '1.0.0' }, image: { engine: 'android-vm-image', installed: '23.2', latest: '' } })
-    page([device()], avail({ install: comp('1.0.0') }))
-    fireEvent.click(screen.getByRole('link', { name: t.mobile.runtimeSource }))
-    expect(api.OpenMobileRuntimeSource).toHaveBeenCalled()
-    cleanup()
-    page([device()], avail({ install: comp('dev') }))
+  it('does not publish the runtime source link', () => {
+    const comp = { runtime: { engine: 'anymobile', installed: '1.0.0', latest: '1.0.0' }, image: { engine: 'anymobile-image', installed: '23.2', latest: '' } }
+    page([device()], avail({ install: comp }))
     expect(screen.queryByRole('link', { name: t.mobile.runtimeSource })).toBeNull()
   })
 
   it('links to the guide for installing apps', () => {
     page([device()], avail())
+    fireEvent.click(screen.getByText(t.mobile.apkHelp))
     fireEvent.click(screen.getByRole('link', { name: t.mobile.apkGuide }))
     expect(openExternal).toHaveBeenCalledWith('https://github.com/D0bby999/anyprofile/blob/master/docs/mobile-apps.md')
   })
 
   it('installs apps on a running device only', async () => {
     page([device({ state: 'running' })], avail())
-    fireEvent.click(screen.getByRole('button', { name: t.mobile.installApps }))
+    await openRowMenu()
+    fireEvent.click(screen.getByRole('menuitem', { name: t.mobile.installApps }))
     await waitFor(() => expect(api.InstallMobileApps).toHaveBeenCalledWith('d1'))
     expect(await screen.findByText(t.mobile.appsInstalled(2))).toBeTruthy()
     cleanup()
@@ -139,7 +173,8 @@ describe('MobilePage', () => {
   it('shows Close and Show window for a running device and locks backup', async () => {
     page([device({ state: 'running' })], avail())
     expect(screen.getByRole('button', { name: t.mobile.close })).toBeTruthy()
-    expect((screen.getByRole('button', { name: t.mobile.backup }) as HTMLButtonElement).disabled).toBe(true)
+    await openRowMenu()
+    expect((screen.getByRole('menuitem', { name: t.mobile.backup }) as HTMLButtonElement).disabled).toBe(true)
     fireEvent.click(screen.getByRole('button', { name: t.mobile.show }))
     await waitFor(() => expect(api.ShowMobileDevice).toHaveBeenCalledWith('d1'))
   })

@@ -58,12 +58,20 @@ type Service struct {
 	// Pro reaches the AnyProfile Pro server; the zero value means pro.NewClient().
 	Pro pro.Client
 
-	snapMu    sync.Mutex
-	updMu     sync.Mutex // one update download at a time
-	proMu     sync.Mutex // one Pro check or install at a time
-	ctlMu     sync.Mutex
-	controls  map[string]*control.Device // the agent's handle on each running mobile device
-	snapLocks map[string]profileLock     // one per profile: snapshots and launches take turns
+	accountMu    sync.Mutex
+	accountLogin *proAccountLogin
+	snapMu       sync.Mutex
+	updMu        sync.Mutex // one update download at a time
+	proMu        sync.Mutex // one Pro check or install at a time
+	ctlMu        sync.Mutex
+	controls     map[string]*control.Device // the agent's handle on each running mobile device
+	snapLocks    map[string]profileLock     // one per profile: snapshots and launches take turns
+
+	pauseMu     sync.Mutex
+	pauseTimers map[string]*time.Timer // freeze a headless device after a quiet period
+
+	recMu      sync.Mutex
+	recordings map[string]*mobileRecording
 }
 
 func (s *Service) notify(kind string) {

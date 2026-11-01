@@ -3,7 +3,7 @@
 Mỗi máy mobile là một máy Android riêng, có proxy riêng: app trong máy chỉ ra internet qua proxy đó, và mất proxy
 thì mất mạng chứ không lộ IP thật. Agent AI điều khiển được máy qua MCP (`docs/mcp.md`, mục "Máy mobile").
 
-**Beta.** Bộ chạy Android cho macOS đến cùng AnyProfile Pro: khi chưa có bản cho máy của bạn, trang Mobile ghi
+**Beta.** Bộ chạy Android cho macOS, đến cùng AnyProfile Pro: khi chưa có bản cho máy của bạn, trang Mobile ghi
 "Sắp có", và bộ chạy tự xuất hiện khi phát hành (không cần cập nhật app). Bản Windows (LDPlayer) chưa được kiểm trên
 máy thật.
 
@@ -26,6 +26,22 @@ Cài app trong máy: xem [Cài app trên máy mobile](mobile-apps.md). Nguồn, 
 5. **Mở máy.** Bấm **Mở**. Khoảng 30 giây sau trạng thái thành **Đang chạy** và cửa sổ điện thoại hiện ra; bấm,
    vuốt, gõ bằng chuột và bàn phím như điện thoại.
 6. **Cài app:** bấm **Cài app** trên dòng của máy, hoặc xem [hướng dẫn chi tiết](mobile-apps.md).
+
+## Automation
+
+Máy mobile có ba preset:
+
+| Preset | RAM | CPU | Màn hình | Dùng cho |
+|---|---:|---:|---|---|
+| Automation | 2 GB | 2 | 540×960 | script, tool, chạy nhiều máy |
+| Balanced | 3 GB | 4 | 720×1600 | mặc định, dùng tay và agent |
+| Interactive | 4 GB | 4 | 720×1600 | app nặng, xem video |
+
+- Agent và script mở máy **headless** (không cửa sổ scrcpy) để nhẹ CPU; người dùng bấm **Mở** vẫn thấy cửa sổ.
+- `device_show` mở cửa sổ khi cần xem.
+- `device_reset mode=soft` xoá dữ liệu app bên thứ ba, giữ máy đang chạy. `mode=hard` đưa máy về bản sạch đã lưu lúc tạo, rồi để máy đóng.
+- `device_metrics` trả thời gian boot/mở/reset, số thao tác và cổng adb hiện tại.
+- Máy tạo trước bản này không có bản sạch để hard reset; backup/restore hoặc tạo lại.
 
 ## Chạy trên gì
 
@@ -66,6 +82,13 @@ là 720×1600, như điện thoại tầm trung. Đo trên M2 khi cuộn trang C
 máy ảo dùng 3,2 nhân CPU; ở 720×1600 còn 16% và 1,6 nhân. Đóng cửa sổ của máy (máy vẫn chạy cho agent) thì gần như
 hết giật.
 
+Cửa sổ scrcpy bị chặn ở 30 khung hình/giây và 4 Mbps: máy ảo không có GPU nên mỗi khung hình đều do CPU nén và giải
+mã, hạ từ 60 xuống 30 cắt gần một nửa công đó mà mắt gần như không thấy khác.
+
+Khi không có cửa sổ, Android tắt màn hình sau 15 giây. Sau 2 phút không thao tác, máy **tạm dừng** (RAM và app giữ
+nguyên, CPU gần 0) và tự tỉnh lại trong khoảng 60 ms khi agent chụp màn hình, chạm hay gõ. Máy đang mở cửa sổ thì
+không tạm dừng.
+
 ## Google hỏi "Bạn không phải robot"
 
 Trang kiểm tra của Google (`google.com/sorry`) phụ thuộc vào **IP**. Máy không có proxy dùng IP của máy tính; nếu
@@ -95,8 +118,25 @@ kiếm chạy bình thường và nhận vị trí theo proxy.
 
 - **Mở** máy thì cửa sổ điện thoại hiện ra (cửa sổ dùng scrcpy). Đóng cửa sổ không đóng máy: máy vẫn chạy, và
   bấm **Hiện cửa sổ** để mở lại cửa sổ.
-- **Đóng** máy tắt Android đàng hoàng. Thoát AnyProfile cũng đóng mọi máy đang chạy.
+- Máy không có cửa sổ (agent, script) tự tạm dừng sau 2 phút không thao tác: CPU gần 0, RAM và app giữ nguyên; thao
+  tác kế tiếp đánh thức trong khoảng 60 ms. Máy có cửa sổ mở thì không tạm dừng.
+- Chụp màn hình, chạm hay gõ khi màn hình đang tắt sẽ tự bật màn hình trước; không cần thao tác tay.
+- **Khởi động nhanh** (mặc định bật): đóng máy lưu trạng thái RAM xuống đĩa (khoảng 2,5 GB mỗi máy) rồi mở lại trong
+  khoảng 3 giây thay vì ~28 giây. Tắt ở dưới bảng Mobile nếu cần lấy lại chỗ; tắt sẽ xoá các bản lưu.
+- **Đóng** máy lưu trạng thái (khởi động nhanh) hoặc tắt Android đàng hoàng nếu đã tắt khởi động nhanh. Thoát
+  AnyProfile cũng đóng mọi máy đang chạy.
 - AnyProfile bị tắt ngang (crash, `kill`): mở lại thì máy đang chạy được nhận lại, không phải mở lại.
+- **Xem trong app**: menu ⋯ → **Xem trong app** mở màn hình ngay trong cửa sổ AnyProfile, bấm để chạm, có nút Quay
+  lại/Trang chính. Đây là bản xem nhanh khoảng 2–3 khung hình/giây; muốn vuốt mượt, gõ phím hay kéo file thì dùng cửa
+  sổ scrcpy.
+- **Chụp màn hình**: menu ⋯ của máy → **Chụp màn hình**; ảnh lưu ở `~/Pictures/AnyProfile` và tự mở.
+- **Quay màn hình**: menu ⋯ → **Quay màn hình** (tối đa 3 phút), dừng bằng **Dừng quay**; video lưu ở
+  `~/Movies/AnyProfile` và tự mở.
+- **Luôn trên cùng**: menu ⋯ → **Luôn trên cùng**; cửa sổ mở lại ở đúng chỗ cũ sau mỗi lần đóng/mở.
+- **Agent** có thêm: nhấn giữ, kéo, chép file về máy, đọc clipboard (nếu Android cho), đọc thông báo, cấp/thu quyền
+  camera/micro/location/notifications/photos.
+- **Pinch/zoom chưa hỗ trợ**: `adb input` chỉ gửi được một ngón; dùng nút zoom của app hoặc double-tap. Đây là giới hạn
+  đã ghi nhận, không phải tool thiếu.
 - **Sao lưu / Khôi phục** (máy phải đóng): sao lưu chép đĩa của máy; khôi phục đưa máy về đúng bản đó, mất mọi thứ
   sau lúc sao lưu.
 - **Xoá** đưa máy vào Thùng rác như profile; xoá hẳn mới xoá đĩa. Dung lượng máy mobile hiện ở Cài đặt → Lưu trữ.

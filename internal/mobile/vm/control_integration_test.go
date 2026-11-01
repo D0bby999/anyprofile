@@ -25,12 +25,17 @@ import (
 
 // Drives a real VM the way the MCP tools do:
 // go test -tags vmintegration -run TestControl -v ./internal/mobile/vm/
-// ANYPROFILE_VM_DUMPS, when set, receives the screens' uiautomator XML.
-func TestControl(t *testing.T) {
-	rtDir := os.Getenv("ANYPROFILE_VM_RUNTIME")
-	if rtDir == "" {
-		t.Skip("ANYPROFILE_VM_RUNTIME not set")
+// ANYPROFILE_MOBILE_DUMPS (or the old ANYPROFILE_VM_DUMPS), when set,
+// receives the screens' uiautomator XML.
+func mobileDumps() string {
+	if v := os.Getenv("ANYPROFILE_MOBILE_DUMPS"); v != "" {
+		return v
 	}
+	return os.Getenv("ANYPROFILE_VM_DUMPS")
+}
+
+func TestControl(t *testing.T) {
+	rtDir := integrationRuntime(t)
 	ctx := context.Background()
 	log := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelWarn}))
 	drv := New(rtDir, t.TempDir(), log)
@@ -48,7 +53,7 @@ func TestControl(t *testing.T) {
 	defer func() { drv.Stop(ctx, d); <-run.Done }()
 	dev := &control.Device{ADB: drv.proc(d.ID).adb, Runtime: t.TempDir()}
 	dump := func(name string) {
-		if dir := os.Getenv("ANYPROFILE_VM_DUMPS"); dir != "" {
+		if dir := mobileDumps(); dir != "" {
 			out, _ := dev.ADB.Shell(ctx, "uiautomator dump /data/local/tmp/x.xml >/dev/null && cat /data/local/tmp/x.xml")
 			os.WriteFile(filepath.Join(dir, name+".xml"), []byte(out), 0o600)
 		}

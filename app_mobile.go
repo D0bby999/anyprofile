@@ -6,12 +6,28 @@ import (
 	"context"
 	"time"
 
+	"github.com/D0bby999/anyprofile/internal/mobile"
 	"github.com/D0bby999/anyprofile/internal/service"
 	"github.com/D0bby999/anyprofile/internal/store"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 // Mobile devices
+
+// MobileFastStart reports whether closing a device saves its RAM state for a
+// fast reopen. On by default.
+func (a *App) MobileFastStart() (bool, error) {
+	if err := a.ready(); err != nil {
+		return true, err
+	}
+	return a.svc.MobileFastStart()
+}
+
+// SetMobileFastStart turns the saved-RAM state on or off; off deletes the
+// saved states (~2.5 GB each).
+func (a *App) SetMobileFastStart(on bool) error {
+	return a.must(func() error { return a.svc.SetMobileFastStart(on) })
+}
 
 func (a *App) MobileAvailability() (service.MobileAvailability, error) {
 	if err := a.ready(); err != nil {
@@ -52,6 +68,19 @@ func (a *App) StopMobileDevice(id string) error {
 	return a.must(func() error { return a.svc.StopMobileDevice(a.ctx, id) })
 }
 
+// ResetMobileDevice returns a device to a clean state (soft or hard).
+func (a *App) ResetMobileDevice(id, mode string) error {
+	return a.must(func() error { return a.svc.ResetMobileDevice(a.ctx, id, mode) })
+}
+
+// MobileMetrics returns boot, action and reset timings for this app run.
+func (a *App) MobileMetrics(id string) (mobile.Metrics, error) {
+	if err := a.ready(); err != nil {
+		return mobile.Metrics{}, err
+	}
+	return a.svc.MobileMetrics(id)
+}
+
 func (a *App) TrashMobileDevice(id string) error {
 	return a.must(func() error { return a.svc.TrashMobileDevice(a.ctx, id) })
 }
@@ -64,7 +93,7 @@ func (a *App) PurgeMobileDevice(id string) error {
 	return a.must(func() error { return a.svc.PurgeMobileDevice(a.ctx, id) })
 }
 
-// OpenMobileRuntimeSource opens the Android runtime's complete source (GPL)
+// OpenMobileRuntimeSource opens the AnyMobile runtime's complete source (GPL)
 // in the default browser.
 func (a *App) OpenMobileRuntimeSource() error {
 	return a.must(func() error {
@@ -79,7 +108,7 @@ func (a *App) OpenMobileRuntimeSource() error {
 	})
 }
 
-// InstallMobileRuntime downloads the Android VM runtime and image, emitting
+// InstallMobileRuntime downloads the AnyMobile runtime and image, emitting
 // "engine:progress" like an engine install.
 func (a *App) InstallMobileRuntime() error {
 	return a.must(func() error {
@@ -109,6 +138,58 @@ func (a *App) InstallMobileApps(id string) (int, error) {
 // ShowMobileDevice opens a running device's window again.
 func (a *App) ShowMobileDevice(id string) error {
 	return a.must(func() error { return a.svc.ShowMobileDevice(a.ctx, id) })
+}
+
+// MobilePreviewFrame returns the screen as base64 JPEG for the in-app viewer.
+func (a *App) MobilePreviewFrame(id string) (string, error) {
+	if err := a.ready(); err != nil {
+		return "", err
+	}
+	return a.svc.MobilePreviewFrame(a.ctx, id)
+}
+
+// TapMobileDevice taps a point in the device's 720x1600 screen space.
+func (a *App) TapMobileDevice(id string, x int, y int) error {
+	return a.must(func() error { return a.svc.TapMobileDevice(a.ctx, id, x, y) })
+}
+
+// PressMobileKey presses home, back or recents from the in-app viewer.
+func (a *App) PressMobileKey(id string, key string) error {
+	return a.must(func() error { return a.svc.PressMobileKey(a.ctx, id, key) })
+}
+
+// ScreenshotMobileDevice saves a JPEG of the Android screen and opens it.
+func (a *App) ScreenshotMobileDevice(id string) (string, error) {
+	if err := a.ready(); err != nil {
+		return "", err
+	}
+	return a.svc.ScreenshotMobileDevice(a.ctx, id)
+}
+
+// MobileWindowOnTop reports the stored always-on-top flag.
+func (a *App) MobileWindowOnTop(id string) (bool, error) {
+	if err := a.ready(); err != nil {
+		return false, err
+	}
+	return a.svc.MobileWindowOnTop(id)
+}
+
+// SetMobileWindowOnTop stores the flag and reopens an open window.
+func (a *App) SetMobileWindowOnTop(id string, on bool) error {
+	return a.must(func() error { return a.svc.SetMobileWindowOnTop(a.ctx, id, on) })
+}
+
+// StartMobileRecording records the Android screen (max 3 minutes).
+func (a *App) StartMobileRecording(id string) error {
+	return a.must(func() error { return a.svc.StartMobileRecording(a.ctx, id) })
+}
+
+// StopMobileRecording stops, saves under ~/Movies/AnyProfile and opens it.
+func (a *App) StopMobileRecording(id string) (string, error) {
+	if err := a.ready(); err != nil {
+		return "", err
+	}
+	return a.svc.StopMobileRecording(a.ctx, id)
 }
 
 func (a *App) BackupMobileDevice(id string) error {

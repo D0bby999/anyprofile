@@ -14,13 +14,13 @@ import (
 
 // Runtime is what a VM needs on disk. Under the mobile runtime folder:
 //
-//	qemu/bin/qemu-system-aarch64, qemu/bin/qemu-img      the "android-vm" package
+//	qemu/bin/qemu-system-aarch64, qemu/bin/qemu-img      the "anymobile" package
 //	qemu/share/edk2-aarch64-code.fd, qemu/share/edk2-arm-vars.fd (a device's EFI variables start as this)
 //	qemu/bin/adb, qemu/bin/scrcpy, qemu/share/scrcpy-server
 //	image/CURRENT                                         the image version in use
-//	image/<version>/vda.qcow2, vdb.qcow2                  the "android-vm-image" package
+//	image/<version>/vda.qcow2, vdb.qcow2                  the "anymobile-image" package
 //
-// scripts/dev-android-vm-runtime.sh lays the same tree out from Homebrew and
+// scripts/dev-anymobile-runtime.sh lays the same tree out from Homebrew and
 // a downloaded image for development.
 type Runtime struct {
 	QEMU, QEMUImg, Firmware   string
@@ -30,8 +30,8 @@ type Runtime struct {
 }
 
 var (
-	errRuntimeMissing = apperr.New("android_runtime_missing", "the Android VM runtime is not installed; install it in Settings")
-	errImageMissing   = apperr.New("android_image_missing", "the Android image is not installed; install it in Settings")
+	errRuntimeMissing = apperr.New("anymobile_runtime_missing", "the Mobile runtime is not installed; install it in Settings")
+	errImageMissing   = apperr.New("anymobile_image_missing", "the Android image is not installed; install it in Settings")
 )
 
 // Locate finds the runtime under root, or says what is missing.

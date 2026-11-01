@@ -15,6 +15,12 @@ type Props = {
 
 const RAM_CHOICES = [2048, 3072, 4096, 6144]
 const CPU_CHOICES = [2, 4, 6, 8]
+const PRESETS = {
+  automation: { ram: 2048, cpus: 2, screenW: 540, screenH: 960, density: 240 },
+  balanced: { ram: 3072, cpus: 4, screenW: 720, screenH: 1600, density: 280 },
+  interactive: { ram: 4096, cpus: 4, screenW: 720, screenH: 1600, density: 280 },
+} as const
+type Preset = keyof typeof PRESETS
 
 const splitTags = (s: string) => s.split(',').map((x) => x.trim()).filter(Boolean)
 
@@ -23,8 +29,12 @@ const splitTags = (s: string) => s.split(',').map((x) => x.trim()).filter(Boolea
 export function MobileDialog({ row, onClose, onSaved }: Props) {
   const [name, setName] = useState(row?.name ?? '')
   const [proxyId, setProxyId] = useState(row ? row.proxyId : 'auto')
-  const [ram, setRam] = useState(row?.ramMb ?? 3072)
-  const [cpus, setCpus] = useState(row?.cpus ?? 4)
+  const [preset, setPreset] = useState<Preset>((row?.preset as Preset) || 'balanced')
+  const [ram, setRam] = useState(row?.ramMb ?? PRESETS.balanced.ram)
+  const [cpus, setCpus] = useState(row?.cpus ?? PRESETS.balanced.cpus)
+  const [screenW, setScreenW] = useState(row?.screenW ?? PRESETS.balanced.screenW)
+  const [screenH, setScreenH] = useState(row?.screenH ?? PRESETS.balanced.screenH)
+  const [density, setDensity] = useState(row?.density ?? PRESETS.balanced.density)
   const [notes, setNotes] = useState(row?.notes ?? '')
   const [tags, setTags] = useState((row?.tags ?? []).join(', '))
   const [proxies, setProxies] = useState<service.ProxyRow[]>([])
@@ -40,12 +50,23 @@ export function MobileDialog({ row, onClose, onSaved }: Props) {
     }).catch(() => {})
   }, [row])
 
+  const choosePreset = (name: Preset) => {
+    setPreset(name)
+    const p = PRESETS[name]
+    setRam(p.ram)
+    setCpus(p.cpus)
+    setScreenW(p.screenW)
+    setScreenH(p.screenH)
+    setDensity(p.density)
+  }
+
   const save = async () => {
     if (!name.trim() || busy) return
     setBusy(true)
     setError('')
     const input = service.MobileInput.createFrom({
-      name: name.trim(), proxyId, ramMb: ram, cpus, notes, tags: splitTags(tags), pinned: row?.pinned ?? false,
+      name: name.trim(), proxyId, ramMb: ram, cpus, preset, screenW, screenH, density,
+      notes, tags: splitTags(tags), pinned: row?.pinned ?? false,
     })
     try {
       if (row) await Api.UpdateMobileDevice(row.id, input)
@@ -76,6 +97,15 @@ export function MobileDialog({ row, onClose, onSaved }: Props) {
         )}
         {proxyId === '' && !locked && <RealIpWarning text={t.mobile.realIpWarning} />}
       </div>
+      <label className="field">
+        <span className="label">{t.mobile.preset}</span>
+        <select className="select" value={preset} disabled={locked} onChange={(e) => choosePreset(e.target.value as Preset)}>
+          <option value="automation">{t.mobile.presetAutomation}</option>
+          <option value="balanced">{t.mobile.presetBalanced}</option>
+          <option value="interactive">{t.mobile.presetInteractive}</option>
+        </select>
+        <span className="hint">{t.mobile.presetHint}</span>
+      </label>
       <div className="row">
         <label className="field grow">
           <span className="label">{t.mobile.ram}</span>
@@ -90,6 +120,7 @@ export function MobileDialog({ row, onClose, onSaved }: Props) {
           </select>
         </label>
       </div>
+      <span className="hint">{t.mobile.screen(screenW, screenH, density)}</span>
       {locked && <span className="hint">{t.mobile.closedOnly}</span>}
       <label className="field">
         <span className="label">{t.mobile.notes}</span>

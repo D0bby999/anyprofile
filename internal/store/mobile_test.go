@@ -44,12 +44,17 @@ func TestMobileDevices(t *testing.T) {
 		t.Fatal(err)
 	}
 	got, err := s.GetMobileDevice("a")
-	if err != nil || got.DriverRef != "dir-a" || got.ImageVersion != "img-1" || got.ProxyID != "px" || got.Tags[0] != "vn" {
+	if err != nil || got.DriverRef != "dir-a" || got.ImageVersion != "img-1" || got.ProxyID != "px" || got.Tags[0] != "vn" ||
+		got.Preset != "balanced" || got.ScreenW != 720 || got.ScreenH != 1600 || got.Density != 280 {
 		t.Fatalf("get = %+v, %v", got, err)
 	}
 	got.Name, got.Pinned, got.ProxyID = "Renamed", true, ""
+	got.Preset, got.ScreenW, got.ScreenH, got.Density = "automation", 540, 960, 240
 	if err := s.UpdateMobileDevice(got); err != nil {
 		t.Fatal(err)
+	}
+	if again, err := s.GetMobileDevice("a"); err != nil || again.Preset != "automation" || again.ScreenW != 540 {
+		t.Fatalf("updated automation = %+v, %v", again, err)
 	}
 	for q, want := range map[string]int{"": 2, "renamed": 1, "#2": 1, "vn": 1, "nothing": 0} {
 		ds, err := s.ListMobileDevices(ProfileFilter{Query: q})

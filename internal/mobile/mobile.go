@@ -35,16 +35,21 @@ const (
 type Info struct {
 	DeviceID string `json:"deviceId"`
 	State    State  `json:"state"`
-	Error    string `json:"error,omitempty"` // why the last create, start or stop failed
+	Error    string `json:"error,omitempty"`   // why the last create, start or stop failed
+	ADBPort  int    `json:"adbPort,omitempty"` // where the host reaches this device while running
 }
 
 // Device is what a driver needs to know about a device: no secrets, no database.
 type Device struct {
-	ID    string
-	Name  string
-	Ref   string // the driver's own handle, from Create
-	RAMMB int
-	CPUs  int
+	ID      string
+	Name    string
+	Ref     string // the driver's own handle, from Create
+	RAMMB   int
+	CPUs    int
+	Preset  string // automation, balanced or interactive
+	ScreenW int
+	ScreenH int
+	Density int
 }
 
 // StartOptions is the network a device gets for one run.
@@ -53,6 +58,9 @@ type StartOptions struct {
 	Upstream *netproxy.Upstream
 	Timezone string // IANA, like "Asia/Tokyo"
 	Locale   string // BCP 47, like "ja-JP"
+	// Headless starts QEMU without scrcpy. Agents and scripts do not need a
+	// window; the user's Open button still asks for one.
+	Headless bool
 }
 
 // Launch is what survives the app: enough to find and adopt the device again.
@@ -68,6 +76,19 @@ type Launch struct {
 type Run struct {
 	Launch Launch
 	Done   <-chan struct{}
+}
+
+// Metrics are the timings one device collected during this app run. They are
+// operational signals, not persisted: restarting the app starts them again.
+type Metrics struct {
+	BootMS       int64 `json:"bootMs"`
+	StartMS      int64 `json:"startMs"`
+	ResetMS      int64 `json:"resetMs"`
+	ADBPort      int   `json:"adbPort"`
+	Headless     bool  `json:"headless"`
+	Actions      int   `json:"actions"`
+	LastActionMS int64 `json:"lastActionMs"`
+	SnapshotMS   int64 `json:"snapshotMs"`
 }
 
 // Driver runs one kind of device. Every call may block for as long as the
@@ -98,10 +119,28 @@ type ADBer interface {
 	ADB(d Device) (adb.Client, bool)
 }
 
+// Pauser is a Driver that can freeze a running device without stopping it.
+// A headless device costs no CPU while paused, and resumes on the next action;
+// the guest keeps its RAM and its running apps. Windowed and paused are used
+// to decide whether a device may be paused at all.
+type Pauser interface {
+	Pause(id string) error
+	Resume(id string) error
+	Paused(id string) bool
+	Windowed(id string) bool
+}
+
 // Shower is a Driver whose device shows in a window the user can close
 // while the device keeps running; Show opens it again.
 type Shower interface {
 	Show(ctx context.Context, d Device) error
+}
+
+// Resetter is a Driver that can return a device to a clean state. mode is
+// "soft" (clear third-party app data and go home) or "hard" (restore the
+// device's clean disks; it ends stopped).
+type Resetter interface {
+	Reset(ctx context.Context, d Device, mode string) error
 }
 
 // Component is one download a driver needs: what is installed ("" for
@@ -137,7 +176,12 @@ type Launches interface {
 	ListMobileLaunches() ([]store.MobileLaunch, error)
 }
 
-var ErrBusy = apperr.New("mobile_busy", "the device is starting, stopping or being created; wait for it")
+var (
+	ErrBusy       = apperr.New("mobile_busy", "the device is starting, stopping or being created; wait for it")
+	ErrNotRunning = apperr.New("mobile_not_running", "open the device first")
+	ErrNoClean    = apperr.New("mobile_no_clean_state", "this device has no clean state to restore; back it up or create it again")
+	ErrBadReset   = apperr.New("mobile_bad_reset", "reset mode is soft or hard")
+)
 
 type Manager struct {
 	drv      Driver
@@ -260,10 +304,26 @@ func (m *Manager) running(id string, run Run) {
 		m.log.Warn("record mobile launch", "device", id, "err", err)
 	}
 	m.set(id, Running, "", run.Done)
+	m.setADBPort(id, l.ADBPort)
 	go func() {
 		<-run.Done
 		m.finish(id, run.Done)
 	}()
+}
+
+func (m *Manager) setADBPort(id string, port int) {
+	m.mu.Lock()
+	e, ok := m.devs[id]
+	if ok && e.info.State == Running && e.info.ADBPort != port {
+		e.info.ADBPort = port
+		info := e.info
+		m.mu.Unlock()
+		if m.onChange != nil {
+			m.onChange(info)
+		}
+		return
+	}
+	m.mu.Unlock()
 }
 
 // finish marks the run that done belongs to as stopped, once. A later run

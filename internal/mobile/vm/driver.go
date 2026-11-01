@@ -47,6 +47,22 @@ const (
 	screenW, screenH, density = 720, 1600, 280
 )
 
+// screenOf returns a device's Android display override; zero fields mean the
+// image's default.
+func screenOf(d mobile.Device) (w, h, dens int) {
+	w, h, dens = d.ScreenW, d.ScreenH, d.Density
+	if w <= 0 {
+		w = screenW
+	}
+	if h <= 0 {
+		h = screenH
+	}
+	if dens <= 0 {
+		dens = density
+	}
+	return w, h, dens
+}
+
 // Driver runs the VMs of one computer.
 type Driver struct {
 	runtime string // the mobile runtime folder (see Runtime)
@@ -55,8 +71,11 @@ type Driver struct {
 	cat     *engine.Catalog // the image's releases
 	offered *engine.Catalog // the runtime's, as Pro offers them (OfferRuntime)
 
-	mu    sync.Mutex
-	procs map[string]*proc
+	mu        sync.Mutex
+	procs     map[string]*proc
+	metricsMu sync.Mutex
+	metrics   map[string]*mobile.Metrics
+	fastStart bool // save RAM on Stop and thaw on Start
 }
 
 // proc is a running VM.
@@ -68,14 +87,70 @@ type proc struct {
 	name   string
 	rt     Runtime
 	scrcpy *exec.Cmd
+	paused bool          // QMP stopped the vCPUs
 	exited chan struct{} // QEMU is gone
 }
 
 func New(runtimeDir, devicesDir string, log *slog.Logger) *Driver {
-	return &Driver{runtime: runtimeDir, devices: devicesDir, log: log, offered: engine.NewCatalog(""), procs: map[string]*proc{}}
+	return &Driver{runtime: runtimeDir, devices: devicesDir, log: log, offered: engine.NewCatalog(""),
+		procs: map[string]*proc{}, metrics: map[string]*mobile.Metrics{}, fastStart: true}
+}
+
+// SetFastStart turns the saved-RAM state on or off. Turning it off deletes
+// every saved state: they are large, and the user asked for the disk back.
+func (v *Driver) SetFastStart(on bool) {
+	v.mu.Lock()
+	v.fastStart = on
+	v.mu.Unlock()
+	if !on {
+		v.clearRAM()
+	}
+}
+
+// FastStart reports whether Stop saves the RAM state.
+func (v *Driver) FastStart() bool {
+	v.mu.Lock()
+	defer v.mu.Unlock()
+	return v.fastStart
+}
+
+func (v *Driver) clearRAM() {
+	entries, err := os.ReadDir(v.devices)
+	if err != nil {
+		return
+	}
+	for _, e := range entries {
+		if !e.IsDir() {
+			continue
+		}
+		dir := filepath.Join(v.devices, e.Name())
+		os.Remove(filepath.Join(dir, ramStateFile))
+		os.Remove(filepath.Join(dir, ramMetaFile))
+	}
 }
 
 func (v *Driver) Name() string { return "vm" }
+
+func (v *Driver) record(id string, fn func(*mobile.Metrics)) {
+	v.metricsMu.Lock()
+	defer v.metricsMu.Unlock()
+	m := v.metrics[id]
+	if m == nil {
+		m = &mobile.Metrics{}
+		v.metrics[id] = m
+	}
+	fn(m)
+}
+
+// Metrics returns what this app run measured for one device.
+func (v *Driver) Metrics(id string) mobile.Metrics {
+	v.metricsMu.Lock()
+	defer v.metricsMu.Unlock()
+	if m := v.metrics[id]; m != nil {
+		return *m
+	}
+	return mobile.Metrics{}
+}
 
 func (v *Driver) Available() error {
 	_, err := Locate(v.runtime)
@@ -114,7 +189,22 @@ func macFor(id string) string {
 	return fmt.Sprintf("52:54:00:%02x:%02x:%02x", h[0], h[1], h[2])
 }
 
+// qemuScreenOf keeps QEMU at the image's known-good 720x1600. Android 16 does
+// not always finish booting when the virtual GPU starts at a smaller mode;
+// Start applies the preset's smaller display with wm size after boot instead.
+func qemuScreenOf(d mobile.Device) (w, h int) {
+	w, h = screenW, screenH
+	if d.ScreenW > w {
+		w = d.ScreenW
+	}
+	if d.ScreenH > h {
+		h = d.ScreenH
+	}
+	return w, h
+}
+
 func qemuArgs(rt Runtime, d mobile.Device, mac, netSock, qmpSock string) []string {
+	w, h := qemuScreenOf(d)
 	return []string{
 		"-name", "anyprofile-" + d.ID,
 		"-machine", "virt", "-accel", "hvf", "-cpu", "host",
@@ -128,7 +218,7 @@ func qemuArgs(rt Runtime, d mobile.Device, mac, netSock, qmpSock string) []strin
 		"-device", "virtio-blk-pci,drive=vd1,bootindex=1",
 		"-netdev", "stream,id=net0,server=off,addr.type=unix,addr.path=" + optEscape(netSock) + ",reconnect-ms=1000",
 		"-device", "virtio-net-pci,netdev=net0,mac=" + mac + ",romfile=",
-		"-device", fmt.Sprintf("virtio-gpu-pci,xres=%d,yres=%d", screenW, screenH),
+		"-device", fmt.Sprintf("virtio-gpu-pci,xres=%d,yres=%d", w, h),
 		"-device", "virtio-rng-pci",
 		"-device", "qemu-xhci", "-device", "usb-tablet", "-device", "usb-kbd",
 		"-qmp", "unix:" + optEscape(qmpSock) + ",server=on,wait=off",
@@ -155,7 +245,14 @@ func dialerFor(up *netproxy.Upstream) vnet.Dialer {
 }
 
 // boot starts QEMU on its network and waits for Android.
-func (v *Driver) boot(ctx context.Context, rt Runtime, d mobile.Device, dial vnet.Dialer, timeout time.Duration) (*proc, error) {
+func (v *Driver) boot(ctx context.Context, rt Runtime, d mobile.Device, dial vnet.Dialer, timeout time.Duration, extra ...string) (*proc, error) {
+	return v.bootWith(ctx, rt, d, dial, timeout, false, extra...)
+}
+
+// bootWith is boot with an optional thaw: a QEMU started with -incoming loads
+// the migration stream paused (the state was saved from a paused guest), so it
+// needs one QMP cont before adb can answer.
+func (v *Driver) bootWith(ctx context.Context, rt Runtime, d mobile.Device, dial vnet.Dialer, timeout time.Duration, thaw bool, extra ...string) (*proc, error) {
 	netSock, qmpSock, err := sockets(d.ID)
 	if err != nil {
 		return nil, err
@@ -176,7 +273,7 @@ func (v *Driver) boot(ctx context.Context, rt Runtime, d mobile.Device, dial vne
 		return nil, err
 	}
 	os.Remove(qmpSock)
-	cmd := exec.Command(rt.QEMU, qemuArgs(rt, d, macFor(d.ID), netSock, qmpSock)...)
+	cmd := exec.Command(rt.QEMU, append(qemuArgs(rt, d, macFor(d.ID), netSock, qmpSock), extra...)...)
 	cmd.Dir, cmd.Stdout, cmd.Stderr = dir, logf, logf
 	cmd.SysProcAttr = launcher.DetachedAttr()
 	if err := cmd.Start(); err != nil {
@@ -190,8 +287,15 @@ func (v *Driver) boot(ctx context.Context, rt Runtime, d mobile.Device, dial vne
 		logf.Close()
 		close(p.exited)
 	}()
+	bootStarted := time.Now()
 	bctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
+	if thaw {
+		if err := v.waitIncoming(bctx, p); err != nil {
+			v.kill(p)
+			return nil, err
+		}
+	}
 	if err := p.adb.WaitBoot(bctx, p.exited); err != nil {
 		v.kill(p)
 		if tail := logTail(filepath.Join(dir, "qemu.log")); tail != "" {
@@ -199,6 +303,10 @@ func (v *Driver) boot(ctx context.Context, rt Runtime, d mobile.Device, dial vne
 		}
 		return nil, err
 	}
+	v.record(d.ID, func(m *mobile.Metrics) {
+		m.BootMS = time.Since(bootStarted).Milliseconds()
+		m.ADBPort = port
+	})
 	return p, nil
 }
 
@@ -282,6 +390,9 @@ func (v *Driver) Create(ctx context.Context, d mobile.Device) (string, string, e
 	if err != nil {
 		return "", "", err
 	}
+	if err := v.saveClean(d); err != nil {
+		return "", "", fmt.Errorf("save clean state: %w", err)
+	}
 	ok = true
 	return d.ID, rt.ImageVersion, nil
 }
@@ -306,22 +417,31 @@ func provision(ctx context.Context, a adb.Client) error {
 }
 
 // Start boots the device on its proxy, sets its timezone and language, and
-// opens its window.
+// opens its window unless the caller asked for a headless start.
 func (v *Driver) Start(ctx context.Context, d mobile.Device, o mobile.StartOptions) (mobile.Run, error) {
+	started := time.Now()
 	rt, err := Locate(v.runtime)
 	if err != nil {
 		return mobile.Run{}, err
 	}
-	p, err := v.boot(ctx, rt, d, dialerFor(o.Upstream), bootTimeout)
+	p, err := v.restore(ctx, rt, d, dialerFor(o.Upstream))
 	if err != nil {
-		return mobile.Run{}, err
+		if !errors.Is(err, errNoRAM) {
+			v.log.Warn("fast start", "device", d.ID, "err", err)
+		}
+		p, err = v.boot(ctx, rt, d, dialerFor(o.Upstream), bootTimeout)
+		if err != nil {
+			return mobile.Run{}, err
+		}
 	}
 	if err := setClock(ctx, p.adb, time.Now()); err != nil {
 		v.log.Warn("mobile clock", "device", d.ID, "err", err)
 	}
-	// Set at every start: devices made at 1080x2400 kept density 420, too large now.
-	if _, err := p.adb.Shell(ctx, "wm density "+strconv.Itoa(density)); err != nil {
-		v.log.Warn("mobile density", "device", d.ID, "err", err)
+	if err := applyDisplay(ctx, p.adb, d); err != nil {
+		v.log.Warn("mobile display", "device", d.ID, "err", err)
+	}
+	if err := applyAutomationSettings(ctx, p.adb, o.Headless); err != nil {
+		v.log.Warn("mobile automation settings", "device", d.ID, "err", err)
 	}
 	// Devices made before the lock screen was turned off at setup still show it.
 	if _, err := p.adb.Shell(ctx, "wm dismiss-keyguard"); err != nil {
@@ -331,8 +451,52 @@ func (v *Driver) Start(ctx context.Context, d mobile.Device, o mobile.StartOptio
 		v.log.Warn("mobile locale", "device", d.ID, "err", err)
 	}
 	st, _ := launcher.ProcessStartTime(p.pid)
-	v.showOn(p)
-	return v.track(d.ID, p, st), nil
+	if !o.Headless {
+		v.showOn(ctx, d, p)
+	}
+	run := v.track(d.ID, p, st)
+	v.record(d.ID, func(m *mobile.Metrics) {
+		m.StartMS = time.Since(started).Milliseconds()
+		m.Headless = o.Headless
+		m.ADBPort = p.adb.Port
+	})
+	return run, nil
+}
+
+// applyDisplay applies the device's screen preset. The image is 720x1600;
+// wm overrides let an automation device run a smaller, cheaper display.
+func applyDisplay(ctx context.Context, a adb.Client, d mobile.Device) error {
+	w, h, dens := screenOf(d)
+	if _, err := a.Shell(ctx, fmt.Sprintf("wm size %dx%d", w, h)); err != nil {
+		return err
+	}
+	if _, err := a.Shell(ctx, "wm density "+strconv.Itoa(dens)); err != nil {
+		return err
+	}
+	return nil
+}
+
+// applyAutomationSettings trims animations. A headless device's screen turns
+// off after 15 s, because a lit screen composites frames for nobody; a device
+// with a window stays awake. Control.wake turns the screen back on before a
+// screenshot or a tap.
+func applyAutomationSettings(ctx context.Context, a adb.Client, headless bool) error {
+	timeout, stayon := "2147483647", "true"
+	if headless {
+		timeout, stayon = "15000", "false"
+	}
+	for _, line := range []string{
+		"settings put global window_animation_scale 0",
+		"settings put global transition_animation_scale 0",
+		"settings put global animator_duration_scale 0",
+		"settings put system screen_off_timeout " + timeout,
+		"svc power stayon " + stayon,
+	} {
+		if _, err := a.Shell(ctx, line); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // track registers a running VM and returns its Run; Done closes once QEMU
@@ -368,7 +532,17 @@ func (v *Driver) Stop(ctx context.Context, d mobile.Device) error {
 	if p == nil {
 		return nil
 	}
+	if p.paused {
+		_ = v.Resume(d.ID)
+	}
 	v.closeWindow(p)
+	if v.FastStart() {
+		if err := v.saveRAM(ctx, d, p); err == nil {
+			return nil
+		} else {
+			v.log.Warn("save RAM state", "device", d.ID, "err", err)
+		}
+	}
 	v.powerdown(ctx, p)
 	return nil
 }
@@ -388,11 +562,92 @@ func (v *Driver) Show(ctx context.Context, d mobile.Device) error {
 	if p == nil {
 		return errors.New("the device is not running")
 	}
-	v.showOn(p)
+	if p.paused {
+		if err := v.Resume(d.ID); err != nil {
+			return err
+		}
+	}
+	v.showOn(ctx, d, p)
 	return nil
 }
 
-func (v *Driver) showOn(p *proc) {
+// Pause freezes the device's vCPUs with QMP stop. The guest keeps its RAM and
+// its apps; the host stops spending CPU on an idle Android. Resume thaws it.
+func (v *Driver) Pause(id string) error {
+	v.mu.Lock()
+	p := v.procs[id]
+	v.mu.Unlock()
+	if p == nil {
+		return errors.New("the device is not running")
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if _, err := qmpCall(ctx, p.qmp, "stop", nil); err != nil {
+		return err
+	}
+	v.mu.Lock()
+	p.paused = true
+	v.mu.Unlock()
+	return nil
+}
+
+// Resume thaws a paused device. adb may have dropped the connection while the
+// guest was frozen, so it reconnects best-effort.
+func (v *Driver) Resume(id string) error {
+	v.mu.Lock()
+	p := v.procs[id]
+	v.mu.Unlock()
+	if p == nil {
+		return errors.New("the device is not running")
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if _, err := qmpCall(ctx, p.qmp, "cont", nil); err != nil {
+		return err
+	}
+	v.mu.Lock()
+	p.paused = false
+	v.mu.Unlock()
+	p.adb.Connect(ctx)
+	return nil
+}
+
+// Paused reports whether the device's vCPUs are frozen.
+func (v *Driver) Paused(id string) bool {
+	v.mu.Lock()
+	defer v.mu.Unlock()
+	p := v.procs[id]
+	return p != nil && p.paused
+}
+
+// Windowed reports whether the device has a scrcpy window open.
+func (v *Driver) Windowed(id string) bool {
+	v.mu.Lock()
+	defer v.mu.Unlock()
+	p := v.procs[id]
+	return p != nil && p.scrcpy != nil
+}
+
+// openWindows counts the device windows on screen: what a new one steps away
+// from. openWindowsLocked is the same for a caller that already holds the lock.
+func (v *Driver) openWindows() int {
+	v.mu.Lock()
+	defer v.mu.Unlock()
+	return v.openWindowsLocked()
+}
+
+func (v *Driver) openWindowsLocked() int {
+	n := 0
+	for _, p := range v.procs {
+		if p.scrcpy != nil {
+			n++
+		}
+	}
+	return n
+}
+
+func (v *Driver) showOn(ctx context.Context, d mobile.Device, p *proc) {
+	setAwake(ctx, p.adb, true)
 	v.mu.Lock()
 	defer v.mu.Unlock()
 	if p.scrcpy != nil && p.scrcpy.ProcessState == nil {
@@ -400,14 +655,79 @@ func (v *Driver) showOn(p *proc) {
 			return // already open
 		}
 	}
-	cmd := exec.Command(p.rt.Scrcpy, "-s", p.adb.Serial(), "--window-title="+p.name, "--no-audio")
+	// 30 fps and 4 Mbps keep the host cool: the guest has no GPU, so every
+	// frame is encoded and decoded on the CPU. A phone at 720x1600 needs no
+	// more to look right. The geometry is the last one seen for this device;
+	// a device that never showed a window steps away from the ones already
+	// open, so two of them do not sit on top of each other.
+	ws, ok := v.loadWindow(d)
+	if !ok {
+		ws = defaultWindow(v.openWindowsLocked())
+	}
+	// Only the position is passed back: CGWindow bounds include the title bar,
+	// so feeding the saved height as scrcpy's content height would grow the
+	// window on every open. scrcpy sizes it from the 720x1600 video.
+	args := []string{"-s", p.adb.Serial(), "--window-title=" + p.name,
+		"--no-audio", "--max-fps=30", "--video-bit-rate=4M",
+		fmt.Sprintf("--window-x=%d", ws.X), fmt.Sprintf("--window-y=%d", ws.Y)}
+	if ws.OnTop {
+		args = append(args, "--always-on-top")
+	}
+	cmd := exec.Command(p.rt.Scrcpy, args...)
 	cmd.Env = append(p.adb.Env(), "ADB="+p.rt.ADB, "SCRCPY_SERVER_PATH="+p.rt.ScrcpyServer)
 	if err := cmd.Start(); err != nil {
+		setAwake(ctx, p.adb, false) // no window: do not leave the screen on
 		v.log.Warn("scrcpy", "err", err)
 		return
 	}
 	p.scrcpy = cmd
-	go func() { _ = cmd.Wait() }()
+	go func() {
+		done := make(chan struct{})
+		go func() { _ = cmd.Wait(); close(done) }()
+		tick := time.NewTicker(2 * time.Second)
+		defer tick.Stop()
+		for {
+			select {
+			case <-done:
+				v.mu.Lock()
+				closed := p.scrcpy == cmd
+				if closed {
+					p.scrcpy = nil
+				}
+				v.mu.Unlock()
+				if !closed {
+					return // Stop closed it on purpose; the device is going away.
+				}
+				// The user closed the window: the device keeps running for
+				// agents, so put it back into the cheap headless power state.
+				c, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+				setAwake(c, p.adb, false)
+				cancel()
+				return
+			case <-tick.C:
+				if r, ok := scrcpyWindow(cmd.Process.Pid); ok {
+					ws.X, ws.Y, ws.W, ws.H = r.X, r.Y, r.W, r.H
+					_ = v.saveWindow(d, ws)
+				}
+			}
+		}
+	}()
+}
+
+// setAwake switches between the windowed power state (screen on forever) and
+// the headless one (screen off after 15 s). It is best-effort: a device that
+// is stopping may not answer.
+func setAwake(ctx context.Context, a adb.Client, on bool) {
+	c, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+	if on {
+		_, _ = a.Shell(c, "svc power stayon true")
+		_, _ = a.Shell(c, "settings put system screen_off_timeout 2147483647")
+		_, _ = a.Shell(c, "input keyevent KEYCODE_WAKEUP")
+		return
+	}
+	_, _ = a.Shell(c, "svc power stayon false")
+	_, _ = a.Shell(c, "settings put system screen_off_timeout 15000")
 }
 
 func (v *Driver) closeWindow(p *proc) {
@@ -418,6 +738,99 @@ func (v *Driver) closeWindow(p *proc) {
 	if c != nil && c.Process != nil {
 		_ = c.Process.Signal(syscall.SIGTERM)
 	}
+}
+
+// cleanDir holds the disks a hard reset restores. They are APFS clones, so
+// keeping them costs almost no space until the device writes.
+func (v *Driver) cleanDir(d mobile.Device) string { return filepath.Join(v.dir(d), "clean") }
+
+func (v *Driver) saveClean(d mobile.Device) error {
+	clean := v.cleanDir(d)
+	if err := os.RemoveAll(clean); err != nil {
+		return err
+	}
+	if err := os.MkdirAll(clean, 0o700); err != nil {
+		return err
+	}
+	for _, f := range imageFiles {
+		if err := cloneOrCopy(filepath.Join(v.dir(d), f), filepath.Join(clean, f)); err != nil {
+			os.RemoveAll(clean)
+			return err
+		}
+	}
+	return nil
+}
+
+// Reset returns a device to a clean state. soft clears third-party app data
+// on a running device; hard stops it and restores the disks saved after
+// provisioning, leaving it stopped for the caller to open.
+func (v *Driver) Reset(ctx context.Context, d mobile.Device, mode string) error {
+	started := time.Now()
+	switch mode {
+	case "soft":
+		p := v.proc(d.ID)
+		if p == nil {
+			return mobile.ErrNotRunning
+		}
+		out, err := p.adb.Shell(ctx, "pm list packages -3")
+		if err != nil {
+			return err
+		}
+		for _, line := range strings.Split(out, "\n") {
+			pkg := strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(line), "package:"))
+			if !validPackage(pkg) {
+				continue
+			}
+			if _, err := p.adb.Shell(ctx, "pm clear "+pkg); err != nil {
+				v.log.Warn("mobile soft reset", "device", d.ID, "package", pkg, "err", err)
+			}
+		}
+		if _, err := p.adb.Shell(ctx, "input keyevent HOME"); err != nil {
+			return err
+		}
+	case "hard":
+		if v.proc(d.ID) != nil {
+			if err := v.Stop(ctx, d); err != nil {
+				return err
+			}
+		}
+		clean := v.cleanDir(d)
+		for _, f := range imageFiles {
+			if !exists(filepath.Join(clean, f)) {
+				return mobile.ErrNoClean
+			}
+		}
+		for _, f := range imageFiles {
+			dst := filepath.Join(v.dir(d), f)
+			tmp := dst + ".reset"
+			os.Remove(tmp)
+			if err := cloneOrCopy(filepath.Join(clean, f), tmp); err != nil {
+				os.Remove(tmp)
+				return err
+			}
+			if err := os.Rename(tmp, dst); err != nil {
+				return err
+			}
+		}
+	default:
+		return mobile.ErrBadReset
+	}
+	v.dropRAM(d) // the disks changed; a saved RAM state no longer matches them
+	v.record(d.ID, func(m *mobile.Metrics) { m.ResetMS = time.Since(started).Milliseconds() })
+	return nil
+}
+
+func validPackage(s string) bool {
+	if s == "" {
+		return false
+	}
+	for _, r := range s {
+		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '.' || r == '_' {
+			continue
+		}
+		return false
+	}
+	return true
 }
 
 func (v *Driver) Delete(ctx context.Context, d mobile.Device) error {
@@ -466,6 +879,7 @@ func (v *Driver) Restore(ctx context.Context, d mobile.Device, dir string) error
 			return err
 		}
 	}
+	v.dropRAM(d) // restored disks do not match a saved RAM state
 	return nil
 }
 
@@ -493,6 +907,11 @@ func (v *Driver) Adopt(ctx context.Context, d mobile.Device, l mobile.Launch, up
 		return mobile.Run{}, err
 	}
 	p := &proc{pid: l.PID, qmp: qmpSock, net: n, adb: adb.Client{Bin: rt.ADB, Port: port}, name: d.Name, rt: rt, exited: make(chan struct{})}
+	// The app may have frozen the device just before it crashed; remember
+	// that, or the first adb call would hang until a timeout.
+	if st, err := qmpStatus(ctx, qmpSock); err == nil && st == "paused" {
+		p.paused = true
+	}
 	go func() { // not our child: watch the pid
 		for launcher.SameProcess(l.PID, l.PIDStartTime) {
 			time.Sleep(2 * time.Second)

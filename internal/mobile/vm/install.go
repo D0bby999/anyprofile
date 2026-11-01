@@ -16,16 +16,16 @@ import (
 	"github.com/D0bby999/anyprofile/internal/mobile"
 )
 
-// The runtime comes in two downloads. "android-vm" is QEMU as AnyProfile
-// builds it (android-vm/ in the Pro repo), offered by the license server to
+// The runtime comes in two downloads. "anymobile" is QEMU as AnyProfile
+// builds it (anymobile/ in the Pro repo), offered by the license server to
 // a key that may use Pro, signed with the Pro key (internal/pro): the service
-// passes the offer on with OfferRuntime. "android-vm-image" is LineageOS as
+// passes the offer on with OfferRuntime. "anymobile-image" is LineageOS as
 // jqssun/android-lineage-qemu publishes it, never redistributed by
 // AnyProfile: the app downloads it from there and checks the pinned hashes.
 // How to update either: docs/mobile-maintenance.md.
 const (
-	RuntimeEngine = "android-vm"
-	ImageEngine   = "android-vm-image"
+	RuntimeEngine = "anymobile"
+	ImageEngine   = "anymobile-image"
 	// The image unpacks as a UTM bundle; the disks are in its Data folder.
 	utmData = "LineageOS_on_arm64.utm/Data"
 )
@@ -34,7 +34,7 @@ const (
 // 20261019, release v2026.10.18: run end to end on an M2 on 2026-10-23. The
 // zip's hash matches GitHub's digest for the asset, and `gh attestation
 // verify --repo jqssun/android-lineage-qemu` passed. "chromium" carries the
-// Android version, the field every release needs. scripts/pin-android-vm-image.sh
+// Android version, the field every release needs. scripts/pin-anymobile-image.sh
 // prints a newer entry; the steps are in docs/mobile-maintenance.md.
 func ImageBuiltin() []engine.Release {
 	return []engine.Release{{
@@ -98,7 +98,7 @@ func (v *Driver) InstallStatus() mobile.InstallStatus {
 	return st
 }
 
-var errNoRelease = apperr.New("android_runtime_unavailable", "the Android VM runtime is not published for this computer yet")
+var errNoRelease = apperr.New("anymobile_runtime_unavailable", "the Mobile runtime is not published for this computer yet")
 
 // Install downloads what is missing: the runtime, then the image. A runtime
 // or an image already installed is kept, so an update is a new version only.

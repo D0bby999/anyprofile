@@ -53,19 +53,91 @@ type Device struct {
 
 	mu   sync.Mutex
 	refs map[string]Rect
+
+	shMu      sync.Mutex
+	sh        *adb.Session
+	metricsMu sync.Mutex
+	metrics   mobile.Metrics
+
+	wakeMu sync.Mutex
+	wokeAt time.Time
+}
+
+func (d *Device) note(start time.Time) {
+	d.metricsMu.Lock()
+	defer d.metricsMu.Unlock()
+	d.metrics.Actions++
+	d.metrics.LastActionMS = time.Since(start).Milliseconds()
+}
+
+// Metrics reports this control handle's action timings.
+func (d *Device) Metrics() mobile.Metrics {
+	d.metricsMu.Lock()
+	defer d.metricsMu.Unlock()
+	return d.metrics
 }
 
 var errNoRef = apperr.New("mobile_ref", "that ref is not on the screen any more; take a new device_snapshot")
 
+// wake turns the screen on before an action that needs it. A headless device's
+// screen turns off after 15 s (the VM driver sets that); a sleeping Android
+// still answers adb, but a screenshot would be black and a tap could land on
+// the lock screen. The 4 s window keeps a burst of taps from paying the
+// keyevent every time; the screen timeout is 15 s, so the next burst after a
+// pause wakes it again.
+func (d *Device) wake(ctx context.Context) {
+	d.wakeMu.Lock()
+	if time.Since(d.wokeAt) < 4*time.Second {
+		d.wakeMu.Unlock()
+		return
+	}
+	d.wokeAt = time.Now()
+	d.wakeMu.Unlock()
+	_, _ = d.shell(ctx, "input keyevent KEYCODE_WAKEUP")
+}
+
 func (d *Device) shell(ctx context.Context, line string) (string, error) {
 	ctx, cancel := context.WithTimeout(ctx, cmdTimout)
 	defer cancel()
+	d.shMu.Lock()
+	defer d.shMu.Unlock()
+	if d.sh == nil {
+		if s, err := d.ADB.OpenShell(ctx); err == nil {
+			d.sh = s
+		}
+	}
+	if d.sh != nil {
+		out, err := d.sh.Run(ctx, line)
+		if err == nil || strings.HasPrefix(err.Error(), "shell exit ") {
+			return out, err
+		}
+		d.sh.Close()
+		d.sh = nil
+	}
 	return d.ADB.Shell(ctx, line)
+}
+
+// Close releases the persistent shell; the next action opens a new one.
+func (d *Device) Close() {
+	d.shMu.Lock()
+	defer d.shMu.Unlock()
+	if d.sh != nil {
+		d.sh.Close()
+		d.sh = nil
+	}
 }
 
 // Snapshot is the screen as an outline. A screen that never settles (a video
 // feed) cannot be dumped; the error says to use a screenshot instead.
 func (d *Device) Snapshot(ctx context.Context) (string, error) {
+	d.wake(ctx)
+	start := time.Now()
+	defer func() {
+		d.metricsMu.Lock()
+		d.metrics.Actions++
+		d.metrics.SnapshotMS = time.Since(start).Milliseconds()
+		d.metricsMu.Unlock()
+	}()
 	out, err := d.shell(ctx, "uiautomator dump "+dumpPath+" >/dev/null 2>&1 && cat "+dumpPath+"; rm -f "+dumpPath)
 	if err != nil || !strings.Contains(out, "<hierarchy") {
 		return "", apperr.New("mobile_snapshot", "the screen keeps moving (like a video feed) and cannot be read as text; use device_screenshot and tap by x and y")
@@ -108,6 +180,9 @@ func pointIn(r Rect) (int, int) {
 
 // Tap touches ref, or x and y when ref is "". A touch lasts 80-140 ms.
 func (d *Device) Tap(ctx context.Context, ref string, x, y int) error {
+	d.wake(ctx)
+	start := time.Now()
+	defer d.note(start)
 	if ref != "" {
 		r, err := d.rect(ref)
 		if err != nil {
@@ -149,6 +224,9 @@ func (d *Device) screen(ctx context.Context) (int, int, error) {
 // Swipe moves a finger in a direction (up scrolls the content up, as on a
 // feed) or between two points, in 250-600 ms.
 func (d *Device) Swipe(ctx context.Context, direction string, x1, y1, x2, y2 int) error {
+	d.wake(ctx)
+	start := time.Now()
+	defer d.note(start)
 	if direction != "" {
 		w, h, err := d.screen(ctx)
 		if err != nil {
@@ -178,6 +256,9 @@ var keycodes = map[string]int{"back": 4, "home": 3, "recents": 187, "enter": 66,
 
 // PressKey presses one of keycodes' keys.
 func (d *Device) PressKey(ctx context.Context, key string) error {
+	d.wake(ctx)
+	start := time.Now()
+	defer d.note(start)
 	code, ok := keycodes[strings.ToLower(key)]
 	if !ok {
 		return apperr.New("mobile_key", "key is back, home, recents, enter, delete, tab, search, menu, volume_up or volume_down")
@@ -190,6 +271,9 @@ func (d *Device) PressKey(ctx context.Context, key string) error {
 // takes it base64 encoded: no character can reach the shell. The input method
 // the user had comes back afterwards.
 func (d *Device) Type(ctx context.Context, ref, text string, submit bool) error {
+	d.wake(ctx)
+	start := time.Now()
+	defer d.note(start)
 	if ref != "" {
 		if err := d.Tap(ctx, ref, 0, 0); err != nil {
 			return err
@@ -257,6 +341,7 @@ func (d *Device) ensureKeyboard(ctx context.Context) error {
 
 // Screenshot is the screen as a JPEG.
 func (d *Device) Screenshot(ctx context.Context) ([]byte, error) {
+	d.wake(ctx)
 	ctx, cancel := context.WithTimeout(ctx, cmdTimout)
 	defer cancel()
 	raw, err := d.ADB.Output(ctx, "exec-out", "screencap", "-p")
@@ -291,6 +376,7 @@ func (d *Device) Apps(ctx context.Context) ([]string, error) {
 
 // Launch opens an app's main screen.
 func (d *Device) Launch(ctx context.Context, pkg string) error {
+	d.wake(ctx)
 	if !mobile.ValidPackage(pkg) {
 		return apperr.New("mobile_package", "that is not an app package name; see device_list_apps")
 	}
@@ -310,6 +396,7 @@ func (d *Device) OpenURL(ctx context.Context, raw string) error {
 		strings.ContainsAny(raw, "'\\") || strings.IndexFunc(raw, func(r rune) bool { return r < 0x20 || r == 0x7f }) >= 0 {
 		return apperr.New("mobile_url", "give an http or https address")
 	}
+	d.wake(ctx)
 	_, err = d.shell(ctx, "am start -a android.intent.action.VIEW -d '"+raw+"' >/dev/null")
 	return err
 }

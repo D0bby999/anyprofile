@@ -3,7 +3,7 @@
 //go:build darwin && vmintegration
 
 // Runs a real VM: go test -tags vmintegration -run TestVM -v -timeout 30m ./internal/mobile/vm/
-// with ANYPROFILE_VM_RUNTIME set to a runtime laid out by scripts/dev-android-vm-runtime.sh.
+// with ANYPROFILE_MOBILE_RUNTIME set to a runtime laid out by scripts/dev-anymobile-runtime.sh.
 
 package vm
 
@@ -70,14 +70,28 @@ func (p *connectProxy) saw(prefix string) bool {
 	return false
 }
 
-func TestVM(t *testing.T) {
-	rtDir := os.Getenv("ANYPROFILE_VM_RUNTIME")
-	if rtDir == "" {
-		t.Skip("ANYPROFILE_VM_RUNTIME not set")
+// integrationRuntime is the runtime under test; the old variable name is
+// still read so an existing dev shell keeps working after the AnyMobile rename.
+func integrationRuntime(t *testing.T) string {
+	t.Helper()
+	rt := os.Getenv("ANYPROFILE_MOBILE_RUNTIME")
+	if rt == "" {
+		rt = os.Getenv("ANYPROFILE_VM_RUNTIME")
 	}
+	if rt == "" {
+		t.Skip("ANYPROFILE_MOBILE_RUNTIME not set")
+	}
+	return rt
+}
+
+func TestVM(t *testing.T) {
+	rtDir := integrationRuntime(t)
 	ctx := context.Background()
 	log := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelWarn}))
-	devs := os.Getenv("ANYPROFILE_VM_DEVICES") // kept for reading qemu.log after a failure
+	devs := os.Getenv("ANYPROFILE_MOBILE_DEVICES")
+	if devs == "" {
+		devs = os.Getenv("ANYPROFILE_VM_DEVICES")
+	} // kept for reading qemu.log after a failure
 	if devs == "" {
 		devs = t.TempDir()
 	}
@@ -141,8 +155,12 @@ func TestVM(t *testing.T) {
 	if got := sh("cmd locale get-app-locales " + browserPkg); !strings.Contains(got, "ja-JP") {
 		t.Errorf("browser locale = %q", got)
 	}
-	if os.Getenv("ANYPROFILE_VM_EXPLORE") != "" {
-		for _, l := range strings.Split(os.Getenv("ANYPROFILE_VM_EXPLORE"), ";;") {
+	explore := os.Getenv("ANYPROFILE_MOBILE_EXPLORE")
+	if explore == "" {
+		explore = os.Getenv("ANYPROFILE_VM_EXPLORE")
+	}
+	if explore != "" {
+		for _, l := range strings.Split(explore, ";;") {
 			if strings.HasPrefix(l, "ADB:") {
 				c, cancel := context.WithTimeout(ctx, 60*time.Second)
 				out, err := a.Run(c, strings.Fields(l[4:])...)
@@ -239,5 +257,77 @@ func TestVM(t *testing.T) {
 		if _, err := os.Stat(filepath.Join(bk, f)); err != nil {
 			t.Error(err)
 		}
+	}
+}
+
+// A headless start must not spawn scrcpy, while ADB still works. Agents use
+// this path so a machine can run several devices without encoding windows.
+func TestVMHeadless(t *testing.T) {
+	rtDir := integrationRuntime(t)
+	ctx := context.Background()
+	log := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelWarn}))
+	drv := New(rtDir, t.TempDir(), log)
+	d := mobile.Device{ID: "headless", Name: "Headless", RAMMB: 2048, CPUs: 2, Preset: "automation",
+		ScreenW: 540, ScreenH: 960, Density: 240}
+	ref, _, err := drv.Create(ctx, d)
+	if err != nil {
+		t.Fatal(err)
+	}
+	d.Ref = ref
+	defer drv.Delete(ctx, d)
+	if _, err := drv.Start(ctx, d, mobile.StartOptions{Headless: true, Timezone: "UTC", Locale: "en-US"}); err != nil {
+		t.Fatal(err)
+	}
+	defer drv.Stop(ctx, d)
+	p := drv.proc(d.ID)
+	if p == nil || p.scrcpy != nil {
+		t.Fatalf("headless start left a scrcpy window: %+v", p)
+	}
+	out, err := p.adb.Shell(ctx, "wm size")
+	if err != nil || !strings.Contains(out, "540x960") {
+		t.Fatalf("wm size = %q, err = %v", out, err)
+	}
+}
+
+// A hard reset restores the disks saved after provisioning and leaves the
+// device stopped; a file written to /sdcard afterwards is gone.
+func TestVMHardReset(t *testing.T) {
+	rtDir := integrationRuntime(t)
+	ctx := context.Background()
+	log := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelWarn}))
+	drv := New(rtDir, t.TempDir(), log)
+	d := mobile.Device{ID: "reset", Name: "Reset", RAMMB: 2048, CPUs: 2}
+	ref, _, err := drv.Create(ctx, d)
+	if err != nil {
+		t.Fatal(err)
+	}
+	d.Ref = ref
+	defer drv.Delete(ctx, d)
+	if _, err := drv.Start(ctx, d, mobile.StartOptions{Headless: true}); err != nil {
+		t.Fatal(err)
+	}
+	p := drv.proc(d.ID)
+	if p == nil {
+		t.Fatal("no running device")
+	}
+	if _, err := p.adb.Shell(ctx, "touch /sdcard/anymobile-reset-marker"); err != nil {
+		t.Fatal(err)
+	}
+	if err := drv.Reset(ctx, d, "hard"); err != nil {
+		t.Fatal(err)
+	}
+	if drv.proc(d.ID) != nil {
+		t.Fatal("hard reset left the device running")
+	}
+	if _, err := drv.Start(ctx, d, mobile.StartOptions{Headless: true}); err != nil {
+		t.Fatal(err)
+	}
+	p = drv.proc(d.ID)
+	out, _ := p.adb.Shell(ctx, "ls /sdcard/anymobile-reset-marker 2>/dev/null || true")
+	if strings.TrimSpace(out) != "" {
+		t.Fatalf("marker survived a hard reset: %q", out)
+	}
+	if err := drv.Stop(ctx, d); err != nil {
+		t.Fatal(err)
 	}
 }

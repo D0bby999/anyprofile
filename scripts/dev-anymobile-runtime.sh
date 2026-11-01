@@ -1,12 +1,12 @@
 #!/bin/sh
 # SPDX-License-Identifier: AGPL-3.0-or-later
-# Lays out the Android VM runtime for development, from Homebrew (qemu,
+# Lays out the AnyMobile runtime for development, from Homebrew (qemu,
 # android-platform-tools, scrcpy) and a LineageOS image, in the same tree the
-# "android-vm" and "android-vm-image" downloads make (internal/mobile/vm/runtime.go).
+# "anymobile" and "anymobile-image" downloads make (internal/mobile/vm/runtime.go).
 #
-#   scripts/dev-android-vm-runtime.sh <runtime-dir> <UTM-VM-lineage-*.zip or its Data folder>
+#   scripts/dev-anymobile-runtime.sh <runtime-dir> <UTM-VM-lineage-*.zip or its Data folder>
 #
-# The runtime dir of a dev build is "<data dir>/mobile/runtime"; see docs/android-vm-runtime.md.
+# The runtime dir of a dev build is "<data dir>/mobile/runtime"; see docs/anymobile-runtime.md.
 set -eu
 rt=${1:?runtime dir}
 src=${2:?image zip or Data folder}

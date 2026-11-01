@@ -115,6 +115,21 @@ func TestQemuArgs(t *testing.T) {
 	}
 }
 
+func TestQemuArgsKeepsBootDisplay(t *testing.T) {
+	rt := Runtime{Firmware: "/rt/code,1.fd"}
+	// A lighter Android display is applied with wm size after boot; QEMU must
+	// still start at 720x1600 because Android 16 does not always boot below it.
+	args := qemuArgs(rt, mobile.Device{ID: "abc", RAMMB: 2048, CPUs: 2, ScreenW: 540, ScreenH: 960}, "m", "/t/n", "/t/q")
+	line := strings.Join(args, " ")
+	if !strings.Contains(line, "xres=720,yres=1600") || !strings.Contains(line, "-m 2048") || !strings.Contains(line, "-smp 2") {
+		t.Fatalf("args = %s", line)
+	}
+	args = qemuArgs(rt, mobile.Device{ID: "abc", RAMMB: 4096, CPUs: 4, ScreenW: 1080, ScreenH: 2400}, "m", "/t/n", "/t/q")
+	if !strings.Contains(strings.Join(args, " "), "xres=1080,yres=2400") {
+		t.Fatal("a larger display was not passed to QEMU")
+	}
+}
+
 func TestMAC(t *testing.T) {
 	a, b := macFor("one"), macFor("two")
 	if a == b || a != macFor("one") || !strings.HasPrefix(a, "52:54:00:") {
@@ -157,7 +172,7 @@ func TestLocate(t *testing.T) {
 		errors.As(err, &ae)
 		return ae.Code
 	}
-	if _, err := Locate(root); code(err) != "android_runtime_missing" {
+	if _, err := Locate(root); code(err) != "anymobile_runtime_missing" {
 		t.Fatalf("empty: %v", err)
 	}
 	for _, f := range []string{"bin/qemu-system-aarch64", "bin/qemu-img", "share/edk2-aarch64-code.fd",
@@ -166,12 +181,12 @@ func TestLocate(t *testing.T) {
 		os.MkdirAll(filepath.Dir(p), 0o700)
 		os.WriteFile(p, nil, 0o700)
 	}
-	if _, err := Locate(root); code(err) != "android_image_missing" {
+	if _, err := Locate(root); code(err) != "anymobile_image_missing" {
 		t.Fatalf("no image: %v", err)
 	}
 	os.MkdirAll(filepath.Join(root, "image", "23.2"), 0o700)
 	os.WriteFile(filepath.Join(root, "image", "CURRENT"), []byte("../../etc\n"), 0o600)
-	if _, err := Locate(root); code(err) != "android_image_missing" {
+	if _, err := Locate(root); code(err) != "anymobile_image_missing" {
 		t.Fatalf("a path in CURRENT: %v", err)
 	}
 	os.WriteFile(filepath.Join(root, "image", "CURRENT"), []byte("23.2\n"), 0o600)

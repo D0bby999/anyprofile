@@ -380,10 +380,10 @@ func (f *fakeInstaller) OfferRuntime(rs []engine.Release) error {
 func TestMobileRuntimeComesWithPro(t *testing.T) {
 	s, _ := newService(t)
 	f := newFakePro(t, s)
-	rt := pro.Runtime{Engine: "android-vm", Version: "1.0.0", Platform: engine.HostPlatform(), QEMU: "11.1.2",
+	rt := pro.Runtime{Engine: "anymobile", Version: "1.0.0", Platform: engine.HostPlatform(), QEMU: "11.1.2",
 		SHA256: strings.Repeat("a", 64), Files: map[string]string{"bin/qemu-system-aarch64": strings.Repeat("b", 64)},
-		Bin: "bin/qemu-system-aarch64", URL: "https://pro.test/v1/runtime/1/t/android-vm-1.0.0-darwin-arm64.tar.xz",
-		SourceURL: "https://pro.test/v1/runtime/1/t/android-vm-1.0.0-source.tar"}
+		Bin: "bin/qemu-system-aarch64", URL: "https://pro.test/v1/runtime/1/t/anymobile-1.0.0-darwin-arm64.tar.xz",
+		SourceURL: "https://pro.test/v1/runtime/1/t/anymobile-1.0.0-source.tar"}
 	rt.Sig = base64.StdEncoding.EncodeToString(ed25519.Sign(f.priv, pro.RuntimeMessage(rt.Engine, rt.Platform, rt.Version, rt.SHA256)))
 	forged := rt
 	forged.Version, forged.Sig = "9.9.9", base64.StdEncoding.EncodeToString(make([]byte, 64))
@@ -417,5 +417,63 @@ func TestMobileRuntimeComesWithPro(t *testing.T) {
 	}
 	if len(inst.offered) != 0 {
 		t.Fatalf("offered after revoking: %+v", inst.offered)
+	}
+}
+
+func TestMobilePresets(t *testing.T) {
+	for _, tc := range []struct {
+		preset              string
+		ram, cpus, w, h, dp int
+	}{
+		{"automation", 2048, 2, 540, 960, 240},
+		{"balanced", 3072, 4, 720, 1600, 280},
+		{"interactive", 4096, 4, 720, 1600, 280},
+	} {
+		in := MobileInput{Name: "phone", Preset: tc.preset}
+		if err := checkMobileInput(&in); err != nil {
+			t.Fatalf("%s: %v", tc.preset, err)
+		}
+		if in.RAMMB != tc.ram || in.CPUs != tc.cpus || in.ScreenW != tc.w || in.ScreenH != tc.h || in.Density != tc.dp {
+			t.Fatalf("%s = %+v", tc.preset, in)
+		}
+	}
+	for _, tc := range []struct {
+		in   MobileInput
+		want string
+	}{
+		{MobileInput{Name: "a", Preset: "huge"}, "mobile_bad_preset"},
+		{MobileInput{Name: "a", Preset: "automation", ScreenW: 100}, "mobile_bad_screen"},
+		{MobileInput{Name: "a", Preset: "automation", Density: 999}, "mobile_bad_density"},
+	} {
+		if err := checkMobileInput(&tc.in); code(err) != tc.want {
+			t.Errorf("%+v = %v, want %s", tc.in, err, tc.want)
+		}
+	}
+}
+
+func TestMobileHeadlessStart(t *testing.T) {
+	ctx := context.Background()
+	s, f := newMobileService(t, "active")
+	d, err := s.CreateMobileDevice(ctx, MobileInput{Name: "phone", Preset: "automation"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if d.RAMMB != 2048 || d.CPUs != 2 || d.ScreenW != 540 || d.ScreenH != 960 {
+		t.Fatalf("created %+v", d)
+	}
+	if _, err := s.StartMobileDeviceHeadless(ctx, d.ID); err != nil {
+		t.Fatal(err)
+	}
+	if !f.opts.Headless {
+		t.Fatal("headless start passed Headless=false")
+	}
+	if err := s.StopMobileDevice(ctx, d.ID); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.StartMobileDevice(ctx, d.ID); err != nil {
+		t.Fatal(err)
+	}
+	if f.opts.Headless {
+		t.Fatal("the UI start opened headless")
 	}
 }
