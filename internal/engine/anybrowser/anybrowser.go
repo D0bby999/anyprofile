@@ -81,23 +81,45 @@ func (a *AnyBrowser) NewIdentity(ctx context.Context, roll uint64) (engine.Ident
 	return a.ComposeIdentity(ctx, a.pinned.Version, roll)
 }
 
-// PrepareProfile blocks geolocation before the first launch: AnyBrowser has no
-// flag to fake a position, so a site that asks would get the real one. It
-// also keeps the browser out of Google sign-in (engine.StayOutOfChromeSignIn).
+// PrepareProfile settles geolocation before the first launch. A profile with a
+// position answers it -- the app sets one from the proxy exit -- and the
+// permission is allowed, so a page that asks gets the profile's position
+// instead of waiting for a prompt nobody is there to answer. A profile without
+// one is denied, so a site never gets this computer's real position. It also
+// keeps the browser out of Google sign-in (engine.StayOutOfChromeSignIn).
 func (a *AnyBrowser) PrepareProfile(p store.Profile, rt engine.Runtime) error {
+	_, _, _, hasFix := geolocationFix(p)
 	return engine.EditPrefs(filepath.Join(rt.UserDataDir, "Default", "Preferences"), func(m map[string]any) bool {
-		geo := blockGeolocation(m)
+		geo := configureGeolocation(m, hasFix)
 		return engine.StayOutOfChromeSignIn(m) || geo
 	})
 }
 
-func blockGeolocation(m map[string]any) bool {
+func configureGeolocation(m map[string]any, allow bool) bool {
 	values := engine.PrefsDict(engine.PrefsDict(m, "profile"), "default_content_setting_values")
-	if v, ok := values["geolocation"].(float64); ok && v == 2 {
+	want := float64(2)
+	if allow {
+		want = 1
+	}
+	if v, ok := values["geolocation"].(float64); ok && v == want {
 		return false
 	}
-	values["geolocation"] = 2
+	values["geolocation"] = want
 	return true
+}
+
+// geolocationFix returns the position the profile claims, when the app has one
+// (it is copied from the proxy exit). The engine reports it instead of this
+// computer's position, so the answer agrees with the exit IP and the timezone.
+func geolocationFix(p store.Profile) (lat, lon, accuracy float64, ok bool) {
+	if p.Lat == nil || p.Lon == nil {
+		return 0, 0, 0, false
+	}
+	lat, lon = *p.Lat, *p.Lon
+	if lat < -90 || lat > 90 || lon < -180 || lon > 180 {
+		return 0, 0, 0, false
+	}
+	return lat, lon, 25, true
 }
 
 var seedRe = regexp.MustCompile(`^[0-9a-f]{16}$`)
@@ -188,6 +210,10 @@ func (a *AnyBrowser) BuildLaunch(ctx context.Context, p store.Profile, rt engine
 			"--force-webrtc-ip-handling-policy=disable_non_proxied_udp",
 			"--fingerprint-webrtc-udp=block",
 		)
+	}
+	if lat, lon, _, ok := geolocationFix(p); ok {
+		args = append(args, "--fingerprint-geolocation="+
+			strconv.FormatFloat(lat, 'f', 6, 64)+","+strconv.FormatFloat(lon, 'f', 6, 64))
 	}
 	if p.EngineMeta.CanvasNoise {
 		// Deterministic, profile-seeded, alpha-preserving; see patch 0120.

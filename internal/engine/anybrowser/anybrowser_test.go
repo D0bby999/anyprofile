@@ -180,6 +180,44 @@ func geo(m map[string]any) any {
 	return v["geolocation"]
 }
 
+// A profile with a position answers it, and the permission is allowed: a page
+// that asks would otherwise wait for a prompt nobody is there to answer.
+func TestPrepareProfileAllowsAConfiguredPosition(t *testing.T) {
+	a := testEngine(t)
+	udd := t.TempDir()
+	prefs := filepath.Join(udd, "Default", "Preferences")
+	p := testProfile()
+	lat, lon := 52.52, 13.405
+	p.Lat, p.Lon = &lat, &lon
+	if err := a.PrepareProfile(p, engine.Runtime{UserDataDir: udd}); err != nil {
+		t.Fatal(err)
+	}
+	if g := geo(readPrefs(t, prefs)); g != float64(1) {
+		t.Fatalf("geolocation = %v, want allowed for a profile with a position", g)
+	}
+}
+
+func TestBuildLaunchGeolocation(t *testing.T) {
+	a := testEngine(t)
+	p := testProfile()
+	lat, lon := 52.52, 13.405
+	p.Lat, p.Lon = &lat, &lon
+	spec, err := a.BuildLaunch(context.Background(), p, engine.Runtime{UserDataDir: "/u"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !slices.Contains(spec.Args, "--fingerprint-geolocation=52.520000,13.405000") {
+		t.Fatalf("args = %v, want the profile position", spec.Args)
+	}
+	spec, err = a.BuildLaunch(context.Background(), testProfile(), engine.Runtime{UserDataDir: "/u"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if slices.Contains(spec.Args, "--fingerprint-geolocation=0.000000,0.000000") {
+		t.Fatalf("args = %v, want no position for a profile without one", spec.Args)
+	}
+}
+
 func TestPrepareProfileGeolocation(t *testing.T) {
 	a := testEngine(t)
 	udd := t.TempDir()
