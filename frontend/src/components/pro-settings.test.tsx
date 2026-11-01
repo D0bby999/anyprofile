@@ -10,12 +10,20 @@ let status: Record<string, unknown> = none
 const api = {
   ProStatus: vi.fn(() => Promise.resolve(status)),
   ProBuy: vi.fn(() => Promise.resolve()),
+  ProBuyGift: vi.fn(() => Promise.resolve()),
   ProCancelBuy: vi.fn(() => Promise.resolve()),
   ProActivate: vi.fn(() => Promise.resolve(active)),
+  ProRedeemGift: vi.fn(() => Promise.resolve(active)),
   ProCheck: vi.fn(() => Promise.resolve({ ...active, version: '1.3.0' })),
   ProDeactivate: vi.fn(() => Promise.resolve()),
+  ProDevices: vi.fn(() => Promise.resolve([{ install_id: 'device-1', name: 'Mac', platform: 'darwin-arm64', last_seen: 1, current: false }])),
+  ProRemoveDevice: vi.fn(() => Promise.resolve()),
   ProOpenPortal: vi.fn(() => Promise.resolve()),
   ProOpenScripts: vi.fn(() => Promise.resolve()),
+  ProAccountStatus: vi.fn(() => Promise.resolve({ signedIn: false, email: '', name: '' })),
+  ProAccountLogin: vi.fn(() => Promise.resolve({ signedIn: false, email: '', name: '' })),
+  ProAccountSignOut: vi.fn(() => Promise.resolve()),
+  ProAccountLink: vi.fn(() => Promise.resolve({ signedIn: true, email: 'a@example.com', name: '' })),
 }
 vi.mock('../api', async (orig) => ({
   ...(await orig<typeof import('../api')>()),
@@ -27,6 +35,7 @@ const { ProSettings } = await import('./pro-settings')
 const { ConfirmProvider } = await import('./confirm')
 
 const show = () => render(<ConfirmProvider><ProSettings /></ConfirmProvider>)
+const openAdvanced = async () => fireEvent.click(await screen.findByRole('button', { name: t.pro.haveKey }))
 
 describe('ProSettings', () => {
   beforeEach(() => { vi.clearAllMocks(); status = none })
@@ -41,6 +50,13 @@ describe('ProSettings', () => {
     await waitFor(() => expect(api.ProBuy).toHaveBeenCalledWith('month'))
   })
 
+  it('opens the paid-gift checkout without starting a key wait', async () => {
+    show()
+    fireEvent.click(await screen.findByRole('button', { name: t.pro.buyGift }))
+    await waitFor(() => expect(api.ProBuyGift).toHaveBeenCalled())
+    expect(api.ProBuy).not.toHaveBeenCalled()
+  })
+
   it('shows the wait for a payment, which can be stopped', async () => {
     status = { ...none, waiting: true }
     show()
@@ -49,8 +65,18 @@ describe('ProSettings', () => {
     expect(screen.queryByRole('button', { name: t.pro.buyYear })).toBeNull()
   })
 
+  it('redeems a gift code without Stripe', async () => {
+    show()
+    await openAdvanced()
+    const input = await screen.findByRole('textbox', { name: t.pro.giftLabel })
+    fireEvent.change(input, { target: { value: 'APRO-GIFT-AAAA-BBBB-CCCC-DDDD' } })
+    fireEvent.click(screen.getByRole('button', { name: t.pro.redeem }))
+    await waitFor(() => expect(api.ProRedeemGift).toHaveBeenCalledWith('APRO-GIFT-AAAA-BBBB-CCCC-DDDD'))
+  })
+
   it('activates a pasted key', async () => {
     show()
+    await openAdvanced()
     const input = await screen.findByRole('textbox', { name: t.pro.keyLabel })
     expect(screen.getByRole('button', { name: t.pro.activate })).toHaveProperty('disabled', true)
     fireEvent.change(input, { target: { value: 'APRO-AAAAA-BBBBB-CCCCC-DDDDD' } })
@@ -67,6 +93,14 @@ describe('ProSettings', () => {
     await waitFor(() => expect(api.ProCheck).toHaveBeenCalled())
   })
 
+  it('lists devices and frees another machine', async () => {
+    status = active
+    show()
+    const removeButtons = await screen.findAllByRole('button', { name: t.pro.removeDevice })
+    fireEvent.click(removeButtons[0])
+    await waitFor(() => expect(api.ProRemoveDevice).toHaveBeenCalledWith('device-1'))
+  })
+
   it('removes the key only after confirming', async () => {
     status = active
     show()
@@ -78,6 +112,7 @@ describe('ProSettings', () => {
   it('names a server error in words', async () => {
     api.ProActivate.mockRejectedValueOnce(new Error('anyprofile:pro_too_many_devices: in use on 3 computers'))
     show()
+    await openAdvanced()
     fireEvent.change(await screen.findByRole('textbox', { name: t.pro.keyLabel }), { target: { value: 'APRO-X' } })
     fireEvent.click(screen.getByRole('button', { name: t.pro.activate }))
     expect(await screen.findByText(t.errors.pro_too_many_devices)).toBeTruthy()

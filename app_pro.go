@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/D0bby999/anyprofile/internal/apperr"
+	"github.com/D0bby999/anyprofile/internal/pro"
 	"github.com/D0bby999/anyprofile/internal/service"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
@@ -55,6 +56,15 @@ func (a *App) ProActivate(key string) (service.ProStatus, error) {
 	return a.proStatus(), err
 }
 
+// ProRedeemGift activates a promo or paid gift code without Stripe.
+func (a *App) ProRedeemGift(code string) (service.ProStatus, error) {
+	if err := a.ready(); err != nil {
+		return service.ProStatus{}, err
+	}
+	_, err := a.svc.ProRedeemGift(a.ctx, code)
+	return a.proStatus(), err
+}
+
 // ProCheck asks the server now, as "Check for updates" in Settings → Pro.
 func (a *App) ProCheck() (service.ProStatus, error) {
 	if err := a.ready(); err != nil {
@@ -89,6 +99,15 @@ func (a *App) ProBuy(plan string) error {
 	runtime.BrowserOpenURL(a.ctx, u)
 	runtime.EventsEmit(a.ctx, "data:changed", "pro")
 	go a.waitForPurchase(ctx, w, ref)
+	return nil
+}
+
+// ProBuyGift opens the paid-gift checkout. The code is emailed after payment.
+func (a *App) ProBuyGift() error {
+	if err := a.ready(); err != nil {
+		return err
+	}
+	runtime.BrowserOpenURL(a.ctx, a.svc.ProBuyGiftURL())
 	return nil
 }
 
@@ -134,6 +153,22 @@ func (a *App) ProCancelBuy() error {
 	return nil
 }
 
+// ProDevices lists the machines on this licence.
+func (a *App) ProDevices() ([]pro.DeviceInfo, error) {
+	if err := a.ready(); err != nil {
+		return nil, err
+	}
+	return a.svc.ProDevices()
+}
+
+// ProRemoveDevice frees another machine's place on this licence.
+func (a *App) ProRemoveDevice(installID string) error {
+	if err := a.ready(); err != nil {
+		return err
+	}
+	return a.svc.ProRemoveDevice(installID)
+}
+
 // ProDeactivate frees this computer's place and removes the key and the pack.
 func (a *App) ProDeactivate() error {
 	return a.must(func() error {
@@ -169,4 +204,67 @@ func (a *App) ProOpenScripts() error {
 		}
 		return revealFolder(dir)
 	})
+}
+
+// ProAccountStatus reports the signed-in account, if any, without exposing
+// access or refresh tokens to the frontend.
+func (a *App) ProAccountStatus() (service.ProAccountStatus, error) {
+	if err := a.ready(); err != nil {
+		return service.ProAccountStatus{}, err
+	}
+	return a.svc.ProAccountStatus(a.ctx)
+}
+
+// ProAccountLogin opens Google in the system browser and waits for the
+// loopback callback, then activates this device through the account.
+func (a *App) ProAccountLogin() (service.ProAccountStatus, error) {
+	if err := a.ready(); err != nil {
+		return service.ProAccountStatus{}, err
+	}
+	u, err := a.svc.ProAccountLoginStart()
+	if err != nil {
+		return service.ProAccountStatus{}, err
+	}
+	runtime.BrowserOpenURL(a.ctx, u)
+	st, err := a.svc.ProAccountLoginWait(a.ctx)
+	if err == nil {
+		runtime.EventsEmit(a.ctx, "pro:activated", a.svc.ProStatus().Version)
+	}
+	return st, err
+}
+
+func (a *App) ProAccountSignOut() error {
+	if err := a.ready(); err != nil {
+		return err
+	}
+	return a.svc.ProAccountSignOut(a.ctx)
+}
+
+func (a *App) ProAccountLink(key string) (service.ProAccountStatus, error) {
+	if err := a.ready(); err != nil {
+		return service.ProAccountStatus{}, err
+	}
+	return a.svc.ProAccountLink(a.ctx, key)
+}
+
+func (a *App) ProAccountDevices() ([]pro.AccountDevice, error) {
+	if err := a.ready(); err != nil {
+		return nil, err
+	}
+	return a.svc.ProAccountDevices(a.ctx)
+}
+
+func (a *App) ProAccountRemoveDevice(installID string) error {
+	if err := a.ready(); err != nil {
+		return err
+	}
+	return a.svc.ProAccountRemoveDevice(a.ctx, installID)
+}
+
+// ProAccountActivate binds this computer to the signed-in account's licence.
+func (a *App) ProAccountActivate() (service.ProStatus, error) {
+	if err := a.ready(); err != nil {
+		return service.ProStatus{}, err
+	}
+	return a.svc.ProAccountActivate(a.ctx)
 }

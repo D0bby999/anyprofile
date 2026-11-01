@@ -190,7 +190,7 @@ func TestServerErrorsBecomeCodes(t *testing.T) {
 
 func TestCheckKeepsOnlySignedRuntimes(t *testing.T) {
 	priv := testKey(t)
-	good := Runtime{Engine: "android-vm", Version: "1.0.0", Platform: "darwin-arm64", SHA256: hex.EncodeToString(make([]byte, 32))}
+	good := Runtime{Engine: "anymobile", Version: "1.0.0", Platform: "darwin-arm64", SHA256: hex.EncodeToString(make([]byte, 32))}
 	good.Sig = base64.StdEncoding.EncodeToString(ed25519.Sign(priv, RuntimeMessage(good.Engine, good.Platform, good.Version, good.SHA256)))
 	moved := good
 	moved.Platform = "windows-amd64" // signed for another computer

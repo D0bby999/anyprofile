@@ -69,7 +69,7 @@ func RuntimeMessage(engine, platform, version, sha256hex string) []byte {
 }
 
 // Runtime is a runtime Pro brings along, offered while the key may use Pro:
-// today the Android VM (QEMU) for mobile devices. The archive's hash is
+// today AnyMobile (QEMU) for mobile devices. The archive's hash is
 // signed; the files are checked against the record after unpacking. The
 // links last minutes, so a download asks the server again first.
 type Runtime struct {
@@ -117,6 +117,9 @@ type Client struct {
 	HTTP *http.Client
 	// Key verifies packs; nil means the built-in Pro key. Tests set their own.
 	Key ed25519.PublicKey
+	// LicenseVerifyKey verifies licence certificates; nil means the built-in
+	// licence key (separate from the pack key).
+	LicenseVerifyKey ed25519.PublicKey
 }
 
 // NewClient uses EnvURL when set, else DefaultURL.
@@ -190,6 +193,12 @@ func serverError(status int, code string) error {
 		return apperr.New("pro_revoked", "this key was revoked (refund or dispute)")
 	case "too_many_devices":
 		return apperr.New("pro_too_many_devices", "this key is in use on 3 computers already")
+	case "gift_invalid", "gift_used", "gift_expired", "gift_revoked":
+		return apperr.New("pro_"+code, "this gift code cannot be used")
+	case "bad_device":
+		return apperr.New("pro_bad_device", "this computer's Pro device key is not recognised")
+	case "bad_install_id":
+		return apperr.New("pro_bad_install_id", "this computer's Pro install id is not valid")
 	case "not_yet":
 		return ErrNotYet
 	case "slow_down":
