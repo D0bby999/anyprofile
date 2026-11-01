@@ -68,6 +68,30 @@ test('a probe error fails the gate even when values agree', () => {
   assert.deepEqual(v.errors, [{ context: 'serviceworker', error: 'canvas: tainted' }]);
 });
 
+test('a Worker permission pair is not compared, because Chrome disagrees there', () => {
+  const r = four();
+  r.serviceworker = workerCtx();
+  r.serviceworker.permissions = 'prompt';
+  r.serviceworker.notification = 'denied';
+  assert.equal(evaluate(run(r)).pass, true);
+});
+
+test('prompt and default are the same permission state', () => {
+  const r = four();
+  r.main.permissions = 'prompt';
+  r.main.notification = 'default';
+  assert.equal(evaluate(run(r)).pass, true);
+});
+
+test('a permission pair that disagrees fails the gate', () => {
+  const r = four();
+  r.main.permissions = 'granted';
+  r.main.notification = 'default';
+  const v = evaluate(run(r));
+  assert.equal(v.pass, false);
+  assert.deepEqual(v.disagreements.map((d) => d.field), ['permissions/notification']);
+});
+
 test('a window that says webdriver true fails the gate', () => {
   const r = four();
   r.main.webdriver = true;

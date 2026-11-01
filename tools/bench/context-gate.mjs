@@ -52,6 +52,12 @@ function probe() {
   sync('dpr', () => (typeof devicePixelRatio === 'undefined' ? undefined : devicePixelRatio));
   sync('voices', () => (typeof speechSynthesis === 'undefined' ? undefined : speechSynthesis.getVoices().length));
   sync('notification', () => (typeof Notification === 'undefined' ? undefined : Notification.permission));
+  // A macOS Chrome with overlay scrollbars leaves no room for one, and a
+  // persona of another OS claims 15-17 px; this is the tell Fury patches.
+  sync('scrollbar', () => (typeof document === 'undefined' ? undefined
+    : { reserved: innerWidth - document.documentElement.clientWidth, any: document.documentElement.clientWidth !== innerWidth }));
+  // Geolocation: a profile that always answers "denied" is a machine that
+  // never once let a site ask, which is not what a fresh Chrome profile does.
   return (async () => {
     await later('canvas', async () => {
       if (typeof OffscreenCanvas === 'undefined') return undefined;
@@ -97,6 +103,20 @@ function probe() {
     await later('permissions', async () => {
       if (typeof navigator === 'undefined' || !navigator.permissions) return undefined;
       return (await navigator.permissions.query({ name: 'notifications' })).state;
+    });
+    await later('geoPermission', async () => {
+      if (typeof navigator === 'undefined' || !navigator.permissions) return undefined;
+      return (await navigator.permissions.query({ name: 'geolocation' })).state;
+    });
+    await later('geolocation', async () => {
+      if (typeof navigator === 'undefined' || !navigator.geolocation) return undefined;
+      return await new Promise((resolve) => {
+        const t = setTimeout(() => resolve({ error: 'timeout' }), 3000);
+        navigator.geolocation.getCurrentPosition(
+          (p) => { clearTimeout(t); resolve({ lat: +p.coords.latitude.toFixed(4), lon: +p.coords.longitude.toFixed(4), accuracy: p.coords.accuracy }); },
+          (e) => { clearTimeout(t); resolve({ error: e.code + ':' + e.message }); },
+          { timeout: 2500, maximumAge: 0 });
+      });
     });
     out.errors = errors;
     return out;

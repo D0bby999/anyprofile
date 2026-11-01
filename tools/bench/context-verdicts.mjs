@@ -9,6 +9,14 @@
 // absence — a Worker has no screen and no speechSynthesis. An absence is only
 // a finding when the field is one that context should have had.
 
+// The two permission APIs use different words for the same state:
+// navigator.permissions reports prompt/granted/denied, Notification.permission
+// reports default/granted/denied. prompt and default are the SAME state, so
+// comparing the strings marks real Chrome inconsistent -- which is what
+// happened the first time a gate like this ran against a genuine Chrome. The
+// pair is compared through this map instead.
+export const PERMISSION_WORDS = { prompt: 'ask', default: 'ask', granted: 'granted', denied: 'denied' };
+
 // Fields every context can answer (Window, dedicated Worker, SharedWorker,
 // ServiceWorker and iframes all expose them).
 export const COMMON = ['ua', 'platform', 'languages', 'hwc', 'mem', 'tz', 'locale', 'canvas', 'webgl'];
@@ -78,7 +86,23 @@ export function evaluate(run) {
     }
   }
   for (const [name, ctx] of contexts) {
-    const wd = normalize(ctx).values.webdriver;
+    const values = normalize(ctx).values;
+    // A page can call both APIs and inside a Window they must describe one
+    // state. A Worker is a different animal: real Chrome answers "denied" from
+    // Notification.permission and "prompt" from permissions.query there, so the
+    // check is limited to contexts that have a screen.
+    if (values.screen !== undefined && values.permissions !== undefined &&
+        values.notification !== undefined) {
+      const a = PERMISSION_WORDS[values.permissions];
+      const b = PERMISSION_WORDS[values.notification];
+      if (a !== b) {
+        disagreements.push({ field: 'permissions/notification', values: [
+          { context: name, value: values.permissions },
+          { context: name + '.notification', value: values.notification },
+        ] });
+      }
+    }
+    const wd = values.webdriver;
     if (wd !== undefined && wd !== false) disagreements.push({ field: 'webdriver', values: [{ context: name, value: wd }] });
     for (const error of ctx?.errors || []) errors.push({ context: name, error });
   }
