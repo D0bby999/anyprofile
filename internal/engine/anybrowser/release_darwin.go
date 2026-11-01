@@ -19,7 +19,7 @@ const (
 	Version  = "0.5.1.156"
 	Chromium = "156.0.8078.74"
 
-	releaseDate        = "2026-10-31"
+	releaseDate        = "2026-11-02"
 	legacyGoogleKeyEnv = false
 	platform           = "macos"
 	// hostPlat is the release's platform in the engine catalog.
@@ -31,9 +31,9 @@ const (
 
 	zipName       = "anybrowser-156.0.8078.74-macos-arm64.zip"
 	defaultZipURL = "https://example.invalid/anybrowser/" + zipName
-	zipSHA256     = "d338a7c0169e053310c3749039dd126ceb179fd9a4ae2a71dc04d13a61b72d5f"
-	binarySHA256  = "e78f52c48aa986391f7deefcaef615dc3dae80d952389766a2b65ee00ac54a2e"
-	frameworkSHA  = "23e66c35a184edfe700afe9138f70ebec2c521abcee3e58247d01bd787f463ef"
+	zipSHA256     = "7aace7d5a70c56e34d64f1cfa3b5e06503dd23eb5f19d7e431882869c9abeb9c"
+	binarySHA256  = "e3c5e0063d1d8c69a1c6446242ee7ec0005f7cb969b2b5c08fb92e8c2b767a37"
+	frameworkSHA  = "f463f3c8d949fd3df18206f6dc456beb986c29bfa3ca3f5fc28032433d6ce21c"
 	// teamID is empty until the Developer ID signing identity is pinned at
 	// publish; this local build is ad-hoc signed. The URL stays a placeholder,
 	// so installing from the catalog still fails closed; the hashes let a
