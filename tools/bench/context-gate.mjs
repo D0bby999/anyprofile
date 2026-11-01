@@ -111,11 +111,11 @@ function probe() {
     await later('geolocation', async () => {
       if (typeof navigator === 'undefined' || !navigator.geolocation) return undefined;
       return await new Promise((resolve) => {
-        const t = setTimeout(() => resolve({ error: 'timeout' }), 3000);
+        const t = setTimeout(() => resolve({ error: 'timeout' }), 6000);
         navigator.geolocation.getCurrentPosition(
           (p) => { clearTimeout(t); resolve({ lat: +p.coords.latitude.toFixed(4), lon: +p.coords.longitude.toFixed(4), accuracy: p.coords.accuracy }); },
           (e) => { clearTimeout(t); resolve({ error: e.code + ':' + e.message }); },
-          { timeout: 2500, maximumAge: 0 });
+          { timeout: 5000, maximumAge: 0 });
       });
     });
     out.errors = errors;
