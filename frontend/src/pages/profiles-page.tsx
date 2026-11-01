@@ -117,6 +117,17 @@ export function ProfilesPage({ rows, sites, view, engineReady, fileVaultOn, erro
     const errs = Object.values((await fn([...selected])) ?? {})
     if (errs.length) showError(errs[0])
   })
+  // Opening one shows it; opening several leaves them tiled behind the app and
+  // says so, because nothing on screen jumps when they open. Past six, the
+  // grid is skipped (the panes would be too small), so the toast offers the
+  // arrange command instead of pretending they were laid out.
+  const openSelected = () => run(async () => {
+    const ids = [...selected]
+    const errs = Object.values((await Api.StartProfiles(ids)) ?? {})
+    if (errs.length) { showError(errs[0]); return }
+    if (ids.length > 6) toast.success(t.profiles.openedMany(ids.length), { label: t.profiles.arrange, run: arrange })
+    else toast.success(t.profiles.opened(ids.length))
+  })
   const onSort = (key: SortKey) => setSort((s) => ({ key, desc: s.key === key ? !s.desc : key === 'lastOpen' }))
   const toggle = (id: string, shift = false) => {
     setSelected((cur) => {
@@ -202,7 +213,7 @@ export function ProfilesPage({ rows, sites, view, engineReady, fileVaultOn, erro
             {selected.size > 0 ? (
               <div className="toolbar selecting">
                 <span className="selcount">{t.profiles.selected(selected.size)}</span>
-                <button className="btn sm primary" disabled={busy} onClick={() => bulk(Api.StartProfiles)}><Icon name="play" className="icon sm" />{t.profiles.openSelected}</button>
+                <button className="btn sm primary" disabled={busy} onClick={openSelected}><Icon name="play" className="icon sm" />{t.profiles.openSelected}</button>
                 <button className="btn sm" disabled={busy} onClick={() => bulk(Api.StopProfiles)}><Icon name="stop" className="icon sm" />{t.profiles.stopSelected}</button>
                 <button className="btn sm danger" disabled={busy}
                   onClick={() => run(() => trashWithUndo([...selected], toast, '', () => { setSelected(new Set()); reload() }))}>

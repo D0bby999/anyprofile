@@ -21,8 +21,14 @@ import { EngineSettings } from '../components/engine-settings'
 import { scrollSettingsTo } from '../lib/scroll'
 
 /** Settings come in groups, most used first; the technical ones sit near the end. */
-const groupKeys = ['general', 'profiles', 'automation', 'data', 'engines', 'about'] as const
+const groupKeys = ['general', 'pro', 'profiles', 'automation', 'data', 'engines', 'about'] as const
 type GroupKey = typeof groupKeys[number]
+
+/** One icon per settings group, so the side list scans evenly. */
+const groupIcons: Record<GroupKey, IconName> = {
+  general: 'settings', pro: 'spark', profiles: 'profiles', automation: 'play',
+  data: 'download', engines: 'engine', about: 'info',
+}
 
 
 type Props = {
@@ -54,14 +60,17 @@ export function SettingsPage({ engines, engineCounts, defaults, onEnginesChanged
     const root = scroller.current
     if (!root || typeof IntersectionObserver === 'undefined') return
     const seen = new Map<string, boolean>()
+    const atBottom = () => root.scrollHeight > root.clientHeight + 2 && root.scrollHeight - root.scrollTop - root.clientHeight <= 8
+    const onScroll = () => { if (atBottom()) setCurrent(groupKeys[groupKeys.length - 1]) }
     const io = new IntersectionObserver((entries) => {
       for (const e of entries) seen.set(e.target.id, e.isIntersecting)
-      if (Date.now() - jumpedAt.current < 600) return
+      if (atBottom() || Date.now() - jumpedAt.current < 600) return
       const first = groupKeys.find((k) => seen.get(`set-${k}`))
       if (first) setCurrent(first)
     }, { root, rootMargin: '0px 0px -60% 0px' })
     for (const k of groupKeys) { const el = document.getElementById(`set-${k}`); if (el) io.observe(el) }
-    return () => io.disconnect()
+    root.addEventListener('scroll', onScroll, { passive: true })
+    return () => { io.disconnect(); root.removeEventListener('scroll', onScroll) }
   }, [])
   const jump = (k: GroupKey) => { jumpedAt.current = Date.now(); setCurrent(k); scrollSettingsTo(`set-${k}`) }
 
@@ -79,7 +88,8 @@ export function SettingsPage({ engines, engineCounts, defaults, onEnginesChanged
         <div className="settings">
           <nav className="setnav" aria-label={t.settings.sections}>
             {groupKeys.map((k) => (
-              <button key={k} type="button" className="setnav-item" aria-current={current === k ? 'true' : undefined} onClick={() => jump(k)}>
+              <button key={k} type="button" className={`setnav-item${k === 'pro' ? ' setnav-pro' : ''}`} aria-current={current === k ? 'true' : undefined} onClick={() => jump(k)}>
+                <Icon name={groupIcons[k]} className="icon sm" />
                 {t.settings.groups[k]}
               </button>
             ))}
@@ -107,6 +117,13 @@ export function SettingsPage({ engines, engineCounts, defaults, onEnginesChanged
               </section>
             </>)}
 
+            {group('pro', (
+              <section className="card pad" id="settings-pro">
+                <h3>{t.pro.title}</h3>
+                <ProSettings />
+              </section>
+            ))}
+
             {group('profiles', <>
               <section className="card pad">
                 <h3>{t.defaults.title}</h3>
@@ -123,16 +140,12 @@ export function SettingsPage({ engines, engineCounts, defaults, onEnginesChanged
               </section>
             </>)}
 
-            {group('automation', <>
-              <section className="card pad" id="settings-pro">
-                <h3>{t.pro.title}</h3>
-                <ProSettings />
-              </section>
+            {group('automation', (
               <section className="card pad">
                 <h3>{t.api.title}</h3>
                 <APISettings />
               </section>
-            </>)}
+            ))}
 
             {group('data', <>
               <section className="card pad" id="settings-backup">

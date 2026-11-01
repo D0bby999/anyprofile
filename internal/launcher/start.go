@@ -97,6 +97,17 @@ func (l *Launcher) start(ctx context.Context, p *proc) error {
 		l.log.Warn("profile identity clamped for this machine", "profile", prof.ID, "detail", spec.Warning)
 	}
 	spec.Args = append(spec.Args, l.TestArgs...)
+	// The first window a profile ever shows is the one nobody sized yet.
+	// Chromium restores the bounds of every later one, so the user's own size
+	// and position are never overridden.
+	if prof.LastOpenAt == "" && l.Screen != nil {
+		if area, ok := l.Screen(); ok {
+			r := firstWindow(area, l.opening())
+			spec.Args = append(spec.Args,
+				fmt.Sprintf("--window-size=%d,%d", r.W, r.H),
+				fmt.Sprintf("--window-position=%d,%d", r.X, r.Y))
+		}
+	}
 	if err := ctx.Err(); err != nil {
 		return err
 	}
@@ -120,7 +131,8 @@ func (l *Launcher) start(ctx context.Context, p *proc) error {
 		}
 	}()
 	if p.behind {
-		go l.keepBehind(pid, front, 6*time.Second)
+		epoch := l.focusEpoch.Load()
+		go l.keepBehind(pid, front, 6*time.Second, epoch)
 	}
 	p.cdp = conn
 	if err := l.waitReady(ctx, udd, pid, wait); err != nil {
@@ -162,6 +174,13 @@ func (l *Launcher) start(ctx context.Context, p *proc) error {
 	started = true
 	l.mu.Unlock()
 	l.onChange(info)
+	if !p.behind {
+		// A window the user asked for comes to the front: Chromium activates
+		// itself about half a second after it starts, which is not something
+		// to rely on when another app was in front, and Windows refuses the
+		// foreground to a process that does not ask for it.
+		activate(pid)
+	}
 	if p.cdp != nil {
 		go l.capture(prof, eng, p.cdp, p.sessionID)
 		go l.quitWithLastWindow(prof.ID, p.cdp)
@@ -230,13 +249,19 @@ func (l *Launcher) measureExit(profileID string, sessionID int64, up netproxy.Up
 // keepBehind puts the app the user is in back in front whenever the new
 // browser takes the focus while starting up, for d. Chromium activates
 // itself more than once (at launch, then as its first window shows); after
-// d, a click on the browser is the user's own.
-func (l *Launcher) keepBehind(pid, front int, d time.Duration) {
+// d, a click on the browser is the user's own. epoch is the focus the user
+// asked for when this browser started: once a later action asks for another
+// window (tiling what was just opened, say), fighting for the old one would
+// undo it, so the loop stops.
+func (l *Launcher) keepBehind(pid, front int, d time.Duration, epoch int64) {
 	if front == 0 || front == pid {
 		return
 	}
 	end := time.Now().Add(d)
 	for range 5 { // a browser that keeps the focus is not fought forever
+		if l.focusEpoch.Load() != epoch {
+			return // the user has asked for another window since
+		}
 		if !waitFront(pid, true, time.Until(end)) {
 			return
 		}

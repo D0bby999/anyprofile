@@ -198,6 +198,32 @@ export namespace mobile {
 		    return a;
 		}
 	}
+	export class Metrics {
+	    bootMs: number;
+	    startMs: number;
+	    resetMs: number;
+	    adbPort: number;
+	    headless: boolean;
+	    actions: number;
+	    lastActionMs: number;
+	    snapshotMs: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new Metrics(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.bootMs = source["bootMs"];
+	        this.startMs = source["startMs"];
+	        this.resetMs = source["resetMs"];
+	        this.adbPort = source["adbPort"];
+	        this.headless = source["headless"];
+	        this.actions = source["actions"];
+	        this.lastActionMs = source["lastActionMs"];
+	        this.snapshotMs = source["snapshotMs"];
+	    }
+	}
 
 }
 
@@ -239,6 +265,85 @@ export namespace netproxy {
 	        this.Port = source["Port"];
 	        this.Username = source["Username"];
 	        this.Password = source["Password"];
+	    }
+	}
+
+}
+
+export namespace pro {
+	
+	export class AccountDevice {
+	    install_id: string;
+	    name: string;
+	    platform: string;
+	    last_seen: number;
+	    current: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new AccountDevice(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.install_id = source["install_id"];
+	        this.name = source["name"];
+	        this.platform = source["platform"];
+	        this.last_seen = source["last_seen"];
+	        this.current = source["current"];
+	    }
+	}
+	export class AccountLicense {
+	    id: string;
+	    kind: string;
+	    source: string;
+	    status: string;
+	    features: string[];
+	    max_devices: number;
+	    paid_through: number;
+	    license_expires_at: number;
+	    grace_until: number;
+	    updates_through: number;
+	    devices: number;
+	    email: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new AccountLicense(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.kind = source["kind"];
+	        this.source = source["source"];
+	        this.status = source["status"];
+	        this.features = source["features"];
+	        this.max_devices = source["max_devices"];
+	        this.paid_through = source["paid_through"];
+	        this.license_expires_at = source["license_expires_at"];
+	        this.grace_until = source["grace_until"];
+	        this.updates_through = source["updates_through"];
+	        this.devices = source["devices"];
+	        this.email = source["email"];
+	    }
+	}
+	export class DeviceInfo {
+	    install_id: string;
+	    name: string;
+	    platform: string;
+	    last_seen: number;
+	    current: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new DeviceInfo(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.install_id = source["install_id"];
+	        this.name = source["name"];
+	        this.platform = source["platform"];
+	        this.last_seen = source["last_seen"];
+	        this.current = source["current"];
 	    }
 	}
 
@@ -527,6 +632,10 @@ export namespace service {
 	    proxyId: string;
 	    ramMb: number;
 	    cpus: number;
+	    preset: string;
+	    screenW: number;
+	    screenH: number;
+	    density: number;
 	    notes: string;
 	    tags: string[];
 	    pinned: boolean;
@@ -541,6 +650,10 @@ export namespace service {
 	        this.proxyId = source["proxyId"];
 	        this.ramMb = source["ramMb"];
 	        this.cpus = source["cpus"];
+	        this.preset = source["preset"];
+	        this.screenW = source["screenW"];
+	        this.screenH = source["screenH"];
+	        this.density = source["density"];
 	        this.notes = source["notes"];
 	        this.tags = source["tags"];
 	        this.pinned = source["pinned"];
@@ -555,6 +668,10 @@ export namespace service {
 	    proxyId: string;
 	    ramMb: number;
 	    cpus: number;
+	    preset: string;
+	    screenW: number;
+	    screenH: number;
+	    density: number;
 	    imageVersion: string;
 	    notes: string;
 	    tags: string[];
@@ -567,6 +684,7 @@ export namespace service {
 	    deletedAt: string;
 	    state: string;
 	    error: string;
+	    adbPort?: number;
 	
 	    static createFrom(source: any = {}) {
 	        return new MobileRow(source);
@@ -582,6 +700,10 @@ export namespace service {
 	        this.proxyId = source["proxyId"];
 	        this.ramMb = source["ramMb"];
 	        this.cpus = source["cpus"];
+	        this.preset = source["preset"];
+	        this.screenW = source["screenW"];
+	        this.screenH = source["screenH"];
+	        this.density = source["density"];
 	        this.imageVersion = source["imageVersion"];
 	        this.notes = source["notes"];
 	        this.tags = source["tags"];
@@ -594,6 +716,7 @@ export namespace service {
 	        this.deletedAt = source["deletedAt"];
 	        this.state = source["state"];
 	        this.error = source["error"];
+	        this.adbPort = source["adbPort"];
 	    }
 	}
 	export class MobileStart {
@@ -646,15 +769,61 @@ export namespace service {
 	        this.bytes = source["bytes"];
 	    }
 	}
+	export class ProAccountStatus {
+	    signedIn: boolean;
+	    email: string;
+	    name: string;
+	    license?: pro.AccountLicense;
+	    error?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new ProAccountStatus(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.signedIn = source["signedIn"];
+	        this.email = source["email"];
+	        this.name = source["name"];
+	        this.license = this.convertValues(source["license"], pro.AccountLicense);
+	        this.error = source["error"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class ProStatus {
 	    active: boolean;
 	    key: string;
 	    state: string;
+	    kind: string;
+	    source: string;
+	    features: string[];
 	    paidThrough: string;
+	    licenseExpiresAt: string;
+	    graceUntil: string;
+	    updatesThrough: string;
 	    version: string;
 	    notes: string;
 	    checkedAt: string;
 	    error: string;
+	    offline: boolean;
+	    test: boolean;
 	    waiting: boolean;
 	
 	    static createFrom(source: any = {}) {
@@ -666,11 +835,19 @@ export namespace service {
 	        this.active = source["active"];
 	        this.key = source["key"];
 	        this.state = source["state"];
+	        this.kind = source["kind"];
+	        this.source = source["source"];
+	        this.features = source["features"];
 	        this.paidThrough = source["paidThrough"];
+	        this.licenseExpiresAt = source["licenseExpiresAt"];
+	        this.graceUntil = source["graceUntil"];
+	        this.updatesThrough = source["updatesThrough"];
 	        this.version = source["version"];
 	        this.notes = source["notes"];
 	        this.checkedAt = source["checkedAt"];
 	        this.error = source["error"];
+	        this.offline = source["offline"];
+	        this.test = source["test"];
 	        this.waiting = source["waiting"];
 	    }
 	}
@@ -1134,6 +1311,10 @@ export namespace store {
 	    proxyId: string;
 	    ramMb: number;
 	    cpus: number;
+	    preset: string;
+	    screenW: number;
+	    screenH: number;
+	    density: number;
 	    imageVersion: string;
 	    notes: string;
 	    tags: string[];
@@ -1159,6 +1340,10 @@ export namespace store {
 	        this.proxyId = source["proxyId"];
 	        this.ramMb = source["ramMb"];
 	        this.cpus = source["cpus"];
+	        this.preset = source["preset"];
+	        this.screenW = source["screenW"];
+	        this.screenH = source["screenH"];
+	        this.density = source["density"];
 	        this.imageVersion = source["imageVersion"];
 	        this.notes = source["notes"];
 	        this.tags = source["tags"];

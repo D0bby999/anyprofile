@@ -10,6 +10,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -171,6 +172,44 @@ func primaryLang(langs string) string {
 	first, _, _ := strings.Cut(langs, ",")
 	tag, _, _ := strings.Cut(strings.TrimSpace(first), "-")
 	return strings.ToLower(tag)
+}
+
+// uaChromiumMajor is the Chromium major a user agent names, 0 when it names
+// none.
+func uaChromiumMajor(ua string) int {
+	m := chromeMajor.FindStringSubmatch(ua)
+	if m == nil {
+		return 0
+	}
+	n, _ := strconv.Atoi(m[1])
+	return n
+}
+
+// Renewed reports whether the baseline was measured on another Chromium build
+// than got. An engine update moves the user agent, and with it every value the
+// build itself decides (the canvas hash, the WebGL strings), so the old
+// baseline no longer describes the same browser and comparing field by field
+// would report a change the user never made. A baseline without a user agent
+// cannot describe anything either, so it renews the same way.
+func Renewed(baseline, got Sample) bool {
+	return uaChromiumMajor(baseline.UA) != uaChromiumMajor(got.UA)
+}
+
+// CompareOrRenew decides what one measurement means against the stored
+// baseline: "" starts a new one ("baseline"), a baseline from another Chromium
+// build is replaced instead of compared ("renewed"), and only a sample of the
+// same build as the baseline is compared field by field ("match" or "drift"
+// with the differing names). The caller stores got as the new baseline whenever
+// the verdict is "baseline" or "renewed".
+func CompareOrRenew(baselineJSON string, got Sample, wantTZ, wantLangs string, primaryLangOnly bool) (string, []string) {
+	var base Sample
+	if baselineJSON == "" || json.Unmarshal([]byte(baselineJSON), &base) != nil {
+		return "baseline", nil
+	}
+	if Renewed(base, got) {
+		return "renewed", nil
+	}
+	return Compare(base, got, wantTZ, wantLangs, primaryLangOnly)
 }
 
 // Compare returns "match" or "drift" and the names of differing fields. The

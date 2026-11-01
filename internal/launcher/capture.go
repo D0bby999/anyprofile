@@ -32,11 +32,9 @@ func (l *Launcher) capture(prof store.Profile, eng engine.Engine, c *cdppipe.Con
 			l.saveChecks(prof, eng, s, primaryOnly, sessionID)
 		}
 		prev, _ := l.st.FingerprintBaseline(prof.ID)
-		var base fingerprint.Sample
-		if prev == "" || json.Unmarshal([]byte(prev), &base) != nil {
-			verdict, baseline = "baseline", last
-		} else {
-			verdict, diff = fingerprint.Compare(base, s, prof.Timezone, prof.Languages, primaryOnly)
+		verdict, diff = fingerprint.CompareOrRenew(prev, s, prof.Timezone, prof.Languages, primaryOnly)
+		if verdict == "baseline" || verdict == "renewed" {
+			baseline = last // the stored baseline no longer describes this browser
 		}
 	}
 	if err := l.st.SaveFingerprint(prof.ID, baseline, last, verdict, diff); err != nil {

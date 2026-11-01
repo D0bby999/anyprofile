@@ -6,8 +6,12 @@ APP         := build/bin/AnyProfile.app
 # The app's version, from wails.json; the in-app updater compares against it.
 VERSION     ?= $(shell sed -n 's/.*"productVersion": *"\([^"]*\)".*/\1/p' wails.json)
 LDFLAGS     := -X github.com/D0bby999/anyprofile/internal/update.Current=$(VERSION)
+# The installed AnyMobile runtime, for `make mobile-bench`.
+MOBILE_RUNTIME ?= $(HOME)/Library/Application Support/AnyProfile/mobile/runtime
+BENCH_RUNS     ?= 3
+BENCH_OUT      ?= build/mobile-bench
 
-.PHONY: dev build build-windows fury-config test test-integration lint
+.PHONY: dev build build-windows fury-config test test-integration lint mobile-bench mobile-faststart
 
 fury-config:
 	cd tools/fury-config && cargo build --release --locked
@@ -51,6 +55,16 @@ test: fury-config
 # Needs ANYPROFILE_TEST_FURY_APP=<path to a verified Fury.app>.
 test-integration: fury-config
 	go test -tags integration ./internal/launcher/ ./internal/service/ -count=1 -v
+
+# Headless VM benchmark: create, boot, idle CPU/RSS, screenshot, stop, disk.
+# Writes BENCH_RUNS JSON lines and a CSV under BENCH_OUT. Needs a runtime.
+mobile-bench:
+	RUNS=$(BENCH_RUNS) MOBILE_RUNTIME="$(MOBILE_RUNTIME)" scripts/mobile-bench.sh "$(BENCH_OUT)"
+
+# Save/thaw one device five times, then prove a cold boot loses the RAM marker.
+mobile-faststart:
+	ANYPROFILE_MOBILE_RUNTIME="$(MOBILE_RUNTIME)" go test -tags vmintegration \
+	  -run TestFastStart -count=1 -v -timeout 30m ./internal/mobile/vm/
 
 lint:
 	./scripts/check-spdx.sh

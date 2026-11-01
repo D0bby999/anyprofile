@@ -75,3 +75,61 @@ func TestSampleReadsConsistencySignals(t *testing.T) {
 		t.Fatalf("sample = %+v", s)
 	}
 }
+
+func TestCompareOrRenew(t *testing.T) {
+	const ua155 = "Mozilla/5.0 (Macintosh) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36"
+	const ua156 = "Mozilla/5.0 (Macintosh) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36"
+	old := Sample{Canvas: "4b92cc9c0a0f033b", UA: ua155, Platform: "MacIntel", HWC: 8, Mem: 16, Screen: "1712x1112", TZ: "Asia/Saigon", Langs: "en-US"}
+	raw, _ := json.Marshal(old)
+
+	// Nothing stored yet: this measurement becomes the baseline.
+	if v, d := CompareOrRenew("", old, "Asia/Saigon", "en-US", true); v != "baseline" || d != nil {
+		t.Fatalf("empty baseline = %q %v", v, d)
+	}
+	// An unreadable baseline starts over instead of comparing with nothing.
+	if v, _ := CompareOrRenew("{not json", old, "Asia/Saigon", "en-US", true); v != "baseline" {
+		t.Fatalf("corrupt baseline = %q", v)
+	}
+	// Same build, nothing moved: a plain match.
+	if v, d := CompareOrRenew(string(raw), old, "Asia/Saigon", "en-US", true); v != "match" || d != nil {
+		t.Fatalf("same build = %q %v", v, d)
+	}
+
+	// The engine moved to a new Chromium: the user agent and the canvas hash
+	// both change, which is the browser's doing, not the profile's. That
+	// replaces the baseline instead of reporting drift on every launch.
+	updated := old
+	updated.UA = ua156
+	updated.Canvas = "07464365c6ce7358"
+	if v, d := CompareOrRenew(string(raw), updated, "Asia/Saigon", "en-US", true); v != "renewed" || d != nil {
+		t.Fatalf("browser update = %q %v", v, d)
+	}
+	if !Renewed(old, updated) {
+		t.Fatal("a new Chromium major is not a renewal")
+	}
+	// A patch release keeps the major in the user agent: same build, so the
+	// values stay comparable and a real change still shows as drift.
+	patch := old
+	patch.Canvas = "different"
+	if Renewed(old, patch) {
+		t.Fatal("a patch release is not a renewal")
+	}
+	if v, d := CompareOrRenew(string(raw), patch, "Asia/Saigon", "en-US", true); v != "drift" || len(d) != 1 || d[0] != "canvas" {
+		t.Fatalf("canvas drift on the same build = %q %v", v, d)
+	}
+
+	// A baseline that names no browser cannot describe one either.
+	bare := Sample{Canvas: "x"}
+	if v, _ := CompareOrRenew(mustJSON(t, bare), old, "Asia/Saigon", "en-US", true); v != "renewed" {
+		t.Fatalf("baseline without a user agent = %q", v)
+	}
+}
+
+func mustJSON(t *testing.T, s Sample) string {
+	t.Helper()
+	b, err := json.Marshal(s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return string(b)
+}

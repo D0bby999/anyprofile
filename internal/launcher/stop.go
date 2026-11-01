@@ -118,7 +118,11 @@ func (l *Launcher) Focus(profileID string) bool {
 	l.mu.Lock()
 	state, pid := p.info.State, p.info.PID
 	l.mu.Unlock()
-	return state == Running && activate(pid)
+	if state != Running {
+		return false
+	}
+	l.claimFront()
+	return activate(pid)
 }
 
 // StopAll stops every running browser in parallel.

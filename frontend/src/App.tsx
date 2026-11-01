@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Api, main, onDataChanged, onMenu, service } from './api'
+import { Api, main, onDataChanged, onMenu, onProEvent, service } from './api'
 import { language, setLanguage, t, type Language } from './i18n'
 import { applyTheme, readTheme, type ThemeChoice } from './lib/theme'
 import { useProfiles } from './hooks/use-profiles'
 import { useMobile } from './hooks/use-mobile'
 import { countProfiles } from './lib/health'
+import { nthRunning } from './lib/open-profiles'
 import { tagCounts } from './lib/tags'
 import { useSites } from './hooks/use-sites'
 import { Sidebar, type Page, type View } from './components/sidebar'
@@ -41,10 +42,14 @@ export default function App() {
   const [fileVaultOn, setFileVaultOn] = useState(true)
   const [engines, setEngines] = useState<main.EngineInfo[] | null>(null)
   const [proxyCount, setProxyCount] = useState(0)
+  const [pro, setPro] = useState<service.ProStatus | null>(null)
   const [theme, setTheme] = useState<ThemeChoice>(readTheme())
   const [lang, setLang] = useState<Language>(language)
   const [defaults, setDefaults] = useState<service.Defaults>(service.Defaults.createFrom({ site: 'other', proxy: 'auto', onOpen: 'start' }))
   const profiles = useProfiles()
+  // The rows the ⌘1…⌘9 shortcuts read, kept current without re-registering them.
+  const openRows = useRef(profiles.rows)
+  openRows.current = profiles.rows
   const mobile = useMobile()
   const { sites } = useSites()
 
@@ -65,6 +70,9 @@ export default function App() {
   const refreshProxies = () => { Api.ListProxies().then((p) => setProxyCount((p ?? []).length)).catch(() => {}) }
   useEffect(refreshProxies, [])
   useEffect(() => onDataChanged(['proxies'], refreshProxies), [])
+  useEffect(() => { Api.ProStatus().then(setPro).catch(() => {}) }, [])
+  useEffect(() => onDataChanged(['pro'], () => { Api.ProStatus().then(setPro).catch(() => {}) }), [])
+  useEffect(() => onProEvent(() => { Api.ProStatus().then(setPro).catch(() => {}) }), [])
 
   const counts = useMemo(() => countProfiles(profiles.rows), [profiles.rows])
 
@@ -85,6 +93,15 @@ export default function App() {
     { combo: 'mod+f', run: focusSearch },
     { combo: '/', run: focusSearch },
     { combo: '?', run: () => setSheet(true) },
+    // ⌘1…⌘9 brings the nth open browser forward, in the order the windows are
+    // arranged in: the same number picks the same pane on screen.
+    ...Array.from({ length: 9 }, (_, i) => ({
+      combo: `mod+${i + 1}`,
+      run: () => {
+        const row = nthRunning(openRows.current, i + 1)
+        if (row) Api.FocusProfile(row.id)
+      },
+    })),
   ]), [])
   const tags = useMemo(() => tagCounts(profiles.rows), [profiles.rows])
 
@@ -169,8 +186,9 @@ export default function App() {
     Promise.resolve(go).catch((e: unknown) => toast.error(errorText(e)))
   }
   return (
-    <div className="app" key={lang}>
+    <div className={`app${pro?.active ? ' is-pro' : ''}`} key={lang}>
       <Sidebar page={page} view={view} counts={counts} tags={tags} sites={sites} siteCounts={siteCounts} proxyCount={proxyCount} mobileCount={mobile.rows.length}
+        pro={pro} onOpenPro={() => openSettings('settings-pro')}
         engineReady={engineReady}
         engineLabel={defaultEngine ? (engineReady ? t.engines.ready(engineName, defaultEngine.version) : t.engines.missing(engineName)) : ''}
         onNavigate={navigate} onNewProfile={newProfile} />

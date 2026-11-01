@@ -258,6 +258,22 @@ export function MobileAvailability() {
   return window['go']['main']['App']['MobileAvailability']();
 }
 
+export function MobileFastStart() {
+  return window['go']['main']['App']['MobileFastStart']();
+}
+
+export function MobileMetrics(arg1) {
+  return window['go']['main']['App']['MobileMetrics'](arg1);
+}
+
+export function MobilePreviewFrame(arg1) {
+  return window['go']['main']['App']['MobilePreviewFrame'](arg1);
+}
+
+export function MobileWindowOnTop(arg1) {
+  return window['go']['main']['App']['MobileWindowOnTop'](arg1);
+}
+
 export function MoveProfilesToFolder(arg1, arg2) {
   return window['go']['main']['App']['MoveProfilesToFolder'](arg1, arg2);
 }
@@ -286,12 +302,48 @@ export function PickBackup() {
   return window['go']['main']['App']['PickBackup']();
 }
 
+export function PressMobileKey(arg1, arg2) {
+  return window['go']['main']['App']['PressMobileKey'](arg1, arg2);
+}
+
+export function ProAccountActivate() {
+  return window['go']['main']['App']['ProAccountActivate']();
+}
+
+export function ProAccountDevices() {
+  return window['go']['main']['App']['ProAccountDevices']();
+}
+
+export function ProAccountLink(arg1) {
+  return window['go']['main']['App']['ProAccountLink'](arg1);
+}
+
+export function ProAccountLogin() {
+  return window['go']['main']['App']['ProAccountLogin']();
+}
+
+export function ProAccountRemoveDevice(arg1) {
+  return window['go']['main']['App']['ProAccountRemoveDevice'](arg1);
+}
+
+export function ProAccountSignOut() {
+  return window['go']['main']['App']['ProAccountSignOut']();
+}
+
+export function ProAccountStatus() {
+  return window['go']['main']['App']['ProAccountStatus']();
+}
+
 export function ProActivate(arg1) {
   return window['go']['main']['App']['ProActivate'](arg1);
 }
 
 export function ProBuy(arg1) {
   return window['go']['main']['App']['ProBuy'](arg1);
+}
+
+export function ProBuyGift() {
+  return window['go']['main']['App']['ProBuyGift']();
 }
 
 export function ProCancelBuy() {
@@ -306,12 +358,24 @@ export function ProDeactivate() {
   return window['go']['main']['App']['ProDeactivate']();
 }
 
+export function ProDevices() {
+  return window['go']['main']['App']['ProDevices']();
+}
+
 export function ProOpenPortal() {
   return window['go']['main']['App']['ProOpenPortal']();
 }
 
 export function ProOpenScripts() {
   return window['go']['main']['App']['ProOpenScripts']();
+}
+
+export function ProRedeemGift(arg1) {
+  return window['go']['main']['App']['ProRedeemGift'](arg1);
+}
+
+export function ProRemoveDevice(arg1) {
+  return window['go']['main']['App']['ProRemoveDevice'](arg1);
 }
 
 export function ProStatus() {
@@ -346,6 +410,10 @@ export function ResetFingerprint(arg1) {
   return window['go']['main']['App']['ResetFingerprint'](arg1);
 }
 
+export function ResetMobileDevice(arg1, arg2) {
+  return window['go']['main']['App']['ResetMobileDevice'](arg1, arg2);
+}
+
 export function RestoreMobileBackup(arg1) {
   return window['go']['main']['App']['RestoreMobileBackup'](arg1);
 }
@@ -360,6 +428,10 @@ export function RestoreProfile(arg1) {
 
 export function RestoreSnapshot(arg1) {
   return window['go']['main']['App']['RestoreSnapshot'](arg1);
+}
+
+export function ScreenshotMobileDevice(arg1) {
+  return window['go']['main']['App']['ScreenshotMobileDevice'](arg1);
 }
 
 export function Sessions(arg1) {
@@ -396,6 +468,14 @@ export function SetLanguage(arg1) {
 
 export function SetMaxConcurrentLaunches(arg1) {
   return window['go']['main']['App']['SetMaxConcurrentLaunches'](arg1);
+}
+
+export function SetMobileFastStart(arg1) {
+  return window['go']['main']['App']['SetMobileFastStart'](arg1);
+}
+
+export function SetMobileWindowOnTop(arg1, arg2) {
+  return window['go']['main']['App']['SetMobileWindowOnTop'](arg1, arg2);
 }
 
 export function SetPinnedMany(arg1, arg2) {
@@ -446,6 +526,10 @@ export function StartMobileDevice(arg1) {
   return window['go']['main']['App']['StartMobileDevice'](arg1);
 }
 
+export function StartMobileRecording(arg1) {
+  return window['go']['main']['App']['StartMobileRecording'](arg1);
+}
+
 export function StartProfile(arg1) {
   return window['go']['main']['App']['StartProfile'](arg1);
 }
@@ -460,6 +544,10 @@ export function StartupError() {
 
 export function StopMobileDevice(arg1) {
   return window['go']['main']['App']['StopMobileDevice'](arg1);
+}
+
+export function StopMobileRecording(arg1) {
+  return window['go']['main']['App']['StopMobileRecording'](arg1);
 }
 
 export function StopProfile(arg1) {
@@ -484,6 +572,10 @@ export function TakeSnapshot(arg1) {
 
 export function TakeWhatsNew() {
   return window['go']['main']['App']['TakeWhatsNew']();
+}
+
+export function TapMobileDevice(arg1, arg2, arg3) {
+  return window['go']['main']['App']['TapMobileDevice'](arg1, arg2, arg3);
 }
 
 export function TrashMobileDevice(arg1) {

@@ -4,6 +4,7 @@ import { t } from '../i18n'
 import { tagColor } from '../lib/tags'
 import { modLabel } from '../lib/platform'
 import type { Site } from '../lib/sites'
+import type { service } from '../api'
 import { SiteGlyph } from './site-glyph'
 import { Icon, LogoMark, type IconName } from './icons'
 
@@ -26,11 +27,13 @@ type Props = {
   mobileCount: number
   engineLabel: string
   engineReady: boolean
+  pro?: service.ProStatus | null
+  onOpenPro?: () => void
   onNavigate: (page: Page, view?: View) => void
   onNewProfile: () => void
 }
 
-export function Sidebar({ page, view, counts, tags, sites, siteCounts, proxyCount, mobileCount, engineLabel, engineReady, onNavigate, onNewProfile }: Props) {
+export function Sidebar({ page, view, counts, tags, sites, siteCounts, proxyCount, mobileCount, engineLabel, engineReady, pro, onOpenPro, onNavigate, onNewProfile }: Props) {
   const [tagsOpen, setTagsOpen] = useState(true)
   const [allTags, setAllTags] = useState(false)
   const item = (label: string, icon: IconName, active: boolean, onClick: () => void, count?: number, tone: '' | 'live' | 'warn' = '') => (
@@ -52,6 +55,7 @@ export function Sidebar({ page, view, counts, tags, sites, siteCounts, proxyCoun
       <div className="brandrow">
         <LogoMark />
         <b>{t.appName}</b>
+        {pro?.active && <span className="propill"><Icon name="spark" className="icon xs" />PRO</span>}
       </div>
       <button className="btn primary block newbtn nodrag" onClick={onNewProfile} title={`${t.nav.newProfile} ${modLabel}N`}>
         <Icon name="plus" />
@@ -99,6 +103,13 @@ export function Sidebar({ page, view, counts, tags, sites, siteCounts, proxyCoun
         )}
       </nav>
       <div className="sidefoot">
+        {pro?.active && (
+          <button type="button" className="prostatus nodrag" onClick={() => onOpenPro?.()} title={t.pro.title}>
+            <span className="prostatus-icon"><Icon name="spark" className="icon sm" /></span>
+            <span className="prostatus-copy"><b>{t.pro.title}</b><small>{pro.kind === 'lifetime' ? t.pro.kindLifetime : pro.kind === 'gift' ? t.pro.kindGift : t.pro.stateActive('')}</small></span>
+            <Icon name="chevron" className="icon xs prostatus-arrow" />
+          </button>
+        )}
         {item(t.nav.tools, 'spark', page === 'tools', () => onNavigate('tools'))}
         {item(t.nav.settings, 'settings', page === 'settings', () => onNavigate('settings'))}
         {engineLabel && (engineReady ? (

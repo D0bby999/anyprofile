@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"log/slog"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/D0bby999/anyprofile/internal/cdppipe"
@@ -69,6 +70,9 @@ type Launcher struct {
 	gate        *launchGate
 	stoppingAll bool
 	stopAllDone chan struct{}
+	// focusEpoch counts the times the user asked for another window to be in
+	// front: a browser still being kept behind when it moves on stops fighting.
+	focusEpoch atomic.Int64
 
 	readyTimeout, termGrace time.Duration
 	// TestArgs are added to every launch. Only integration tests set them,
@@ -78,6 +82,12 @@ type Launcher struct {
 
 	// Capture measures the fingerprint at each launch; the app turns it on.
 	Capture bool
+
+	// Screen is the work area of the screen a window opens on. Reading it
+	// needs the app's main thread on macOS, which a test binary does not run,
+	// so the app sets it and anything without one leaves it nil: the browser
+	// then opens where Chromium puts it.
+	Screen func() (Rect, bool)
 	// OnData is told "profiles" after a measurement is saved; may be nil.
 	OnData func(kind string)
 	// CheckExit measures a proxy's exit right after a launch (netproxy.Check
@@ -137,6 +147,15 @@ func (l *Launcher) Info(profileID string) (Info, bool) {
 	return p.info, true
 }
 
+// opening is how many profiles are starting or open: it is what a new first
+// window steps away from, so two of them never sit exactly on top of each
+// other.
+func (l *Launcher) opening() int {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return len(l.procs)
+}
+
 func (l *Launcher) set(p *proc, s State, errMsg string) {
 	l.mu.Lock()
 	p.info.State, p.info.Error = s, errMsg
@@ -157,6 +176,10 @@ func (l *Launcher) StartBehind(ctx context.Context, profileID string) error {
 	return l.open(ctx, profileID, true)
 }
 
+// claimFront records that the user has asked for a window now, so a browser
+// still being kept behind from an earlier launch stops fighting for it.
+func (l *Launcher) claimFront() { l.focusEpoch.Add(1) }
+
 func (l *Launcher) open(ctx context.Context, profileID string, behind bool) error {
 	if err := ctx.Err(); err != nil {
 		return err
@@ -171,6 +194,7 @@ func (l *Launcher) open(ctx context.Context, profileID string, behind bool) erro
 		l.mu.Unlock()
 		if state == Running {
 			if !behind {
+				l.claimFront()
 				activate(pid)
 			}
 			return nil

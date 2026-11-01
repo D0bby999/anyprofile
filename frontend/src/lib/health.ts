@@ -13,15 +13,28 @@ const rank: Record<HealthLevel, number> = { danger: 4, warn: 3, info: 2, ok: 1, 
 type CheckResult = { id: string; ok: boolean; level: string }
 type Row = Pick<service.ProfileRow, 'fpVerdict' | 'fpDiff' | 'proxyExpiry' | 'lastOpenAt' | 'cdpPort'> & { flags?: Flag[]; checks?: CheckResult[] }
 
+/**
+ * The values the browser build itself decides. When only these moved, the
+ * engine or the graphics driver changed under the profile: worth knowing, but
+ * not the user's doing and not the warning a changed timezone or screen is.
+ */
+const buildFields = new Set(['ua', 'canvas', 'webglVendor', 'webglRenderer'])
+
 /** The one thing most worth knowing about a profile, plus every reason in words. */
 export function health(row: Row, now: Date = new Date()): Health {
   void now // later checks (sessions, consistency) depend on time
   const r: Reason[] = []
   const h = t.health
   if (row.fpVerdict === 'drift') {
-    const fields = (row.fpDiff ?? []).map((f) => h.fields[f] ?? f).join(', ')
-    r.push({ level: 'danger', label: h.drift, text: h.driftText(fields) })
+    const diff = row.fpDiff ?? []
+    const fields = diff.map((f) => h.fields[f] ?? f).join(', ')
+    r.push(diff.every((f) => buildFields.has(f))
+      ? { level: 'warn', label: h.driftBuild, text: h.driftBuildText(fields) }
+      : { level: 'danger', label: h.drift, text: h.driftText(fields) })
   }
+  // A baseline is replaced, not compared, when the browser moved to a new
+  // build: the stored reference could not describe the browser any more.
+  if (row.fpVerdict === 'renewed') r.push({ level: 'info', label: h.renewed, text: h.renewedText })
   for (const f of row.flags ?? []) {
     const { label, text } = flagText(f)
     r.push({ level: (f.level as HealthLevel) || 'info', label, text, tone: f.id === 'direct' ? 'warn' : undefined })

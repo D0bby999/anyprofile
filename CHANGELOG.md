@@ -5,6 +5,125 @@ keeps them together.
 
 ## Unreleased
 
+Window focus (261101):
+
+- Mobile devices opened in a row now stand side by side instead of every first
+  window landing on the same spot at the right edge: a phone is tall and
+  narrow, so four fit across a 13-inch screen, and the fifth steps slightly off
+  the first column. Each device still remembers where the user left it.
+- Opening one profile brings that browser to the front. It used to open behind
+  the app and then be pushed back several times while starting, which looked
+  like the window flickering.
+- Opening several profiles at once lays them out in a grid behind the app and
+  then raises the whole set once, the first window keeping the focus, so they
+  neither land on the same spot nor take the focus from each other. A toast
+  says how many opened. The API and agents still open browsers without
+  touching the focus.
+- Past six windows the grid is skipped, since every pane would be too small to
+  work in; the toast offers to arrange them by hand instead of pretending it
+  did. ⌘1…⌘9 brings the nth open browser to the front, numbered in the same
+  order the windows are arranged in.
+- Arrange windows now leaves the window in the first cell in front, instead of
+  whichever window happened to be activated last.
+- A profile's first window opens at a size the web is laid out for (1280 wide,
+  at most 900 tall, fitted to the work area with a margin, stepped for each
+  window already open). Chromium keeps whatever size and position the user
+  leaves it at afterwards.
+
+Fingerprint reference (261101):
+
+- A profile measured on an older Chromium build no longer reports
+  "Fingerprint changed" on every launch. The reference is renewed when the
+  browser itself moves to a new Chromium build, and a drift that only the
+  build decides (user agent, canvas, WebGL) reads as a warning instead of a
+  red alert. Profiles left with a reference from the Apostate build get a
+  fresh one on their next launch.
+
+Agent automation (261101):
+
+- MCP agents can find an element by text, role and name, label or test id
+  (`find`, `click_text`, `device_find`, `device_tap_text`) and pass a `target`
+  object to `click`, `type`, `device_tap` and `device_type`. A step no longer
+  needs a full snapshot first; `find` returns refs only, and ambiguity returns
+  the candidates instead of guessing. Targets wait up to five seconds for the
+  element to appear, so a script does not need a sleep. Mobile adds
+  `device_long_press`, `device_drag`, `device_pull_file`, clipboard read/write
+  (typed unsupported where Android blocks adb), notifications, and
+  camera/microphone/location/notifications/photos permission grant/revoke.
+- Web agents can hover, double-click, right-click and drag; `snapshot
+  mode=interactive` drops static text; `captcha_check` detects a challenge and
+  tells the agent to hand it to the user instead of looping.
+- MCP now keeps a per-session lease on `open_profile`/`open_device` (stateful
+  streamable sessions), so two agents cannot drive one profile at once — every
+  tool on the profile, not only `open_profile`, checks the lease.
+- `anyprofile record` records intent steps into a flow JSON (`secret: true`
+  keeps typed text out); replay with `anyprofile run`. Automation examples and
+  a pass/fail/wall-time harness live in `examples/automation/` and
+  `scripts/automation-eval.sh`. Target clicks
+  wait for a stable, enabled element, and every MCP call leaves a JSONL trace
+  under `logs/traces/` (tool, profile/device, ms, ok, error — no page content).
+- Scripts can drive the same actions over HTTP: `/v1/act`, `/v1/run`,
+  `/v1/find`, `/v1/trace`, with a TypeScript client, a Python client and a
+  dependency-free `anyprofile run flow.json` CLI. HTTP sessions lease a
+  profile/device for 60 s with a heartbeat, so two scripts cannot silently
+  share a tab.
+
+Pro licence v2 (261031):
+
+- Pro now uses a signed Ed25519 JWS certificate bound to a per-computer
+  device key, not just a bearer key. The app verifies it offline, with
+  per-kind grace: subscription 7 days, gift 30 days, lifetime five years.
+  Lifetime means permanent use plus 12 months of updates/support.
+- The owner can grant a lifetime/test licence or create a promo/paid gift
+  code without Stripe (`pro/tools/admin.sh`). Gift codes are one-time,
+  hashed at rest, and extend the licence already on the computer. The app's
+  Pro page has a gift-code field; the UI still calls the feature Mobile.
+- A customer can buy a one-year gift from Settings → Pro → Buy a gift. This
+  uses Stripe `mode=payment` and the `pro_gift` lookup key; create that
+  one-time price before enabling the button in production.
+- Customers can manage Pro devices without a password: `/manage` sends a
+  20-minute email link to `/manage/devices` to remove one device or reset all.
+- Stripe subscriptions keep working and can activate the new certificate.
+  The old key path remains for one release.
+
+AnyMobile (261031):
+
+- Mobile now has automation presets (Automation 2 GB/2 CPU/540×960,
+  Balanced, Interactive), headless starts for agents, a persistent ADB shell,
+  soft/hard reset with a clean-disk snapshot, per-device metrics and the
+  `device_reset`/`device_metrics`/`device_show` MCP tools. The app UI still
+  calls the feature Mobile and opens a window when the user presses Open.
+- Mobile devices now go quiet when nobody uses them: a device without a window
+  turns its screen off after 15 s and, after two minutes without a tool call,
+  has its vCPUs frozen — CPU near 0, RAM and apps intact, about 60 ms to thaw.
+  Screenshots and input wake the screen automatically. scrcpy is capped at
+  30 fps / 4 Mbps so an idle window does not heat the Mac.
+- Mobile devices can be watched inside the app: **View in app** opens a JPEG
+  preview (about 2-3 frames a second) with tap, Back and Home. It is a quick
+  look, not a replacement for the smooth scrcpy window.
+- The scrcpy window now remembers its position per device, can stay always on
+  top, and the row menu can take a screenshot (`~/Pictures/AnyProfile`) or
+  record up to three minutes (`~/Movies/AnyProfile`).
+- Mobile devices start fast again: closing one saves its RAM state (about
+  2.5 GB per device) and reopening it takes 2.6-4.4 s instead of a ~28 s cold
+  boot. The Mobile page has a **Fast start** switch that also deletes the
+  saved states when turned off. A saved state is valid only for the same
+  runtime, image, shape and disks; a restore, reset or crash makes the next
+  open cold.
+
+- The Mac mobile runtime is now **AnyMobile**, its internal name: the Pro
+  folder is `anymobile/`, its engines are `anymobile` and `anymobile-image`,
+  and packages, records and scripts use those names. The app keeps calling the
+  feature **Mobile** everywhere. `android-vm` 1.0.0 was never published; the
+  old engine id is only kept in historical notes. The runtime now ships its
+  GPL/Apache/BSD texts and an `anymobile/verify.sh` gate before publishing.
+- Legacy Apostate databases migrate again: the pre-option 0.5.1 profiles that
+  migration 21 was written for are verified and rewritten to AnyBrowser after
+  a backup, templates follow, the saved default engine is fixed by schema 23,
+  and schema 24 moves those profiles to the AnyBrowser release that replaced
+  Apostate 0.5.1 (`0.5.1.156`). Unknown or post-option Apostate rows still
+  fail closed. Launch history no longer blocks the migration.
+
 Security rebase (261031):
 
 - The macOS engine is now Chromium 156.0.8078.74 (the 28–29 October stable

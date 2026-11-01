@@ -9,9 +9,9 @@ afterEach(cleanup)
 
 describe('InstallProgress', () => {
   it('shows the download, then says it is unpacking once every byte is in', () => {
-    const { rerender } = render(<InstallProgress progress={{ engine: 'android-vm-image', done: 524288000, total: 1048576000 }} />)
+    const { rerender } = render(<InstallProgress progress={{ engine: 'anymobile-image', done: 524288000, total: 1048576000 }} />)
     expect(screen.getByText(t.engines.installing(50, '500 MB / 1000 MB'))).toBeTruthy()
-    rerender(<InstallProgress progress={{ engine: 'android-vm-image', done: 1048576000, total: 1048576000 }} />)
+    rerender(<InstallProgress progress={{ engine: 'anymobile-image', done: 1048576000, total: 1048576000 }} />)
     expect(screen.getByText(t.engines.unpacking)).toBeTruthy()
   })
 })

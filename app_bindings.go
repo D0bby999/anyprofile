@@ -431,12 +431,13 @@ func (a *App) ResetFingerprint(id string) error {
 }
 func (a *App) PurgeProfile(id string) error { return a.must(func() error { return a.svc.Purge(id) }) }
 
-// StartProfile opens the browser behind the app, so several profiles can be
-// opened in a row without each new window taking the focus; Focus shows it.
+// StartProfile opens the browser in front: the user asked for this window, so
+// it is the one to look at. Opening many at once (StartProfiles) is the case
+// that must not take the focus from itself; Focus brings any of them back.
 func (a *App) StartProfile(id string) error {
 	return a.must(func() error {
 		a.svc.Log.Info("ui asked to start", "profile", id)
-		err := a.svc.Launcher.StartBehind(a.ctx, id)
+		err := a.svc.Launcher.Start(a.ctx, id)
 		a.svc.Log.Info("start returned", "profile", id, "err", err)
 		if errors.Is(err, context.Canceled) && a.ctx.Err() == nil {
 			return nil

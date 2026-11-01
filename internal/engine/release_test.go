@@ -52,6 +52,27 @@ func TestReleaseValidate(t *testing.T) {
 	}
 }
 
+func TestDevLocalAnyBrowserReleaseURL(t *testing.T) {
+	r := rel("1.0.0")
+	r.Engine = "anybrowser"
+	r.URL = "http://127.0.0.1:8765/" + "anybrowser.zip"
+	if err := r.Validate(); err == nil {
+		t.Fatal("loopback URL accepted without the dev flag")
+	}
+	t.Setenv("ANYPROFILE_ANYBROWSER_DEV", "1")
+	if err := r.Validate(); err != nil {
+		t.Fatalf("dev loopback URL rejected: %v", err)
+	}
+	r.URL = "http://127.0.0.1.evil.example/a.zip"
+	if err := r.Validate(); err == nil {
+		t.Fatal("non-loopback URL accepted")
+	}
+	r.URL = "http://192.168.1.2/a.zip"
+	if err := r.Validate(); err == nil {
+		t.Fatal("LAN URL accepted")
+	}
+}
+
 func TestNewerVersion(t *testing.T) {
 	for _, c := range []struct {
 		a, b string

@@ -2,6 +2,11 @@
 
 package anybrowser
 
+import (
+	"os"
+	"strings"
+)
+
 // The macOS arm64 build of AnyBrowser, the project's own Chromium fork
 // (pro/chrome). On a Mac only the macOS persona is offered: the Windows
 // persona renders with the host's fonts, which detection sites notice.
@@ -24,11 +29,11 @@ const (
 	// with --fingerprint-timezone.
 	setsTZ = true
 
-	zipName      = "anybrowser-156.0.8078.74-macos-arm64.zip"
-	zipURL       = "https://example.invalid/anybrowser/" + zipName
-	zipSHA256    = "d338a7c0169e053310c3749039dd126ceb179fd9a4ae2a71dc04d13a61b72d5f"
-	binarySHA256 = "e78f52c48aa986391f7deefcaef615dc3dae80d952389766a2b65ee00ac54a2e"
-	frameworkSHA = "23e66c35a184edfe700afe9138f70ebec2c521abcee3e58247d01bd787f463ef"
+	zipName       = "anybrowser-156.0.8078.74-macos-arm64.zip"
+	defaultZipURL = "https://example.invalid/anybrowser/" + zipName
+	zipSHA256     = "d338a7c0169e053310c3749039dd126ceb179fd9a4ae2a71dc04d13a61b72d5f"
+	binarySHA256  = "e78f52c48aa986391f7deefcaef615dc3dae80d952389766a2b65ee00ac54a2e"
+	frameworkSHA  = "23e66c35a184edfe700afe9138f70ebec2c521abcee3e58247d01bd787f463ef"
 	// teamID is empty until the Developer ID signing identity is pinned at
 	// publish; this local build is ad-hoc signed. The URL stays a placeholder,
 	// so installing from the catalog still fails closed; the hashes let a
@@ -41,3 +46,15 @@ const (
 	// frameworkRel holds the browser's code; the launcher binary is a stub.
 	frameworkRel = appRel + "/Contents/Frameworks/Chromium Framework.framework/Versions/156.0.8078.74/Chromium Framework"
 )
+
+// zipURL is defaultZipURL unless a development shell points the app at a
+// local mirror of the exact pinned zip (scripts/dev-anybrowser-server.sh).
+// The SHA256 below still has to match; a server cannot substitute another
+// build.
+var zipURL = defaultZipURL
+
+func init() {
+	if v := strings.TrimSpace(os.Getenv("ANYPROFILE_ANYBROWSER_URL")); v != "" {
+		zipURL = v
+	}
+}

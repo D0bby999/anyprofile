@@ -5,7 +5,9 @@ import {store} from '../models';
 import {service} from '../models';
 import {site} from '../models';
 import {engine} from '../models';
+import {mobile} from '../models';
 import {fury} from '../models';
+import {pro} from '../models';
 
 export function APIStatus():Promise<main.APIStatus>;
 
@@ -135,6 +137,14 @@ export function MaxConcurrentLaunches():Promise<number>;
 
 export function MobileAvailability():Promise<service.MobileAvailability>;
 
+export function MobileFastStart():Promise<boolean>;
+
+export function MobileMetrics(arg1:string):Promise<mobile.Metrics>;
+
+export function MobilePreviewFrame(arg1:string):Promise<string>;
+
+export function MobileWindowOnTop(arg1:string):Promise<boolean>;
+
 export function MoveProfilesToFolder(arg1:Array<string>,arg2:string):Promise<number>;
 
 export function NewAPIToken():Promise<void>;
@@ -149,9 +159,27 @@ export function Personas():Promise<Array<fury.Persona>>;
 
 export function PickBackup():Promise<string>;
 
+export function PressMobileKey(arg1:string,arg2:string):Promise<void>;
+
+export function ProAccountActivate():Promise<service.ProStatus>;
+
+export function ProAccountDevices():Promise<Array<pro.AccountDevice>>;
+
+export function ProAccountLink(arg1:string):Promise<service.ProAccountStatus>;
+
+export function ProAccountLogin():Promise<service.ProAccountStatus>;
+
+export function ProAccountRemoveDevice(arg1:string):Promise<void>;
+
+export function ProAccountSignOut():Promise<void>;
+
+export function ProAccountStatus():Promise<service.ProAccountStatus>;
+
 export function ProActivate(arg1:string):Promise<service.ProStatus>;
 
 export function ProBuy(arg1:string):Promise<void>;
+
+export function ProBuyGift():Promise<void>;
 
 export function ProCancelBuy():Promise<void>;
 
@@ -159,9 +187,15 @@ export function ProCheck():Promise<service.ProStatus>;
 
 export function ProDeactivate():Promise<void>;
 
+export function ProDevices():Promise<Array<pro.DeviceInfo>>;
+
 export function ProOpenPortal():Promise<void>;
 
 export function ProOpenScripts():Promise<void>;
+
+export function ProRedeemGift(arg1:string):Promise<service.ProStatus>;
+
+export function ProRemoveDevice(arg1:string):Promise<void>;
 
 export function ProStatus():Promise<service.ProStatus>;
 
@@ -179,6 +213,8 @@ export function ReorderFolders(arg1:Array<string>):Promise<void>;
 
 export function ResetFingerprint(arg1:string):Promise<void>;
 
+export function ResetMobileDevice(arg1:string,arg2:string):Promise<void>;
+
 export function RestoreMobileBackup(arg1:string):Promise<void>;
 
 export function RestoreMobileDevice(arg1:string):Promise<void>;
@@ -186,6 +222,8 @@ export function RestoreMobileDevice(arg1:string):Promise<void>;
 export function RestoreProfile(arg1:string):Promise<void>;
 
 export function RestoreSnapshot(arg1:number):Promise<number>;
+
+export function ScreenshotMobileDevice(arg1:string):Promise<string>;
 
 export function Sessions(arg1:string):Promise<Array<store.Session>>;
 
@@ -204,6 +242,10 @@ export function SetFolderColor(arg1:string,arg2:string):Promise<void>;
 export function SetLanguage(arg1:string):Promise<void>;
 
 export function SetMaxConcurrentLaunches(arg1:number):Promise<void>;
+
+export function SetMobileFastStart(arg1:boolean):Promise<void>;
+
+export function SetMobileWindowOnTop(arg1:string,arg2:boolean):Promise<void>;
 
 export function SetPinnedMany(arg1:Array<string>,arg2:boolean):Promise<void>;
 
@@ -229,6 +271,8 @@ export function Snapshots(arg1:string):Promise<Array<store.Snapshot>>;
 
 export function StartMobileDevice(arg1:string):Promise<service.MobileStart>;
 
+export function StartMobileRecording(arg1:string):Promise<void>;
+
 export function StartProfile(arg1:string):Promise<void>;
 
 export function StartProfiles(arg1:Array<string>):Promise<Record<string, string>>;
@@ -236,6 +280,8 @@ export function StartProfiles(arg1:Array<string>):Promise<Record<string, string>
 export function StartupError():Promise<string>;
 
 export function StopMobileDevice(arg1:string):Promise<void>;
+
+export function StopMobileRecording(arg1:string):Promise<string>;
 
 export function StopProfile(arg1:string):Promise<void>;
 
@@ -248,6 +294,8 @@ export function TOTPCode(arg1:string,arg2:string):Promise<service.TOTPCode>;
 export function TakeSnapshot(arg1:string):Promise<store.Snapshot>;
 
 export function TakeWhatsNew():Promise<service.WhatsNew>;
+
+export function TapMobileDevice(arg1:string,arg2:number,arg3:number):Promise<void>;
 
 export function TrashMobileDevice(arg1:string):Promise<void>;
 

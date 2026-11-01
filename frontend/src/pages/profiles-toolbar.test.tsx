@@ -9,10 +9,11 @@ import { ToastProvider } from '../components/toast'
 
 const arrangeWindows = vi.fn(() => Promise.resolve(2))
 const setProfileOrder = vi.fn((_: string[]) => Promise.resolve())
+const startProfiles = vi.fn((_: string[]) => Promise.resolve({} as Record<string, string>))
 vi.mock('../api', async (orig) => ({
   ...(await orig<typeof import('../api')>()),
   onDataChanged: () => () => {},
-  Api: { ListProxies: () => Promise.resolve([]), UpdateStatus: () => Promise.resolve(null), ArrangeWindows: () => arrangeWindows(), SetProfileOrder: (ids: string[]) => setProfileOrder(ids) },
+  Api: { ListProxies: () => Promise.resolve([]), UpdateStatus: () => Promise.resolve(null), ArrangeWindows: () => arrangeWindows(), SetProfileOrder: (ids: string[]) => setProfileOrder(ids), StartProfiles: (ids: string[]) => startProfiles(ids) },
 }))
 const { ProfilesPage } = await import('./profiles-page')
 
@@ -35,6 +36,30 @@ describe('profiles toolbar', () => {
     cleanup()
     const open = (id: string) => service.ProfileRow.createFrom({ ...rows[0], id, name: id, state: 'running' })
     page('all', vi.fn(), [open('a'), open('b')])
+    fireEvent.click(screen.getByRole('button', { name: t.profiles.arrange }))
+    expect(arrangeWindows).toHaveBeenCalledOnce()
+  })
+
+  it('opens the selection and says so, because no window jumps into view', async () => {
+    const two = [rows[0], service.ProfileRow.createFrom({ ...rows[0], id: 'b', name: 'Kênh B', serial: 2 })]
+    page('all', vi.fn(), two)
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Kênh A' }))
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Kênh B' }))
+    // The bulk bar's Open, not a row's own Open button.
+    fireEvent.click(screen.getAllByRole('button', { name: t.profiles.openSelected })[0])
+    expect(startProfiles).toHaveBeenCalledWith(['a', 'b'])
+    expect(await screen.findByText(t.profiles.opened(2))).toBeTruthy()
+  })
+
+  it('offers to arrange when there are too many windows to lay out', async () => {
+    const many = Array.from({ length: 7 }, (_, i) => service.ProfileRow.createFrom({
+      ...rows[0], id: `p${i}`, name: `Kênh ${i}`, serial: i + 1,
+    }))
+    page('all', vi.fn(), many)
+    fireEvent.click(screen.getByRole('checkbox', { name: t.profiles.selectAll(7) }))
+    fireEvent.click(screen.getAllByRole('button', { name: t.profiles.openSelected })[0])
+    expect(await screen.findByText(t.profiles.openedMany(7))).toBeTruthy()
+    arrangeWindows.mockClear()
     fireEvent.click(screen.getByRole('button', { name: t.profiles.arrange }))
     expect(arrangeWindows).toHaveBeenCalledOnce()
   })

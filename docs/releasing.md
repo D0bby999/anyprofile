@@ -118,15 +118,19 @@ request nào: đây vẫn là file `latest.json` app đã đọc.
   đã cài khi mở, nếu cùng `catalogue`; khác `catalogue` thì giữ bản của nó. Chromium đổi thì baseline fingerprint
   được đo lại. Xoá một bản: profile của nó chuyển sang bản mới nhất cùng `catalogue`; không có thì không cho xoá.
 
-## Android VM runtime
+- **Thử tải trước khi host:** `scripts/dev-anybrowser-server.sh <zip> [port]` phục vụ đúng zip đã pin trên loopback.
+  Chạy app với `ANYPROFILE_ANYBROWSER_DEV=1` và `ANYPROFILE_ANYBROWSER_URL=http://127.0.0.1:8765/…zip` (script in ra
+  hai biến). Chỉ loopback + env này mới được chấp nhận; SHA256 vẫn phải khớp.
 
-Máy mobile trên macOS cần hai thứ tải về (`docs/android-vm-runtime.md`):
+## AnyMobile runtime
 
-- **`android-vm`** (QEMU, scrcpy, adb) đến cùng Pro: dựng và phát hành trong repo AnyProfile Pro, `android-vm/README.md`
+Máy mobile trên macOS cần hai thứ tải về (`docs/anymobile-runtime.md`):
+
+- **`anymobile`** (QEMU, scrcpy, adb, tên cũ `android-vm`) đến cùng Pro: dựng và phát hành trong repo AnyProfile Pro, `anymobile/README.md`
   (`scripts/build.sh`, rồi `scripts/publish.sh` đưa lên máy chủ license). Không cần ra app mới; trước bản đầu tiên,
   trang Mobile ghi "Sắp có".
-- **`android-vm-image`** (LineageOS của jqssun) đi qua `engines.json`: `scripts/pin-android-vm-image.sh <tag của jqssun>`
-  in mục của nó; chạy thử (`ANYPROFILE_VM_RUNTIME=…`, `go test -tags vmintegration`), thêm vào `engines.json`, rồi
+- **`anymobile-image`** (LineageOS của jqssun) đi qua `engines.json`: `scripts/pin-anymobile-image.sh <tag của jqssun>`
+  in mục của nó; chạy thử (`ANYPROFILE_MOBILE_RUNTIME=…`, `go test -tags vmintegration`), thêm vào `engines.json`, rồi
   ký vào `latest.json` như mục trên (`go run ./tools/release engines …`). Bản dùng khi chưa có danh sách ký nằm trong
   `vm.ImageBuiltin()`.
 

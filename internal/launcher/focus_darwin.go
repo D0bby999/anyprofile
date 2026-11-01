@@ -17,14 +17,21 @@ static int activatePID(int pid) {
 
 // activateSelf puts this app (AnyProfile) back in front. Unlike hiding
 // another app, it never lets macOS pick an app on another desktop.
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
 static void activateSelf(void) {
 	dispatch_async(dispatch_get_main_queue(), ^{
-		[NSApp activateIgnoringOtherApps:YES];
+		// macOS 14 made activation a request driven by user intent and
+		// deprecated the "ignore other apps" argument; it is already a
+		// no-op there, and asking politely is what the system expects.
+		if (@available(macOS 14.0, *)) {
+			[NSApp activate];
+		} else {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+			[NSApp activateIgnoringOtherApps:YES];
+#pragma clang diagnostic pop
+		}
 	});
 }
-#pragma clang diagnostic pop
 
 // passFocus activates the app owning the frontmost window on the current
 // desktop, other than this app; 0 when there is none.

@@ -25,6 +25,7 @@ vi.mock('./api', async (orig) => ({
   ...(await orig<typeof import('./api')>()),
   onDataChanged: () => () => {},
   onMenu: () => () => {},
+  onProEvent: () => () => {},
   onLaunchChanged: () => () => {},
   onMobileChanged: () => () => {},
   onEngineProgress: () => () => {},
@@ -34,7 +35,8 @@ vi.mock('./api', async (orig) => ({
 window.matchMedia ??= ((q: string) => ({ matches: false, media: q, addEventListener() {}, removeEventListener() {} })) as unknown as typeof window.matchMedia
 const { default: App } = await import('./App')
 
-afterEach(() => { cleanup(); flags.onboarded = true; flags.created = true })
+const listProfiles = api.ListProfiles
+afterEach(() => { cleanup(); flags.onboarded = true; flags.created = true; api.ListProfiles = listProfiles; delete api.FocusProfile })
 
 describe('App shortcuts', () => {
   it('opens the palette with ⌘K and a profile from it with Enter', async () => {
@@ -46,6 +48,22 @@ describe('App shortcuts', () => {
     expect(screen.getByRole('option', { name: /Thử proxy TW/ })).toBeTruthy()
     fireEvent.keyDown(input, { key: 'Enter' })
     await waitFor(() => expect(screen.getByRole('complementary', { name: t.drawer.label('Thử proxy TW') })).toBeTruthy())
+  })
+
+  it('brings the nth open browser forward with ⌘2', async () => {
+    const running = Array.from({ length: 3 }, (_, i) => ({
+      ...profile, id: `r${i}`, name: `Kênh ${i}`, serial: i + 1, state: 'running',
+    }))
+    const focus = vi.fn((_: unknown) => Promise.resolve(true))
+    api.ListProfiles = () => Promise.resolve(running)
+    api.FocusProfile = focus
+    render(<App />)
+    await screen.findByText('Kênh 0')
+    fireEvent.keyDown(document.body, { key: '2', metaKey: true })
+    await waitFor(() => expect(focus).toHaveBeenCalledWith('r1'))
+    // A number past the open browsers does nothing.
+    fireEvent.keyDown(document.body, { key: '9', metaKey: true })
+    expect(focus).toHaveBeenCalledOnce()
   })
 
   it('opens New profile with ⌘N and the shortcut list with ?', async () => {

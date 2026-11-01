@@ -79,34 +79,59 @@ func (s *Store) migrate(path, backupDir string, existed bool, maxVer int) error 
 		return err
 	}
 	sort.Slice(names, func(i, j int) bool { return names[i].Name() < names[j].Name() })
-	// Migration 21 rewrites engine identities without preserving release origin
-	// or rollback data. Schema 22 reintroduces Apostate as an explicit choice;
-	// older Apostate rows must still fail closed, not be relabeled or mistaken
-	// for profiles created with that new option.
+	// Migration 21 is the dedicated Apostate -> AnyBrowser migration: it
+	// rewrites profiles and templates, and migration 23 finishes the saved
+	// default engine. Before 21 this is the only migration path, so a database
+	// from a released Apostate build must be able to take it after verifying
+	// that every legacy profile is the known upstream shape (0.5.1 with its
+	// apostate persona). Anything else fails closed instead of being
+	// relabeled.
+	//
+	// At schema 21 Apostate rows are post-option data: migration 21 already
+	// ran, so they cannot be pre-option legacy rows and must fail closed.
+	// Schema 22 reintroduces Apostate as an explicit choice; its rows are not
+	// touched by this guard.
+	//
+	// sessions are launch history, not identity: they record which engine ran,
+	// carry no seed/persona/origin, and stay readable after schema 22 registers
+	// Apostate again. An old database with launch history must not be unable to
+	// migrate forever because of it.
 	if cur > 0 && cur < 22 && maxVer >= 21 && maxVer > cur {
-		var legacy int
-		if err := s.db.QueryRow(`SELECT COUNT(*) FROM profiles WHERE engine = 'apostate' OR persona_id IN ('apostate-macos', 'apostate-windows')`).Scan(&legacy); err != nil {
-			return err
-		}
-		checks := []struct {
-			version int
-			query   string
-		}{
-			{2, `SELECT COUNT(*) FROM settings WHERE key = 'default_engine' AND value = 'apostate'`},
-			{10, `SELECT COUNT(*) FROM sessions WHERE engine = 'apostate'`},
-			{19, `SELECT COUNT(*) FROM templates WHERE engine = 'apostate'`},
-		}
-		for _, check := range checks {
-			if cur >= check.version {
-				var count int
-				if err := s.db.QueryRow(check.query).Scan(&count); err != nil {
-					return err
-				}
-				legacy += count
+		if cur < 21 {
+			var unknown int
+			if err := s.db.QueryRow(`SELECT COUNT(*) FROM profiles
+				WHERE (engine = 'apostate' OR persona_id IN ('apostate-macos', 'apostate-windows'))
+				  AND NOT (engine = 'apostate' AND engine_version = '0.5.1'
+				           AND persona_id IN ('apostate-macos', 'apostate-windows'))`).Scan(&unknown); err != nil {
+				return err
 			}
-		}
-		if legacy > 0 {
-			return ErrLegacyEngineMigrationBlocked
+			if unknown > 0 {
+				return ErrLegacyEngineMigrationBlocked
+			}
+		} else {
+			var legacy int
+			if err := s.db.QueryRow(`SELECT COUNT(*) FROM profiles WHERE engine = 'apostate' OR persona_id IN ('apostate-macos', 'apostate-windows')`).Scan(&legacy); err != nil {
+				return err
+			}
+			checks := []struct {
+				version int
+				query   string
+			}{
+				{2, `SELECT COUNT(*) FROM settings WHERE key = 'default_engine' AND value = 'apostate'`},
+				{19, `SELECT COUNT(*) FROM templates WHERE engine = 'apostate'`},
+			}
+			for _, check := range checks {
+				if cur >= check.version {
+					var count int
+					if err := s.db.QueryRow(check.query).Scan(&count); err != nil {
+						return err
+					}
+					legacy += count
+				}
+			}
+			if legacy > 0 {
+				return ErrLegacyEngineMigrationBlocked
+			}
 		}
 	}
 	backedUp := false

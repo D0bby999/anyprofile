@@ -65,7 +65,7 @@ func (r Release) Validate() error {
 		return fmt.Errorf("release %s %s: bad chromium %q", r.Engine, r.Version, r.Chromium)
 	case !platformRe.MatchString(r.Platform):
 		return fmt.Errorf("release %s %s: bad platform %q", r.Engine, r.Version, r.Platform)
-	case !strings.HasPrefix(r.URL, "https://"):
+	case !releaseURLAllowed(r.Engine, r.URL):
 		return fmt.Errorf("release %s %s: the archive is not on https", r.Engine, r.Version)
 	case !strings.HasSuffix(r.URL, ".zip") && !strings.HasSuffix(r.URL, ".tar.xz"):
 		return fmt.Errorf("release %s %s: the archive is neither .zip nor .tar.xz", r.Engine, r.Version)
@@ -84,6 +84,18 @@ func (r Release) Validate() error {
 		}
 	}
 	return nil
+}
+
+// releaseURLAllowed requires https everywhere except the explicit local
+// mirror AnyBrowser development uses (scripts/dev-anybrowser-server.sh).
+// The loopback URL is only accepted while ANYPROFILE_ANYBROWSER_DEV=1 is set;
+// the release's SHA256 still has to match.
+func releaseURLAllowed(engine, raw string) bool {
+	if strings.HasPrefix(raw, "https://") {
+		return true
+	}
+	return engine == "anybrowser" && os.Getenv("ANYPROFILE_ANYBROWSER_DEV") == "1" &&
+		strings.HasPrefix(raw, "http://127.0.0.1:")
 }
 
 // safeRel is a relative, slash-separated path that stays inside its folder.

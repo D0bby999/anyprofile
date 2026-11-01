@@ -8,6 +8,9 @@ const base = { fpVerdict: '', fpDiff: [] as string[], proxyExpiry: '', lastOpenA
 describe('health', () => {
   it.each([
     [{ fpVerdict: 'drift', fpDiff: ['canvas', 'screen'] }, 'danger', t.health.drift],
+    [{ fpVerdict: 'drift', fpDiff: ['tz'] }, 'danger', t.health.drift],
+    [{ fpVerdict: 'drift', fpDiff: ['ua', 'canvas'] }, 'warn', t.health.driftBuild],
+    [{ fpVerdict: 'renewed' }, 'info', t.health.renewed],
     [{ proxyExpiry: 'expired' }, 'danger', t.health.expired],
     [{ proxyExpiry: 'soon' }, 'warn', t.health.expiring],
     [{ fpVerdict: 'unchecked' }, 'warn', t.health.unchecked],
@@ -30,6 +33,16 @@ describe('health', () => {
   it('names the changed values in words', () => {
     expect(health({ ...base, fpVerdict: 'drift', fpDiff: ['canvas', 'screen'] }).reasons[0])
       .toBe(t.health.driftText('canvas, screen'))
+  })
+
+  it('does not call a browser update a change the user made', () => {
+    // Only what the build itself decides moved: the engine or the driver was
+    // updated, which the user cannot act on, so it stays out of the red.
+    const h = health({ ...base, fpVerdict: 'drift', fpDiff: ['ua', 'canvas'] })
+    expect(h.level).toBe('warn')
+    expect(h.reasons[0]).toBe(t.health.driftBuildText('browser version, canvas'))
+    // One identity value moving makes it a real change again.
+    expect(health({ ...base, fpVerdict: 'drift', fpDiff: ['ua', 'tz'] })).toMatchObject({ level: 'danger' })
   })
 
   it('keeps every reason and shows the worst', () => {

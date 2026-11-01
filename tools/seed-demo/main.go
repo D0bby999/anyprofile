@@ -500,7 +500,9 @@ func (s *seeder) statusDemos() error {
 			if err := s.history(p, 3, nil); err != nil {
 				return err
 			}
-			return s.st.SaveFingerprint(p.ID, "", "", "drift", []string{"canvas", "webglRenderer"})
+			// A real change, not the build-noise pair the UI now words as a
+			// browser update: this sample must still read as red.
+			return s.st.SaveFingerprint(p.ID, "", "", "drift", []string{"canvas", "screen"})
 		}},
 		{"Mẫu: đổi quốc gia", "US", func(p store.Profile) error {
 			return s.history(p, 4, &exit{ip: "203.0.113.250", country: "CA", tz: p.Timezone})
