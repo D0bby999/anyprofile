@@ -247,20 +247,21 @@ async function launch({ binary, seed, noise, dir }) {
     `--fingerprint=${seed}`, '--fingerprint-platform=macos', '--fingerprint-locale=en-US,en', 'about:blank'];
   if (noise) argv.splice(1, 0, '--fingerprint-noise');
   const child = spawn(binary, argv, { stdio: ['ignore', 'ignore', 'ignore'] });
+  let ws = null;
   try {
     for (let i = 0; i < 200 && !fs.existsSync(path.join(dir, 'DevToolsActivePort')); i++) await new Promise((r) => setTimeout(r, 100));
     const port = fs.readFileSync(path.join(dir, 'DevToolsActivePort'), 'utf8').split('\n')[0];
     const page = (await (await fetch(`http://127.0.0.1:${port}/json/list`)).json()).find((t) => t.type === 'page');
-    const ws = new WebSocket(page.webSocketDebuggerUrl);
+    ws = new WebSocket(page.webSocketDebuggerUrl);
     await new Promise((resolve, reject) => { ws.onopen = resolve; ws.onerror = () => reject(new Error('DevTools socket failed')); });
     let id = 0; const pending = new Map();
     ws.onmessage = (event) => { const m = JSON.parse(event.data); if (m.id && pending.has(m.id)) { pending.get(m.id)(m); pending.delete(m.id); } };
     const send = (method, params = {}, ms = 25000) => new Promise((resolve) => { const n = ++id; pending.set(n, resolve); ws.send(JSON.stringify({ id: n, method, params })); setTimeout(() => resolve({ timeout: true }), ms); });
     const reply = await send('Runtime.evaluate', { expression: SCENE, returnByValue: true, awaitPromise: true }, 40000);
     if (!reply.result?.result?.value) throw new Error('canvas route probe returned nothing: ' + JSON.stringify(reply.result?.exceptionDetails ?? reply));
-    ws.close();
     return reply.result.result.value;
   } finally {
+    try { ws?.close(); } catch { /* gone */ }
     try { child.kill('SIGTERM'); } catch { /* gone */ }
     await new Promise((r) => setTimeout(r, 800));
     try { child.kill('SIGKILL'); } catch { /* gone */ }

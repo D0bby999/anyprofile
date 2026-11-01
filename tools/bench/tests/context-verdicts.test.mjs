@@ -107,5 +107,6 @@ test('normalize separates absence from a value', () => {
 
 test('summary reads as one line', () => {
   assert.match(summary({ pass: true, contexts: ['main'] }), /^PASS contexts=1$/);
+  assert.match(summary({ pass: true, moved: [] }), /^PASS identity$/);
   assert.match(summary({ pass: false, disagreements: [{ field: 'tz' }], unexpectedAbsences: [], errors: [] }), /disagreements=tz/);
 });

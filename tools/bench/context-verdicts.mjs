@@ -108,7 +108,7 @@ export function identityDiff(a, b) {
 
 // summary() is the one-line verdict a CI log needs.
 export function summary(verdict) {
-  if (verdict.pass) return `PASS contexts=${verdict.contexts.length}`;
+  if (verdict.pass) return verdict.contexts ? `PASS contexts=${verdict.contexts.length}` : 'PASS identity';
   const parts = [];
   if (verdict.reason) parts.push(verdict.reason);
   if (verdict.disagreements?.length) parts.push(`disagreements=${verdict.disagreements.map((d) => d.field).join(',')}`);
