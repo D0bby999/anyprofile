@@ -31,9 +31,9 @@ const (
 
 	zipName       = "anybrowser-156.0.8078.74-macos-arm64.zip"
 	defaultZipURL = "https://example.invalid/anybrowser/" + zipName
-	zipSHA256     = "7aace7d5a70c56e34d64f1cfa3b5e06503dd23eb5f19d7e431882869c9abeb9c"
-	binarySHA256  = "e3c5e0063d1d8c69a1c6446242ee7ec0005f7cb969b2b5c08fb92e8c2b767a37"
-	frameworkSHA  = "f463f3c8d949fd3df18206f6dc456beb986c29bfa3ca3f5fc28032433d6ce21c"
+	zipSHA256     = "999d18efbec1e23005f43f95e7125bee44fcd8fdfa9dfcf4befb98dc1a2ec965"
+	binarySHA256  = "77db438f4eb6f122439ac0fe8c79469a497e9e400b32ae23d4047cf9b3530b56"
+	frameworkSHA  = "803d22f3dbd74261ec8ca1e45bc8ee38b0bf577e29ad6b960e9696baa5db69fc"
 	// teamID is empty until the Developer ID signing identity is pinned at
 	// publish; this local build is ad-hoc signed. The URL stays a placeholder,
 	// so installing from the catalog still fails closed; the hashes let a
