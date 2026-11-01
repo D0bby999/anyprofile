@@ -398,9 +398,27 @@ func (s *Service) listOrder() ([]string, error) {
 }
 
 // StartMany and StopMany run in parallel and report per-profile errors.
-// The browsers open behind the app, like a single Open.
+// One profile opens like a single Open, in front. Several open behind the app
+// and are then tiled, so they neither land all on the same spot nor take the
+// focus from each other; the first one keeps the focus.
 func (s *Service) StartMany(ctx context.Context, ids []string) map[string]string {
-	return parallel(ids, func(id string) error { return s.Launcher.StartBehind(ctx, id) })
+	if len(ids) == 1 {
+		errs := parallel(ids, func(id string) error { return s.Launcher.Start(ctx, id) })
+		return errs
+	}
+	errs := parallel(ids, func(id string) error { return s.Launcher.StartBehind(ctx, id) })
+	opened := make([]string, 0, len(ids))
+	for _, id := range ids {
+		if _, failed := errs[id]; !failed {
+			opened = append(opened, id)
+		}
+	}
+	if len(opened) > 1 {
+		if _, err := s.Launcher.Tile(ctx, opened); err != nil {
+			s.Log.Warn("tile the profiles just opened", "err", err)
+		}
+	}
+	return errs
 }
 
 func (s *Service) StopMany(ids []string) map[string]string {
