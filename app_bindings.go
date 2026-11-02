@@ -437,6 +437,7 @@ func (a *App) PurgeProfile(id string) error { return a.must(func() error { retur
 func (a *App) StartProfile(id string) error {
 	return a.must(func() error {
 		a.svc.Log.Info("ui asked to start", "profile", id)
+		a.svc.RefreshLaunchIdentity(a.ctx, id)
 		err := a.svc.Launcher.Start(a.ctx, id)
 		a.svc.Log.Info("start returned", "profile", id, "err", err)
 		if errors.Is(err, context.Canceled) && a.ctx.Err() == nil {

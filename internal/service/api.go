@@ -103,6 +103,7 @@ func (s *Service) StartProfile(ctx context.Context, id string, devtools bool) er
 		}
 		return nil
 	}
+	s.RefreshLaunchIdentity(ctx, id)
 	if devtools && !p.CDPNextLaunch {
 		p.CDPNextLaunch = true
 		if err := s.Store.UpdateProfile(p); err != nil {

@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/D0bby999/anyprofile/internal/apperr"
 	"github.com/D0bby999/anyprofile/internal/engine"
@@ -397,11 +398,41 @@ func (s *Service) listOrder() ([]string, error) {
 	return ids, nil
 }
 
+// RefreshLaunchIdentity re-reads the proxy exit before a launch. A gateway that
+// changes its exit between connections leaves every stored coordinate behind,
+// and a profile claiming Kentucky while its IP is in South Carolina tells a
+// detector two stories: Fingerprint.com called exactly that an anti-detect
+// browser (tampering true) until the stale position was dropped. When the exit
+// cannot be measured, or it rotates, the position is dropped and the profile
+// denies geolocation instead of serving a position that is already wrong. A
+// sticky proxy refreshes the position to the exit this launch will use.
+func (s *Service) RefreshLaunchIdentity(ctx context.Context, id string) {
+	p, err := s.Store.GetProfile(id)
+	if err != nil || p.ProxyID == "" {
+		return
+	}
+	ctx, cancel := context.WithTimeout(ctx, 8*time.Second)
+	defer cancel()
+	px, err := s.CheckProxyByID(ctx, p.ProxyID)
+	if err != nil || px.Rotating || px.Timezone == "" || px.Lat == nil || px.Lon == nil {
+		if p.Lat != nil || p.Lon != nil {
+			p.Lat, p.Lon = nil, nil
+			_ = s.Store.UpdateProfile(p)
+		}
+		return
+	}
+	p.Timezone, p.Lat, p.Lon = px.Timezone, px.Lat, px.Lon
+	_ = s.Store.UpdateProfile(p)
+}
+
 // StartMany and StopMany run in parallel and report per-profile errors.
 // One profile opens like a single Open, in front. Several open behind the app
 // and are then tiled, so they neither land all on the same spot nor take the
 // focus from each other; the first one keeps the focus.
 func (s *Service) StartMany(ctx context.Context, ids []string) map[string]string {
+	for _, id := range ids {
+		s.RefreshLaunchIdentity(ctx, id)
+	}
 	if len(ids) == 1 {
 		errs := parallel(ids, func(id string) error { return s.Launcher.Start(ctx, id) })
 		return errs
