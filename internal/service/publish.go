@@ -163,7 +163,40 @@ func (s *Service) CancelPublishTask(id string) error {
 	return nil
 }
 
+// RunPublishTaskNow moves a pending, failed or cancelled task to this minute,
+// so the next loop tick runs it.
+func (s *Service) RunPublishTaskNow(id string) error {
+	s.rebuildSteps(id)
+	if err := s.Store.RunPublishTaskNow(id); err != nil {
+		if errors.Is(err, store.ErrNotFound) {
+			return apperr.New("publish_run", "only a pending, failed or cancelled task can run now")
+		}
+		return err
+	}
+	s.notify("publish")
+	return nil
+}
+
+// rebuildSteps replaces a task's steps with the current template, so a retry
+// after a platform UI fix uses the fix.
+func (s *Service) rebuildSteps(id string) {
+	t, err := s.Store.GetPublishTask(id)
+	if err != nil {
+		return
+	}
+	steps, err := publish.Build(t.Platform, t.Kind, t.SourcePath, t.Caption)
+	if err != nil {
+		return
+	}
+	raw, err := publish.JSON(steps)
+	if err != nil {
+		return
+	}
+	_ = s.Store.UpdatePublishTaskSteps(id, raw)
+}
+
 func (s *Service) RetryPublishTask(id string) error {
+	s.rebuildSteps(id)
 	if err := s.Store.RetryPublishTask(id); err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			return apperr.New("publish_retry", "only a failed or cancelled task can be retried")

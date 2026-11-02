@@ -8,8 +8,10 @@ Business Suite.
 
 - **UI**: Settings sidebar → *Scheduled posts* (`frontend/src/pages/publish-page.tsx`).
 - **REST**: `GET/POST /v1/publish-tasks`, `POST /v1/publish-tasks/{id}/cancel`,
-  `POST /v1/publish-tasks/{id}/retry` (same token as the local API).
-- **MCP**: `publish_schedule`, `publish_list`, `publish_cancel`, `publish_retry`.
+  `POST /v1/publish-tasks/{id}/retry`, `POST /v1/publish-tasks/{id}/run` (same
+  token as the local API).
+- **MCP**: `publish_schedule`, `publish_list`, `publish_cancel`,
+  `publish_retry`, `publish_run`.
 - **Storage**: table `publish_tasks` in the app database (migration 0027).
 
 ## How a task runs
@@ -17,7 +19,9 @@ Business Suite.
 1. The queue loop ticks every 20 s and claims every pending task whose time has
    come, one UPDATE with RETURNING, so a task can never run twice.
 2. The app starts the profile if it is closed (DevTools on), waits for its pipe,
-   and replays the task's steps: the same act steps `/v1/run` takes.
+   opens the task's platform in **its own tab** (a task never navigates away
+   from a tab the user is working in, and closes its tab when it ends), and
+   replays the task's steps: the same act steps `/v1/run` takes.
 3. The steps are built per platform in `internal/publish/steps.go`
    (Instagram: Create → Post → Select from computer → OK notice → Next (crop) →
    Next (edit) → caption → Share, wait for "Shared reel"; Facebook:
@@ -40,6 +44,8 @@ Business Suite.
   native schedule on those composers, which is why this queue exists.
 - YouTube is not in the queue: use Studio's own Schedule (the `youtube-upload`
   recipe).
+- A retry rebuilds the steps from the current template, so a fix to a
+  platform's selectors applies to the retry, not only to new tasks.
 - The queue needs the local API: the REST routes and MCP tools are served by it,
   and the runner is wired when the API starts. With the API off, due tasks stay
   pending and say so in their error (they are retried once a minute).

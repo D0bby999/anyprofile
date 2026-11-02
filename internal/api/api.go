@@ -133,6 +133,9 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /v1/publish-tasks/{id}/retry", func(w http.ResponseWriter, r *http.Request) {
 		s.publishAction(w, r, s.Publish.RetryPublishTask)
 	})
+	mux.HandleFunc("POST /v1/publish-tasks/{id}/run", func(w http.ResponseWriter, r *http.Request) {
+		s.publishAction(w, r, s.Publish.RunPublishTaskNow)
+	})
 	mux.HandleFunc("GET /v1/sessions/{id}/record", s.sessionRecord)
 	if s.Agent != nil {
 		mux.Handle("/mcp", s.mcpHandler())

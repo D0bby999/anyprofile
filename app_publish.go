@@ -32,3 +32,8 @@ func (a *App) CancelPublishTask(id string) error {
 func (a *App) RetryPublishTask(id string) error {
 	return a.must(func() error { return a.svc.RetryPublishTask(id) })
 }
+
+// RunPublishTaskNow moves a pending, failed or cancelled post to this minute.
+func (a *App) RunPublishTaskNow(id string) error {
+	return a.must(func() error { return a.svc.RunPublishTaskNow(id) })
+}

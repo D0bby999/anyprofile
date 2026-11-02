@@ -446,6 +446,10 @@ export function RetryPublishTask(arg1) {
   return window['go']['main']['App']['RetryPublishTask'](arg1);
 }
 
+export function RunPublishTaskNow(arg1) {
+  return window['go']['main']['App']['RunPublishTaskNow'](arg1);
+}
+
 export function ScreenshotMobileDevice(arg1) {
   return window['go']['main']['App']['ScreenshotMobileDevice'](arg1);
 }

@@ -80,6 +80,8 @@ func (b apiBackend) CancelPublishTask(id string) error { return b.svc.CancelPubl
 
 func (b apiBackend) RetryPublishTask(id string) error { return b.svc.RetryPublishTask(id) }
 
+func (b apiBackend) RunPublishTaskNow(id string) error { return b.svc.RunPublishTaskNow(id) }
+
 func (b apiBackend) Stop(id string) error {
 	b.svc.Log.Info("api asked to stop", "profile", id)
 	return b.svc.Launcher.Stop(id)

@@ -231,6 +231,8 @@ export function RestoreSnapshot(arg1:number):Promise<number>;
 
 export function RetryPublishTask(arg1:string):Promise<void>;
 
+export function RunPublishTaskNow(arg1:string):Promise<void>;
+
 export function ScreenshotMobileDevice(arg1:string):Promise<string>;
 
 export function Sessions(arg1:string):Promise<Array<store.Session>>;

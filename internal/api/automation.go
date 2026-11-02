@@ -244,6 +244,32 @@ func (s *Server) browserAct(ctx context.Context, in actRequest) (any, error) {
 			return nil, err
 		}
 		return b.Click(ctx, in.Tab, ref)
+	case "click_first":
+		// A page can list several controls whose names contain the wanted text
+		// ("Post", "Post audience", "Boost post"); pick the one whose whole
+		// name equals it, else the first match.
+		if in.Target == nil {
+			return nil, apperr.New("api_target", "click_first needs a target")
+		}
+		matches, err := b.Find(ctx, in.Tab, *in.Target, 0)
+		if err != nil {
+			return nil, err
+		}
+		if len(matches) == 0 {
+			return nil, apperr.Newf("target_not_found", "no element matches %q after 5s", in.Target.String())
+		}
+		pick := matches[0]
+		for _, m := range matches {
+			if strings.EqualFold(strings.TrimSpace(m.Name), strings.TrimSpace(in.Target.Name)) && in.Target.Name != "" {
+				pick = m
+				break
+			}
+			if strings.EqualFold(strings.TrimSpace(m.Name), strings.TrimSpace(in.Target.Text)) && in.Target.Text != "" {
+				pick = m
+				break
+			}
+		}
+		return b.Click(ctx, in.Tab, pick.Ref)
 	case "type":
 		ref, err := s.targetRef(ctx, b, in.Tab, in.Ref, in.Target)
 		if err != nil {

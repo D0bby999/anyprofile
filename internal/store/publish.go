@@ -180,3 +180,25 @@ func (s *Store) RescheduleTask(id, at, lastError string, attempts int) error {
 		attempts = ?, updated_at = ? WHERE id = ?`, at, lastError, attempts, now(), id)
 	return err
 }
+
+// RunPublishTaskNow puts a task that has not run yet (pending, failed or
+// cancelled) back in the queue at the current minute.
+func (s *Store) RunPublishTaskNow(id string) error {
+	res, err := s.db.Exec(`UPDATE publish_tasks SET status = 'pending', schedule_at = ?, last_error = '',
+		updated_at = ? WHERE id = ? AND status IN ('pending','failed','cancelled')`, now(), now(), id)
+	if err != nil {
+		return err
+	}
+	n, _ := res.RowsAffected()
+	if n == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
+// UpdatePublishTaskSteps replaces the stored steps, so a retry after a template
+// fix replays the current one instead of the one that failed.
+func (s *Store) UpdatePublishTaskSteps(id, steps string) error {
+	_, err := s.db.Exec(`UPDATE publish_tasks SET steps_json = ?, updated_at = ? WHERE id = ?`, steps, now(), id)
+	return err
+}

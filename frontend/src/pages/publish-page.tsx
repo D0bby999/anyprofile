@@ -113,6 +113,9 @@ export function PublishPage({ profiles }: { profiles: service.ProfileRow[] }) {
                       {(task.status === 'failed' || task.status === 'cancelled') && (
                         <button type="button" className="btn sm primary" onClick={() => act(() => Api.RetryPublishTask(task.id))}>{t.publish.retry}</button>
                       )}
+                      {task.status !== 'running' && task.status !== 'done' && (
+                        <button type="button" className="btn sm" onClick={() => act(() => Api.RunPublishTaskNow(task.id))}>{t.publish.now}</button>
+                      )}
                     </td>
                   </tr>
                 ))}

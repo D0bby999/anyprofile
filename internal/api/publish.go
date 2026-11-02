@@ -39,6 +39,7 @@ type PublishTasks interface {
 	ListPublishTasks(status string) ([]store.PublishTask, error)
 	CancelPublishTask(id string) error
 	RetryPublishTask(id string) error
+	RunPublishTaskNow(id string) error
 }
 
 // RunPublishTask posts one claimed task and returns the URL it read. It starts
@@ -58,10 +59,42 @@ func (s *Server) RunPublishTask(ctx context.Context, t store.PublishTask) (strin
 			return "", err
 		}
 	}
-	if _, err := s.waitBrowser(ctx, t.ProfileID); err != nil {
+	b, err := s.waitBrowser(ctx, t.ProfileID)
+	if err != nil {
 		return "", err
 	}
+	// The task gets its own tab: it must not navigate away from a tab the user
+	// is working in (the queue used to reuse whatever tab was in front).
+	var target *string
+	if len(steps) > 0 && steps[0].Action == "navigate" && steps[0].URL != "" {
+		tab, err := b.OpenTab(ctx, steps[0].URL)
+		if err != nil {
+			return "", err
+		}
+		target = &tab.ID
+		defer func() { _ = b.CloseTab(context.Background(), tab.ID) }()
+	}
 	for i, st := range steps {
+		if target != nil && i == 0 && st.Action == "navigate" {
+			continue // the tab already opened at this URL
+		}
+		// A wait with no text or URL is a plain pause in the template; the
+		// executor's wait needs one of them to wait for.
+		if st.Action == "wait" && st.Text == "" && st.URL == "" {
+			secs := st.Seconds
+			if secs <= 0 {
+				secs = 1
+			}
+			if secs > 60 {
+				secs = 60
+			}
+			select {
+			case <-ctx.Done():
+				return "", ctx.Err()
+			case <-time.After(time.Duration(secs) * time.Second):
+			}
+			continue
+		}
 		in := actRequest{
 			Profile: t.ProfileID,
 			Action:  st.Action,
@@ -72,6 +105,9 @@ func (s *Server) RunPublishTask(ctx context.Context, t store.PublishTask) (strin
 			Files:   st.Files,
 			Seconds: st.Seconds,
 			Gone:    st.Gone,
+		}
+		if target != nil {
+			in.Tab = *target
 		}
 		if st.Target != nil {
 			in.Target = &automation.Target{Text: st.Target.Text, Role: st.Target.Role,
@@ -84,7 +120,7 @@ func (s *Server) RunPublishTask(ctx context.Context, t store.PublishTask) (strin
 			if st.Optional {
 				continue
 			}
-			dir := s.screenshotStep(ctx, t.ProfileID, t.ID, i)
+			dir := s.screenshotStep(ctx, t.ProfileID, t.ID, i, target)
 			return "", apperr.Newf("publish_step", "step %d (%s) failed: %s%s", i+1, st.Action, err.Error(), dir)
 		}
 	}
@@ -93,7 +129,7 @@ func (s *Server) RunPublishTask(ctx context.Context, t store.PublishTask) (strin
 
 // screenshotStep saves what the browser showed at the failing step, so the
 // queue's error carries a picture of the page that changed.
-func (s *Server) screenshotStep(ctx context.Context, profileID, taskID string, step int) string {
+func (s *Server) screenshotStep(ctx context.Context, profileID, taskID string, step int, tab *string) string {
 	if s.PublishArtifacts == "" {
 		return ""
 	}
@@ -101,7 +137,11 @@ func (s *Server) screenshotStep(ctx context.Context, profileID, taskID string, s
 	if err != nil {
 		return ""
 	}
-	img, err := b.Screenshot(ctx, "")
+	shotTab := ""
+	if tab != nil {
+		shotTab = *tab
+	}
+	img, err := b.Screenshot(ctx, shotTab)
 	if err != nil {
 		return ""
 	}
@@ -119,7 +159,7 @@ func (s *Server) screenshotStep(ctx context.Context, profileID, taskID string, s
 // publishedURL reads the links on the page and returns the newest post URL.
 var (
 	igPostRe = regexp.MustCompile(`https://www\.instagram\.com/(?:[A-Za-z0-9_.]+/)?(?:p|reel)/[A-Za-z0-9_-]+/?`)
-	fbPostRe = regexp.MustCompile(`https://www\.facebook\.com/(?:reel/|permalink\.php\?story_fbid=)[^\s"'<>]+`)
+	fbPostRe = regexp.MustCompile(`https://www\.facebook\.com/(?:reel/\d+|share/[^\s"'<>]+|permalink\.php\?story_fbid=\d+)[^\s"'<>]*`)
 )
 
 func (s *Server) publishedURL(ctx context.Context, profileID string) string {
@@ -250,6 +290,13 @@ func (s *Server) addPublishTools(srv *mcp.Server) {
 				return nil, err
 			}
 			return text("cancelled " + in.ID), nil
+		})
+	add(s, srv, "publish_run", "Run a pending, failed or cancelled post now instead of at its time.", false,
+		func(_ context.Context, in publishIDIn) (*mcp.CallToolResult, error) {
+			if err := s.Publish.RunPublishTaskNow(in.ID); err != nil {
+				return nil, err
+			}
+			return text("running " + in.ID + " now"), nil
 		})
 	add(s, srv, "publish_retry", "Put a failed or cancelled post back in the queue, to run now.", false,
 		func(_ context.Context, in publishIDIn) (*mcp.CallToolResult, error) {
