@@ -65,3 +65,9 @@ test('a malformed block is INCONCLUSIVE', () => {
   assert.equal(parseFingerprint('SERVER API RESPONSE\n{"suspect_score": 1,').status, 'INCONCLUSIVE');
   assert.equal(parseFingerprint('SERVER API RESPONSE\n{"suspect_score": "1", "tampering": false}').status, 'INCONCLUSIVE');
 });
+
+test('an unfinished IPhey page is INCONCLUSIVE, not PASS 0', async () => {
+  const { parseIPhey } = await import('../detector-verdicts.mjs');
+  const v = parseIPhey('MX SCORE\nHow trustworthy is your identity\n0\nBest proxies');
+  assert.equal(v.status, 'INCONCLUSIVE');
+});

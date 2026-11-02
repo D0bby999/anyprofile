@@ -38,12 +38,16 @@ export function parseIPhey(text) {
   let score = null;
   const mx = lines.findIndex(line => /MX\s*S(C)?ORE/i.test(line));
   if (mx >= 0) {
-    for (let i = mx - 1; i >= Math.max(0, mx - 3); i--) {
-      if (/^\d{1,3}$/.test(lines[i])) { score = Number(lines[i]); break; }
+    // The score sits on the row immediately above the heading. A looser window
+    // picked up an unrelated "0" on a page that had not finished scoring and
+    // reported PASS 0; a score that is not 1..100 is no score at all.
+    const above = lines[mx - 1];
+    if (above && /^\d{1,3}$/.test(above) && Number(above) >= 1 && Number(above) <= 100) {
+      score = Number(above);
     }
     if (score === null) {
       const same = lines[mx].match(/(\d{1,3})\s*MX/i);
-      if (same) score = Number(same[1]);
+      if (same && Number(same[1]) >= 1) score = Number(same[1]);
     }
   }
   const whale = /\bwhale\b/i.test(text);
