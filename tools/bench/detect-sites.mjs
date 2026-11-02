@@ -1,6 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Open one Chromium-family browser, visit fingerprint test sites, print the verdict lines.
 // Usage: node detect-sites.mjs <binary> <profile-dir> [fury-config.json]
+//
+// The window is placed on screen by default. An off-screen window makes
+// Pixelscan report "inconsistent" and "Masking detected" for every browser,
+// including real Chrome: measured 2026-11-02 at -4000,-4000 on both. Set
+// WINDOW_POS for an invisible run only when the site's consistency verdict is
+// not the thing being measured.
 import { spawn } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import fs from 'node:fs';
@@ -14,7 +20,7 @@ if (!process.env.CDP_PORT) {
 
 const args = [`--user-data-dir=${dir}`, '--remote-debugging-port=0', '--remote-allow-origins=*',
   '--no-first-run', '--no-default-browser-check', '--hide-crash-restore-bubble', '--use-mock-keychain', '--lang=en-US',
-  '--window-position=-4000,-4000', '--window-size=1280,900', 'about:blank'];
+  '--window-position=' + (process.env.WINDOW_POS || '80,80'), '--window-size=' + (process.env.WINDOW_SIZE || '1280,900'), 'about:blank'];
 const stdio = ['ignore', 'ignore', 'ignore'];
 if (cfg && cfg !== '-') { args.push('--fury-fp-fd=3'); stdio.push(fs.openSync(cfg, 'r')); }
 args.splice(args.length - 1, 0, ...extraArgs);
@@ -221,6 +227,10 @@ const sites = [
   ['pixelscan', 'https://pixelscan.net/fingerprint-check', /Your Browser Fingerprint is (consistent|inconsistent)/, /(consistent|masking|automation|detected|spoof|fingerprint)/i],
   ['iphey', 'https://iphey.com', /MX|Trustworthy|whale/i, /(whale|trustworthy|everything is fine|browser|location|hardware|software|mx|score|warning)/i],
   ['fingerprint', 'https://fingerprint.com/demo', /Bot detection|Suspect|tampering|Your browser/i, /(tampering|suspect|bot|vpn|proxy|anti-?detect|visitor|confidence)/i],
+  ['fv', 'https://fv.pro/', /fingerprint|canvas|webgl/i, /(unique|trust|bot|detected|canvas|webgl|audio|font)/i],
+  ['sannysoft', 'https://bot.sannysoft.com/', /WebDriver|Chrome/i, /(webdriver|passed|failed|missing|present)/i],
+  ['browserleaks-canvas', 'https://browserleaks.com/canvas', /Canvas/i, /(hash|signature|unique|canvas|stable)/i],
+  ['whoer', 'https://whoer.net/', /IP|DNS/i, /(anonym|blacklist|dns|webrtc|timezone|language)/i],
 ].filter(([n]) => !process.env.SITES || process.env.SITES.split(',').includes(n));
 try {
   for (const [name, url, readyRe, keep] of sites) {
