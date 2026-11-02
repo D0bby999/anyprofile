@@ -75,9 +75,14 @@ type Server struct {
 	Mobile  MobileBackend
 	prompts promptSet
 	// Traces is where the MCP tool trace JSONL is written; "" disables it.
-	Traces  string
-	traceMu sync.Mutex
-	leases  leaseStore
+	Traces string
+	// Publish is the queue the REST routes and the MCP tools drive; nil leaves
+	// them out.
+	Publish PublishTasks
+	// PublishArtifacts is where a failing step's screenshot goes; "" skips it.
+	PublishArtifacts string
+	traceMu          sync.Mutex
+	leases           leaseStore
 }
 
 func New(b Backend, log *slog.Logger, port int, token string) *Server {
@@ -120,6 +125,14 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /v1/sessions", s.createSession)
 	mux.HandleFunc("POST /v1/sessions/{id}/heartbeat", s.sessionHeartbeat)
 	mux.HandleFunc("DELETE /v1/sessions/{id}", s.releaseSession)
+	mux.HandleFunc("GET /v1/publish-tasks", s.publishList)
+	mux.HandleFunc("POST /v1/publish-tasks", s.publishCreate)
+	mux.HandleFunc("POST /v1/publish-tasks/{id}/cancel", func(w http.ResponseWriter, r *http.Request) {
+		s.publishAction(w, r, s.Publish.CancelPublishTask)
+	})
+	mux.HandleFunc("POST /v1/publish-tasks/{id}/retry", func(w http.ResponseWriter, r *http.Request) {
+		s.publishAction(w, r, s.Publish.RetryPublishTask)
+	})
 	mux.HandleFunc("GET /v1/sessions/{id}/record", s.sessionRecord)
 	if s.Agent != nil {
 		mux.Handle("/mcp", s.mcpHandler())

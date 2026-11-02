@@ -326,6 +326,7 @@ func (s *Server) mcpHandler() http.Handler {
 	if s.Mobile != nil {
 		s.addMobileTools(srv)
 	}
+	s.addPublishTools(srv)
 
 	add(s, srv, "record_start", "Record subsequent agent actions on a profile or device into a flow. Stop with record_stop.", false,
 		func(ctx context.Context, in mcpRecordIn) (*mcp.CallToolResult, error) {

@@ -45,7 +45,10 @@ type Service struct {
 	Launcher *launcher.Launcher
 	// Mobile runs this OS's mobile devices; nil where there is no driver.
 	Mobile *mobile.Manager
-	Log    *slog.Logger
+	// publishRunner posts one queued task; nil leaves tasks pending until the
+	// app wires its browser driver.
+	publishRunner PublishRunner
+	Log           *slog.Logger
 	// Clock is nil in production (time.Now); tests fix it.
 	Clock func() time.Time
 	// OnChange is told the kind of data a write changed: "profiles",

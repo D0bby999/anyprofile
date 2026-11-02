@@ -16,6 +16,16 @@ export const en = {
     trash: 'Trash', settings: 'Settings', sites: 'Platforms',
     attention: 'Needs attention', tags: 'Tags', showAll: (n: number) => `Show all (${n})`, showFewer: 'Show fewer',
     tools: 'Creator tools',
+    publish: 'Scheduled posts',
+  },
+  publish: {
+    title: 'Scheduled posts', sub: 'AnyProfile posts these by itself, with the profile’s browser, at the time you pick.',
+    form: 'Schedule a post', profile: 'Profile', platform: 'Platform', kind: 'Kind', file: 'Video file in uploads',
+    caption: 'Caption', when: 'When', add: 'Schedule', queue: 'Queue', empty: 'Nothing scheduled yet.',
+    when2: 'time', status: 'Status', cancel: 'Cancel', retry: 'Retry', now: 'Run now',
+    st_pending: 'Pending', st_running: 'Posting', st_done: 'Posted', st_failed: 'Failed', st_cancelled: 'Cancelled',
+    hint: 'The file must already be in the uploads folder. Instagram and Facebook post publicly; the queue records the link when it can read it.',
+    err: 'Could not schedule',
   },
   common: {
     save: 'Save', cancel: 'Cancel', close: 'Close', delete: 'Delete', loading: 'Loading…', refresh: 'Refresh',

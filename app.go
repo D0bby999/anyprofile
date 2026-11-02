@@ -152,6 +152,7 @@ func (a *App) init() error {
 		runtime.EventsEmit(a.ctx, "data:changed", "agent")
 	}
 	a.restartAPI()
+	a.svc.StartPublishLoop(a.ctx)
 	a.svc.CleanUpdates()
 	a.setMenuLanguage(a.svc.Language())
 	go a.svc.WatchMobileProxies(a.ctx)
