@@ -124,6 +124,18 @@ AnyMobile (261031):
   Apostate 0.5.1 (`0.5.1.156`). Unknown or post-option Apostate rows still
   fail closed. Launch history no longer blocks the migration.
 
+Canvas noise on for new profiles (261102):
+
+- Profiles created from now on opt into the profile-seeded readback noise, so
+  two profiles on one machine no longer share a canvas hash. It is the same
+  switch as before; what changed is the rule behind it: a pixel moves only
+  where the window around it holds an edge, and a canvas that only filled
+  pixel-aligned rectangles is left exact. Measured with the packaged build:
+  Pixelscan "consistent, no masking" with the noise on, IPhey 100, one hash
+  across all seven readback routes, two seeds rendering different canvases.
+- Profiles created before today keep their stored value, so their pixels do not
+  move; their canvas hash stays what it was.
+
 Geolocation from the profile (261102):
 
 - A profile that has a position — copied from the proxy exit — now answers

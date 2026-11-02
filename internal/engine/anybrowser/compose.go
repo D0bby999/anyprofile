@@ -34,10 +34,14 @@ const seedDraws = 24
 var errEngineMissing = errors.New("engine binary is not installed")
 
 // canvasNoiseForNewProfiles is the policy switch for the profile-seeded canvas
-// readback noise. It is off until the canvas decision (route A) is approved;
-// profiles created before a change keep their stored value, so their pixels do
-// not move.
-const canvasNoiseForNewProfiles = false
+// readback noise. On since 2026-11-02: patch 0163 moves a pixel only where the
+// window around it holds an edge and leaves a pixel-aligned fill exact, and the
+// packaged build then measured "consistent, no masking" on Pixelscan with the
+// noise on, IPhey 100, one hash on all seven readback routes and two seeds
+// rendering different canvases. Two profiles on one machine otherwise share a
+// canvas hash, which lets a site link them. Profiles created before this date
+// keep their stored value, so their pixels do not move.
+const canvasNoiseForNewProfiles = true
 
 // Composition is the part of --fingerprint-explain that decides whether this
 // host can serve a seed.

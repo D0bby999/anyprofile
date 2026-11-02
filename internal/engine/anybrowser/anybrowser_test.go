@@ -294,3 +294,12 @@ func TestCompleteIsIdempotent(t *testing.T) {
 		t.Fatalf("macOS app changed: %v", entries)
 	}
 }
+
+// The readback noise is on for profiles created from here on: it separates two
+// profiles on one machine and passed every detector we can read. Profiles made
+// before the change keep their stored value, so their pixels do not move.
+func TestNewProfilesOptIntoCanvasNoise(t *testing.T) {
+	if !canvasNoiseForNewProfiles {
+		t.Fatal("new profiles should opt into the readback noise; the policy lives in compose.go")
+	}
+}
