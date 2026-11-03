@@ -22,7 +22,7 @@ export const vi: Messages = {
   publish: {
     title: 'Lịch đăng', sub: 'AnyProfile tự đăng bằng browser của profile vào đúng giờ bạn chọn.',
     form: 'Hẹn giờ đăng', profile: 'Profile', platform: 'Nền tảng', kind: 'Loại', file: 'File video trong uploads',
-    caption: 'Caption', when: 'Thời gian', add: 'Hẹn giờ', queue: 'Hàng đợi', empty: 'Chưa có bài nào được hẹn.',
+    caption: 'Caption', crop: 'Cắt khung', when: 'Thời gian', add: 'Hẹn giờ', queue: 'Hàng đợi', empty: 'Chưa có bài nào được hẹn.',
     when2: 'giờ', status: 'Trạng thái', cancel: 'Huỷ', retry: 'Thử lại', now: 'Chạy ngay',
     st_pending: 'Chờ', st_running: 'Đang đăng', st_done: 'Đã đăng', st_failed: 'Lỗi', st_cancelled: 'Đã huỷ',
     hint: 'File phải nằm sẵn trong thư mục uploads. Instagram và Facebook đăng công khai; hàng đợi ghi lại link khi đọc được.',

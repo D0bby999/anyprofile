@@ -67,7 +67,7 @@ func (b apiBackend) Pipe(id string) (agent.Conn, bool) {
 // Publish queue: the API and MCP tools reach the service through these.
 func (b apiBackend) CreatePublishTask(ctx context.Context, in api.PublishInput) (store.PublishTask, error) {
 	return b.svc.CreatePublishTask(ctx, service.PublishInput{
-		ProfileID: in.ProfileID, Platform: in.Platform, Kind: in.Kind,
+		ProfileID: in.ProfileID, Platform: in.Platform, Kind: in.Kind, Crop: in.Crop,
 		Title: in.Title, Caption: in.Caption, Source: in.Source, ScheduleAt: in.ScheduleAt,
 	})
 }

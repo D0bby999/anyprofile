@@ -16,6 +16,7 @@ type PublishTask struct {
 	ProfileID   string `json:"profileId"`
 	Platform    string `json:"platform"` // instagram | facebook | youtube
 	Kind        string `json:"kind"`     // reel | video | short
+	Crop        string `json:"crop"`     // original | 1:1 | 4:5 | 9:16 | 16:9
 	Title       string `json:"title"`
 	Caption     string `json:"caption"`
 	SourcePath  string `json:"source"`     // file name inside the uploads folder
@@ -37,19 +38,19 @@ func (s *Store) CreatePublishTask(t *PublishTask) error {
 	}
 	t.UpdatedAt = now
 	_, err := s.db.Exec(`INSERT INTO publish_tasks
-		(id, profile_id, platform, kind, title, caption, source_path, steps_json, schedule_at,
+		(id, profile_id, platform, kind, crop, title, caption, source_path, steps_json, schedule_at,
 		 status, attempts, last_error, result_url, artifact_dir, created_at, updated_at)
-		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-		t.ID, t.ProfileID, t.Platform, t.Kind, t.Title, t.Caption, t.SourcePath, t.Steps, t.ScheduleAt,
+		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+		t.ID, t.ProfileID, t.Platform, t.Kind, t.Crop, t.Title, t.Caption, t.SourcePath, t.Steps, t.ScheduleAt,
 		t.Status, t.Attempts, t.LastError, t.ResultURL, t.ArtifactDir, t.CreatedAt, t.UpdatedAt)
 	return err
 }
 
 func (s *Store) GetPublishTask(id string) (PublishTask, error) {
 	var t PublishTask
-	err := s.db.QueryRow(`SELECT id, profile_id, platform, kind, title, caption, source_path, steps_json,
+	err := s.db.QueryRow(`SELECT id, profile_id, platform, kind, crop, title, caption, source_path, steps_json,
 		schedule_at, status, attempts, last_error, result_url, artifact_dir, created_at, updated_at
-		FROM publish_tasks WHERE id = ?`, id).Scan(&t.ID, &t.ProfileID, &t.Platform, &t.Kind, &t.Title,
+		FROM publish_tasks WHERE id = ?`, id).Scan(&t.ID, &t.ProfileID, &t.Platform, &t.Kind, &t.Crop, &t.Title,
 		&t.Caption, &t.SourcePath, &t.Steps, &t.ScheduleAt, &t.Status, &t.Attempts, &t.LastError,
 		&t.ResultURL, &t.ArtifactDir, &t.CreatedAt, &t.UpdatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
@@ -63,7 +64,7 @@ func (s *Store) ListPublishTasks(status string, limit int) ([]PublishTask, error
 	if limit <= 0 || limit > 500 {
 		limit = 100
 	}
-	q := `SELECT id, profile_id, platform, kind, title, caption, source_path, steps_json,
+	q := `SELECT id, profile_id, platform, kind, crop, title, caption, source_path, steps_json,
 		schedule_at, status, attempts, last_error, result_url, artifact_dir, created_at, updated_at
 		FROM publish_tasks`
 	args := []any{}
@@ -81,7 +82,7 @@ func (s *Store) ListPublishTasks(status string, limit int) ([]PublishTask, error
 	var out []PublishTask
 	for rows.Next() {
 		var t PublishTask
-		if err := rows.Scan(&t.ID, &t.ProfileID, &t.Platform, &t.Kind, &t.Title, &t.Caption, &t.SourcePath,
+		if err := rows.Scan(&t.ID, &t.ProfileID, &t.Platform, &t.Kind, &t.Crop, &t.Title, &t.Caption, &t.SourcePath,
 			&t.Steps, &t.ScheduleAt, &t.Status, &t.Attempts, &t.LastError, &t.ResultURL, &t.ArtifactDir,
 			&t.CreatedAt, &t.UpdatedAt); err != nil {
 			return nil, err
@@ -101,7 +102,7 @@ func (s *Store) ClaimDueTasks(now string, limit int) ([]PublishTask, error) {
 	rows, err := s.db.Query(`UPDATE publish_tasks SET status = 'running', updated_at = ?
 		WHERE id IN (SELECT id FROM publish_tasks WHERE status = 'pending' AND schedule_at <= ?
 			ORDER BY schedule_at LIMIT ?)
-		RETURNING id, profile_id, platform, kind, title, caption, source_path, steps_json,
+		RETURNING id, profile_id, platform, kind, crop, title, caption, source_path, steps_json,
 		schedule_at, status, attempts, last_error, result_url, artifact_dir, created_at, updated_at`,
 		now, now, limit)
 	if err != nil {
@@ -111,7 +112,7 @@ func (s *Store) ClaimDueTasks(now string, limit int) ([]PublishTask, error) {
 	var out []PublishTask
 	for rows.Next() {
 		var t PublishTask
-		if err := rows.Scan(&t.ID, &t.ProfileID, &t.Platform, &t.Kind, &t.Title, &t.Caption, &t.SourcePath,
+		if err := rows.Scan(&t.ID, &t.ProfileID, &t.Platform, &t.Kind, &t.Crop, &t.Title, &t.Caption, &t.SourcePath,
 			&t.Steps, &t.ScheduleAt, &t.Status, &t.Attempts, &t.LastError, &t.ResultURL, &t.ArtifactDir,
 			&t.CreatedAt, &t.UpdatedAt); err != nil {
 			return nil, err

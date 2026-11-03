@@ -59,7 +59,7 @@ func ValidPlatform(p string) bool {
 
 // Build returns the steps for one post: navigate, open the composer, upload the
 // file, write the caption, publish, and wait for the platform's confirmation.
-func Build(platform, kind string, source string, caption string) ([]Step, error) {
+func Build(platform, kind, crop, source, caption string) ([]Step, error) {
 	if !ValidPlatform(platform) {
 		return nil, apperr.Newf("publish_platform", "the queue cannot post to %q yet", platform)
 	}
@@ -71,7 +71,7 @@ func Build(platform, kind string, source string, caption string) ([]Step, error)
 	}
 	switch platform {
 	case "instagram":
-		return instagram(kind, source, caption), nil
+		return instagram(kind, crop, source, caption), nil
 	case "facebook":
 		return facebook(kind, source, caption), nil
 	}
@@ -81,7 +81,7 @@ func Build(platform, kind string, source string, caption string) ([]Step, error)
 // instagram follows the web composer: Create -> Post -> Select from computer
 // -> OK notice (optional) -> Next (crop) -> Next (edit) -> caption -> Share.
 // A vertical file becomes a Reel by itself; that notice is the optional OK.
-func instagram(kind, source, caption string) []Step {
+func instagram(kind, crop, source, caption string) []Step {
 	return []Step{
 		{Action: "navigate", URL: "https://www.instagram.com/"},
 		{Action: "wait", Seconds: 4},
@@ -95,6 +95,12 @@ func instagram(kind, source, caption string) []Step {
 		{Action: "wait", Seconds: 2},
 		{Action: "click", Target: &Target{Role: "button", Name: "Next"}},
 		{Action: "wait", Seconds: 3},
+		// The crop screen defaults to the platform's ratio; a feed video that
+		// must not be cut asks for Original (or 4:5) instead.
+		{Action: "click", Target: &Target{Role: "button", Name: "Select crop"}, Optional: true},
+		{Action: "wait", Seconds: 1},
+		{Action: "click_first", Target: &Target{Text: crop}, Optional: true},
+		{Action: "wait", Seconds: 1},
 		{Action: "click", Target: &Target{Role: "button", Name: "Next"}},
 		{Action: "wait", Seconds: 3},
 		{Action: "click", Target: &Target{Role: "textbox", Name: "Add a caption..."}},
@@ -117,7 +123,7 @@ func facebook(kind, source, caption string) []Step {
 		{Action: "wait", Seconds: 1},
 		{Action: "click", Target: &Target{Role: "button", Name: "Next"}},
 		{Action: "wait", Seconds: 3},
-		{Action: "click", Target: &Target{Role: "button", Name: "Post"}},
+		{Action: "click_first", Target: &Target{Text: "Post"}},
 		{Action: "wait", Text: "successfully been shared", Seconds: 60},
 	}
 }

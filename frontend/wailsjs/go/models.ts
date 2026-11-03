@@ -1072,6 +1072,7 @@ export namespace service {
 	    profileId: string;
 	    platform: string;
 	    kind: string;
+	    crop: string;
 	    title: string;
 	    caption: string;
 	    source: string;
@@ -1087,6 +1088,7 @@ export namespace service {
 	        this.profileId = source["profileId"];
 	        this.platform = source["platform"];
 	        this.kind = source["kind"];
+	        this.crop = source["crop"];
 	        this.title = source["title"];
 	        this.caption = source["caption"];
 	        this.source = source["source"];
@@ -1568,6 +1570,7 @@ export namespace store {
 	    profileId: string;
 	    platform: string;
 	    kind: string;
+	    crop: string;
 	    title: string;
 	    caption: string;
 	    source: string;
@@ -1590,6 +1593,7 @@ export namespace store {
 	        this.profileId = source["profileId"];
 	        this.platform = source["platform"];
 	        this.kind = source["kind"];
+	        this.crop = source["crop"];
 	        this.title = source["title"];
 	        this.caption = source["caption"];
 	        this.source = source["source"];

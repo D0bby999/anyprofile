@@ -13,6 +13,7 @@ export function PublishPage({ profiles }: { profiles: service.ProfileRow[] }) {
   const [profileId, setProfileId] = useState('')
   const [platform, setPlatform] = useState('instagram')
   const [kind, setKind] = useState('reel')
+  const [crop, setCrop] = useState('Original')
   const [source, setSource] = useState('')
   const [caption, setCaption] = useState('')
   const [when, setWhen] = useState(defaultWhen())
@@ -32,7 +33,7 @@ export function PublishPage({ profiles }: { profiles: service.ProfileRow[] }) {
     setBusy(true); setErr('')
     try {
       await Api.CreatePublishTask({
-        profileId, platform, kind, title: source, caption, source,
+        profileId, platform, kind, crop, title: source, caption, source,
         scheduleAt: new Date(when).toISOString(),
       } as service.PublishInput)
       setSource(''); setCaption(''); load()
@@ -72,6 +73,14 @@ export function PublishPage({ profiles }: { profiles: service.ProfileRow[] }) {
             </label>
             <label className="field"><span className="label">{t.publish.file}</span>
               <input value={source} onChange={(e) => setSource(e.target.value)} placeholder="clip.mp4" />
+            </label>
+            <label className="field"><span className="label">{t.publish.crop}</span>
+              <select value={crop} onChange={(e) => setCrop(e.target.value)}>
+                <option value="Original">Original</option>
+                <option value="1:1">1:1</option>
+                <option value="9:16">9:16</option>
+                <option value="16:9">16:9</option>
+              </select>
             </label>
             <label className="field"><span className="label">{t.publish.when}</span>
               <input type="datetime-local" value={when} onChange={(e) => setWhen(e.target.value)} />

@@ -26,6 +26,7 @@ type PublishInput struct {
 	ProfileID  string    `json:"profileId" jsonschema:"the profile that will post"`
 	Platform   string    `json:"platform" jsonschema:"instagram or facebook"`
 	Kind       string    `json:"kind,omitempty" jsonschema:"reel (default) or video"`
+	Crop       string    `json:"crop,omitempty" jsonschema:"Instagram crop: Original (default), 1:1, 4:5, 9:16 or 16:9"`
 	Title      string    `json:"title,omitempty" jsonschema:"a label for the queue; the platform caption is separate"`
 	Caption    string    `json:"caption,omitempty" jsonschema:"the caption or description written on the post"`
 	Source     string    `json:"source" jsonschema:"video file name inside the uploads folder"`

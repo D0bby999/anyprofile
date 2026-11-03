@@ -5,7 +5,7 @@ package publish
 import "testing"
 
 func TestBuildInstagramReel(t *testing.T) {
-	steps, err := Build("instagram", "reel", "v.mp4", "hello")
+	steps, err := Build("instagram", "reel", "Original", "v.mp4", "hello")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -30,7 +30,7 @@ func TestBuildInstagramReel(t *testing.T) {
 }
 
 func TestBuildFacebookReel(t *testing.T) {
-	steps, err := Build("facebook", "reel", "v.mp4", "hello")
+	steps, err := Build("facebook", "reel", "Original", "v.mp4", "hello")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -49,19 +49,19 @@ func TestBuildFacebookReel(t *testing.T) {
 }
 
 func TestBuildRefusesUnknownPlatformAndKind(t *testing.T) {
-	if _, err := Build("tiktok", "reel", "v.mp4", ""); err == nil {
+	if _, err := Build("tiktok", "reel", "Original", "v.mp4", ""); err == nil {
 		t.Fatal("tiktok must be refused until it has steps")
 	}
-	if _, err := Build("instagram", "photo", "v.mp4", ""); err == nil {
+	if _, err := Build("instagram", "photo", "Original", "v.mp4", ""); err == nil {
 		t.Fatal("kind photo must be refused")
 	}
-	if _, err := Build("instagram", "reel", "", ""); err == nil {
+	if _, err := Build("instagram", "reel", "Original", "", ""); err == nil {
 		t.Fatal("an empty file must be refused")
 	}
 }
 
 func TestJSONRoundTrip(t *testing.T) {
-	steps, err := Build("instagram", "reel", "v.mp4", "c")
+	steps, err := Build("instagram", "reel", "Original", "v.mp4", "c")
 	if err != nil {
 		t.Fatal(err)
 	}

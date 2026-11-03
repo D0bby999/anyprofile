@@ -21,6 +21,7 @@ type PublishInput struct {
 	ProfileID  string    `json:"profileId"`
 	Platform   string    `json:"platform"`
 	Kind       string    `json:"kind"`
+	Crop       string    `json:"crop"`
 	Title      string    `json:"title"`
 	Caption    string    `json:"caption"`
 	Source     string    `json:"source"`     // file name inside the uploads folder
@@ -110,6 +111,9 @@ func (s *Service) CreatePublishTask(ctx context.Context, in PublishInput) (store
 	if in.Kind == "" {
 		in.Kind = "reel"
 	}
+	if in.Crop == "" {
+		in.Crop = "Original"
+	}
 	name := filepath.Base(strings.TrimSpace(in.Source))
 	if name == "" || name == "." || name == ".." {
 		return store.PublishTask{}, apperr.New("publish_source", "give the video file name in the uploads folder")
@@ -120,7 +124,7 @@ func (s *Service) CreatePublishTask(ctx context.Context, in PublishInput) (store
 	if in.ScheduleAt.IsZero() || !in.ScheduleAt.After(s.now().Add(-time.Minute)) {
 		return store.PublishTask{}, apperr.New("publish_time", "give a time in the future")
 	}
-	steps, err := publish.Build(in.Platform, in.Kind, name, in.Caption)
+	steps, err := publish.Build(in.Platform, in.Kind, in.Crop, name, in.Caption)
 	if err != nil {
 		return store.PublishTask{}, err
 	}
@@ -133,6 +137,7 @@ func (s *Service) CreatePublishTask(ctx context.Context, in PublishInput) (store
 		ProfileID:  in.ProfileID,
 		Platform:   in.Platform,
 		Kind:       in.Kind,
+		Crop:       in.Crop,
 		Title:      in.Title,
 		Caption:    in.Caption,
 		SourcePath: name,
@@ -184,7 +189,7 @@ func (s *Service) rebuildSteps(id string) {
 	if err != nil {
 		return
 	}
-	steps, err := publish.Build(t.Platform, t.Kind, t.SourcePath, t.Caption)
+	steps, err := publish.Build(t.Platform, t.Kind, t.Crop, t.SourcePath, t.Caption)
 	if err != nil {
 		return
 	}

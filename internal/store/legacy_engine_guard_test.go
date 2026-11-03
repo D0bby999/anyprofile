@@ -107,7 +107,7 @@ func TestKnownLegacyEngineMigrates(t *testing.T) {
 			}
 			defer s.Close()
 			var version int
-			if err := s.db.QueryRow(`SELECT MAX(version) FROM schema_version`).Scan(&version); err != nil || version != 27 {
+			if err := s.db.QueryRow(`SELECT MAX(version) FROM schema_version`).Scan(&version); err != nil || version != 28 {
 				t.Fatalf("schema version = %d, err = %v", version, err)
 			}
 			if kind == "profile" {
@@ -172,7 +172,7 @@ func TestLegacySessionHistoryDoesNotBlockMigration(t *testing.T) {
 	}
 	defer s.Close()
 	var version, sessions int
-	if err := s.db.QueryRow(`SELECT MAX(version) FROM schema_version`).Scan(&version); err != nil || version != 27 {
+	if err := s.db.QueryRow(`SELECT MAX(version) FROM schema_version`).Scan(&version); err != nil || version != 28 {
 		t.Fatalf("schema version = %d, err = %v", version, err)
 	}
 	if err := s.db.QueryRow(`SELECT COUNT(*) FROM sessions WHERE engine = 'apostate'`).Scan(&sessions); err != nil || sessions != 1 {

@@ -44,6 +44,10 @@ Business Suite.
   native schedule on those composers, which is why this queue exists.
 - YouTube is not in the queue: use Studio's own Schedule (the `youtube-upload`
   recipe).
+- Instagram keeps the platform's crop unless the task asks otherwise: the
+  `crop` field (Original by default, or 1:1, 9:16, 16:9) picks a ratio in the
+  composer's "Select crop" menu. A 16:9 feed video is squeezed to the default
+  square without it.
 - A retry rebuilds the steps from the current template, so a fix to a
   platform's selectors applies to the retry, not only to new tasks.
 - The queue needs the local API: the REST routes and MCP tools are served by it,
