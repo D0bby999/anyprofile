@@ -82,7 +82,34 @@ Workflow đã có sẵn các bước ký và công chứng; chúng tự bỏ qua
 Sau đó Keychain cũng thôi hỏi lại ở mỗi bản cập nhật: macOS nhận app theo Team ID thay vì theo từng bản build.
 Bản cập nhật đầu tiên từ bản ad hoc sang bản có Developer ID vẫn hỏi một lần.
 
-Các bước này chưa chạy thật lần nào (chưa có tài khoản): lần phát hành đầu có secret, xem kỹ log bước macOS.
+Đã chạy thật lần đầu ngày 2026-11-04 (team `25C8SNXS6Q`, Cassau, LLC). Kinh nghiệm từ lần đó: `codesign --deep`
+không ký các file Mach-O rời trong bundle (dylib trong framework, `Contents/Resources/fury-config`), nên hồ sơ công
+chứng bị `Invalid` với "not signed with a valid Developer ID certificate" và "does not include a secure timestamp".
+Script đóng gói giờ ký từng binary và kiểm lại trước khi ghi file nén.
+
+## Gửi công chứng không phải phát hành
+
+Hai việc khác nhau, đừng lẫn:
+
+| | Gửi công chứng (`notarytool submit`) | Phát hành (`git tag vX.Y.Z` + push) |
+|---|---|---|
+| Ai thấy | Chỉ Apple và team mình | Cả thế giới |
+| Đưa lên cái gì | Một file zip/DMG vào máy quét malware của Apple | Release trên GitHub, `latest.json`, DMG cho người dùng |
+| Làm lại | Được, không giới hạn, không tính quota | Tag đã push là công khai; sửa phải xoá release/tag |
+| Hỏng thì sao | Hồ sơ `Invalid`, xem log, sửa, gửi lại | Người dùng đã tải bản lỗi |
+| Kết quả | Ticket để `stapler staple` vào app/DMG | Bản cập nhật trong app + trang tải |
+
+Vì thế thứ tự luôn là: **công chứng trước, phát hành sau.** Một hồ sơ bị từ chối chỉ tốn thời gian chờ; phát
+hành rồi mới biết hỏng thì đã có người tải.
+
+Cụ thể những gì làm thay đổi trạng thái công khai:
+
+- `git tag engine-anybrowser-…` + `gh release create --prerelease` → asset engine tải được (nhưng không thành
+  "latest", nên updater trong app không bị trỏ sai).
+- `git push origin v0.2.0` → workflow `release` build, ký, công chứng, tạo release và `latest.json`; đây mới là
+  lúc app đến tay người dùng.
+- `gh release upload --clobber` → thay file của một release đã có; người dùng đang tải dở có thể nhận file khác,
+  nên chỉ làm khi thật cần (ví dụ thay engine vừa ký lại).
 
 ## Phát hành một bản engine AnyBrowser (ký và host)
 
