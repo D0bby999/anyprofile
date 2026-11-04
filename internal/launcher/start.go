@@ -175,11 +175,12 @@ func (l *Launcher) start(ctx context.Context, p *proc) error {
 	l.mu.Unlock()
 	l.onChange(info)
 	if !p.behind {
-		// A window the user asked for comes to the front: Chromium activates
-		// itself about half a second after it starts, which is not something
-		// to rely on when another app was in front, and Windows refuses the
-		// foreground to a process that does not ask for it.
-		activate(pid)
+		// A window the user asked for comes to the front. It is raised only
+		// once it exists: asking while Chromium is still starting makes the
+		// app active without a window, and the window that appears afterwards
+		// stays behind this one — it opens, and nothing on it answers until
+		// the user raises it by hand.
+		go l.bringFront(pid)
 	}
 	if p.cdp != nil {
 		go l.capture(prof, eng, p.cdp, p.sessionID)
@@ -244,6 +245,56 @@ func (l *Launcher) measureExit(profileID string, sessionID int64, up netproxy.Up
 	if l.OnData != nil {
 		l.OnData("profiles")
 	}
+}
+
+// bringWait is how long a browser is given to show its window before giving up
+// on raising it; a cold start on a busy computer is the slow case.
+const bringWait = 6 * time.Second
+
+// bringFront raises the window the user asked for, once Chromium has created
+// it, and checks that it is really the app in front. Asking before the window
+// exists makes the app active with nothing to show, and the window that
+// appears afterwards stays behind this one: it looks open, and nothing on it
+// answers until the user raises it by hand. The first request is always made —
+// the user asked for this window — and it is only repeated while this app is
+// still the one in front.
+func (l *Launcher) bringFront(pid int) {
+	if frontPID() == 0 { // the platform does not report the front app
+		activate(pid)
+		return
+	}
+	epoch := l.focusEpoch.Load()
+	// Chromium creates the window a moment after it is ready to launch.
+	deadline := time.Now().Add(bringWait)
+	for !onCurrentDesktop(pid) { // not on this desktop yet
+		if time.Now().After(deadline) || l.focusEpoch.Load() != epoch {
+			// No window here: another desktop, or none at all. One request is
+			// still the right answer — it is the window the user asked for.
+			l.log.Warn("browser window is not on this desktop", "pid", pid)
+			activate(pid)
+			return
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
+	for attempt := 0; attempt < 5; attempt++ {
+		if l.focusEpoch.Load() != epoch {
+			return
+		}
+		// The first request is always worth making: the user asked for this
+		// window. Later ones are only repeated while this app is still the
+		// one in front — once the user is in another app, it is theirs.
+		activate(pid)
+		for settled := time.Now().Add(300 * time.Millisecond); time.Now().Before(settled); time.Sleep(20 * time.Millisecond) {
+			switch f := frontPID(); {
+			case f == pid:
+				l.log.Info("browser window raised", "pid", pid, "attempt", attempt+1)
+				return // the window is in front: done
+			case attempt > 0 && f != 0 && f != os.Getpid():
+				return // the user is in another app: leave it alone
+			}
+		}
+	}
+	l.log.Warn("browser window stayed behind", "pid", pid)
 }
 
 // keepBehind puts the app the user is in back in front whenever the new
