@@ -5,6 +5,77 @@ keeps them together.
 
 ## Unreleased
 
+Engine colour (261104):
+
+- AnyBrowser no longer paints wide-gamut pages for a display the machine does
+  not have. The profile's colour-gamut and HDR claim used to be written into the
+  display colour spaces, which also told the compositor to paint every
+  wide-gamut layer into that claimed display: Meta Business Suite, written in
+  `color(display-p3 …)`, arrived washed out, with a cyan "Create Post" where
+  Chrome paints #3576b9, faint text and no card borders. The two media features
+  are now answered from the profile in Blink (0165) and the display spaces stay
+  the real ones (0166), so what a page reads is unchanged while what the
+  compositor paints is the page as written. The engine was rebuilt
+  (0.5.1.156, Chromium 156.0.8078.74) and the pin's hashes updated.
+
+Cookie safety (261103):
+
+- A profile's cookie jar is copied aside before every launch (a few tens of kB,
+  ten copies kept). When a launch finds that the jar lost most of its cookies —
+  what happens when the folder is opened by a build or a tool whose key differs,
+  because a browser deletes every cookie it cannot decrypt — the last copy is
+  put back before the browser reads it, so the accounts are still signed in
+  instead of showing a login page. The emptied file is kept beside the copies
+  and the event is written to the log.
+
+Window focus (261103):
+
+- A profile opened from the app now raises its own window once the browser has
+  actually created it. It used to ask too early: the app became active while
+  the window did not exist yet, and the window that appeared a moment later
+  stayed behind, so it looked open but nothing on it answered until "Bring
+  window to front" was clicked. The raise is verified and retried a few times,
+  and never fought for once the user has moved to another app.
+
+Engine settings (261103):
+
+- The engine list says it at the top now: a profile keeps the engine it was
+  created with, and the default engine applies to new profiles only. After
+  switching, a toast names the profiles that stay on their own engine, so the
+  next Open is not a surprise.
+
+Proxy table (261102):
+
+- The proxy list has fixed columns now: a long label, host, timezone or note is
+  cut with an ellipsis (with the whole value in its tooltip) instead of spilling
+  over the column beside it, and the table no longer grows past the window.
+- "Used by" names one profile and counts the rest ("+4"), every name in the
+  tooltip, instead of wrapping five chips into the rows below.
+- On a narrow window the expiry column steps out and its room goes to the
+  status chip and the names; the date stays whole at every width.
+
+Colour and contrast (261102):
+
+- Hover, selection and state tints were nearly invisible on the white table
+  (1.04-1.12:1); they are now steps you can see and tell apart: hover 1.18:1,
+  selected 1.23:1, selected under the pointer 1.34:1, in both themes.
+- Hovering a selected, running or agent row now darkens it. Those states used
+  to override the hover rule, so the row gave no feedback at all.
+- The row whose drawer is open, and the row being dragged, carry a 3px accent
+  bar at the left edge, so "selected" and "the one I am looking at" are no
+  longer the same picture.
+- Text selection (drag over a field or a name) is a real blue tint with 12:1
+  text instead of a near-white wash; the keyboard focus ring is stronger; the
+  faint text used for machine names and placeholders went from 2.6:1 to 4.0:1.
+  The Pro theme gets its own violet selection tint.
+
+Row menu (261102):
+
+- The "⋯" menu on a profile row no longer hides behind the action buttons of
+  the rows below, and no longer gets cut off at the bottom of the table: it is
+  rendered in a layer of its own, follows its button when the table scrolls,
+  and flips above the button when there is no room below it.
+
 Window focus (261101):
 
 - Mobile devices opened in a row now stand side by side instead of every first
