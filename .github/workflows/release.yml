@@ -76,6 +76,21 @@ jobs:
       # that); people download the disk image.
       - name: Zip the app
         run: ditto -c -k --keepParent build/bin/AnyProfile.app AnyProfile-macos-arm64.zip
+      # The updater downloads the .zip, not the disk image, so the app itself
+      # has to carry a notarization ticket: submit the zip, staple the app
+      # inside it, then zip again. Without the staple a first launch with no
+      # network still fails Gatekeeper.
+      - name: Notarize the app
+        if: env.MACOS_SIGN_ID != '' && env.APPLE_API_KEY != ''
+        run: |
+          printf '%s' "$APPLE_API_KEY" | base64 --decode > "$RUNNER_TEMP/api-key.p8"
+          xcrun notarytool submit AnyProfile-macos-arm64.zip --key "$RUNNER_TEMP/api-key.p8" \
+            --key-id "$APPLE_API_KEY_ID" --issuer "$APPLE_API_ISSUER" --wait --timeout 30m
+          rm "$RUNNER_TEMP/api-key.p8"
+          xcrun stapler staple build/bin/AnyProfile.app
+          xcrun stapler validate build/bin/AnyProfile.app
+          rm AnyProfile-macos-arm64.zip
+          ditto -c -k --keepParent build/bin/AnyProfile.app AnyProfile-macos-arm64.zip
       - name: Make the disk image
         run: scripts/make-dmg.sh build/bin/AnyProfile.app AnyProfile-macos-arm64.dmg
       - name: Notarize the disk image
