@@ -38,7 +38,10 @@ describe('ProfileTable', () => {
     expect(screen.getByText('Mac M4 Pro · 1728×1117')).toBeTruthy()
     expect(screen.getByText('Fury')).toBeTruthy()
     expect(screen.getByText('67.84.146.69')).toBeTruthy()
-    expect(screen.getByText('US')).toBeTruthy()
+    // The country shows twice: in the proxy column, and as the narrow-window chip
+    // that keeps the proxy beside the name when that column is dropped.
+    expect(screen.getAllByText('US')).toHaveLength(2)
+    expect(screen.getAllByText(/u@gw:10001/).length).toBeGreaterThan(0)
     expect(screen.getByText(t.health.new)).toBeTruthy()
     expect(screen.queryByText(t.profiles.colStatus)).toBeTruthy()
     fireEvent.click(screen.getByText(t.profiles.open))

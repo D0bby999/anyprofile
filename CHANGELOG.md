@@ -15,6 +15,10 @@ Profile status (261104):
 - A profile with no proxy reads "Real IP" instead of a green "OK": the direct
   connection is not a healthy state of a profile built to travel through a
   proxy, it is the one thing such a profile should not silently be.
+- A narrow window still shows which proxy a profile uses. The proxy column is
+  the first thing dropped when space runs out, which took away the one fact
+  that decides whether a profile is safe to open; the row now carries the
+  proxy beside its name instead.
 
 Engine colour (261104):
 

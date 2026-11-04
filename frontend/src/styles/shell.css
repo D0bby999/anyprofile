@@ -413,7 +413,14 @@ kbd { display: inline-flex; align-items: center; min-width: 22px; height: 20px; 
      left into the empty end of the Name header. */
   .table th.col-site .sitehead { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); }
 }
-@container (max-width: 830px) { .table .col-proxy, .table .col-no { display: none; } }
+.proxy-inline { display: none; }
+/* The proxy column goes away before the row does: the exit a profile uses is
+   the reason it exists, so it moves beside the name instead of vanishing. */
+@container (max-width: 830px) {
+  .table .col-proxy, .table .col-no { display: none; }
+  .proxy-inline { display: inline-flex; align-items: center; gap: 4px; color: var(--muted); font-weight: 600; }
+  .proxy-inline .cc { font-style: normal; font-size: 10px; font-weight: 700; letter-spacing: .02em; padding: 1px 3px; border-radius: 3px; background: var(--surface-active); color: var(--muted); }
+}
 @container (max-width: 600px) { .table .col-status { display: none; } .table .cellname { min-width: 120px; } }
 /* The smallest window with the drawer open: the sidebar still filters by platform. */
 @container (max-width: 420px) { .table .col-site { display: none; } .table .cellname { min-width: 100px; } }

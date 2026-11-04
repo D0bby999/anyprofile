@@ -156,6 +156,14 @@ export function ProfileTable(p: Props) {
               <td className="cellname">
                 <b className="selectable">{r.name}</b>
                 <span className="sub">
+                  {/* Under 830px the proxy column is dropped; the row keeps the
+                      proxy as a chip here, because which exit a profile uses is
+                      the reason it exists. */}
+                  {r.proxyLabel && (
+                    <span className="proxy-inline" title={`${t.profiles.colProxy}: ${r.proxyLabel}`}>
+                      {r.proxyCountry && <em className="cc">{r.proxyCountry}</em>}{r.proxyLabel}
+                    </span>
+                  )}
                   {machineKnown(r) && <span>{machineLabel(r)}</span>}
                   {r.engine === 'fury' && <span className="chip engine-tag">{t.engines.names.fury}</span>}
                   {r.tags.map((x) => <span key={x} className="tag">{x}</span>)}
