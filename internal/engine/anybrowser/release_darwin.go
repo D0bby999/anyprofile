@@ -11,10 +11,10 @@ import (
 // (pro/chrome). On a Mac only the macOS persona is offered: the Windows
 // persona renders with the host's fonts, which detection sites notice.
 //
-// The archive lives on its own engine pre-release, so it stays downloadable
-// while /releases/latest keeps pointing at the newest app release (the
-// updater reads latest.json from there). The bundle is signed with the same
-// Developer ID as the app, which is what teamID below checks.
+// The first AnyBrowser build is not hosted yet: zipURL is a placeholder and
+// the hashes are zero. The publish step (docs/releasing.md) pins the real
+// URL and hashes; until then installing this release fails closed at
+// download/verification instead of fetching the old upstream build.
 const (
 	Version  = "0.5.1.156"
 	Chromium = "156.0.8078.74"
@@ -29,15 +29,16 @@ const (
 	// with --fingerprint-timezone.
 	setsTZ = true
 
-	zipName = "anybrowser-156.0.8078.74-macos-arm64.zip"
-	// engineTag names the pre-release the archive is attached to.
-	engineTag     = "engine-anybrowser-0.5.1.156"
-	defaultZipURL = "https://github.com/D0bby999/anyprofile/releases/download/" + engineTag + "/" + zipName
-	zipSHA256     = "3abbc0e039197ef0ef8bd95f9688b867636d8c75a2725c3e147cc60b2f5c2ee5"
-	binarySHA256  = "efa45e35a42703e66fb24e2a4da02e9327fb8cba10e4941fb229f8564cafd097"
-	frameworkSHA  = "6f8230d07923012d7fa337a028824f80d44eab48c30a58285a69f0474e7c29cf"
-	// teamID is the Developer ID team the bundle's signature must name.
-	teamID = "25C8SNXS6Q"
+	zipName       = "anybrowser-156.0.8078.74-macos-arm64.zip"
+	defaultZipURL = "https://example.invalid/anybrowser/" + zipName
+	zipSHA256     = "614b19f6973fcbf73cfce5744a3c50e4ed1f711cb4d5d963a9061d2091b495d6"
+	binarySHA256  = "d07dc89343ce0ffa1d4061f321b44ed27001b8dfc966c314c1cab3df0bf0fb24"
+	frameworkSHA  = "11cc238817aec2b25a403fb2d81d60912e6a406d9a73f30936f10777c939fa74"
+	// teamID is empty until the Developer ID signing identity is pinned at
+	// publish; this local build is ad-hoc signed. The URL stays a placeholder,
+	// so installing from the catalog still fails closed; the hashes let a
+	// local extracted build be verified.
+	teamID = ""
 
 	rootDir = "anybrowser-156.0.8078.74-macos-arm64"
 	appRel  = rootDir + "/Chromium.app"
