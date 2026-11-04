@@ -126,10 +126,17 @@ người dùng. Chạy trong `pro/chrome`, với Chromium đã build (`scripts/b
    `frameworkSHA`, `teamID`. `Catalogue` chỉ đổi khi bộ máy giả lập đổi (digest của `--fingerprint-explain` khác
    bản trước); giữ nguyên thì profile cũ tự chuyển sang bản mới, đổi thì chúng ở lại bản cũ.
 
-5. **Kiểm trước khi phát hành app.** `scripts/dev-anybrowser-server.sh <zip> 8765` phục vụ đúng zip trên loopback
-   (script in ra `ANYPROFILE_ANYBROWSER_DEV` và `ANYPROFILE_ANYBROWSER_URL`); hoặc mở một profile mới trong app và
-   để nó tải từ GitHub. Sau khi cài: `codesign -dv` phải ra đúng Team ID, và Settings → Engines phải hiện đúng
-   phiên bản đã pin.
+5. **Kiểm trước khi phát hành app.** Tải lại đúng asset vừa đăng rồi chạy kiểm tra của chính app (giải nén bằng
+   `engine.ExtractZip`, so hash từng file với pin, `codesign --verify --deep --strict` và so Team ID):
+
+   ```
+   curl -sSL -o /tmp/engine.zip "<URL ở bước 1>"
+   ENGINE_ZIP=/tmp/engine.zip go test ./internal/engine/ -run TestPinnedEngineArchive -v
+   ```
+
+   Cách khác: `scripts/dev-anybrowser-server.sh <zip> 8765` phục vụ đúng zip trên loopback (script in ra
+   `ANYPROFILE_ANYBROWSER_DEV` và `ANYPROFILE_ANYBROWSER_URL`), hoặc mở một profile mới trong app và để nó tải từ
+   GitHub. Sau khi cài: `codesign -dv` phải ra đúng Team ID, và Settings → Engines phải hiện đúng phiên bản đã pin.
 
 ## Engine mới mà không ra app mới
 
