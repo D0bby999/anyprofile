@@ -3,7 +3,7 @@
 The notes of each release tag are shown in the app's update prompt; this file
 keeps them together.
 
-## Unreleased
+## 0.2.0 (2026-11-04)
 
 Engine colour (261104):
 

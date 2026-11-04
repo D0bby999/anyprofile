@@ -84,6 +84,53 @@ Bản cập nhật đầu tiên từ bản ad hoc sang bản có Developer ID v�
 
 Các bước này chưa chạy thật lần nào (chưa có tài khoản): lần phát hành đầu có secret, xem kỹ log bước macOS.
 
+## Phát hành một bản engine AnyBrowser (ký và host)
+
+Engine không nằm trong app: nó được tải về ở lần mở profile đầu tiên, nên file nén phải ở một URL `https` thật và
+đúng hash đã pin. `internal/engine/anybrowser/release_darwin.go` pin bản dựng tại máy này; một bản dựng ad hoc với
+URL `example.invalid` thì app từ chối cài và không mở được profile. Bốn bước dưới đây đưa một bản dựng lên cho
+người dùng. Chạy trong `pro/chrome`, với Chromium đã build (`scripts/build.sh`) và series đã áp.
+
+1. **Ký và đóng gói bằng Developer ID.** `SIGN_IDENTITY` bật hardened runtime và secure timestamp (cùng chứng chỉ
+   với app), nên engine mang Team ID thay vì chữ ký ad hoc; `RELEASE_URL_BASE` chỉ để in ra mục release đúng URL.
+
+   ```
+   SIGN_IDENTITY="Developer ID Application: … (TEAMID)" \
+   RELEASE_URL_BASE="https://github.com/D0bby999/anyprofile/releases/download/engine-anybrowser-0.5.1.156" \
+   PACKAGE_OUT="$HOME/chromium-work/dist-0.5.1.156" \
+     scripts/package.sh 0.5.1.156
+   ```
+
+   Kết quả: `.zip`, `.zip.release.json` (URL, hash file nén, hash `Chromium` và `Chromium Framework`, `teamId`,
+   `catalogue`) và `.zip.build-record.txt`. `package.sh` không ghi đè artifact đã có: đổi `PACKAGE_OUT` cho mỗi lần.
+
+2. **Cắt source tương ứng.** GPLv3 đòi bản source đi kèm; `SOURCE.txt` trong zip cũng hứa như vậy. Tarball cắt từ
+   HEAD của `pro/`, nên commit phần `chrome/` trước (script từ chối chạy khi còn file chưa commit).
+
+   ```
+   scripts/source-tarball.sh 0.5.1.156 "$HOME/chromium-work/dist-source"
+   ```
+
+3. **Tạo một release riêng cho engine, đánh dấu pre-release.** `/releases/latest` phải vẫn trỏ vào bản phát hành
+   app, vì app đọc `latest.json` ở đúng URL đó; một release engine không đánh dấu sẽ che mất nó.
+
+   ```
+   gh release create engine-anybrowser-0.5.1.156 \
+     "$HOME/chromium-work/dist-0.5.1.156/anybrowser-156.0.8078.74-macos-arm64.zip" \
+     "$HOME/chromium-work/dist-source/anybrowser-0.5.1.156-source.tar.gz" \
+     --prerelease --title "AnyBrowser 0.5.1.156" --notes-file <ghi chú> -R D0bby999/anyprofile
+   ```
+
+4. **Pin lại bản đó** trong `internal/engine/anybrowser/release_darwin.go` (mọi giá trị đọc từ `.zip.release.json`;
+   `teamID` là `.teamId`, `releaseDate` là `.date`): `defaultZipURL` (URL ở bước 1), `zipSHA256`, `binarySHA256`,
+   `frameworkSHA`, `teamID`. `Catalogue` chỉ đổi khi bộ máy giả lập đổi (digest của `--fingerprint-explain` khác
+   bản trước); giữ nguyên thì profile cũ tự chuyển sang bản mới, đổi thì chúng ở lại bản cũ.
+
+5. **Kiểm trước khi phát hành app.** `scripts/dev-anybrowser-server.sh <zip> 8765` phục vụ đúng zip trên loopback
+   (script in ra `ANYPROFILE_ANYBROWSER_DEV` và `ANYPROFILE_ANYBROWSER_URL`); hoặc mở một profile mới trong app và
+   để nó tải từ GitHub. Sau khi cài: `codesign -dv` phải ra đúng Team ID, và Settings → Engines phải hiện đúng
+   phiên bản đã pin.
+
 ## Engine mới mà không ra app mới
 
 `latest.json` có thêm danh sách engine (`engines`) và chữ ký của nó (`enginesSig`, cùng khoá phát hành). App đọc
@@ -143,6 +190,9 @@ phát hành.
 
 Bản phát hành công khai đầu: `v0.1.0`, 2026-10-24. Hai bản dựng trước đó cũng mang số 0.1.0 (2026-10-17) và 0.1.1
 (2026-10-18) chỉ là bản nháp; chúng đã bị xoá, tệp cài và ghi chú được sao lưu trên máy phát hành.
+
+Tính đến 2026-11-04 repo không còn tag hay release nào (bản 0.1.0 đã bị xoá cùng tag), nên `v0.2.0` là bản đầu tiên
+người dùng tải được, và là bản đầu tiên ký bằng Developer ID và được Apple công chứng.
 
 ## Thử mà không phát hành
 
