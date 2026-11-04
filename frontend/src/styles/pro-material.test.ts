@@ -3,12 +3,9 @@
 // surface), never a second accent. A paid tier that recolours the working
 // accent changes what a colour means for the people who paid, and the violet
 // ramp it used was the default every generated UI reaches for.
-import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
-
-const css = readFileSync(fileURLToPath(new URL('./shell.css', import.meta.url)), 'utf8')
-const tokens = readFileSync(fileURLToPath(new URL('./tokens.css', import.meta.url)), 'utf8')
+import css from './shell.css?raw'
+import tokens from './tokens.css?raw'
 
 describe('Pro is a material, not a hue', () => {
   it('never overrides the working accent for Pro', () => {
