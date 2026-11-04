@@ -1,0 +1,32 @@
+<!-- SPDX-License-Identifier: AGPL-3.0-or-later
+     Dev-only preview: renders the real app against fixtures in src/preview so the
+     UI can be looked at in a browser (screenshots, design checks) without the
+     Wails shell. `npm run dev`, then open /preview.html. Not part of the build:
+     Vite only emits index.html. -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>AnyProfile preview</title>
+</head>
+<body>
+<div id="root"></div>
+<script>
+  // Surface a boot failure in the page, so a headless screenshot/dump shows it
+  // instead of a blank screen.
+  const boot = (what, detail) => {
+    document.title = what + ' ' + detail
+    const pre = document.createElement('pre')
+    pre.id = 'boot-error'
+    pre.style.cssText = 'all:initial;display:block;white-space:pre-wrap;font:12px ui-monospace;color:#900;background:#fee;padding:12px'
+    pre.textContent = what + '\n' + detail
+    document.body?.appendChild(pre)
+  }
+  addEventListener('error', (e) => boot('ERR:', (e.error && e.error.stack) || e.message))
+  addEventListener('unhandledrejection', (e) => boot('REJ:', (e.reason && (e.reason.stack || e.reason.message)) || String(e.reason)))
+</script>
+<script src="./src/preview/stub.ts" type="module"></script>
+<script src="./src/main.tsx" type="module"></script>
+</body>
+</html>
