@@ -50,6 +50,9 @@ func (l *Launcher) start(ctx context.Context, p *proc) error {
 	if pid := singletonPID(udd); pid != 0 && alive(pid) {
 		return apperr.Newf("folder_in_use", "another process (pid %d) already uses this profile's folder; close it first", pid)
 	}
+	// The browser reads the cookie jar as soon as it starts, so the last copy
+	// goes back before that (see cookieguard.go).
+	l.cookieGuard(prof, udd)
 
 	var up netproxy.Upstream // kept in memory only, to measure the exit after launch
 	if prof.ProxyID != "" {
