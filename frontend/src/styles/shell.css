@@ -592,55 +592,32 @@ kbd { display: inline-flex; align-items: center; min-width: 22px; height: 20px; 
 .pro-device { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 0; border-top: 1px solid var(--line); font-size: var(--t-sm); }
 .pro-device:first-child { border-top: 0; }
 
-/* Pro mode: the app keeps its structure, but the accent turns violet and the
-   sidebar carries a persistent membership marker. */
-.app.is-pro {
-  --accent: #7c3aed; --accent-hover: #6d28d9;
-  --accent-soft: #f3e8ff; --accent-soft-hover: #e9d5ff;
-  --accent-line: #d8b4fe; --accent-ink: #5b21b6;
-  --accent-selection: #ddd0fb;
-  --accent-fill: #7c3aed; --accent-fill-hover: #6d28d9; --accent-fill-press: #5b21b6;
-}
-:root[data-theme="dark"] .app.is-pro {
-  --accent: #a78bfa; --accent-hover: #c4b5fd;
-  --accent-soft: #211a3a; --accent-soft-hover: #2a2147;
-  --accent-line: #4c3a78; --accent-ink: #d8b4fe;
-  --accent-selection: #33265c;
-  --accent-fill: #7c3aed; --accent-fill-hover: #8b5cf6; --accent-fill-press: #6d28d9;
-}
-.is-pro .sidebar {
-  background:
-    radial-gradient(180px 160px at 20% 0%, color-mix(in srgb, var(--accent) 13%, transparent), transparent 70%),
-    linear-gradient(180deg, var(--surface), color-mix(in srgb, var(--surface) 92%, var(--accent) 8%));
-  border-right-color: var(--accent-line);
-}
-.propill {
-  display: inline-flex; align-items: center; gap: 4px; height: 19px; padding: 0 7px;
-  margin-left: auto; border: 1px solid var(--accent-line); border-radius: var(--r-pill);
-  background: var(--accent-soft); color: var(--accent-ink);
-  font-size: 9px; font-weight: 750; letter-spacing: .12em;
-}
-.propill .icon { color: var(--accent); }
-.prostatus {
-  display: flex; align-items: center; gap: 9px; width: 100%; min-height: 46px;
-  margin: 2px 0 8px; padding: 7px 8px; text-align: left;
-  border: 1px solid var(--accent-line); border-radius: var(--r-md);
-  background: linear-gradient(135deg, var(--accent-soft), color-mix(in srgb, var(--accent-soft) 35%, transparent));
-  color: var(--ink); box-shadow: var(--sh-ctl);
-}
-.prostatus:hover { background: var(--accent-soft-hover); border-color: var(--accent); }
-.prostatus-icon {
-  display: grid; place-items: center; width: 28px; height: 28px; flex: 0 0 auto;
-  border-radius: 8px; color: var(--on-fill); background: var(--accent-fill);
-  box-shadow: 0 0 16px color-mix(in srgb, var(--accent) 35%, transparent);
-}
-.prostatus-copy { display: flex; flex-direction: column; min-width: 0; line-height: 1.25; }
-.prostatus-copy b { font-size: 11px; font-weight: 700; letter-spacing: -.01em; color: var(--ink); }
-.prostatus-copy small { font-size: 10px; color: var(--muted); margin-top: 2px; }
-.prostatus-arrow { margin-left: auto; color: var(--accent); }
-.app.is-pro .navitem[aria-current="page"] { border-color: var(--accent-line); }
-.app.is-pro .pro-block { border-color: var(--accent-line); background: linear-gradient(180deg, var(--accent-soft), color-mix(in srgb, var(--surface-sunken) 78%, var(--accent-soft) 22%)); }
+/* Pro is a material, not a hue. The working accent stays blue for everyone, so
+   the colour of an action keeps one meaning after a purchase; membership shows
+   as a seal on the account row, a firmer rule on the rail, and a deeper surface
+   under the Pro blocks. No gradient wash, no glow, nothing violet. */
+.app.is-pro .sidebar { border-right-color: var(--line-strong); }
+.app.is-pro .pro-block { border-color: var(--line-strong); background: var(--surface-sunken); }
 .app.is-pro .pro-block-title { color: var(--ink); }
+
+/* The seal: a drawn mark in ink, not a coloured badge. One per window. */
+.seal {
+  display: grid; place-items: center; width: 22px; height: 22px; flex: 0 0 auto;
+  border: 1px solid var(--line-strong); border-radius: 6px;
+  color: var(--ink-soft); background: var(--surface);
+}
+.prostatus {
+  display: flex; align-items: center; gap: 8px; width: 100%; min-height: 34px;
+  margin: 2px 0 6px; padding: 5px 8px; text-align: left;
+  border: 0; border-radius: var(--r-sm);
+  background: transparent; color: var(--ink); box-shadow: none;
+}
+.prostatus:hover { background: var(--surface-hover); }
+.prostatus-copy { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex: 1; min-width: 0; }
+.prostatus-copy b { font-size: var(--t-sm); font-weight: 600; letter-spacing: -.005em; color: var(--ink); }
+.prostatus-copy small { font-size: var(--t-xs); color: var(--muted); }
+.prostatus-arrow { margin-left: auto; color: var(--muted); }
+.prostatus:hover .prostatus-arrow { color: var(--ink-soft); }
 
 /* Mobile device table: identity first, then proxy/status, actions last. */
 .mobile-table { min-width: 820px; table-layout: fixed; }

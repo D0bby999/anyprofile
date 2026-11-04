@@ -4,6 +4,13 @@
 // the app (Vite only builds index.html).
 import { defaults, engines, profiles, proxies } from './fixtures'
 
+let proActive = true
+// ?theme=light|dark and ?pro=0 pin the two states a screenshot needs.
+const params = new URLSearchParams(location.search)
+const wanted = params.get('theme')
+if (wanted === 'light' || wanted === 'dark') localStorage.setItem('anyprofile.theme', wanted)
+if (params.get('pro') === '0') proActive = false
+
 const noop = () => {}
 const unsubscribe = () => noop
 
@@ -16,7 +23,8 @@ const answers: Record<string, unknown> = {
   ListProxies: async () => proxies,
   Engines: async () => engines,
   Defaults: async () => defaults,
-  ProStatus: async () => ({ active: false, plan: '', expiresAt: '', seats: 0, devices: [] }),
+  ProStatus: async () => ({ active: proActive, plan: 'Lifetime', expiresAt: '', seats: 3, devices: [] }),
+  ProDevices: async () => [],
   TakeWhatsNew: async () => ({ version: '', notes: '' }),
   UpdateStatus: async () => ({ current: '0.2.0', latest: '0.2.0', available: false, checking: false, error: '' }),
   Sites: async () => [

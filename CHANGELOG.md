@@ -26,6 +26,19 @@ Agent profile management (261104):
 
 ## 0.2.0 (2026-11-04)
 
+Pro membership (261104):
+
+- Pro no longer repaints the app. Membership used to swap the working accent to
+  the Tailwind violet ramp and wash the sidebar with a radial gradient, so a
+  paid user's primary button changed colour — and the only thing a colour then
+  said was "you are on the paid tier", while the same hue everywhere else still
+  meant "this is the action". Pro is now a material: a seal on the account row,
+  a firmer rule on the rail, a deeper surface under the Pro blocks. The accent
+  stays blue for everyone.
+- One membership marker instead of two. The "PRO" chip in the brand row (9px,
+  letter-spaced, uppercase) is gone; the account row at the bottom of the rail
+  carries the seal, the name and the state, and it is the only place that does.
+
 Profile status (261104):
 
 - A profile whose last open failed now says so in its row ("Did not open",

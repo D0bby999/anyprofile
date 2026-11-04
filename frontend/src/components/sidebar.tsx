@@ -55,7 +55,6 @@ export function Sidebar({ page, view, counts, tags, sites, siteCounts, proxyCoun
       <div className="brandrow">
         <LogoMark />
         <b>{t.appName}</b>
-        {pro?.active && <span className="propill"><Icon name="spark" className="icon xs" />PRO</span>}
       </div>
       <button className="btn primary block newbtn nodrag" onClick={onNewProfile} title={`${t.nav.newProfile} ${modLabel}N`}>
         <Icon name="plus" />
@@ -105,7 +104,7 @@ export function Sidebar({ page, view, counts, tags, sites, siteCounts, proxyCoun
       <div className="sidefoot">
         {pro?.active && (
           <button type="button" className="prostatus nodrag" onClick={() => onOpenPro?.()} title={t.pro.title}>
-            <span className="prostatus-icon"><Icon name="spark" className="icon sm" /></span>
+            <span className="seal" aria-hidden="true"><Icon name="spark" className="icon xs" /></span>
             <span className="prostatus-copy"><b>{t.pro.title}</b><small>{pro.kind === 'lifetime' ? t.pro.kindLifetime : pro.kind === 'gift' ? t.pro.kindGift : t.pro.stateActive('')}</small></span>
             <Icon name="chevron" className="icon xs prostatus-arrow" />
           </button>
