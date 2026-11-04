@@ -274,6 +274,95 @@ func (s *Service) UpdateProfile(ctx context.Context, p store.Profile) error {
 	return nil
 }
 
+// ProfilePatch is what an agent may change about a profile: every nil field
+// stays as it is. Identity, engine and the saved accounts are not patchable.
+type ProfilePatch struct {
+	Name     *string   `json:"name,omitempty"`
+	Sites    *[]string `json:"sites,omitempty"`
+	Tags     *[]string `json:"tags,omitempty"`
+	FolderID *string   `json:"folderId,omitempty"`
+	Notes    *string   `json:"notes,omitempty"`
+	StartURL *string   `json:"startUrl,omitempty"`
+	ProxyID  *string   `json:"proxyId,omitempty"`
+}
+
+// PatchProfile saves only the fields p sets. A new proxy is refused while the
+// profile is open: the browser in it keeps the network it started with, so its
+// timezone and exit would stop matching what the row now says.
+func (s *Service) PatchProfile(ctx context.Context, id string, p ProfilePatch) (store.Profile, error) {
+	cur, err := s.Store.GetProfile(id)
+	if err != nil {
+		return store.Profile{}, err
+	}
+	if p.Name != nil {
+		name := strings.TrimSpace(*p.Name)
+		if name == "" {
+			return store.Profile{}, apperr.New("name_required", "profile name is required")
+		}
+		cur.Name = name
+	}
+	if p.Sites != nil {
+		cur.Sites = *p.Sites
+	}
+	if p.Tags != nil {
+		cur.Tags = cleanTags(*p.Tags)
+	}
+	if p.FolderID != nil {
+		cur.FolderID = *p.FolderID
+	}
+	if p.Notes != nil {
+		cur.Notes = *p.Notes
+	}
+	if p.StartURL != nil {
+		cur.StartURL = *p.StartURL
+	}
+	if p.ProxyID != nil && *p.ProxyID != cur.ProxyID {
+		if s.profileRunning(cur.ID) {
+			return store.Profile{}, apperr.Newf("profile_running", "%q is open; close it before changing its proxy", cur.Name).Never()
+		}
+		if *p.ProxyID != "" {
+			if _, err := s.Store.GetProxy(*p.ProxyID); err != nil {
+				return store.Profile{}, apperr.Newf("proxy_not_found", "no proxy %q; see list_proxies", *p.ProxyID).Never()
+			}
+		}
+		cur.ProxyID = *p.ProxyID
+	}
+	if err := s.UpdateProfile(ctx, cur); err != nil {
+		return store.Profile{}, err
+	}
+	// UpdateProfile works on a copy, so read the row again for the derived
+	// fields it wrote (timezone, languages, start URL).
+	return s.Store.GetProfile(id)
+}
+
+// AssignProxy moves a profile onto another proxy, or off proxies with "".
+func (s *Service) AssignProxy(ctx context.Context, profileID, proxyID string) (store.Profile, error) {
+	return s.PatchProfile(ctx, profileID, ProfilePatch{ProxyID: &proxyID})
+}
+
+// profileRunning reports whether id has a browser open or starting.
+func (s *Service) profileRunning(id string) bool {
+	if s.Running != nil {
+		return s.Running(id)
+	}
+	return s.running()[id]
+}
+
+// cleanTags trims, drops empty tags and keeps the first of a repeat.
+func cleanTags(tags []string) []string {
+	out := make([]string, 0, len(tags))
+	seen := map[string]bool{}
+	for _, tag := range tags {
+		tag = strings.TrimSpace(tag)
+		if tag == "" || seen[tag] {
+			continue
+		}
+		seen[tag] = true
+		out = append(out, tag)
+	}
+	return out
+}
+
 // proxyCountry is the country the proxy exits in, "" without one.
 func (s *Service) proxyCountry(proxyID string) string {
 	if proxyID == "" {

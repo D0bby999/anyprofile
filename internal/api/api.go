@@ -74,6 +74,10 @@ type Server struct {
 	// Mobile serves the device tools to agents; nil leaves them out.
 	Mobile  MobileBackend
 	prompts promptSet
+	// App serves the profile-management tools, and only when AgentManage says
+	// the user let agents change profiles. Both nil/false leaves them out.
+	App         AppBackend
+	AgentManage bool
 	// Traces is where the MCP tool trace JSONL is written; "" disables it.
 	Traces string
 	// Publish is the queue the REST routes and the MCP tools drive; nil leaves

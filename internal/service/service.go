@@ -58,6 +58,9 @@ type Service struct {
 	CheckProxy func(ctx context.Context, up netproxy.Upstream) (netproxy.Exit, error)
 	// PingProxy opens one connection through up; nil means a real one.
 	PingProxy func(ctx context.Context, up netproxy.Upstream) error
+	// Running says whether a profile has a browser open or starting; nil asks
+	// the launcher. Tests set it instead of launching a browser.
+	Running func(profileID string) bool
 	// Pro reaches the AnyProfile Pro server; the zero value means pro.NewClient().
 	Pro pro.Client
 

@@ -196,9 +196,10 @@ func (deviceListIn) who() string { return "" }
 // device id, duration and outcome, never with screen content or typed text.
 func addDevice[In interface{ dev() string }](s *Server, srv *mcp.Server, name, desc string, readOnly bool,
 	fn func(context.Context, MobileDevice, In) (*mcp.CallToolResult, error)) {
+	destructive := false
 	t := &mcp.Tool{Name: name, Description: desc, Annotations: &mcp.ToolAnnotations{ReadOnlyHint: readOnly, OpenWorldHint: &yes}}
 	if !readOnly {
-		t.Annotations.DestructiveHint = &no
+		t.Annotations.DestructiveHint = &destructive
 	}
 	mcp.AddTool(srv, t, func(ctx context.Context, req *mcp.CallToolRequest, in In) (*mcp.CallToolResult, any, error) {
 		if req.Session != nil {
@@ -216,7 +217,7 @@ func addDevice[In interface{ dev() string }](s *Server, srv *mcp.Server, name, d
 			if d, derr := s.device(in.dev()); derr == nil {
 				if o := (&s.leases).ownerOf("device:" + d.ID); o != "" && o != "mcp:"+sid {
 					err = apperr.Newf("device_busy", "%q is held by another agent session", d.Name)
-					return nil, nil, err
+					return nil, nil, retryHint(err)
 				}
 			}
 		}
@@ -226,6 +227,7 @@ func addDevice[In interface{ dev() string }](s *Server, srv *mcp.Server, name, d
 			shot = s.traceShot(name, d.ID, false)
 		}
 		s.log.Info("mcp", "tool", name, "device", d.ID, "ms", ms, "ok", err == nil)
+		err = retryHint(err)
 		s.trace(name, d.ID, ms, err, shot)
 		return res, nil, err
 	})
@@ -277,7 +279,7 @@ func deviceRef(ctx context.Context, c DeviceControl, ref string, t *automation.T
 		return ref, nil
 	}
 	if ref != "" {
-		return "", apperr.New("agent_bad_target", "give a ref or a target, not both")
+		return "", apperr.New("agent_bad_target", "give a ref or a target, not both").Never()
 	}
 	f, ok := c.(interface {
 		FindOne(context.Context, automation.Target) (automation.Match, error)

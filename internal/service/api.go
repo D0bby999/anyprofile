@@ -23,6 +23,9 @@ const DefaultAPIPort = 51525
 type APISettings struct {
 	Enabled bool `json:"enabled"`
 	Port    int  `json:"port"`
+	// AgentManage lets an agent create and change profiles, not only drive
+	// them. Off until the user turns it on.
+	AgentManage bool `json:"agentManage"`
 }
 
 func (s *Service) APISettings() APISettings {
@@ -34,6 +37,9 @@ func (s *Service) APISettings() APISettings {
 		if n, err := strconv.Atoi(v); err == nil {
 			a.Port = n
 		}
+	}
+	if v, _ := s.Store.GetSetting("agent_manage"); v == "1" {
+		a.AgentManage = true
 	}
 	return a
 }
@@ -55,6 +61,13 @@ func (s *Service) SetAPISettings(a APISettings) error {
 		return err
 	}
 	if err := s.Store.SetSetting("api_port", strconv.Itoa(a.Port)); err != nil {
+		return err
+	}
+	manage := "0"
+	if a.AgentManage {
+		manage = "1"
+	}
+	if err := s.Store.SetSetting("agent_manage", manage); err != nil {
 		return err
 	}
 	s.notify("settings")

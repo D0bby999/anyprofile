@@ -5,6 +5,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -175,7 +176,7 @@ func (noArgs) who() string { return "" }
 
 type whoer interface{ who() string }
 
-var no, yes = false, true
+var yes = true
 
 type mcpSessionCtx struct{}
 
@@ -194,9 +195,19 @@ func mcpSession(ctx context.Context) string {
 // add registers one tool; every call is logged with its tool, profile id,
 // duration and outcome, never with page content or typed text.
 func add[In whoer](s *Server, srv *mcp.Server, name, desc string, readOnly bool, fn func(context.Context, In) (*mcp.CallToolResult, error)) {
+	register(s, srv, name, desc, readOnly, false, fn)
+}
+
+// addD is add for a tool that can destroy something. Clients see
+// DestructiveHint, and a client that asks the user before such a call can do so.
+func addD[In whoer](s *Server, srv *mcp.Server, name, desc string, fn func(context.Context, In) (*mcp.CallToolResult, error)) {
+	register(s, srv, name, desc, false, true, fn)
+}
+
+func register[In whoer](s *Server, srv *mcp.Server, name, desc string, readOnly, destructive bool, fn func(context.Context, In) (*mcp.CallToolResult, error)) {
 	t := &mcp.Tool{Name: name, Description: desc, Annotations: &mcp.ToolAnnotations{ReadOnlyHint: readOnly, OpenWorldHint: &yes}}
 	if !readOnly {
-		t.Annotations.DestructiveHint = &no
+		t.Annotations.DestructiveHint = &destructive
 	}
 	mcp.AddTool(srv, t, func(ctx context.Context, req *mcp.CallToolRequest, in In) (*mcp.CallToolResult, any, error) {
 		if req.Session != nil {
@@ -218,8 +229,8 @@ func add[In whoer](s *Server, srv *mcp.Server, name, desc string, readOnly bool,
 		if sid := mcpSession(ctx); sid != "" && in.who() != "" {
 			if p, perr := s.profile(in.who()); perr == nil {
 				if o := (&s.leases).ownerOf("profile:" + p.ID); o != "" && o != "mcp:"+sid {
-					err = apperr.Newf("profile_busy", "%q is held by another agent session", p.Name)
-					return nil, nil, err
+					err = apperr.Newf("profile_busy", "%q is held by another agent session", p.Name).Safe()
+					return nil, nil, retryHint(err)
 				}
 			}
 		}
@@ -232,9 +243,23 @@ func add[In whoer](s *Server, srv *mcp.Server, name, desc string, readOnly bool,
 			s.recordMCP(ctx, name, in)
 		}
 		s.log.Info("mcp", "tool", name, "profile", id, "ms", ms, "ok", err == nil)
+		err = retryHint(err)
 		s.trace(name, id, ms, err, shot)
 		return res, nil, err
 	})
+}
+
+// retryHint puts the error's disposition on its own last line: an agent reads
+// a tool error as text, so the advice has to travel with the message.
+func retryHint(err error) error {
+	if err == nil {
+		return nil
+	}
+	var ae *apperr.Error
+	if errors.As(err, &ae) && ae.Retry != "" {
+		return fmt.Errorf("%w\nretry: %s", err, ae.Retry)
+	}
+	return err
 }
 
 // MCPClients are the agents Settings writes a setup for; "other" is the
@@ -291,12 +316,12 @@ func tabLine(t agent.Tab) *mcp.CallToolResult {
 func (s *Server) targetRef(ctx context.Context, b *agent.Browser, tab, ref string, t *automation.Target) (string, error) {
 	if t == nil {
 		if ref == "" {
-			return "", apperr.New("agent_bad_ref", "give a ref or a target")
+			return "", apperr.New("agent_bad_ref", "give a ref or a target").Never()
 		}
 		return ref, nil
 	}
 	if ref != "" {
-		return "", apperr.New("agent_bad_target", "give a ref or a target, not both")
+		return "", apperr.New("agent_bad_target", "give a ref or a target, not both").Never()
 	}
 	m, err := b.FindOne(ctx, tab, *t)
 	if err != nil {
@@ -321,10 +346,16 @@ func (s *Server) mcpHandler() http.Handler {
 	if s.Mobile != nil {
 		ins += mobileInstructions
 	}
+	if s.App != nil && s.AgentManage {
+		ins += appInstructions
+	}
 	srv := mcp.NewServer(&mcp.Implementation{Name: "anyprofile", Title: "AnyProfile", Version: update.Current},
 		&mcp.ServerOptions{Instructions: ins})
 	if s.Mobile != nil {
 		s.addMobileTools(srv)
+	}
+	if s.App != nil && s.AgentManage {
+		s.addAppTools(srv)
 	}
 	s.addPublishTools(srv)
 
@@ -343,7 +374,7 @@ func (s *Server) mcpHandler() http.Handler {
 			}
 			owner := "mcp:" + sid
 			if o := (&s.leases).ownerOf(key); o != "" && o != owner {
-				return nil, apperr.New("profile_busy", "held by another agent session")
+				return nil, apperr.New("profile_busy", "held by another agent session").Safe()
 			}
 			if _, err := (&s.leases).acquireFor(key, owner, time.Hour); err != nil {
 				return nil, err
@@ -860,7 +891,7 @@ func (s *Server) browser(ref string) (Profile, *agent.Browser, error) {
 		return Profile{}, nil, err
 	}
 	if p.State != "running" {
-		return Profile{}, nil, apperr.Newf("agent_not_open", "%q is not open; call open_profile first", p.Name)
+		return Profile{}, nil, apperr.Newf("agent_not_open", "%q is not open; call open_profile first", p.Name).Safe()
 	}
 	c, ok := s.backend.Pipe(p.ID)
 	if !ok {
@@ -870,7 +901,7 @@ func (s *Server) browser(ref string) (Profile, *agent.Browser, error) {
 }
 
 func noPipe(p Profile) error {
-	return apperr.Newf("agent_no_pipe", "%q was opened before AnyProfile last restarted, so it cannot be driven; close it and open it again", p.Name)
+	return apperr.Newf("agent_no_pipe", "%q was opened before AnyProfile last restarted, so it cannot be driven; close it and open it again", p.Name).Never()
 }
 
 // waitBrowser waits up to 60 s for a starting profile's pipe. The launcher

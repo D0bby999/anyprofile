@@ -159,6 +159,8 @@ func (a *App) restartAPI() {
 	}
 	srv := api.New(apiBackend{a.svc}, a.svc.Log, set.Port, tok)
 	srv.Agent = a.agent
+	srv.App = apiBackend{a.svc}
+	srv.AgentManage = set.AgentManage
 	srv.Uploads, srv.Recipes = a.svc.Dirs.Uploads(), a.svc.Dirs.Recipes()
 	srv.ProRecipes = pro.Recipes(a.svc.Dirs.Pro())
 	srv.Traces = filepath.Join(a.svc.Dirs.Logs(), "traces")
