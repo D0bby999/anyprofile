@@ -67,6 +67,26 @@ Engine colour (261104):
   compositor paints is the page as written. The engine was rebuilt
   (0.5.1.156, Chromium 156.0.8078.74) and the pin's hashes updated.
 
+Code signing (261104):
+
+- The app and the engine are signed with the same Developer ID (Cassau, LLC,
+  team 25C8SNXS6Q), the hardened runtime and a secure timestamp, and the engine
+  archive is published on its own pre-release with its URL, hashes and team
+  pinned in the build: a profile will not start on an engine whose signature
+  does not name that team.
+- Every Mach-O in the engine archive is signed on its own, and each helper gets
+  its own entitlements — `allow-jit` for the renderer and the GPU process,
+  library validation off for the plain helper. Signing them all with the app's
+  entitlements produced a bundle that passed every local check and then could
+  not start a renderer under the hardened runtime: the page died with "V8
+  process OOM (Failed to reserve virtual memory for CodeRange)" and the profile
+  reported "browser failed".
+- The archive no longer carries AppleDouble `._` entries. `ditto` stores
+  extended attributes as those entries, and `unzip` writes them out as real
+  files, so a bundle sealed a moment earlier read as modified for anyone who
+  unpacked the zip by hand; the packager now keeps them out and stops if one
+  reappears.
+
 Cookie safety (261103):
 
 - A profile's cookie jar is copied aside before every launch (a few tens of kB,

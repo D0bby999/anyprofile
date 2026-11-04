@@ -74,8 +74,30 @@ jobs:
           make build VERSION=${{ needs.version.outputs.version }} WAILS="$(go env GOPATH)/bin/wails" "$@"
       # The in-app updater downloads the .zip (0.1.0 and 0.1.1 unpack only
       # that); people download the disk image.
+      #
+      # Extended attributes travel as AppleDouble "._name" entries, which unzip
+      # writes out as real files: the bundle then reads as modified and fails
+      # its own signature check. Strip them and keep the archive free of them.
       - name: Zip the app
-        run: ditto -c -k --keepParent build/bin/AnyProfile.app AnyProfile-macos-arm64.zip
+        run: |
+          xattr -cr build/bin/AnyProfile.app
+          ditto -c -k --norsrc --noextattr --keepParent build/bin/AnyProfile.app AnyProfile-macos-arm64.zip
+      # Notarization takes hours to reject; check here, where the answer is
+      # immediate, that every Mach-O in the bundle carries the Developer ID and
+      # a secure timestamp.
+      - name: Verify the bundle before notarizing
+        if: env.MACOS_SIGN_ID != ''
+        run: |
+          bad=0
+          while IFS= read -r -d '' f; do
+            file -b "$f" | grep -q 'Mach-O' || continue
+            sig="$(codesign -dv --verbose=4 "$f" 2>&1)"
+            case "$sig" in
+            *"Authority=Developer ID Application:"*Timestamp=*) ;;
+            *) echo "not signed for distribution: $f" >&2; bad=1 ;;
+            esac
+          done < <(find build/bin/AnyProfile.app -type f -print0)
+          exit "$bad"
       # The updater downloads the .zip, not the disk image, so the app itself
       # has to carry a notarization ticket: submit the zip, staple the app
       # inside it, then zip again. Without the staple a first launch with no
@@ -90,7 +112,7 @@ jobs:
           xcrun stapler staple build/bin/AnyProfile.app
           xcrun stapler validate build/bin/AnyProfile.app
           rm AnyProfile-macos-arm64.zip
-          ditto -c -k --keepParent build/bin/AnyProfile.app AnyProfile-macos-arm64.zip
+          ditto -c -k --norsrc --noextattr --keepParent build/bin/AnyProfile.app AnyProfile-macos-arm64.zip
       - name: Make the disk image
         run: scripts/make-dmg.sh build/bin/AnyProfile.app AnyProfile-macos-arm64.dmg
       - name: Notarize the disk image

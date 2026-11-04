@@ -165,6 +165,22 @@ người dùng. Chạy trong `pro/chrome`, với Chromium đã build (`scripts/b
    `ANYPROFILE_ANYBROWSER_DEV` và `ANYPROFILE_ANYBROWSER_URL`), hoặc mở một profile mới trong app và để nó tải từ
    GitHub. Sau khi cài: `codesign -dv` phải ra đúng Team ID, và Settings → Engines phải hiện đúng phiên bản đã pin.
 
+### Bẫy đã gặp khi ký engine
+
+- **Entitlements theo từng helper, không dùng chung của app.** Helper Renderer và GPU cần
+  `com.apple.security.cs.allow-jit`; helper thường cần `com.apple.security.cs.disable-library-validation`. Gắn
+  entitlements của app chính (`com.apple.security.device.*`) cho tất cả helper thì hardened runtime chặn V8 xin
+  vùng nhớ JIT: renderer chết với `V8 process OOM (Failed to reserve virtual memory for CodeRange)`, app báo
+  "browser failed", và Apple từ chối notarize. Kiểm nhanh:
+  `codesign -d --entitlements :- "<…>/Helpers/Chromium Helper (Renderer).app"` phải thấy `allow-jit`.
+- **Không được để AppleDouble (`._` name) trong zip.** `ditto -c -k` ghi extended attribute thành entry `._name`;
+  ai giải nén bằng `unzip` sẽ thấy chúng là file thật và `codesign --verify --deep --strict` báo "a sealed
+  resource is missing or invalid". `package.sh` đóng gói với `--norsrc --noextattr` và dừng nếu zip còn entry
+  `._`. Sau khi nhận zip, thử `unzip -q <zip> -d /tmp/x && codesign --verify --deep --strict /tmp/x/*/Chromium.app`.
+- **Notarize rồi mới staple, và staple xong phải pin lại.** Ticket nằm trong bundle, nên zip sau khi staple khác
+  zip đã gửi: staple lên bản đã giải nén, đóng gói lại, cập nhật asset, rồi mới lấy `.zip.release.json` để pin.
+  Hàng đợi notarize có lúc kéo dài vài giờ, nên chạy bước kiểm tra ở trên trước khi gửi.
+
 ## Engine mới mà không ra app mới
 
 `latest.json` có thêm danh sách engine (`engines`) và chữ ký của nó (`enginesSig`, cùng khoá phát hành). App đọc
