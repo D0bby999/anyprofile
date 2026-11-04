@@ -76,6 +76,7 @@ export namespace main {
 	export class APIStatus {
 	    enabled: boolean;
 	    port: number;
+	    agentManage: boolean;
 	    running: boolean;
 	    error: string;
 	
@@ -87,6 +88,7 @@ export namespace main {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.enabled = source["enabled"];
 	        this.port = source["port"];
+	        this.agentManage = source["agentManage"];
 	        this.running = source["running"];
 	        this.error = source["error"];
 	    }
@@ -354,6 +356,7 @@ export namespace service {
 	export class APISettings {
 	    enabled: boolean;
 	    port: number;
+	    agentManage: boolean;
 	
 	    static createFrom(source: any = {}) {
 	        return new APISettings(source);
@@ -363,6 +366,7 @@ export namespace service {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.enabled = source["enabled"];
 	        this.port = source["port"];
+	        this.agentManage = source["agentManage"];
 	    }
 	}
 	export class BackupResult {

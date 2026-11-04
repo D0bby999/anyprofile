@@ -547,6 +547,8 @@ export const vi: Messages = {
     openUploads: 'Mở thư mục uploads', openRecipes: 'Mở thư mục recipe',
     foldersHint: 'Agent chỉ upload được các file nằm trong thư mục uploads. Recipe (file .md) trong thư mục recipe hiện thành lệnh trong các agent hỗ trợ, như Claude Code.',
     mcpHint: 'Claude Code và các agent khác mở được profile và làm việc trong trình duyệt của nó: đọc trang, bấm, gõ, xem request mạng. Agent đi qua AnyProfile tới trình duyệt nên không cổng DevTools nào được mở. Trang web có thể tìm cách lừa agent: hãy để mắt tới việc nó làm.',
+    agentsManage: 'Cho agent tạo và sửa profile',
+    agentsManageHint: 'Agent thêm được profile, gán proxy, xếp folder và tag, bật extension, và đọc trạng thái app. Xoá vào thùng rác phải xác nhận; xoá hẳn phải gõ đúng tên profile. Tắt mục này thì agent chỉ mở và điều khiển profile như trước.',
   },
   agent: { label: 'Agent', title: 'Một AI agent đang làm việc trong profile này' },
   onOpen: {

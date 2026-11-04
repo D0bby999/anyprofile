@@ -29,10 +29,10 @@ export function APISettings() {
   const toast = useToast()
   useEffect(() => { Api.APIStatus().then((s) => { setSt(s); setPort(String(s.port)) }).catch((e) => setError(errorText(e))) }, [])
 
-  const save = async (enabled: boolean, p: number) => {
+  const save = async (enabled: boolean, p: number, agentManage: boolean) => {
     setError('')
     try {
-      const next = await Api.SetAPISettings(service.APISettings.createFrom({ enabled, port: p }))
+      const next = await Api.SetAPISettings(service.APISettings.createFrom({ enabled, port: p, agentManage }))
       setSt(next)
       setPort(String(next.port))
     } catch (e) {
@@ -51,7 +51,7 @@ export function APISettings() {
 
   const savePort = () => {
     const n = Number(port)
-    if (n !== st.port) save(st.enabled, n)
+    if (n !== st.port) save(st.enabled, n, st.agentManage)
   }
   const newToken = async () => {
     if (!(await confirm(t.api.newTokenConfirm))) return
@@ -61,8 +61,8 @@ export function APISettings() {
   return (
     <div className="field">
       <div className="seg" role="group" aria-label={t.api.title}>
-        <button type="button" aria-pressed={!st.enabled} onClick={() => save(false, st.port)}>{t.api.off}</button>
-        <button type="button" aria-pressed={st.enabled} onClick={() => save(true, st.port)}>{t.api.on}</button>
+        <button type="button" aria-pressed={!st.enabled} onClick={() => save(false, st.port, st.agentManage)}>{t.api.off}</button>
+        <button type="button" aria-pressed={st.enabled} onClick={() => save(true, st.port, st.agentManage)}>{t.api.on}</button>
       </div>
       <label className="field">
         <span className="label">{t.api.port}</span>
@@ -100,6 +100,12 @@ export function APISettings() {
         </span>
         <span className="hint">{t.api.foldersHint}</span>
         <span className="hint">{t.api.mcpHint}</span>
+        <label className="row" style={{ alignItems: 'center', gap: 8 }}>
+          <input type="checkbox" checked={st.agentManage} disabled={!st.enabled}
+            onChange={(e) => save(st.enabled, st.port, e.target.checked)} />
+          <span>{t.api.agentsManage}</span>
+        </label>
+        <span className="hint">{t.api.agentsManageHint}</span>
       </div>
       {error && <div className="banner danger" role="alert"><Icon name="alert" /><span className="grow">{error}</span></div>}
     </div>

@@ -546,6 +546,8 @@ export const en = {
     openUploads: 'Open uploads folder', openRecipes: 'Open recipes folder',
     foldersHint: 'An agent can upload only the files in the uploads folder. Recipes (.md files) in the recipes folder show up as commands in agents that support them, like Claude Code.',
     mcpHint: 'Claude Code and other agents can open profiles and work in their browsers: read pages, click, type, see network requests. They reach the browser through AnyProfile, so no DevTools port opens. A web page can try to trick an agent: watch what it does.',
+    agentsManage: 'Let agents create and change profiles',
+    agentsManageHint: 'Agents can add profiles, assign proxies, file them in folders and tags, turn extensions on, and read the app status. Moving one to the trash needs confirmation; deleting it for good needs its exact name. With this off, agents only open and drive profiles, as before.',
   },
   agent: { label: 'Agent', title: 'An AI agent is working in this profile' },
   onOpen: {

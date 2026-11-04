@@ -6,8 +6,8 @@ import { t } from '../i18n'
 import { ConfirmProvider } from './confirm'
 import { ToastProvider } from './toast'
 
-let status = { enabled: false, port: 51525, running: false, error: '' }
-const setAPISettings = vi.fn(async (s: { enabled: boolean; port: number }) => { status = { ...status, ...s, running: s.enabled }; return status })
+let status = { enabled: false, port: 51525, running: false, error: '', agentManage: false }
+const setAPISettings = vi.fn(async (s: { enabled: boolean; port: number; agentManage: boolean }) => { status = { ...status, ...s, running: s.enabled }; return status })
 const copyAPIToken = vi.fn().mockResolvedValue(undefined)
 const newAPIToken = vi.fn().mockResolvedValue(undefined)
 const copyMCPSetup = vi.fn((_: string) => Promise.resolve())
@@ -16,7 +16,7 @@ vi.mock('../api', async (orig) => ({
   ...(await orig<typeof import('../api')>()),
   Api: {
     APIStatus: () => Promise.resolve(status),
-    SetAPISettings: (s: { enabled: boolean; port: number }) => setAPISettings(s),
+    SetAPISettings: (s: { enabled: boolean; port: number; agentManage: boolean }) => setAPISettings(s),
     CopyAPIToken: () => copyAPIToken(),
     NewAPIToken: () => newAPIToken(),
     CopyMCPSetup: (c: string) => copyMCPSetup(c),
@@ -26,7 +26,7 @@ vi.mock('../api', async (orig) => ({
 const { APISettings } = await import('./api-settings')
 const view = () => render(<ConfirmProvider><ToastProvider><APISettings /></ToastProvider></ConfirmProvider>)
 
-afterEach(() => { cleanup(); vi.clearAllMocks(); localStorage.clear(); status = { enabled: false, port: 51525, running: false, error: '' } })
+afterEach(() => { cleanup(); vi.clearAllMocks(); localStorage.clear(); status = { enabled: false, port: 51525, running: false, error: '', agentManage: false } })
 
 describe('APISettings', () => {
   it('turns the API on and says where it listens', async () => {
@@ -38,7 +38,7 @@ describe('APISettings', () => {
   })
 
   it('copies the token through Go and asks before making a new one', async () => {
-    status = { enabled: true, port: 51525, running: true, error: '' }
+    status = { ...status, enabled: true, port: 51525, running: true }
     view()
     fireEvent.click(await screen.findByRole('button', { name: t.api.copyToken }))
     await waitFor(() => expect(copyAPIToken).toHaveBeenCalled())
@@ -68,8 +68,21 @@ describe('APISettings', () => {
     expect(openAgentFolder.mock.calls).toEqual([['uploads'], ['recipes']])
   })
 
+  it('lets agents change profiles only after the switch is turned on', async () => {
+    view()
+    const off = (await screen.findByRole('checkbox', { name: t.api.agentsManage })) as HTMLInputElement
+    expect(off.disabled).toBe(true)
+    fireEvent.click(await screen.findByRole('button', { name: t.api.on }))
+    await waitFor(() => expect(setAPISettings).toHaveBeenCalledWith(expect.objectContaining({ enabled: true, agentManage: false })))
+    const on = (await screen.findByRole('checkbox', { name: t.api.agentsManage })) as HTMLInputElement
+    expect(on.disabled).toBe(false)
+    fireEvent.click(on)
+    await waitFor(() => expect(setAPISettings).toHaveBeenLastCalledWith(expect.objectContaining({ enabled: true, agentManage: true })))
+    expect(((await screen.findByRole('checkbox', { name: t.api.agentsManage })) as HTMLInputElement).checked).toBe(true)
+  })
+
   it('explains a busy port', async () => {
-    status = { enabled: true, port: 51525, running: false, error: 'anyprofile:api_port_busy: port 51525 is in use' }
+    status = { ...status, enabled: true, port: 51525, running: false, error: 'anyprofile:api_port_busy: port 51525 is in use' }
     view()
     expect(await screen.findByText(t.errors.api_port_busy)).toBeTruthy()
   })
