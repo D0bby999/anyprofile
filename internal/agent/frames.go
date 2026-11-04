@@ -35,7 +35,7 @@ func (f *frameSess) parentSession(t *tab) string {
 
 // resolve parses ref into the node and the frame it is in (nil: the page).
 func (b *Browser) resolve(t *tab, ref string) (int64, *frameSess, error) {
-	bad := apperr.Newf("agent_bad_ref", "%q is not a ref from snapshot (like e123)", ref)
+	bad := apperr.Newf("agent_bad_ref", "%q is not a ref from snapshot (like e123)", ref).Never()
 	if !strings.HasPrefix(ref, "e") {
 		return 0, nil, bad
 	}

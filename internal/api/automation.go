@@ -256,7 +256,7 @@ func (s *Server) browserAct(ctx context.Context, in actRequest) (any, error) {
 			return nil, err
 		}
 		if len(matches) == 0 {
-			return nil, apperr.Newf("target_not_found", "no element matches %q after 5s", in.Target.String())
+			return nil, apperr.Newf("target_not_found", "no element matches %q after 5s", in.Target.String()).Safe()
 		}
 		pick := matches[0]
 		for _, m := range matches {

@@ -240,5 +240,5 @@ func (b *Browser) call(ctx context.Context, session, method string, params any, 
 }
 
 func errGone(ref string) error {
-	return apperr.Newf("agent_ref_gone", "%s is no longer on the page; take a new snapshot", ref)
+	return apperr.Newf("agent_ref_gone", "%s is no longer on the page; take a new snapshot", ref).Safe()
 }

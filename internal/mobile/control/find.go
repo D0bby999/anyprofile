@@ -126,14 +126,14 @@ func (d *Device) FindOneWait(ctx context.Context, t automation.Target, wait time
 		case 0:
 			prev = ""
 			if time.Now().After(deadline) {
-				return automation.Match{}, apperr.Newf("target_not_found", "no element matches %s after %s", t, wait)
+				return automation.Match{}, apperr.Newf("target_not_found", "no element matches %s after %s", t, wait).Safe()
 			}
 		default:
 			var refs []string
 			for _, m := range ms {
 				refs = append(refs, m.Ref+" "+strconv.Quote(m.Name))
 			}
-			return automation.Match{}, apperr.Newf("target_ambiguous", "%s matches %d elements: %s", t, len(ms), strings.Join(refs, ", "))
+			return automation.Match{}, apperr.Newf("target_ambiguous", "%s matches %d elements: %s", t, len(ms), strings.Join(refs, ", ")).Never()
 		}
 		select {
 		case <-ctx.Done():

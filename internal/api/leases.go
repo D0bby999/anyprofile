@@ -332,7 +332,7 @@ func (s *Server) checkSession(id string, in actRequest) error {
 	}
 	if id == "" {
 		if o := (&s.leases).ownerOf(key); o != "" {
-			return apperr.Newf("profile_busy", "held by another session; pass its session id or close it")
+			return apperr.Newf("profile_busy", "held by another session; pass its session id or close it").Safe()
 		}
 		return nil
 	}

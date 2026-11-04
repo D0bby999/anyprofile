@@ -275,7 +275,12 @@ func writeErr(w http.ResponseWriter, status int, err error) {
 	} else if errors.Is(err, store.ErrNotFound) {
 		code, msg = "not_found", "no such profile"
 	}
-	writeJSON(w, status, map[string]any{"error": map[string]string{"code": code, "message": msg}})
+	body := map[string]any{"code": code, "message": msg}
+	// Disposition is what a script may do next; without it, it does not repeat.
+	if ae != nil && ae.Retry != "" {
+		body["disposition"] = map[string]string{"retry": ae.Retry}
+	}
+	writeJSON(w, status, map[string]any{"error": body})
 }
 
 func writeJSON(w http.ResponseWriter, status int, v any) {

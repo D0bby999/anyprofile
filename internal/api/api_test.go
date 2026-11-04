@@ -73,6 +73,34 @@ func errCode(out map[string]any) string {
 	return s
 }
 
+// A script retries only what says it may: the disposition travels with the
+// error, and an error that says nothing stays unretryable.
+func TestErrorDisposition(t *testing.T) {
+	for _, tc := range []struct {
+		err  error
+		want string
+	}{
+		{apperr.NewRetryable("target_not_found", "no element"), "safe"},
+		{apperr.New("agent_bad_ref", "not a ref").Never(), "never"},
+		{apperr.New("profile_not_trashed", "move it to the trash first"), ""},
+	} {
+		rec := httptest.NewRecorder()
+		writeErr(rec, http.StatusConflict, tc.err)
+		var out map[string]any
+		if err := json.Unmarshal(rec.Body.Bytes(), &out); err != nil {
+			t.Fatal(err)
+		}
+		body, _ := out["error"].(map[string]any)
+		got := ""
+		if d, ok := body["disposition"].(map[string]any); ok {
+			got, _ = d["retry"].(string)
+		}
+		if got != tc.want {
+			t.Fatalf("%v: retry = %q, want %q", tc.err, got, tc.want)
+		}
+	}
+}
+
 func TestRefusesWhatAWebPageOrAStrangerCouldSend(t *testing.T) {
 	f, h := setup()
 	cases := []struct {
