@@ -29,10 +29,14 @@ SIGN_ID ?= $(shell security find-identity -v -p codesigning 2>/dev/null | grep -
 SIGN_FLAGS ?=
 
 # wails build signs the bundle ad hoc; adding the helper breaks that seal,
-# so the bundle is re-signed after the copy.
+# so the bundle is re-signed after the copy. --deep signs nested bundles but
+# not a bare executable sitting in Resources: fury-config kept the ad hoc
+# signature Rust gives arm64 binaries, and Apple's notary service rejected the
+# archive for it. It is signed on its own first, then sealed by the bundle.
 build: fury-config
 	$(WAILS) build -clean -platform darwin/arm64 -ldflags "$(LDFLAGS)"
 	cp $(FURY_CONFIG) $(APP)/Contents/Resources/fury-config
+	codesign --force $(SIGN_FLAGS) --sign "$(SIGN_ID)" $(APP)/Contents/Resources/fury-config
 	codesign --force --deep $(SIGN_FLAGS) --sign "$(SIGN_ID)" $(APP)
 	codesign --verify --deep --strict $(APP)
 
