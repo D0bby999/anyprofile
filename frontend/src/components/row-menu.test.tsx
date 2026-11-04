@@ -49,6 +49,26 @@ describe('RowMenu', () => {
     expect(screen.queryByText('Copy login')).toBeNull()
   })
 
+  it('renders the menu in a layer of its own, not inside the row', () => {
+    // Inside the row, the sticky action cells of the rows below would paint
+    // over it and the table's scroll box would cut it off.
+    render(<RowMenu sites={[]} {...props()} />)
+    fireEvent.click(screen.getByRole('button', { name: 'More' }))
+    const menu = screen.getByRole('menu')
+    expect(menu.parentElement).toBe(document.body)
+    expect(menu.closest('table')).toBeNull()
+    expect(menu.className).toContain('floating')
+  })
+
+  it('stays open while clicking inside it and closes on a click outside', () => {
+    render(<RowMenu sites={[]} {...props()} />)
+    fireEvent.click(screen.getByRole('button', { name: 'More' }))
+    fireEvent.mouseDown(screen.getByRole('menu'))
+    expect(screen.getByRole('menu')).toBeTruthy()
+    fireEvent.mouseDown(document.body)
+    expect(screen.queryByRole('menu')).toBeNull()
+  })
+
   it('names each platform when the profile has several accounts', () => {
     const sites = [
       site.Site.createFrom({ id: 'tiktok', name: 'TikTok', group: 'video', domains: [], startUrl: '', icon: '', color: '#000', custom: false }),

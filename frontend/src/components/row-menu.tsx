@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-import { Fragment, useEffect, useRef, useState } from 'react'
+import { Fragment, useRef, useState } from 'react'
 import { Api, copyText, service } from '../api'
 import { t } from '../i18n'
 import { errorText } from '../lib/format'
 import { Icon } from './icons'
-import { focusFirstItem, menuArrows } from '../lib/menu-keys'
 import { siteById, type Site } from '../lib/sites'
 import { useCookieActions } from './use-cookie-actions'
+import { PopMenu } from './pop-menu'
 
 type Props = {
   row: service.ProfileRow
@@ -23,15 +23,6 @@ export function RowMenu({ row, sites, onEdit, onDuplicate, onTrash, onMessage, o
   const [open, setOpen] = useState(false)
   const cookies = useCookieActions(row, sites)
   const ref = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (!open) return
-    const onDown = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
-    }
-    document.addEventListener('mousedown', onDown)
-    return () => document.removeEventListener('mousedown', onDown)
-  }, [open])
 
   const act = (fn: () => void | Promise<void>) => {
     setOpen(false)
@@ -86,30 +77,28 @@ export function RowMenu({ row, sites, onEdit, onDuplicate, onTrash, onMessage, o
         onClick={() => setOpen(!open)}>
         <Icon name="more" />
       </button>
-      {open && (
-        <div role="menu" className="rowmenu" ref={focusFirstItem} onKeyDown={(e) => { menuArrows(e); if (e.key === 'Escape') { e.stopPropagation(); setOpen(false) } }}>
-          <button role="menuitem" onClick={() => act(onEdit)}>{t.menu.edit}</button>
-          <button role="menuitem" onClick={() => act(onDuplicate)}>{t.menu.duplicate}</button>
-          <button role="menuitem" onClick={() => act(() => Api.SetPinnedMany([row.id], !row.pinned).catch((e) => onError(errorText(e))))}>
-            {row.pinned ? t.menu.unpin : t.menu.pin}
-          </button>
-          {accounts.map((a) => (
-            <Fragment key={a.site}>
-              {a.login && <button role="menuitem" onClick={() => act(() => copyLogin(a.login))}>{named(t.menu.copyLogin, a.site)}</button>}
-              {a.hasPassword && <button role="menuitem" onClick={() => act(() => copyPassword(a.site))}>{named(t.menu.copyPassword, a.site)}</button>}
-              {a.hasTotp && <button role="menuitem" onClick={() => act(() => copyCode(a.site))}>{named(t.menu.copyCode, a.site)}</button>}
-            </Fragment>
-          ))}
-          <hr />
-          <button role="menuitem" disabled={cookies.importing} onClick={() => act(cookies.importCookies)}>{t.cookies.import}</button>
-          <button role="menuitem" disabled={!cookies.canExport} title={cookies.canExport ? undefined : t.cookies.openFirst}
-            onClick={() => act(cookies.exportCookies)}>{t.cookies.export}</button>
-          <button role="menuitem" disabled={row.state !== 'stopped'} title={row.state !== 'stopped' ? t.bookmarks.closeFirst : undefined}
-            onClick={() => act(importBookmarks)}>{t.bookmarks.import}</button>
-          <hr />
-          <button role="menuitem" disabled={row.state !== 'stopped'} onClick={() => act(onTrash)}>{t.menu.trash}</button>
-        </div>
-      )}
+      <PopMenu anchor={ref} open={open} onClose={() => setOpen(false)}>
+        <button role="menuitem" onClick={() => act(onEdit)}>{t.menu.edit}</button>
+        <button role="menuitem" onClick={() => act(onDuplicate)}>{t.menu.duplicate}</button>
+        <button role="menuitem" onClick={() => act(() => Api.SetPinnedMany([row.id], !row.pinned).catch((e) => onError(errorText(e))))}>
+          {row.pinned ? t.menu.unpin : t.menu.pin}
+        </button>
+        {accounts.map((a) => (
+          <Fragment key={a.site}>
+            {a.login && <button role="menuitem" onClick={() => act(() => copyLogin(a.login))}>{named(t.menu.copyLogin, a.site)}</button>}
+            {a.hasPassword && <button role="menuitem" onClick={() => act(() => copyPassword(a.site))}>{named(t.menu.copyPassword, a.site)}</button>}
+            {a.hasTotp && <button role="menuitem" onClick={() => act(() => copyCode(a.site))}>{named(t.menu.copyCode, a.site)}</button>}
+          </Fragment>
+        ))}
+        <hr />
+        <button role="menuitem" disabled={cookies.importing} onClick={() => act(cookies.importCookies)}>{t.cookies.import}</button>
+        <button role="menuitem" disabled={!cookies.canExport} title={cookies.canExport ? undefined : t.cookies.openFirst}
+          onClick={() => act(cookies.exportCookies)}>{t.cookies.export}</button>
+        <button role="menuitem" disabled={row.state !== 'stopped'} title={row.state !== 'stopped' ? t.bookmarks.closeFirst : undefined}
+          onClick={() => act(importBookmarks)}>{t.bookmarks.import}</button>
+        <hr />
+        <button role="menuitem" disabled={row.state !== 'stopped'} onClick={() => act(onTrash)}>{t.menu.trash}</button>
+      </PopMenu>
     </div>
   )
 }

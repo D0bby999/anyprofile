@@ -331,6 +331,10 @@ kbd { display: inline-flex; align-items: center; min-width: 22px; height: 20px; 
 .rowmenu button:disabled { opacity: .5; cursor: not-allowed; }
 .rowmenu button:hover:not(:disabled) { background: var(--surface-hover); }
 .rowmenu hr { border: 0; height: 1px; background: var(--line-soft); margin: 4px 0; }
+/* A menu rendered into the body (PopMenu): the table's scroll box would clip a
+   menu inside it, and the sticky action cells of the rows below would paint
+   over one. Its left/top come from the button it belongs to. */
+.rowmenu.floating { position: fixed; right: auto; top: auto; z-index: 40; }
 .sorthead { display: inline-flex; align-items: center; gap: 3px; }
 .card.pad > .seg, .card.pad > .row { align-self: flex-start; }
 
