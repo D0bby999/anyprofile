@@ -77,6 +77,19 @@ describe('health', () => {
     expect(h.reasons).toHaveLength(2)
   })
 
+  it('keeps a failed open visible after the error message is gone', () => {
+    const h = health({ ...base, fpVerdict: 'match', state: 'error', stateError: 'browser exited before the window appeared' })
+    expect(h.level).toBe('danger')
+    expect(h.label).toBe(t.health.openFailed)
+    expect(h.reasons[0]).toContain('browser exited before the window appeared')
+    expect(needsAttention({ ...base, fpVerdict: 'match', state: 'error', stateError: 'boom' })).toBe(true)
+  })
+
+  it('says nothing about a failed open that has no message', () => {
+    const h = health({ ...base, fpVerdict: 'match', state: 'error', stateError: '' })
+    expect(h.label).toBe(t.health.ok)
+  })
+
   it('explains an IPv6 exit in another timezone', () => {
     const h = health({ ...base, fpVerdict: 'match', flags: [{ id: 'ipv6_elsewhere', level: 'warn', params: { profile: 'America/New_York', ip: 'America/Chicago' } }] })
     expect(h.level).toBe('warn')

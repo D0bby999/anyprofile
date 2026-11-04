@@ -11,7 +11,10 @@ type Reason = { level: HealthLevel; label: string; text: string; tone?: HealthLe
 const rank: Record<HealthLevel, number> = { danger: 4, warn: 3, info: 2, ok: 1, none: 0 }
 
 type CheckResult = { id: string; ok: boolean; level: string }
-type Row = Pick<service.ProfileRow, 'fpVerdict' | 'fpDiff' | 'proxyExpiry' | 'lastOpenAt' | 'cdpPort'> & { flags?: Flag[]; checks?: CheckResult[] }
+type Row = Pick<service.ProfileRow, 'fpVerdict' | 'fpDiff' | 'proxyExpiry' | 'lastOpenAt' | 'cdpPort'> &
+  // stateError is the launcher's message for the last failed open; it is the
+  // only place a failure survives once the toast is gone.
+  { state?: string; stateError?: string; flags?: Flag[]; checks?: CheckResult[] }
 
 /**
  * The values the browser build itself decides. When only these moved, the
@@ -44,6 +47,9 @@ export function health(row: Row, now: Date = new Date()): Health {
   }
   if (row.proxyExpiry === 'expired') r.push({ level: 'danger', label: h.expired, text: h.expiredText })
   if (row.proxyExpiry === 'soon') r.push({ level: 'warn', label: h.expiring, text: h.expiringText })
+  if (row.state === 'error' && row.stateError) {
+    r.push({ level: 'danger', label: h.openFailed, text: h.openFailedText(row.stateError) })
+  }
   if (row.cdpPort > 0) r.push({ level: 'warn', label: h.cdp(row.cdpPort), text: h.cdpText })
   if (row.fpVerdict === 'unchecked') r.push({ level: 'warn', label: h.unchecked, text: h.uncheckedText })
   if (row.fpVerdict === 'baseline') r.push({ level: 'info', label: h.baseline, text: h.baselineText })

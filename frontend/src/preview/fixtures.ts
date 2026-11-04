@@ -56,9 +56,9 @@ export const profiles: service.ProfileRow[] = [
   row({ id: 'p1', name: 'Bluebird — NL', state: 'running', cdpPort: 9333, position: 1, tags: ['ads', 'client-a'], lastOpenAt: ago(3), proxyLabel: 'Amsterdam 3', notes: 'Meta Ads, 3 accounts' }),
   row({ id: 'p2', name: 'Cobalt — US', state: 'stopped', position: 2, sites: ['tiktok', 'instagram'], tags: ['client-a'], proxyLabel: 'Ashburn 2', proxyCountry: 'US', timezone: 'America/New_York', proxyExitIp: '45.33.70.12', lastOpenAt: ago(900), fpVerdict: 'drift', fpDiff: ['webglRenderer'], machine: 'Apple M2 · 1440×900' }),
   row({ id: 'p3', name: 'Lumen — DE', state: 'stopped', position: 3, tags: ['ads'], proxyLabel: 'Frankfurt 1', proxyCountry: 'DE', timezone: 'Europe/Berlin', proxyExpiry: 'soon', lastOpenAt: ago(2600), machine: 'Apple M1 · 1280×800' }),
-  row({ id: 'p4', name: 'Harbor — SG', state: 'error', stateError: 'browser exited before the window appeared', position: 4, sites: ['youtube'], proxyLabel: 'Singapore 4', proxyCountry: 'SG', timezone: 'Asia/Singapore', lastOpenAt: ago(60), flags: [{ kind: 'proxy', text: 'proxy unreachable' } as never] }),
+  row({ id: 'p4', name: 'Harbor — SG', state: 'error', stateError: 'browser exited before the window appeared', fpVerdict: 'unchecked', position: 4, sites: ['youtube'], proxyLabel: 'Singapore 4', proxyCountry: 'SG', timezone: 'Asia/Singapore', lastOpenAt: ago(60) }),
   row({ id: 'p5', name: 'Quiet — CA', state: 'stopped', position: 5, tags: ['client-b'], proxyLabel: 'Toronto 2', proxyCountry: 'CA', timezone: 'America/Toronto', lastOpenAt: ago(5000), machine: 'Apple M4 · 1512×982' }),
-  row({ id: 'p6', name: 'No proxy yet', state: 'stopped', position: 6, proxyId: '', proxyLabel: '', proxyCountry: '', proxyExitIp: '', sites: ['other'], lastOpenAt: '' }),
+  row({ id: 'p6', name: 'No proxy yet', state: 'stopped', position: 6, proxyId: '', proxyLabel: '', proxyCountry: '', proxyExitIp: '', sites: ['other'], fpVerdict: '', fpCheckedAt: '', lastOpenAt: '', flags: [{ id: 'direct', level: 'info', params: {} } as never] }),
 ]
 
 export const proxies = [

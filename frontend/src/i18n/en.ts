@@ -41,6 +41,7 @@ export const en = {
     expiring: 'Proxy expiring', expiringText: 'The proxy expires within 3 days.',
     cdp: (port: number) => `Port ${port} open`, cdpText: 'A diagnostics port is open. Any local program can control this browser until it closes.',
     unchecked: 'Not checked', uncheckedText: 'The last launch could not be measured.',
+    openFailed: 'Did not open', openFailedText: (why: string) => `The last time this profile was opened the browser stopped first: ${why}`,
     baseline: 'Reference set', baselineText: 'Measured and saved as the reference. The next launch is compared with it.',
     ok: 'OK', okText: 'Same fingerprint as the reference.',
     new: 'New', newText: 'Not opened yet.',

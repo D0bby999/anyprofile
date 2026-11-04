@@ -5,6 +5,17 @@ keeps them together.
 
 ## 0.2.0 (2026-11-04)
 
+Profile status (261104):
+
+- A profile whose last open failed now says so in its row ("Did not open",
+  hover for the launcher's message) and counts under "need attention". The
+  message used to exist only until the page error cleared, so a browser that
+  died before its window appeared left the row looking merely closed, and the
+  retry looked like the first attempt.
+- A profile with no proxy reads "Real IP" instead of a green "OK": the direct
+  connection is not a healthy state of a profile built to travel through a
+  proxy, it is the one thing such a profile should not silently be.
+
 Engine colour (261104):
 
 - AnyBrowser no longer paints wide-gamut pages for a display the machine does

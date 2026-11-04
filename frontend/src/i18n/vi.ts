@@ -42,6 +42,7 @@ export const vi: Messages = {
     expiring: 'Proxy sắp hết hạn', expiringText: 'Proxy hết hạn trong vòng 3 ngày.',
     cdp: (port: number) => `Cổng ${port} đang mở`, cdpText: 'Cổng chẩn đoán đang mở. Mọi chương trình trên máy đều điều khiển được trình duyệt này cho tới khi nó đóng.',
     unchecked: 'Chưa kiểm', uncheckedText: 'Lần mở gần nhất không đo được.',
+    openFailed: 'Không mở được', openFailedText: (why: string) => `Lần mở gần nhất trình duyệt dừng trước khi hiện cửa sổ: ${why}`,
     baseline: 'Đã đặt mốc', baselineText: 'Đã đo và lưu làm mốc. Lần mở tới sẽ so với lần này.',
     ok: 'OK', okText: 'Fingerprint giống mốc đã lưu.',
     new: 'Mới', newText: 'Chưa mở lần nào.',
