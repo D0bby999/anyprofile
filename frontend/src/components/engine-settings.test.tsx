@@ -30,6 +30,7 @@ vi.mock('../api', async (orig) => ({
 }))
 const { EngineSettings } = await import('./engine-settings')
 const { ConfirmProvider } = await import('./confirm')
+const { ToastProvider } = await import('./toast')
 
 const engines = [
   main.EngineInfo.createFrom({ engine: 'anybrowser', version: '0.5.1', chromium: '155.0.8059.31', installed: false, problem: '', default: true }),
@@ -72,6 +73,17 @@ describe('EngineSettings', () => {
     const block = screen.getByText('Apostate').closest('.engine') as HTMLElement
     fireEvent.click(within(block).getByRole('radio'))
     await waitFor(() => expect(setDefaults).toHaveBeenCalledWith(expect.objectContaining({ engine: 'apostate' })))
+  })
+
+  it('says which profiles the new default does not move', async () => {
+    const apostate = main.EngineInfo.createFrom({ engine: 'apostate', version: '0.5.1', chromium: '155.0.8059.31', installed: true, problem: '', default: false })
+    const anybrowser = main.EngineInfo.createFrom({ engine: 'anybrowser', version: '0.5.1', chromium: '155.0.8059.31', installed: true, problem: '', default: true })
+    render(<ToastProvider><EngineSettings engines={[anybrowser, apostate]} counts={{ anybrowser: 3 }} defaults={defaults} onChanged={vi.fn()} /></ToastProvider>)
+    // The rule is on the page, not only in the tooltip of the profile's engine row.
+    expect(screen.getByText(t.engines.defaultHint)).toBeTruthy()
+    const block = screen.getByText('Apostate').closest('.engine') as HTMLElement
+    fireEvent.click(within(block).getByRole('radio'))
+    expect(await screen.findByText(t.engines.defaultSavedOthers('Apostate', 'AnyBrowser (3)'))).toBeTruthy()
   })
 
   it('folds away an engine that is not installed, not chosen and not used', () => {

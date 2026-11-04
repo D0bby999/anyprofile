@@ -6,6 +6,7 @@ import { errorText } from '../lib/format'
 import { EngineVersions } from './engine-versions'
 import { Icon } from './icons'
 import { InstallProgress } from './install-progress'
+import { useToast } from './toast'
 
 const engineName = (id: string) => t.engines.names[id] ?? id
 
@@ -19,6 +20,7 @@ type Props = {
 
 /** One block per engine: status, install or reinstall, and the new-profile default. */
 export function EngineSettings({ engines, counts, defaults, onChanged }: Props) {
+  const toast = useToast()
   const [progress, setProgress] = useState<EngineProgress | null>(null)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [releases, setReleases] = useState<Record<string, service.EngineRelease[]>>({})
@@ -52,6 +54,13 @@ export function EngineSettings({ engines, counts, defaults, onChanged }: Props) 
     setErrors((e) => ({ ...e, [id]: '' }))
     try {
       await Api.SetDefaults(service.Defaults.createFrom({ ...defaults, engine: id }))
+      // New profiles only: say which existing ones this does not move, so the
+      // next Open is not a surprise.
+      const keep = engines
+        .filter((x) => x.engine !== id && (counts[x.engine] ?? 0) > 0)
+        .map((x) => `${t.engines.names[x.engine] ?? x.engine} (${counts[x.engine]})`)
+        .join(', ')
+      toast.success(keep ? t.engines.defaultSavedOthers(engineName(id), keep) : t.engines.defaultSaved(engineName(id)))
       onChanged()
     } catch (e) {
       setErrors((x) => ({ ...x, [id]: errorText(e) }))
@@ -60,6 +69,7 @@ export function EngineSettings({ engines, counts, defaults, onChanged }: Props) 
 
   return (
     <div className="engines">
+      <p className="hint">{t.engines.defaultHint}</p>
       {engines.map((e) => {
         // A version's own download shows in its row; the engine's newest shows here.
         const busy = progress?.engine === e.engine && !progress.version

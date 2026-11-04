@@ -116,6 +116,8 @@ kbd { display: inline-flex; align-items: center; min-width: 22px; height: 20px; 
 .chip.engine-tag { height: 17px; padding: 0 6px; font-size: 10.5px; }
 
 .engines { display: flex; flex-direction: column; }
+/* The rule above the engine list, before the first engine's block. */
+.engines > .hint { margin: 0 0 2px; }
 .engine { display: flex; flex-direction: column; gap: 10px; padding: 14px 0; }
 .engine:first-child { padding-top: 0; }
 .engine:last-child { padding-bottom: 0; }
