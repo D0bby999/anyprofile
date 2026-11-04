@@ -27,6 +27,7 @@
 .navitem .icon { color: var(--muted); }
 .navitem:hover { background: var(--surface-hover); color: var(--ink); }
 .navitem[aria-current="page"] { color: var(--accent-ink); background: var(--accent-soft); border-color: var(--accent-line); font-weight: 600; }
+.navitem[aria-current="page"]:hover { background: var(--accent-soft-hover); }
 .navitem[aria-current="page"] .icon { color: var(--accent); }
 .navitem .cnt { margin-left: auto; min-width: 22px; height: 20px; padding: 0 7px; display: inline-flex; align-items: center; justify-content: center; border-radius: var(--r-pill); background: var(--surface-hover); color: var(--muted); font-size: var(--t-xs); font-weight: 600; }
 .navitem[aria-current="page"] .cnt { background: var(--raised); color: var(--accent-ink); }
@@ -188,22 +189,32 @@ kbd { display: inline-flex; align-items: center; min-width: 22px; height: 20px; 
 .table th.sortable:hover { color: var(--ink); }
 .table th[aria-sort] { color: var(--accent-ink); }
 .table td { height: 54px; padding: 6px 12px; border-bottom: 1px solid var(--line-soft); vertical-align: middle; }
-.table tbody tr { transition: background .1s var(--ease); }
+/* Every state is its own step: hover tints the row, a selected row darkens
+   further under the pointer (it used to be overridden and give nothing back),
+   and the row the drawer belongs to keeps a bar at its left edge so it never
+   reads as "just selected". */
+.table tbody td { transition: background .1s var(--ease); }
 .table tbody tr:hover td { background: var(--surface-hover); }
 .table tbody tr.running td { background: var(--running-row); }
+.table tbody tr.running:hover td { background: var(--running-row-hover); }
 .table tbody tr.agent td { background: var(--agent-row); animation: agent-pulse 1.6s ease-in-out infinite alternate; }
+.table tbody tr.agent:hover td { background: var(--agent-row-hover); animation: none; }
 /* Like a recording light: the tint breathes while an agent works. Steady without motion. */
 @keyframes agent-pulse { to { background: var(--agent-row-pulse); } }
 @media (prefers-reduced-motion: reduce) { .table tbody tr.agent td { animation: none; background: var(--agent-row-pulse); } }
 .table tbody tr.agent.selected td, .table tbody tr.agent.active td { animation: none; }
 .table tbody tr.selected td { background: var(--accent-soft); }
+.table tbody tr.selected:hover td { background: var(--accent-soft-hover); }
 .table tbody tr.active td { background: var(--accent-soft); }
-.table tbody tr.cursor:not(.active) td { background: var(--surface-hover); }
+.table tbody tr.active:hover td { background: var(--accent-soft-hover); }
+.table tbody tr.active td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
+.table tbody tr.cursor:not(.active):not(.selected) td { background: var(--surface-hover); }
 .table.compact td { height: 40px; padding-top: 4px; padding-bottom: 4px; }
 .table.compact .cellname .sub { display: none; }
 .serialcell { display: inline-flex; align-items: center; gap: 3px; }
 .pinmark { display: inline-flex; color: var(--accent); }
 .iconbtn.on { color: var(--accent); background: var(--accent-soft); }
+.iconbtn.on:hover:not(:disabled) { background: var(--accent-soft-hover); }
 .invisible { visibility: hidden; }
 .menulabel { padding: 6px 10px 2px; color: var(--muted); font-size: var(--t-xs); font-weight: 600; }
 .viewmenu button { display: flex; align-items: center; gap: 8px; }
@@ -239,6 +250,7 @@ kbd { display: inline-flex; align-items: center; min-width: 22px; height: 20px; 
 .statusbtn { display: inline-flex; align-items: center; gap: 4px; height: 28px; margin: 0 -8px; padding: 0 8px; border: 0; border-radius: var(--r-sm); background: none; color: inherit; font: inherit; cursor: pointer; }
 .statusbtn:hover { background: var(--surface-hover); }
 .statusbtn[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent-ink); }
+.statusbtn[aria-pressed="true"]:hover { background: var(--accent-soft-hover); }
 .statusbtn .warnicon { color: var(--warn); margin-right: 2px; }
 
 /* In a table's frame the empty state fills it, so its message sits in the middle. */
@@ -282,6 +294,7 @@ kbd { display: inline-flex; align-items: center; min-width: 22px; height: 20px; 
 .siteopt { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px 4px 5px; border-radius: var(--r-sm); border: 1px solid var(--line); background: var(--surface); cursor: pointer; color: var(--ink); font: inherit; white-space: nowrap; }
 .siteopt:hover { background: var(--surface-hover); }
 .siteopt.sel { background: var(--accent-soft); border-color: var(--accent-line); }
+.siteopt.sel:hover { background: var(--accent-soft-hover); }
 .siteopt.sel .icon { color: var(--accent); }
 .sitechips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .sitechip { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 2px 0 5px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface); font-size: var(--t-sm); }
@@ -477,8 +490,9 @@ kbd { display: inline-flex; align-items: center; min-width: 22px; height: 20px; 
 .table.reordering, .table.reordering * { cursor: grabbing !important; user-select: none; }
 /* While dragging, the rows passed slide aside; the dragged one is lifted above them. */
 .table.reordering tbody tr:not(.dragging) { transition: transform .16s cubic-bezier(.2, .8, .2, 1); }
-.table tbody tr.dragging { position: relative; z-index: 5; filter: drop-shadow(0 8px 18px rgb(0 0 0 / .16)); }
+.table tbody tr.dragging { position: relative; z-index: 5; filter: drop-shadow(0 10px 22px rgb(0 0 0 / .22)); }
 .table.reordering tbody tr.dragging td { background: var(--raised); }
+.table tbody tr.dragging td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
 .table tbody tr.dragging .grip { color: var(--ink); }
 @media (prefers-reduced-motion: reduce) { .table.reordering tbody tr:not(.dragging) { transition: none; } }
 .table .col-status .health .chip .label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
@@ -524,12 +538,14 @@ kbd { display: inline-flex; align-items: center; min-width: 22px; height: 20px; 
   --accent: #7c3aed; --accent-hover: #6d28d9;
   --accent-soft: #f3e8ff; --accent-soft-hover: #e9d5ff;
   --accent-line: #d8b4fe; --accent-ink: #5b21b6;
+  --accent-selection: #ddd0fb;
   --accent-fill: #7c3aed; --accent-fill-hover: #6d28d9; --accent-fill-press: #5b21b6;
 }
 :root[data-theme="dark"] .app.is-pro {
   --accent: #a78bfa; --accent-hover: #c4b5fd;
   --accent-soft: #211a3a; --accent-soft-hover: #2a2147;
   --accent-line: #4c3a78; --accent-ink: #d8b4fe;
+  --accent-selection: #33265c;
   --accent-fill: #7c3aed; --accent-fill-hover: #8b5cf6; --accent-fill-press: #6d28d9;
 }
 .is-pro .sidebar {

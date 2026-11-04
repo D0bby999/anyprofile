@@ -12,14 +12,14 @@
   --bg: #ecebe7;
   --surface: #ffffff;
   --surface-sunken: #f8f7f5;
-  --surface-hover: #f3f2ef;
-  --surface-active: #e9e7e2;
+  --surface-hover: #efece6;
+  --surface-active: #e7e2d9;
 
   /* Ink, from headings down to placeholders. */
   --ink: #1b1a18;
   --ink-soft: #45423d;
   --muted: #76736d;
-  --faint: #a5a19a;
+  --faint: #837f78;
 
   /* Hairlines: --line between regions, --line-soft between rows. */
   --line: #e6e3dd;
@@ -29,9 +29,11 @@
   /* One accent for everything you can do: primary actions, links, selection. */
   --accent: #3366e6;
   --accent-hover: #2a58cf;
-  --accent-soft: #eef3ff;
-  --accent-soft-hover: #dfe9fd;
-  --accent-line: #c5d6fb;
+  --accent-soft: #dde8ff;
+  --accent-soft-hover: #d0dffd;
+  --accent-line: #b6ccf7;
+  /* What a mouse drag with the cursor covers, in fields and in the list. */
+  --accent-selection: #c9d9fb;
   --accent-ink: #284a9e;
   --accent-fill: #3366e6;
   --accent-fill-hover: #2a58cf;
@@ -44,9 +46,11 @@
   --success-soft: #eefaf2;
   --success-line: #bde9cf;
   --success-ink: #0d7a3d;
-  --running-row: #f6fcf8;
-  --agent-row: #f5f1fe;
-  --agent-row-pulse: #e6dcfc;
+  --running-row: #e9f8ef;
+  --running-row-hover: #dff3e8;
+  --agent-row: #f2ecfe;
+  --agent-row-hover: #e8ddfd;
+  --agent-row-pulse: #e6d9fd;
 
   --danger: #dc3b32;
   --danger-fill: #dc3b32;
@@ -83,7 +87,7 @@
   --backdrop: rgba(27, 26, 24, .40);
   --scroll-thumb: #d3cfc7;
   --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2376736d' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
-  --ring: 0 0 0 3px rgba(51, 102, 230, .18);
+  --ring: 0 0 0 3px rgba(51, 102, 230, .38);
   --ease: cubic-bezier(.2, .8, .3, 1);
 
   --sidebar-w: 236px;
@@ -119,12 +123,12 @@ html.win { --titlebar-h: 12px; }
   --bg: #0a0a0e;
   --surface: #1a1a21;
   --surface-sunken: #15151a;
-  --surface-hover: #24242c;
-  --surface-active: #2d2d37;
+  --surface-hover: #282833;
+  --surface-active: #34343f;
   --ink: #f1f1f4;
   --ink-soft: #c9c9d2;
   --muted: #90909d;
-  --faint: #66666f;
+  --faint: #787884;
   --line: #2e2e38;
   --line-soft: #26262e;
   --line-strong: #41414e;
@@ -132,9 +136,10 @@ html.win { --titlebar-h: 12px; }
   --accent-hover: #7a9df4;
   --accent-fill-hover: #4573e9;
   --accent-fill-press: #2a58cf;
-  --accent-soft: #151f38;
-  --accent-soft-hover: #1b2949;
-  --accent-line: #2b3f6e;
+  --accent-soft: #1b2947;
+  --accent-soft-hover: #22345c;
+  --accent-line: #2f4778;
+  --accent-selection: #2d4a86;
   --accent-ink: #b3c6f8;
   --glow: 0 4px 16px rgba(94, 136, 240, .30);
   --glow-strong: 0 6px 20px rgba(94, 136, 240, .42);
@@ -142,9 +147,11 @@ html.win { --titlebar-h: 12px; }
   --success-soft: #12261a;
   --success-line: #24523a;
   --success-ink: #6fe0a4;
-  --running-row: #141f19;
-  --agent-row: #1e1830;
-  --agent-row-pulse: #30244f;
+  --running-row: #16261d;
+  --running-row-hover: #1b3024;
+  --agent-row: #241b3b;
+  --agent-row-hover: #2c2148;
+  --agent-row-pulse: #302354;
   --danger: #f0584d;
   --danger-soft: #2a1615;
   --danger-line: #542825;
@@ -162,7 +169,7 @@ html.win { --titlebar-h: 12px; }
   --sh-field: inset 0 1px 2px rgba(0, 0, 0, .25);
   --backdrop: rgba(6, 6, 8, .66);
   --scroll-thumb: #3a3a44;
-  --ring: 0 0 0 3px rgba(94, 136, 240, .32);
+  --ring: 0 0 0 3px rgba(94, 136, 240, .50);
   --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2390909d' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
 
   --tag-1: oklch(0.72 0.12 255);

@@ -22,7 +22,7 @@ button { cursor: pointer; }
 button:disabled { cursor: default; }
 
 /* Browser surfaces follow the palette. Focus shows at once, never animated. */
-::selection { background: var(--accent-soft-hover); color: var(--ink); }
+::selection { background: var(--accent-selection); color: var(--ink); }
 input, textarea { caret-color: var(--accent); }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 * { scrollbar-width: thin; scrollbar-color: var(--scroll-thumb) transparent; }
@@ -116,6 +116,7 @@ input[type="checkbox"] { width: 15px; height: 15px; margin: 0; accent-color: var
 }
 .seg button:hover { color: var(--ink); }
 .seg button[aria-pressed="true"] { color: var(--ink); background: var(--raised); border-color: var(--line); box-shadow: var(--sh-ctl); }
+.seg button[aria-pressed="true"]:hover { box-shadow: var(--sh-ctl-hover); }
 
 /* Chips and status pills: colour always comes with a word. */
 .chip {
