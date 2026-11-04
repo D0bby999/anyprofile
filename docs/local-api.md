@@ -56,6 +56,17 @@ trước.
 Lỗi có dạng `{"error": {"code": "…", "message": "…"}}`: 401 thiếu hay sai token, 403 bị chặn vì
 `Origin` hay `Host`, 404 không có profile, 409 app từ chối (ví dụ profile trong thùng rác).
 
+Khi biết được nên làm gì tiếp, lỗi có thêm `disposition`:
+
+```json
+{"error": {"code": "target_not_found", "message": "no element matches \"Lưu\" after 5s",
+           "disposition": {"retry": "safe"}}}
+```
+
+`retry: "safe"` nghĩa là gọi lại y hệt có thể thành công, thường sau bước mà `message` nói (chụp lại trang, mở
+profile). `retry: "never"` nghĩa là gọi lại y hệt thì vẫn thế: phải đổi tham số. Không có `disposition` thì coi như
+không retry.
+
 ## Ví dụ
 
 curl:

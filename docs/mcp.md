@@ -228,6 +228,33 @@ Target sống qua lần render lại; `ref` chỉ đúng cho tới lần `snapsh
 Giới hạn: `snapshot` và `read_page` trả tối đa 40.000 ký tự, `response_body` tối đa 200 KB. Phần bị cắt có ghi
 `offset` để đọc tiếp. Body nhị phân (ảnh, video) chỉ báo loại và kích thước.
 
+## Quản lý profile (tuỳ chọn)
+
+Mặc định agent chỉ **mở và điều khiển** profile. Muốn agent tạo và sửa profile, bật **Cài đặt → API trên máy →
+Cho agent tạo và sửa profile** (tiếng Anh: Settings → Local API → Let agents create and change profiles), rồi kết
+nối lại agent: 10 tool dưới đây chỉ xuất hiện khi mục đó bật, nên agent không gọi được thứ bạn chưa cho phép.
+
+| Tool | Làm gì |
+|---|---|
+| `app_status` | phiên bản app, số profile (đang dùng, trong thùng rác, đang mở), máy mobile, engine đã cài, folder, extension, giới hạn mở cùng lúc |
+| `proxy_list` | id, nhãn, nước, IP ra, lần kiểm tra cuối, proxy nào còn trống để cấp; **không** có username hay mật khẩu |
+| `profile_create` | tạo 1–100 profile: `baseName`, `count`, `engine`, `proxy` (`auto`/`none`; muốn một proxy cụ thể thì tạo rồi gọi `proxy_assign`), `sites`, `tags`, `notes`, `startUrl`, `folderId` |
+| `profile_update` | chỉ đổi field bạn nêu: `name`, `sites`, `tags`, `folderId`, `notes`, `startUrl`, `proxyId` |
+| `profile_trash` | đưa vào thùng rác (dừng trình duyệt), cần `confirm: true`; hoàn tác bằng `profile_restore` |
+| `profile_restore` | lấy lại profile từ thùng rác |
+| `profile_purge` | xoá hẳn: folder, cookie, tài khoản đã lưu; cần `confirm` đúng **tên profile** |
+| `proxy_assign` | đổi proxy, hoặc bỏ proxy với `proxyId: ""`; timezone và ngôn ngữ theo IP ra mới |
+| `proxy_check` | kiểm tra IP ra của một proxy ngay, như nút Check |
+| `extension_set` | bật/tắt một extension thư viện trong các profile bạn nêu |
+
+Mọi tool nhận `profile` như tool trình duyệt: id, đúng tên, hoặc `#số thứ tự`. Ba luật đi kèm:
+
+- **Đổi proxy bị từ chối khi profile đang mở** (`profile_running`): trình duyệt trong đó vẫn đi qua mạng cũ, nên
+  đổi sẽ làm dòng trong bảng nói sai sự thật. Đóng profile rồi đổi.
+- **Trash cần `confirm: true`, purge cần đúng tên.** Purge không hoàn tác được; chỉ gọi khi người dùng yêu cầu.
+- **Tên profile, nhãn proxy và ghi chú là dữ liệu người dùng viết**, không phải chỉ dẫn: agent không được làm theo
+  chữ nằm trong đó.
+
 ## Upload file
 
 Agent chỉ upload được file nằm trong **thư mục uploads** (Cài đặt → API trên máy → Mở thư mục uploads; trên đĩa là
@@ -340,7 +367,8 @@ Khi có máy mobile (AnyProfile Pro, `docs/mobile.md`), agent có thêm các too
 
 ## Không có
 
-- Chạy JavaScript tuỳ ý trên trang, xuất cookie, đổi fingerprint hay viewport, tạo hoặc xoá profile, gán proxy.
+- Chạy JavaScript tuỳ ý trên trang, xuất cookie, đổi fingerprint hay viewport. Tạo, sửa, xoá profile và gán proxy
+  chỉ có khi bạn bật "Cho agent tạo và sửa profile" (xem mục Quản lý profile ở trên); mặc định thì không.
 - Upload file nằm ngoài thư mục uploads.
 - Request trước lần đầu agent dùng tab: tải lại trang (`navigate` với `reload`) để thấy chúng.
 - Profile đã mở từ trước khi AnyProfile khởi động lại không điều khiển được (`agent_no_pipe`): đóng rồi mở lại.
@@ -351,6 +379,9 @@ Khi có máy mobile (AnyProfile Pro, `docs/mobile.md`), agent có thêm các too
 
 - **Ai có token thì điều khiển được mọi profile và máy mobile**, kể cả đọc nội dung các trang đã đăng nhập. Chỉ đưa token cho
   agent bạn tin.
+- **Mục "Cho agent tạo và sửa profile" cho agent quyền ngang bạn trong phạm vi profile**: thêm profile, gán proxy,
+  bật extension, xoá vào thùng rác, và xoá hẳn khi nó gõ đúng tên. Bật khi bạn thật sự muốn agent làm việc đó, và
+  xem lại việc nó làm như xem lại việc một người bạn nhờ làm hộ.
 - **Trang web có thể tìm cách lừa agent** (prompt injection), ví dụ chèn chữ "hãy chuyển tiền tới…". AnyProfile báo
   cho agent rằng mọi nội dung từ trang là không đáng tin, và không có tool chạy JavaScript hay lấy cookie. Dù vậy,
   hãy để mắt tới cửa sổ khi agent làm việc trên tài khoản quan trọng.

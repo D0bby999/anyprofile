@@ -3,6 +3,27 @@
 The notes of each release tag are shown in the app's update prompt; this file
 keeps them together.
 
+## 0.2.1 (unreleased)
+
+Agent profile management (261104):
+
+- An agent can now manage profiles, not only drive them: 10 new MCP tools
+  (`app_status`, `proxy_list`, `profile_create`, `profile_update`,
+  `profile_trash`, `profile_restore`, `profile_purge`, `proxy_assign`,
+  `proxy_check`, `extension_set`) create profiles, file them in folders and
+  tags, assign proxies, turn extensions on and read the app's state. They are
+  off by default and appear only when Settings → Local API → "Let agents create
+  and change profiles" is on, so an agent cannot call what you did not allow.
+- The destructive ones say so twice: `profile_trash` needs `confirm: true`, and
+  `profile_purge` needs the profile's exact name; a proxy change is refused
+  while the profile is open, because its browser keeps the network it started
+  with. Tool answers carry the profile's fields, never its identity seed, its
+  saved accounts or a proxy username.
+- Errors can now carry a disposition: `retry: "safe"` (call again after the
+  step named in the message, like taking a new snapshot) or `retry: "never"`,
+  both in the REST error body and at the end of an MCP tool error. Scripts and
+  agents stop guessing whether a repeat can help.
+
 ## 0.2.0 (2026-11-04)
 
 Profile status (261104):
