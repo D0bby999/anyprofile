@@ -12,10 +12,12 @@ import { useToast } from '../components/toast'
 import { useConfirm } from '../components/confirm'
 
 function ProxyState({ p }: { p: service.ProxyRow }) {
-  if (p.failedAt) return <span className="chip danger"><span className="dot" />{t.proxies.failed}</span>
-  if (!p.checkedAt) return <span className="chip">{t.proxies.unchecked}</span>
-  if (p.rotating) return <span className="chip warn"><span className="dot" />{t.proxies.rotating}</span>
-  return <span className="chip ok"><span className="dot" />{t.proxies.ok}</span>
+  const chip = (cls: string, text: string) =>
+    <span className={`chip ${cls}`} title={text}><span className="dot" /><span className="chiptext">{text}</span></span>
+  if (p.failedAt) return chip('danger', t.proxies.failed)
+  if (!p.checkedAt) return chip('', t.proxies.unchecked)
+  if (p.rotating) return chip('warn', t.proxies.rotating)
+  return chip('ok', t.proxies.ok)
 }
 
 export function ProxiesPage({ onChanged }: { onChanged: () => void }) {
@@ -95,7 +97,9 @@ export function ProxiesPage({ onChanged }: { onChanged: () => void }) {
                 <BuyProxiesButton />
               </EmptyState>
             ) : (
-              <table className="table">
+              /* Fixed column widths: a long host, label or profile name is cut
+                 with an ellipsis instead of running into the next column. */
+              <table className="table proxies">
                 <thead>
                   <tr><th>{t.proxies.colLabel}</th><th>{t.proxies.colExit}</th>
                     <th>{t.proxies.colStatus}</th><th>{t.proxies.expires}</th><th>{t.proxies.colUsedBy}</th><th className="col-actions" /></tr>
@@ -103,12 +107,16 @@ export function ProxiesPage({ onChanged }: { onChanged: () => void }) {
                 <tbody>
                   {rows.map((p) => (
                     <tr key={p.id}>
-                      <td className="cellname"><b className="selectable">{p.label}</b><span className="mono">{p.scheme}://{p.host}:{p.port}</span>{p.note && <small className="faint ellipsis">{p.note}</small>}</td>
+                      <td className="cellname">
+                        <b className="selectable" title={p.label}>{p.label}</b>
+                        <span className="mono" title={`${p.scheme}://${p.host}:${p.port}`}>{p.scheme}://{p.host}:{p.port}</span>
+                        {p.note && <small className="faint ellipsis" title={p.note}>{p.note}</small>}
+                      </td>
                       <td>{p.exitIp ? (
                         <span className="cellproxy">
-                          <span className="cc">{p.country || '?'}</span>
-                          <span>
-                            <span className="mono selectable">{p.exitIp}</span>{p.timezone && <span className="tzline">{p.timezone}</span>}
+                          <span className="cc" title={p.country || '?'}>{p.country || '?'}</span>
+                          <span className="exittext">
+                            <span className="mono selectable" title={p.exitIp}>{p.exitIp}</span>{p.timezone && <span className="tzline" title={p.timezone}>{p.timezone}</span>}
                             {p.timezone6 && p.timezone6 !== p.timezone && (
                               <span className="tzline warn" title={t.proxies.ipv6Elsewhere(p.exitIp6, p.timezone6)}>
                                 <Icon name="alert" className="icon xs" />IPv6 · {p.timezone6}
@@ -120,10 +128,17 @@ export function ProxiesPage({ onChanged }: { onChanged: () => void }) {
                       <td className="stack nowrap"><ProxyState p={p} />{p.checkedAt && <small className="faint">{t.proxies.checkedAgo(relativeTime(p.checkedAt))}</small>}</td>
                       <td className="stack nowrap">
                         {p.expiresOn && <span className="muted">{formatDate(p.expiresOn + 'T00:00:00')}</span>}
-                        {p.expiry === 'soon' && <span className="chip warn"><span className="dot" />{t.proxies.expiringSoon}</span>}
-                        {p.expiry === 'expired' && <span className="chip danger"><span className="dot" />{t.proxies.expired}</span>}
+                        {p.expiry === 'soon' && <span className="chip warn" title={t.proxies.expiringSoon}><span className="dot" /><span className="chiptext">{t.proxies.expiringSoon}</span></span>}
+                        {p.expiry === 'expired' && <span className="chip danger" title={t.proxies.expired}><span className="dot" /><span className="chiptext">{t.proxies.expired}</span></span>}
                       </td>
-                      <td>{p.usedBy.length ? p.usedBy.map((n) => <span key={n} className="chip accent" style={{ marginRight: 4 }}>{n}</span>) : <span className="faint">{t.proxies.unused}</span>}</td>
+                      {/* Two names and a count: a long list wraps into the rows below
+                          otherwise, and every name is still in the tooltip. */}
+                      <td className="col-usedby">{p.usedBy.length ? (
+                        <span className="usedby" title={p.usedBy.join(', ')}>
+                          <span className="chip accent"><span className="chiptext">{p.usedBy[0]}</span></span>
+                          {p.usedBy.length > 1 && <span className="chip more" title={p.usedBy.join(', ')}>+{p.usedBy.length - 1}</span>}
+                        </span>
+                      ) : <span className="faint">{t.proxies.unused}</span>}</td>
                       <td className="col-actions"><span className="row">
                         <button className={`iconbtn sm${busy === p.id ? ' busy' : ''}`} aria-busy={busy === p.id} disabled={!!busy} onClick={() => run(p.id, () => Api.CheckProxy(p.id))} aria-label={t.proxies.check} title={t.proxies.check}><Icon name="refresh" /></button>
                         <button className="iconbtn sm" disabled={!!busy} onClick={() => setEditing(p)} aria-label={t.proxies.rename} title={t.proxies.rename}><Icon name="pencil" /></button>

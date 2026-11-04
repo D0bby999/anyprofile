@@ -14,7 +14,8 @@ vi.mock('../api', async (orig) => ({
   ...(await orig<typeof import('../api')>()),
   openExternal: (u: string) => openExternal(u),
   onDataChanged: () => () => {},
-  Api: { ListProxies: () => Promise.resolve([proxy('1', { exitIp: '1.2.3.4', timezone: 'America/New_York', status: 'ok' }), proxy('2'),
+  Api: { ListProxies: () => Promise.resolve([proxy('1', { exitIp: '1.2.3.4', timezone: 'America/New_York', status: 'ok',
+      usedBy: ['Kênh A', 'Kênh B', 'Kênh C', 'Kênh D', 'Kênh E'] }), proxy('2'),
     proxy('3', { exitIp: '5.6.7.8', timezone: 'America/New_York', exitIp6: '2001:db8::7', timezone6: 'America/Chicago' }),
     proxy('4', { exitIp: '9.9.9.9', timezone: 'Europe/Paris', checkedAt: '2026-10-24T08:00:00Z', failedAt: '2026-10-24T08:00:00Z' }),
     proxy('5', { checkedAt: '2026-10-24T08:00:00Z', failedAt: '2026-10-24T08:00:00Z' })]),
@@ -33,6 +34,15 @@ describe('ProxiesPage', () => {
     expect(screen.getByRole('columnheader', { name: t.proxies.colExit })).toBeTruthy()
     expect(screen.getAllByRole('columnheader')).toHaveLength(6)
     expect(screen.getAllByText(t.proxies.unchecked).length).toBeGreaterThan(0)
+  })
+
+  it('names one profile using a proxy and counts the rest', async () => {
+    render(<ConfirmProvider><ToastProvider><ProxiesPage onChanged={vi.fn()} /></ToastProvider></ConfirmProvider>)
+    const row = (await screen.findByText('1.2.3.4')).closest('tr')!
+    expect(within(row).getByText('Kênh A')).toBeTruthy()
+    expect(within(row).queryByText('Kênh B')).toBeNull()
+    const more = within(row).getByText('+4')
+    expect(more.getAttribute('title')).toContain('Kênh E')
   })
 
   it('marks a proxy whose last check failed, and says how many failed after Check all', async () => {

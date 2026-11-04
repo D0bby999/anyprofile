@@ -242,6 +242,53 @@ kbd { display: inline-flex; align-items: center; min-width: 22px; height: 20px; 
 .cellproxy .tzline { display: block; color: var(--faint); font-size: var(--t-xs); white-space: nowrap; }
 .cellproxy .tzline.warn { display: inline-flex; align-items: center; gap: 4px; color: var(--warn-ink); }
 .cellproxy small { display: block; color: var(--faint); font-size: var(--t-xs); max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Proxies: fixed columns, so a long host, label or profile name is trimmed
+   with an ellipsis instead of running over the column beside it (a long value
+   used to spill out of its cell as soon as the table was narrower than the
+   text). The actions column keeps the room its three buttons need. */
+.table.proxies { table-layout: fixed; }
+/* Eight points a side, not twelve: the extra 8px per cell is what keeps the
+   date and the status chip whole at the smallest window. */
+.table.proxies th, .table.proxies td { padding-left: 8px; padding-right: 8px; }
+/* The name column takes whatever the others leave: it is the one that reads
+   best with a little more room, and the actions column keeps a fixed 124px for
+   its three buttons at every window size. */
+.table.proxies th:nth-child(1) { width: auto; }
+.table.proxies th:nth-child(2) { width: 20%; }
+.table.proxies th:nth-child(3) { width: 16%; }
+.table.proxies th:nth-child(4) { width: 13%; }
+.table.proxies th:nth-child(5) { width: 13%; }
+.table.proxies th.col-actions { width: 124px; }
+.table.proxies .cellname { width: auto; min-width: 0; max-width: none; }
+.table.proxies .cellname .mono { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.table.proxies .cellname .ellipsis { max-width: 100%; }
+.table.proxies .cellproxy { min-width: 0; }
+.table.proxies .cellproxy .exittext { min-width: 0; }
+.table.proxies .cellproxy .mono { display: block; }
+.table.proxies .cellproxy .mono,
+.table.proxies .cellproxy .tzline,
+.table.proxies .stack small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.table.proxies .chip { max-width: 100%; min-width: 0; }
+.table.proxies .chiptext { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.table.proxies .col-usedby { min-width: 0; }
+/* Status and expiry put a chip under a date. The cell stays a table cell (a
+   flex cell leaves the column model and the columns drift); its children take
+   a line each instead. */
+.table.proxies .stack .chip { display: flex; width: fit-content; max-width: 100%; }
+.table.proxies .stack small { display: block; max-width: 100%; }
+.table.proxies .stack .muted { display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.table.proxies .usedby { display: flex; align-items: center; gap: 4px; min-width: 0; overflow: hidden; }
+.table.proxies .usedby .chip { flex: 0 1 auto; min-width: 0; }
+/* The count is never the part that gets squeezed out. */
+.table.proxies .usedby .more { flex: none; }
+/* A narrow window drops the expiry column: the date is in the edit dialog, and
+   the expiry chip still shows on the row when it matters. */
+@container (max-width: 780px) {
+  .table.proxies th:nth-child(4), .table.proxies td:nth-child(4) { display: none; }
+  /* The room the date gave up goes to the status chip and the names. */
+  .table.proxies th:nth-child(3) { width: 17%; }
+  .table.proxies th:nth-child(5) { width: 15%; }
+}
 
 .statusbar { display: flex; align-items: center; gap: 16px; height: 46px; padding: 0 16px; border-top: 1px solid var(--line); color: var(--muted); font-size: var(--t-sm); }
 .statusbar b { color: var(--ink-soft); font-weight: 650; }
