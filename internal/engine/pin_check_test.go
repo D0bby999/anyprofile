@@ -3,11 +3,14 @@
 package engine_test
 
 import (
+	"archive/zip"
 	"crypto/sha256"
 	"encoding/hex"
 	"io"
 	"os"
+	"path"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/D0bby999/anyprofile/internal/engine"
@@ -27,6 +30,20 @@ func TestPinnedEngineArchive(t *testing.T) {
 		t.Fatalf("builtin releases: %d", len(rels))
 	}
 	rel := rels[0]
+
+	// A "._name" entry is metadata that unzip writes out as a real file: the
+	// bundle then reads as modified and fails its own signature check. The
+	// installer skips these, so only a look at the archive itself catches them.
+	zr, err := zip.OpenReader(zipPath)
+	if err != nil {
+		t.Fatalf("open archive: %v", err)
+	}
+	for _, f := range zr.File {
+		if strings.HasPrefix(path.Base(f.Name), "._") || strings.HasPrefix(f.Name, "__MACOSX/") {
+			t.Errorf("archive carries AppleDouble metadata: %s", f.Name)
+		}
+	}
+	zr.Close()
 
 	dir := t.TempDir()
 	if err := engine.ExtractZip(zipPath, dir); err != nil {

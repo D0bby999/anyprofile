@@ -26,7 +26,7 @@ func TestVerifyCertificateAndDeviceProof(t *testing.T) {
 		"iat": now.Unix(), "nbf": now.Unix(), "exp": now.Add(7 * 24 * time.Hour).Unix(),
 		"license_id": "lic_1", "source": "admin", "kind": "lifetime", "status": "active",
 		"features": []string{"mobile", "recipes"}, "max_devices": 3,
-		"device": map[string]string{"alg": "Ed25519", "pubkey": pubB64},
+		"device":       map[string]string{"alg": "Ed25519", "pubkey": pubB64},
 		"paid_through": 0, "license_expires_at": 0,
 		"grace_until": now.Add(5 * 365 * 24 * time.Hour).Unix(), "updates_through": 0,
 		"refresh_after": now.Add(24 * time.Hour).Unix(),

@@ -11,10 +11,10 @@ import (
 // (pro/chrome). On a Mac only the macOS persona is offered: the Windows
 // persona renders with the host's fonts, which detection sites notice.
 //
-// The first AnyBrowser build is not hosted yet: zipURL is a placeholder and
-// the hashes are zero. The publish step (docs/releasing.md) pins the real
-// URL and hashes; until then installing this release fails closed at
-// download/verification instead of fetching the old upstream build.
+// The engine archive is hosted on its own pre-release and signed with the same
+// Developer ID as the app. The publish step (docs/releasing.md) pins the URL and
+// hashes; a build that is not hosted yet keeps the placeholder URL and ad-hoc
+// hashes, so installs fail closed instead of fetching some other build.
 const (
 	Version  = "0.5.1.156"
 	Chromium = "156.0.8078.74"
@@ -29,16 +29,15 @@ const (
 	// with --fingerprint-timezone.
 	setsTZ = true
 
-	zipName       = "anybrowser-156.0.8078.74-macos-arm64.zip"
-	defaultZipURL = "https://example.invalid/anybrowser/" + zipName
-	zipSHA256     = "614b19f6973fcbf73cfce5744a3c50e4ed1f711cb4d5d963a9061d2091b495d6"
-	binarySHA256  = "d07dc89343ce0ffa1d4061f321b44ed27001b8dfc966c314c1cab3df0bf0fb24"
-	frameworkSHA  = "11cc238817aec2b25a403fb2d81d60912e6a406d9a73f30936f10777c939fa74"
-	// teamID is empty until the Developer ID signing identity is pinned at
-	// publish; this local build is ad-hoc signed. The URL stays a placeholder,
-	// so installing from the catalog still fails closed; the hashes let a
-	// local extracted build be verified.
-	teamID = ""
+	zipName = "anybrowser-156.0.8078.74-macos-arm64.zip"
+	// engineTag names the pre-release the archive is attached to.
+	engineTag     = "engine-anybrowser-0.5.1.156"
+	defaultZipURL = "https://github.com/D0bby999/anyprofile/releases/download/" + engineTag + "/" + zipName
+	zipSHA256     = "a55179225b861feac2f47f1bf431025e118a7fb744e36c3556be28af76c7cc76"
+	binarySHA256  = "c213832922c57fe424abaa93973a3e474533c4dfa483ed183dbc275bb6f91be9"
+	frameworkSHA  = "dac42c8642d1cf49cc32e35887efd0427f6992ddf59fa3c1116eca03f2c17796"
+	// teamID is the Developer ID team the bundle's signature must name.
+	teamID = "25C8SNXS6Q"
 
 	rootDir = "anybrowser-156.0.8078.74-macos-arm64"
 	appRel  = rootDir + "/Chromium.app"

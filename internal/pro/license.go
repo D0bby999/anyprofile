@@ -28,21 +28,21 @@ var ErrUnsupported = errors.New("licence endpoint not supported")
 
 // Certificate is the verified payload of a Pro licence JWS.
 type Certificate struct {
-	Token            string   `json:"-"`
-	Issuer           string   `json:"iss"`
-	Audience         string   `json:"aud"`
-	Subject          string   `json:"sub"`
-	JTI              string   `json:"jti"`
-	IssuedAt         int64    `json:"iat"`
-	NotBefore        int64    `json:"nbf"`
-	ExpiresAt        int64    `json:"exp"`
-	LicenseID        string   `json:"license_id"`
-	Source           string   `json:"source"`
-	Kind             string   `json:"kind"`
-	Status           string   `json:"status"`
-	Features         []string `json:"features"`
-	MaxDevices       int      `json:"max_devices"`
-	Device           struct {
+	Token      string   `json:"-"`
+	Issuer     string   `json:"iss"`
+	Audience   string   `json:"aud"`
+	Subject    string   `json:"sub"`
+	JTI        string   `json:"jti"`
+	IssuedAt   int64    `json:"iat"`
+	NotBefore  int64    `json:"nbf"`
+	ExpiresAt  int64    `json:"exp"`
+	LicenseID  string   `json:"license_id"`
+	Source     string   `json:"source"`
+	Kind       string   `json:"kind"`
+	Status     string   `json:"status"`
+	Features   []string `json:"features"`
+	MaxDevices int      `json:"max_devices"`
+	Device     struct {
 		Alg    string `json:"alg"`
 		Pubkey string `json:"pubkey"`
 	} `json:"device"`
