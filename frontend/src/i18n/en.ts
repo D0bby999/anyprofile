@@ -300,6 +300,7 @@ export const en = {
       nodemaven: 'Residential IPs filtered for quality, with sticky sessions up to 24 hours. Made for antidetect browsers.',
       decodo: 'Formerly Smartproxy. Large residential and mobile pools, static ISP and sticky sessions.',
       soax: 'Residential and mobile IPs you can target by city and carrier.',
+      oxylabs: 'Residential, mobile, ISP and datacenter proxies.',
       proxyseller: 'A long-running provider of dedicated ISP and datacenter IPs, IPv4 and IPv6, plus mobile.',
       marsproxies: 'Pick IPs by country, city, ZIP code or carrier, in 190+ countries.',
       evomi: 'Residential, static ISP and mobile proxies at low per-GB prices.',

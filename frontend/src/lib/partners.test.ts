@@ -25,6 +25,14 @@ describe('partners', () => {
     for (const g of toolGroups) expect([en.partners.groups[g], viCatalog.partners.groups[g]].every(Boolean), g).toBe(true)
   })
 
+  it('keeps the account-management recommendation order, including specialist and trial providers', () => {
+    expect(partnersOf('proxy').map((p) => p.id)).toEqual([
+      'decodo', 'nodemaven', 'iproyal', 'proxyseller', 'webshare', 'evomi',
+      'soax', 'oxylabs', 'proxyempire', 'massive', 'infatica', 'marsproxies', 'proxycheap',
+      'froxy', 'coronium', 'ltesocks', '9proxy', 'lumiproxy', 'rapidproxy',
+    ])
+  })
+
   it('list PostClaw first among the tools and nowhere among proxies', () => {
     expect(partnersOf('tool')[0].id).toBe('postclaw')
     expect(partnersOf('proxy').map((p) => p.id)).not.toContain('postclaw')
@@ -52,6 +60,13 @@ describe('partners', () => {
     const partner = partners.find((p) => p.id === id)!
     for (const lang of ['en', 'vi']) {
       expect(partnerLink(partner, lang)).toBe(url)
+    }
+  })
+
+  it('uses the Oxylabs affiliate URL in both app languages', () => {
+    const oxylabs = partnersOf('proxy').find((p) => p.id === 'oxylabs')!
+    for (const lang of ['en', 'vi']) {
+      expect(partnerLink(oxylabs, lang)).toBe('https://oxylabs.go2cloud.org/aff_c?offer_id=7&aff_id=2794')
     }
   })
 

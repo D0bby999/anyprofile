@@ -301,6 +301,7 @@ export const vi: Messages = {
       nodemaven: 'IP residential được lọc chất lượng, phiên sticky đến 24 giờ. Làm riêng cho trình duyệt antidetect.',
       decodo: 'Tên cũ là Smartproxy. Kho residential và mobile lớn, có ISP tĩnh và phiên sticky.',
       soax: 'IP residential và mobile, chọn được thành phố và nhà mạng.',
+      oxylabs: 'Proxy residential, mobile, ISP và datacenter.',
       proxyseller: 'Nhà cung cấp lâu năm: IP ISP và datacenter riêng, IPv4 và IPv6, kèm mobile.',
       marsproxies: 'Chọn IP theo quốc gia, thành phố, mã bưu chính hoặc nhà mạng, hơn 190 quốc gia.',
       evomi: 'Proxy residential, ISP tĩnh và mobile, giá theo GB thấp.',

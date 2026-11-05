@@ -81,25 +81,31 @@ describe('ProxiesPage', () => {
     ['Rapidproxy', 'https://www.rapidproxy.io/?code=GN72DW2EP'],
     ['LumiProxy', 'https://www.lumiproxy.com/?invite_code=97EJLV'],
     ['Decodo', 'https://dashboard.decodo.com/register?referral_code=2973fec4bd68c176365c5cf1ef80bade6eaccdde'],
+    ['Oxylabs', 'https://oxylabs.go2cloud.org/aff_c?offer_id=7&aff_id=2794'],
   ])('lists every provider under Buy proxies and opens %s in the browser', async (provider, url) => {
     render(<ConfirmProvider><ToastProvider><ProxiesPage onChanged={vi.fn()} /></ToastProvider></ConfirmProvider>)
     await screen.findByText('1.2.3.4')
     fireEvent.click(screen.getByRole('button', { name: t.proxies.buy }))
     const dialog = screen.getByRole('dialog', { name: t.proxies.buy })
-    for (const p of partnersOf('proxy')) expect(within(dialog).getByText(p.name)).toBeTruthy()
+    expect(within(dialog).getAllByRole('listitem').map((item) => item.querySelector('b')?.textContent))
+      .toEqual(partnersOf('proxy').map((p) => p.name))
     expect(within(dialog).queryByText('PostClaw')).toBeNull()
     fireEvent.click(within(dialog).getByRole('button', { name: new RegExp(provider) }))
     expect(openExternal).toHaveBeenCalledWith(url)
   })
 
-  it('narrows Buy proxies to one proxy type', async () => {
+  it('keeps recommendation order when filtering Buy proxies and restores every provider with All', async () => {
     render(<ConfirmProvider><ToastProvider><ProxiesPage onChanged={vi.fn()} /></ToastProvider></ConfirmProvider>)
     await screen.findByText('1.2.3.4')
     fireEvent.click(screen.getByRole('button', { name: t.proxies.buy }))
     const dialog = screen.getByRole('dialog', { name: t.proxies.buy })
     fireEvent.click(within(within(dialog).getByRole('group', { name: t.partners.filter })).getByRole('button', { name: t.partners.types.mobile }))
     const mobile = partnersOf('proxy').filter((p) => p.types?.includes('mobile'))
-    expect(within(dialog).getAllByRole('listitem')).toHaveLength(mobile.length)
+    expect(within(dialog).getAllByRole('listitem').map((item) => item.querySelector('b')?.textContent))
+      .toEqual(mobile.map((p) => p.name))
     expect(within(dialog).queryByText('Massive')).toBeNull()
+    fireEvent.click(within(dialog).getByRole('button', { name: t.partners.all }))
+    expect(within(dialog).getAllByRole('listitem').map((item) => item.querySelector('b')?.textContent))
+      .toEqual(partnersOf('proxy').map((p) => p.name))
   })
 })
