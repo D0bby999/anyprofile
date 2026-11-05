@@ -23,6 +23,10 @@ frontend/package.json.md5
 Screenshot *.png
 /test-artifacts/
 
+# Signed builds, engine archives, certificates and measurement evidence.
+# Local only: artifacts/anybrowser/anyprofile-signing holds a private key.
+/artifacts/
+
 examples/*/node_modules
 examples/*/package-lock.json
 examples/*/.venv
