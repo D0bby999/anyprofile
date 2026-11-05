@@ -157,7 +157,18 @@ export function MobilePage({ mobile, onOpenPro, onOpenSettings }: Props) {
             )}
           </section>
         )}
-        {avail?.pro && !avail.ready && !installReasons.includes(avail.reason) && (
+        {avail?.pro && !avail.ready && avail.reason === 'ldplayer_missing' && (
+          <section className="card pad">
+            <h2>{t.mobile.ldplayerTitle}</h2>
+            <p className="desc">{t.mobile.ldplayerText}</p>
+            <p className="desc">{t.mobile.ldplayerLite}</p>
+            <div className="row">
+              <button className="btn primary" onClick={() => openExternal('https://www.ldplayer.net/')}><Icon name="external" />{t.mobile.ldplayerDownload}</button>
+              <button className="btn" onClick={reload}><Icon name="refresh" />{t.mobile.ldplayerCheck}</button>
+            </div>
+          </section>
+        )}
+        {avail?.pro && !avail.ready && avail.reason !== 'ldplayer_missing' && !installReasons.includes(avail.reason) && (
           <div className="banner warn" role="status">
             <Icon name="alert" />
             <span className="grow">{t.mobile.notReady} {t.errors[avail.reason] ?? avail.message}</span>
@@ -198,6 +209,8 @@ export function MobilePage({ mobile, onOpenPro, onOpenSettings }: Props) {
                           <span className="mobile-device-copy">
                             <b className="selectable mobile-name" title={r.name}>{r.name}</b>
                             <span className="sub mobile-meta">#{r.serial} · {r.ramMb / 1024} GB · {r.cpus} CPU</span>
+                            {running && <button className="btn sm mobile-install" disabled={working} onClick={() => installApps(r.id)}>
+                              <Icon name="download" />{t.mobile.installApps}</button>}
                             {r.tags.length > 0 && <span className="row mobile-tags">{r.tags.map((tag) => (
                               <span key={tag} className="chip"><span className="tagdot" style={{ background: `var(--tag-${tagColor(tag)})` }} />{tag}</span>
                             ))}</span>}
@@ -206,7 +219,8 @@ export function MobilePage({ mobile, onOpenPro, onOpenSettings }: Props) {
                           </span>
                         </td>
                         <td className="stack mobile-proxy">{proxyLabel(r)}</td>
-                        <td className="stack nowrap mobile-state"><StateChip r={r} />
+                        <td className="stack mobile-state"><StateChip r={r} />
+                          {r.state === 'starting' && mobile.phases?.[r.id] && <small role="status" className="faint">{t.mobile.startPhase[mobile.phases[r.id]]}</small>}
                           {r.backedUpAt && <small className="faint">{t.mobile.backedUp(relativeTime(r.backedUpAt))}</small>}</td>
                         <td className="muted nowrap mobile-last">{r.lastOpenAt ? relativeTime(r.lastOpenAt) : t.mobile.never}</td>
                         <td className="col-actions"><span className="row mobile-actions">
@@ -216,8 +230,7 @@ export function MobilePage({ mobile, onOpenPro, onOpenSettings }: Props) {
                           <MobileRowMenu row={r} running={running} busy={working} recording={recording.has(r.id)}
                             onView={() => setViewing(r)}
                             onScreenshot={() => screenshot(r.id)} onRecord={() => toggleRecording(r.id)}
-                            onTop={() => toggleTop(r.id)}
-                            onInstall={() => installApps(r.id)} onEdit={() => setEditing(r)}
+                            onTop={() => toggleTop(r.id)} onEdit={() => setEditing(r)}
                             onBackup={() => run(r.id, () => Api.BackupMobileDevice(r.id), t.mobile.backupDone)}
                             onRestore={async () => { if (await confirm({ ...t.confirm.restoreMobile(relativeTime(r.backedUpAt)), danger: true })) run(r.id, () => Api.RestoreMobileBackup(r.id), t.mobile.restoreDone) }}
                             onTrash={() => trash(r)} />
@@ -253,12 +266,14 @@ export function MobilePage({ mobile, onOpenPro, onOpenSettings }: Props) {
           </div>
         )}
         {rows.length > 0 && canUse && (
-          <details className="mobile-help">
-            <summary><Icon name="info" className="icon xs" />{t.mobile.apkHelp}</summary>
-            <p>{t.mobile.apkHint} {t.mobile.apkWhere}{' '}
-              <a href="#" onClick={(e) => { e.preventDefault(); openExternal(MOBILE_APPS_GUIDE) }}>{t.mobile.apkGuide}</a>.
+          <section className="mobile-help" aria-label={t.mobile.apkHelp}>
+            <strong>{t.mobile.apkHelp}</strong>
+            <p>{t.mobile.apkHint} {avail?.driver === 'vm' && t.mobile.apkWhere}</p>
+            <p><a href="https://f-droid.org/packages/com.aurora.store/" onClick={(e) => { e.preventDefault(); openExternal('https://f-droid.org/packages/com.aurora.store/') }}>Aurora Store</a>{' · '}
+              <a href="https://f-droid.org/F-Droid.apk" onClick={(e) => { e.preventDefault(); openExternal('https://f-droid.org/F-Droid.apk') }}>F-Droid</a>{' · '}
+              <a href={MOBILE_APPS_GUIDE} onClick={(e) => { e.preventDefault(); openExternal(MOBILE_APPS_GUIDE) }}>{t.mobile.apkGuide}</a>
             </p>
-          </details>
+          </section>
         )}
       </div>
       {viewing && <MobileViewer row={viewing} onClose={() => setViewing(null)} />}
@@ -272,10 +287,10 @@ export function MobilePage({ mobile, onOpenPro, onOpenSettings }: Props) {
 
 
 /** The row's controls stay one action + one overflow menu, like the profile table. */
-function MobileRowMenu({ row, running, busy, recording, onView, onScreenshot, onRecord, onTop, onInstall, onEdit, onBackup, onRestore, onTrash }: {
+function MobileRowMenu({ row, running, busy, recording, onView, onScreenshot, onRecord, onTop, onEdit, onBackup, onRestore, onTrash }: {
   row: service.MobileRow; running: boolean; busy: boolean; recording: boolean
   onView: () => void; onScreenshot: () => void; onRecord: () => void; onTop: () => void
-  onInstall: () => void; onEdit: () => void; onBackup: () => void; onRestore: () => void; onTrash: () => void
+  onEdit: () => void; onBackup: () => void; onRestore: () => void; onTrash: () => void
 }) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
@@ -296,7 +311,6 @@ function MobileRowMenu({ row, running, busy, recording, onView, onScreenshot, on
           {running && <button role="menuitem" onClick={() => act(onScreenshot)}>{t.mobile.screenshot}</button>}
           {running && <button role="menuitem" onClick={() => act(onRecord)}>{recording ? t.mobile.stopRecording : t.mobile.recordScreen}</button>}
           {running && <button role="menuitem" onClick={() => act(onTop)}>{t.mobile.alwaysOnTop}</button>}
-          {running && <button role="menuitem" onClick={() => act(onInstall)}>{t.mobile.installApps}</button>}
           <button role="menuitem" onClick={() => act(onEdit)}>{t.mobile.edit}</button>
           <button role="menuitem" disabled={running} onClick={() => act(onBackup)}>{t.mobile.backup}</button>
           {row.backedUpAt && <button role="menuitem" disabled={running} onClick={() => act(onRestore)}>{t.mobile.restoreBackup}</button>}

@@ -17,6 +17,7 @@ type fakeDriver struct {
 	running  map[string]chan struct{}
 	alive    map[string]bool // what Adopt finds still running
 	startErr error
+	progress bool
 	opts     StartOptions
 	adopted  []string
 }
@@ -38,6 +39,10 @@ func (f *fakeDriver) Start(ctx context.Context, d Device, o StartOptions) (Run, 
 		return Run{}, f.startErr
 	}
 	f.opts = o
+	if f.progress && o.Progress != nil {
+		o.Progress("restore")
+		o.Progress("boot")
+	}
 	done := make(chan struct{})
 	f.running[d.ID] = done
 	return Run{Launch: Launch{PID: 100, PIDStartTime: "t", ADBPort: 5555}, Done: done}, nil

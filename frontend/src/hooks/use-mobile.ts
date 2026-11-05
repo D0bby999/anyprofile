@@ -8,6 +8,7 @@ export function useMobile() {
   const [rows, setRows] = useState<service.MobileRow[]>([])
   const [avail, setAvail] = useState<service.MobileAvailability | null>(null)
   const [error, setError] = useState('')
+  const [phases, setPhases] = useState<Record<string, string>>({})
 
   const reload = useCallback(() => {
     Api.ListMobileDevices(store.ProfileFilter.createFrom({ query: '', tag: '', trashed: false }))
@@ -19,10 +20,11 @@ export function useMobile() {
   useEffect(reload, [reload])
   useEffect(() => onDataChanged(['mobile', 'proxies', 'pro'], reload), [reload])
   useEffect(() => onMobileChanged((info) => {
+    setPhases((cur) => ({ ...cur, [info.deviceId]: info.state === 'starting' ? info.phase ?? '' : '' }))
     setRows((cur) => cur.map((r) => (r.id !== info.deviceId ? r : service.MobileRow.createFrom({
       ...r, state: info.state, error: info.error ?? '',
     }))))
   }), [])
 
-  return { rows, avail, error, setError, reload }
+  return { rows, avail, error, setError, reload, phases }
 }

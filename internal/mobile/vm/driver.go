@@ -424,16 +424,32 @@ func (v *Driver) Start(ctx context.Context, d mobile.Device, o mobile.StartOptio
 	if err != nil {
 		return mobile.Run{}, err
 	}
+	phase := func(name string) {
+		if o.Progress != nil {
+			o.Progress(name)
+		}
+	}
+	restoreStarted := time.Now()
+	phase("restore")
 	p, err := v.restore(ctx, rt, d, dialerFor(o.Upstream))
+	restoreMS := time.Since(restoreStarted).Milliseconds()
+	var coldMS int64
+	mode := "restore"
 	if err != nil {
 		if !errors.Is(err, errNoRAM) {
 			v.log.Warn("fast start", "device", d.ID, "err", err)
 		}
+		mode = "cold"
+		phase("boot")
+		coldStarted := time.Now()
 		p, err = v.boot(ctx, rt, d, dialerFor(o.Upstream), bootTimeout)
+		coldMS = time.Since(coldStarted).Milliseconds()
 		if err != nil {
 			return mobile.Run{}, err
 		}
 	}
+	phase("setup")
+	setupStarted := time.Now()
 	if err := setClock(ctx, p.adb, time.Now()); err != nil {
 		v.log.Warn("mobile clock", "device", d.ID, "err", err)
 	}
@@ -451,9 +467,13 @@ func (v *Driver) Start(ctx context.Context, d mobile.Device, o mobile.StartOptio
 		v.log.Warn("mobile locale", "device", d.ID, "err", err)
 	}
 	st, _ := launcher.ProcessStartTime(p.pid)
+	setupMS := time.Since(setupStarted).Milliseconds()
+	windowStarted := time.Now()
 	if !o.Headless {
 		v.showOn(ctx, d, p)
 	}
+	v.log.Info("mobile start timing", "device", d.ID, "mode", mode, "restore_ms", restoreMS, "cold_boot_ms", coldMS,
+		"setup_ms", setupMS, "window_ms", time.Since(windowStarted).Milliseconds(), "total_ms", time.Since(started).Milliseconds())
 	run := v.track(d.ID, p, st)
 	v.record(d.ID, func(m *mobile.Metrics) {
 		m.StartMS = time.Since(started).Milliseconds()

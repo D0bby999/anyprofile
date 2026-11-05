@@ -102,9 +102,15 @@ describe('MobilePage', () => {
     await waitFor(() => expect(api.InstallMobileRuntime).toHaveBeenCalled())
   })
 
-  it('says what the driver is missing', () => {
-    page([], avail({ ready: false, reason: 'ldplayer_missing', message: 'Install LDPlayer 9.' }))
-    expect(screen.getByRole('status').textContent).toContain(t.errors.ldplayer_missing)
+  it('offers the official LDPlayer download and checks again when missing', () => {
+    const reload = vi.fn()
+    const mobile = { rows: [], avail: avail({ driver: 'ldplayer', ready: false, reason: 'ldplayer_missing' }), error: '', setError: vi.fn(), reload } as never
+    render(<ConfirmProvider><ToastProvider><MobilePage mobile={mobile} onOpenPro={vi.fn()} onOpenSettings={vi.fn()} /></ToastProvider></ConfirmProvider>)
+    expect(screen.getByText(t.mobile.ldplayerLite)).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: t.mobile.ldplayerDownload }))
+    expect(openExternal).toHaveBeenCalledWith('https://www.ldplayer.net/')
+    fireEvent.click(screen.getByRole('button', { name: t.mobile.ldplayerCheck }))
+    expect(reload).toHaveBeenCalled()
     expect((screen.getByRole('button', { name: t.mobile.newDevice }) as HTMLButtonElement).disabled).toBe(true)
   })
 
@@ -154,20 +160,26 @@ describe('MobilePage', () => {
 
   it('links to the guide for installing apps', () => {
     page([device()], avail())
-    fireEvent.click(screen.getByText(t.mobile.apkHelp))
+    fireEvent.click(screen.getByRole('link', { name: 'Aurora Store' }))
+    expect(openExternal).toHaveBeenCalledWith('https://f-droid.org/packages/com.aurora.store/')
     fireEvent.click(screen.getByRole('link', { name: t.mobile.apkGuide }))
     expect(openExternal).toHaveBeenCalledWith('https://github.com/D0bby999/anyprofile/blob/master/docs/mobile-apps.md')
   })
 
   it('installs apps on a running device only', async () => {
     page([device({ state: 'running' })], avail())
-    await openRowMenu()
-    fireEvent.click(screen.getByRole('menuitem', { name: t.mobile.installApps }))
+    fireEvent.click(screen.getByRole('button', { name: t.mobile.installApps }))
     await waitFor(() => expect(api.InstallMobileApps).toHaveBeenCalledWith('d1'))
     expect(await screen.findByText(t.mobile.appsInstalled(2))).toBeTruthy()
     cleanup()
     page([device()], avail())
     expect(screen.queryByRole('button', { name: t.mobile.installApps })).toBeNull()
+  })
+
+  it('shows the current startup phase', () => {
+    const mobile = { rows: [device({ state: 'starting' })], avail: avail(), error: '', setError: vi.fn(), reload: vi.fn(), phases: { d1: 'boot' } } as never
+    render(<ConfirmProvider><ToastProvider><MobilePage mobile={mobile} onOpenPro={vi.fn()} onOpenSettings={vi.fn()} /></ToastProvider></ConfirmProvider>)
+    expect(screen.getByRole('status').textContent).toBe(t.mobile.startPhase.boot)
   })
 
   it('shows Close and Show window for a running device and locks backup', async () => {

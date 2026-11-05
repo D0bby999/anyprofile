@@ -38,7 +38,7 @@ export function onLaunchChanged(fn: (info: LaunchInfo) => void): () => void {
 }
 
 /** A mobile device changed state: stopped, provisioning, starting, running, stopping, working. */
-export type MobileInfo = { deviceId: string; state: string; error?: string }
+export type MobileInfo = { deviceId: string; state: string; error?: string; phase?: string }
 
 export function onMobileChanged(fn: (info: MobileInfo) => void): () => void {
   return EventsOn('mobile:changed', fn)

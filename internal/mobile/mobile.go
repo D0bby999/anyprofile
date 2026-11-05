@@ -37,6 +37,7 @@ type Info struct {
 	State    State  `json:"state"`
 	Error    string `json:"error,omitempty"`   // why the last create, start or stop failed
 	ADBPort  int    `json:"adbPort,omitempty"` // where the host reaches this device while running
+	Phase    string `json:"phase,omitempty"`
 }
 
 // Device is what a driver needs to know about a device: no secrets, no database.
@@ -61,6 +62,7 @@ type StartOptions struct {
 	// Headless starts QEMU without scrcpy. Agents and scripts do not need a
 	// window; the user's Open button still asks for one.
 	Headless bool
+	Progress func(string)
 }
 
 // Launch is what survives the app: enough to find and adopt the device again.
@@ -286,6 +288,20 @@ func (m *Manager) Start(ctx context.Context, d Device, o StartOptions) error {
 	}
 	if err := m.claim(d.ID, Starting); err != nil {
 		return err
+	}
+	o.Progress = func(phase string) {
+		m.mu.Lock()
+		e := m.devs[d.ID]
+		if e == nil || e.info.State != Starting {
+			m.mu.Unlock()
+			return
+		}
+		e.info.Phase = phase
+		info := e.info
+		m.mu.Unlock()
+		if m.onChange != nil {
+			m.onChange(info)
+		}
 	}
 	run, err := m.drv.Start(ctx, d, o)
 	if err != nil {

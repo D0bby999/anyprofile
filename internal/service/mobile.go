@@ -519,6 +519,7 @@ func (s *Service) StartMobileDeviceHeadless(ctx context.Context, id string) (Mob
 }
 
 func (s *Service) startMobile(ctx context.Context, id string, headless bool) (MobileStart, error) {
+	started := time.Now()
 	s.applyMobileFastStart()
 	if err := s.mobileReady(); err != nil {
 		return MobileStart{}, err
@@ -527,10 +528,12 @@ func (s *Service) startMobile(ctx context.Context, id string, headless bool) (Mo
 	if err != nil {
 		return MobileStart{}, err
 	}
+	proxyStarted := time.Now()
 	net, err := s.proxyNetwork(ctx, d.ProxyID)
 	if err != nil {
 		return MobileStart{}, err
 	}
+	proxyMS := time.Since(proxyStarted).Milliseconds()
 	o := mobile.StartOptions{Timezone: net.Timezone, Locale: androidLocale(net), Headless: headless}
 	if d.ProxyID != "" {
 		up, err := s.proxyUpstream(d.ProxyID)
@@ -546,6 +549,7 @@ func (s *Service) startMobile(ctx context.Context, id string, headless bool) (Mo
 	if err := s.Mobile.Start(ctx, mobileDevice(d), o); err != nil {
 		return res, err
 	}
+	s.Log.Info("mobile open timing", "device", id, "proxy_ms", proxyMS, "total_ms", time.Since(started).Milliseconds())
 	if err := s.Store.MarkMobileOpened(id); err != nil {
 		s.Log.Warn("mark mobile device opened", "device", id, "err", err)
 	}

@@ -63,6 +63,28 @@ func TestStartStop(t *testing.T) {
 	}
 }
 
+func TestStartProgress(t *testing.T) {
+	f := newFake()
+	f.progress = true
+	var phases []string
+	m := NewManager(f, newMem(), slog.New(slog.NewTextHandler(io.Discard, nil)), func(info Info) {
+		if info.Phase != "" {
+			phases = append(phases, info.Phase)
+		}
+	})
+	if err := m.Start(context.Background(), Device{ID: "d1"}, StartOptions{}); err != nil {
+		t.Fatal(err)
+	}
+	if len(phases) != 2 || phases[0] != "restore" || phases[1] != "boot" || m.Info("d1").Phase != "" {
+		t.Fatalf("phases = %v, final = %+v", phases, m.Info("d1"))
+	}
+	f.opts.Progress("setup")
+	if len(phases) != 2 {
+		t.Fatalf("late progress changed state: %v", phases)
+	}
+	f.crash("d1")
+}
+
 func TestStopsByItself(t *testing.T) {
 	m, f, st := newManager(t)
 	ctx := context.Background()

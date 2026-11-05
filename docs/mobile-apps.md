@@ -19,7 +19,7 @@ Lần đầu dùng máy, cách nhanh nhất là dùng cách 1 để cài **Auror
 ## Cách 1: nút Cài app (file APK trên máy tính)
 
 1. Tải file `.apk` về máy tính (nguồn tin được ở [bên dưới](#lấy-file-apk-ở-đâu)).
-2. Trên trang **Mobile** của AnyProfile, ở dòng của máy đang chạy, bấm **Cài app**.
+2. Trên trang **Mobile** của AnyProfile, ở dòng của máy đang chạy, bấm **Cài app** dưới tên máy.
 3. Chọn một hay nhiều file `.apk`, bấm **Open**.
 4. Đợi thông báo **"Đã cài 1 app."** ở góc màn hình. File lớn (vài trăm MB) mất khoảng một phút.
 5. App mới hiện trong danh sách app của điện thoại (vuốt lên từ màn hình chính).

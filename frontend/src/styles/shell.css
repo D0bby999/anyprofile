@@ -642,6 +642,7 @@ kbd { display: inline-flex; align-items: center; min-width: 22px; height: 20px; 
 .mobile-device-copy { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1 1 auto; overflow: hidden; }
 .mobile-name { display: block; max-width: 100%; font-size: 14px; line-height: 1.3; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .mobile-meta { display: block; max-width: 100%; color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mobile-install { align-self: flex-start; margin-top: 4px; }
 .mobile-tags { gap: 4px; flex-wrap: wrap; margin-top: 1px; max-width: 100%; overflow: hidden; }
 .mobile-tags .chip { height: 18px; padding: 0 6px; font-size: 10px; }
 .proxy-pill { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; max-width: 190px; color: var(--ink-soft); font-size: 12px; }
@@ -655,13 +656,9 @@ kbd { display: inline-flex; align-items: center; min-width: 22px; height: 20px; 
   .mobile-table { min-width: 760px; }
 }
 
-/* One small disclosure replaces two paragraphs under the device table. */
+/* App sources and installation guidance under the device table. */
 .mobile-help { align-self: flex-start; margin-top: -2px; color: var(--muted); font-size: var(--t-xs); }
-.mobile-help > summary { display: inline-flex; align-items: center; gap: 5px; padding: 2px 0; cursor: pointer; list-style: none; }
-.mobile-help > summary::-webkit-details-marker { display: none; }
-.mobile-help > summary:hover { color: var(--ink-soft); }
-.mobile-help > summary .icon { color: var(--faint); }
-.mobile-help[open] > summary { color: var(--ink-soft); }
+.mobile-help > strong { color: var(--ink-soft); }
 .mobile-help p { max-width: 72ch; margin: 8px 0 0; line-height: 1.55; color: var(--muted); }
 .mobile-faststart { display: flex; flex-direction: column; gap: 1px; }
 .mobileviewer { width: 430px; }
