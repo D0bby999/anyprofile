@@ -148,6 +148,15 @@ func TestStartWithDevToolsThenStop(t *testing.T) {
 	}
 }
 
+func TestPublishRoutesAreGone(t *testing.T) {
+	_, h := setup()
+	for _, method := range []string{"GET", "POST"} {
+		if code, _ := do(h, method, "/v1/publish-tasks", "", nil); code != http.StatusNotFound {
+			t.Fatalf("%s /v1/publish-tasks = %d, want 404", method, code)
+		}
+	}
+}
+
 func TestErrors(t *testing.T) {
 	f, h := setup()
 	if code, out := do(h, "GET", "/v1/profiles/nope", "", nil); code != 404 || errCode(out) != "not_found" {

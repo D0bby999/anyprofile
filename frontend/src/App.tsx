@@ -17,7 +17,6 @@ import { ProxiesPage } from './pages/proxies-page'
 import { MobilePage } from './pages/mobile-page'
 import { TrashPage } from './pages/trash-page'
 import { ToolsPage } from './pages/tools-page'
-import { PublishPage } from './pages/publish-page'
 import { SettingsPage } from './pages/settings-page'
 import { scrollSettingsTo } from './lib/scroll'
 import { WelcomePage } from './pages/welcome-page'
@@ -204,7 +203,6 @@ export default function App() {
         {page === 'proxies' && <ProxiesPage onChanged={() => { refreshProxies(); profiles.reload(); mobile.reload() }} />}
         {page === 'trash' && <TrashPage onChanged={() => { profiles.reload(); mobile.reload() }} />}
         {page === 'tools' && <ToolsPage onOpenPro={() => openSettings('settings-pro')} />}
-        {page === 'publish' && <PublishPage profiles={profiles.rows} />}
         {page === 'settings' && (
           <SettingsPage engines={engines ?? []} engineCounts={engineCounts} defaults={defaults} onEnginesChanged={refreshEngines} theme={theme} onTheme={setTheme} fileVaultOn={fileVaultOn}
             lang={lang} onLanguage={changeLanguage} openProfiles={profiles.rows.filter((r) => r.state === 'running').length} checkUpdate={checkUpdate} />

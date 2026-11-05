@@ -23,8 +23,6 @@ export function AssignProxiesMany(arg1:Array<string>,arg2:string):Promise<Record
 
 export function BackupMobileDevice(arg1:string):Promise<void>;
 
-export function CancelPublishTask(arg1:string):Promise<void>;
-
 export function CheckAllProxies():Promise<number>;
 
 export function CheckProxy(arg1:string):Promise<store.Proxy>;
@@ -54,8 +52,6 @@ export function CreateProfile(arg1:service.NewProfile):Promise<store.Profile>;
 export function CreateProfileFromTemplate(arg1:string,arg2:string,arg3:string):Promise<store.Profile>;
 
 export function CreateProfiles(arg1:service.BulkCreate):Promise<Array<store.Profile>>;
-
-export function CreatePublishTask(arg1:service.PublishInput):Promise<store.PublishTask>;
 
 export function CreateSite(arg1:service.SiteInput):Promise<site.Site>;
 
@@ -203,8 +199,6 @@ export function ProRemoveDevice(arg1:string):Promise<void>;
 
 export function ProStatus():Promise<service.ProStatus>;
 
-export function PublishTasks():Promise<Array<store.PublishTask>>;
-
 export function PurgeMobileDevice(arg1:string):Promise<void>;
 
 export function PurgeProfile(arg1:string):Promise<void>;
@@ -228,10 +222,6 @@ export function RestoreMobileDevice(arg1:string):Promise<void>;
 export function RestoreProfile(arg1:string):Promise<void>;
 
 export function RestoreSnapshot(arg1:number):Promise<number>;
-
-export function RetryPublishTask(arg1:string):Promise<void>;
-
-export function RunPublishTaskNow(arg1:string):Promise<void>;
 
 export function ScreenshotMobileDevice(arg1:string):Promise<string>;
 

@@ -64,24 +64,6 @@ func (b apiBackend) Pipe(id string) (agent.Conn, bool) {
 	return c, true
 }
 
-// Publish queue: the API and MCP tools reach the service through these.
-func (b apiBackend) CreatePublishTask(ctx context.Context, in api.PublishInput) (store.PublishTask, error) {
-	return b.svc.CreatePublishTask(ctx, service.PublishInput{
-		ProfileID: in.ProfileID, Platform: in.Platform, Kind: in.Kind, Crop: in.Crop,
-		Title: in.Title, Caption: in.Caption, Source: in.Source, ScheduleAt: in.ScheduleAt,
-	})
-}
-
-func (b apiBackend) ListPublishTasks(status string) ([]store.PublishTask, error) {
-	return b.svc.ListPublishTasks(status)
-}
-
-func (b apiBackend) CancelPublishTask(id string) error { return b.svc.CancelPublishTask(id) }
-
-func (b apiBackend) RetryPublishTask(id string) error { return b.svc.RetryPublishTask(id) }
-
-func (b apiBackend) RunPublishTaskNow(id string) error { return b.svc.RunPublishTaskNow(id) }
-
 func (b apiBackend) Stop(id string) error {
 	b.svc.Log.Info("api asked to stop", "profile", id)
 	return b.svc.Launcher.Stop(id)
@@ -164,9 +146,6 @@ func (a *App) restartAPI() {
 	srv.Uploads, srv.Recipes = a.svc.Dirs.Uploads(), a.svc.Dirs.Recipes()
 	srv.ProRecipes = pro.Recipes(a.svc.Dirs.Pro())
 	srv.Traces = filepath.Join(a.svc.Dirs.Logs(), "traces")
-	srv.Publish = apiBackend{a.svc}
-	srv.PublishArtifacts = filepath.Join(a.svc.Dirs.Logs(), "publish")
-	a.svc.SetPublishRunner(srv.RunPublishTask)
 	if a.svc.Mobile != nil {
 		srv.Mobile = apiMobile{a.svc}
 	}

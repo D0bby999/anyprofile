@@ -8,7 +8,7 @@ import type { service } from '../api'
 import { SiteGlyph } from './site-glyph'
 import { Icon, LogoMark, type IconName } from './icons'
 
-export type Page = 'profiles' | 'mobile' | 'proxies' | 'trash' | 'tools' | 'publish' | 'settings'
+export type Page = 'profiles' | 'mobile' | 'proxies' | 'trash' | 'tools' | 'settings'
 /** What the profile table shows: everything, the running ones, the ones that
  *  need attention (both picked from the status bar), one platform, or one tag. */
 export type View = 'all' | 'running' | 'attention' | `site:${string}` | `tag:${string}`
@@ -110,7 +110,6 @@ export function Sidebar({ page, view, counts, tags, sites, siteCounts, proxyCoun
           </button>
         )}
         {item(t.nav.tools, 'spark', page === 'tools', () => onNavigate('tools'))}
-        {item(t.nav.publish, 'play', page === 'publish', () => onNavigate('publish'))}
         {item(t.nav.settings, 'settings', page === 'settings', () => onNavigate('settings'))}
         {engineLabel && (engineReady ? (
           <div className="enginechip"><span className="state ok" />{engineLabel}</div>

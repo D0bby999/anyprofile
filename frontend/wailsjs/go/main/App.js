@@ -30,10 +30,6 @@ export function BackupMobileDevice(arg1) {
   return window['go']['main']['App']['BackupMobileDevice'](arg1);
 }
 
-export function CancelPublishTask(arg1) {
-  return window['go']['main']['App']['CancelPublishTask'](arg1);
-}
-
 export function CheckAllProxies() {
   return window['go']['main']['App']['CheckAllProxies']();
 }
@@ -92,10 +88,6 @@ export function CreateProfileFromTemplate(arg1, arg2, arg3) {
 
 export function CreateProfiles(arg1) {
   return window['go']['main']['App']['CreateProfiles'](arg1);
-}
-
-export function CreatePublishTask(arg1) {
-  return window['go']['main']['App']['CreatePublishTask'](arg1);
 }
 
 export function CreateSite(arg1) {
@@ -390,10 +382,6 @@ export function ProStatus() {
   return window['go']['main']['App']['ProStatus']();
 }
 
-export function PublishTasks() {
-  return window['go']['main']['App']['PublishTasks']();
-}
-
 export function PurgeMobileDevice(arg1) {
   return window['go']['main']['App']['PurgeMobileDevice'](arg1);
 }
@@ -440,14 +428,6 @@ export function RestoreProfile(arg1) {
 
 export function RestoreSnapshot(arg1) {
   return window['go']['main']['App']['RestoreSnapshot'](arg1);
-}
-
-export function RetryPublishTask(arg1) {
-  return window['go']['main']['App']['RetryPublishTask'](arg1);
-}
-
-export function RunPublishTaskNow(arg1) {
-  return window['go']['main']['App']['RunPublishTaskNow'](arg1);
 }
 
 export function ScreenshotMobileDevice(arg1) {
