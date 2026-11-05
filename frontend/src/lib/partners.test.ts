@@ -41,10 +41,17 @@ describe('partners', () => {
     expect(vi.searchParams.get('utm_source')).toBe('anyprofile')
   })
 
-  it('uses the MarsProxies affiliate URL in both app languages', () => {
-    const mars = partners.find((p) => p.id === 'marsproxies')!
+  it.each([
+    ['marsproxies', 'https://marsproxies.sjv.io/bkJz7g'],
+    ['proxycheap', 'https://app.proxy-cheap.com/r/NZNb2Ik0'],
+    ['webshare', 'https://www.webshare.io/?referral_code=e18t5gbij3d3'],
+    ['rapidproxy', 'https://www.rapidproxy.io/?code=GN72DW2EP'],
+    ['lumiproxy', 'https://www.lumiproxy.com/?invite_code=97EJLV'],
+    ['decodo', 'https://dashboard.decodo.com/register?referral_code=2973fec4bd68c176365c5cf1ef80bade6eaccdde'],
+  ])('uses the %s affiliate URL in both app languages', (id, url) => {
+    const partner = partners.find((p) => p.id === id)!
     for (const lang of ['en', 'vi']) {
-      expect(partnerLink(mars, lang)).toBe('https://marsproxies.sjv.io/bkJz7g')
+      expect(partnerLink(partner, lang)).toBe(url)
     }
   })
 

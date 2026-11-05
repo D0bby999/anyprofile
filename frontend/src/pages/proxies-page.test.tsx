@@ -74,8 +74,13 @@ describe('ProxiesPage', () => {
   })
 
   it.each([
-    ['IPRoyal', 'https://iproyal.com/?r=1734020'],
+    ['IPRoyal', 'https://iproyal.sjv.io/X4aYqG'],
     ['MarsProxies', 'https://marsproxies.sjv.io/bkJz7g'],
+    ['Proxy-Cheap', 'https://app.proxy-cheap.com/r/NZNb2Ik0'],
+    ['Webshare', 'https://www.webshare.io/?referral_code=e18t5gbij3d3'],
+    ['Rapidproxy', 'https://www.rapidproxy.io/?code=GN72DW2EP'],
+    ['LumiProxy', 'https://www.lumiproxy.com/?invite_code=97EJLV'],
+    ['Decodo', 'https://dashboard.decodo.com/register?referral_code=2973fec4bd68c176365c5cf1ef80bade6eaccdde'],
   ])('lists every provider under Buy proxies and opens %s in the browser', async (provider, url) => {
     render(<ConfirmProvider><ToastProvider><ProxiesPage onChanged={vi.fn()} /></ToastProvider></ConfirmProvider>)
     await screen.findByText('1.2.3.4')
