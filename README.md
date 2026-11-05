@@ -18,8 +18,10 @@ Website: [anytools.world/anyprofile](https://anytools.world/en/anyprofile)
   (macOS only). Each engine has its own verified releases and install directory.
   Choose Apostate in Settings → Browser engines or under Advanced when creating
   a profile; installing it does not change the AnyBrowser default. AnyBrowser's
-  macOS fork release is not hosted yet; its Windows build still uses the pinned
-  upstream Chromium 155 release.
+  macOS fork (Chromium 156) is hosted, signed with the Developer ID team
+  `25C8SNXS6Q` and notarized, beside its complete source. Its Windows build is
+  still the pinned upstream Chromium 155 release, and is neither signed nor
+  the project's own fork yet.
 - **Identity:** a profile gets a persona of the computer's own operating system
   and its own random seed at creation, fixed for the profile's life. A profile
   opens only on the OS that created it: another OS's persona would render with
@@ -48,9 +50,9 @@ Website: [anytools.world/anyprofile](https://anytools.world/en/anyprofile)
 Download the newest release from [the website](https://anytools.world/en/anyprofile)
 or [Releases](https://github.com/D0bby999/anyprofile/releases/latest): `AnyProfile-macos-arm64.dmg` (open it,
 drag AnyProfile onto Applications) or `AnyProfile-amd64-installer.exe`.
-Builds are not signed by Apple or Microsoft yet: on macOS, open it once from
-System Settings → Privacy & Security → Open Anyway; on Windows, choose More
-info → Run anyway. Windows details: `docs/windows.md`.
+Builds from 0.2.0 on macOS are signed with a Developer ID and notarized by
+Apple, so the app opens directly. The Windows installer is not signed yet:
+choose More info → Run anyway. Windows details: `docs/windows.md`.
 
 ## Build
 

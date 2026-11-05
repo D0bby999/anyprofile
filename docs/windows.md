@@ -3,6 +3,11 @@
 AnyProfile chạy trên Windows 10/11 x64 với engine AnyBrowser. Profile tạo trên Windows mang fingerprint
 Windows, khớp với máy thật: font, GPU và hệ điều hành đều là của máy đó.
 
+Khác một điểm so với bản Mac: trên Windows, engine AnyBrowser hiện là **bản phát hành gốc của Apostate 0.5.1
+(Chromium 155)**, chưa phải bản fork của dự án, và **không có chữ ký số**. Bản fork Chromium 156 mới chỉ dựng
+và phát hành cho macOS; bản Windows cần một máy Windows x64 để dựng và kiểm nhận. Vì thế đừng so điểm
+fingerprint giữa hai nền tảng với nhau.
+
 ## Khác với bản macOS
 
 | | macOS | Windows |
