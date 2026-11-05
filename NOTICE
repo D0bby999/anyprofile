@@ -70,6 +70,8 @@ Partner logos
   frontend/src/assets/partners/ holds the icons that proxy providers and creator
   tools publish on their own websites, shown next to links to those sites. Each
   logo is a trademark of its owner; no endorsement is implied.
+  Craft App Suite and SolidCraft icon authors and MIT license:
+  frontend/public/licenses/craft-icons.txt.
 
 Inter typeface
   Bundled through @fontsource-variable/inter. Copyright The Inter Project

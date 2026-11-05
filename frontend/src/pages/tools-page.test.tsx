@@ -21,9 +21,22 @@ describe('ToolsPage', () => {
     expect(openExternal).toHaveBeenCalledWith('https://postclaw.fun/?utm_source=anyprofile&utm_medium=app&utm_campaign=creator-tools')
   })
 
+  it('shows the Pro invitation only when an upgrade action is available', () => {
+    const openPro = vi.fn()
+    const { rerender } = render(<ToolsPage onOpenPro={openPro} />)
+    fireEvent.click(screen.getByRole('button', { name: t.tools.proOpen }))
+    expect(openPro).toHaveBeenCalledOnce()
+    rerender(<ToolsPage />)
+    expect(screen.queryByRole('button', { name: t.tools.proOpen })).toBeNull()
+  })
+
   it('opens an open-source tool at its own page, untagged', () => {
     render(<ToolsPage />)
     fireEvent.click(screen.getByRole('button', { name: /FilmCraft/ }))
     expect(openExternal).toHaveBeenLastCalledWith('https://getartcraft.com/apps/filmcraft')
+    fireEvent.click(screen.getByRole('button', { name: /Craft Anything/ }))
+    expect(openExternal).toHaveBeenLastCalledWith('https://github.com/storytold/craft-anything')
+    fireEvent.click(screen.getByRole('button', { name: /SolidCraft/ }))
+    expect(openExternal).toHaveBeenLastCalledWith('https://github.com/tangency-labs/solidcraft')
   })
 })

@@ -33,6 +33,13 @@ describe('partners', () => {
     ])
   })
 
+  it('includes every Craft app from the suite', () => {
+    const ids = partnersOf('tool').map((p) => p.id)
+    for (const id of ['photocraft', 'vectorcraft', 'filmcraft', 'lightcraft', 'pdfcraft', 'effectcraft', 'designcraft', 'figcraft', 'wordcraft', 'soundcraft', 'deckcraft', 'cadcraft', 'gridcraft', 'texturecraft', 'craft-anything', 'solidcraft']) {
+      expect(ids, id).toContain(id)
+    }
+  })
+
   it('list PostClaw first among the tools and nowhere among proxies', () => {
     expect(partnersOf('tool')[0].id).toBe('postclaw')
     expect(partnersOf('proxy').map((p) => p.id)).not.toContain('postclaw')

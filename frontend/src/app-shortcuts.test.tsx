@@ -36,9 +36,19 @@ window.matchMedia ??= ((q: string) => ({ matches: false, media: q, addEventListe
 const { default: App } = await import('./App')
 
 const listProfiles = api.ListProfiles
-afterEach(() => { cleanup(); flags.onboarded = true; flags.created = true; api.ListProfiles = listProfiles; delete api.FocusProfile })
+afterEach(() => { cleanup(); flags.onboarded = true; flags.created = true; api.ListProfiles = listProfiles; delete api.FocusProfile; delete api.ProStatus })
 
 describe('App shortcuts', () => {
+  it.each([true, false])('shows the Creator Tools Pro invitation only when active=%s is false', async (active) => {
+    api.ProStatus = () => Promise.resolve({ active })
+    render(<App />)
+    await screen.findByText('Thử proxy TW')
+    fireEvent.click(screen.getByRole('button', { name: t.nav.tools }))
+    await screen.findByRole('heading', { name: t.tools.title })
+    if (active) expect(screen.queryByRole('button', { name: t.tools.proOpen })).toBeNull()
+    else expect(await screen.findByRole('button', { name: t.tools.proOpen })).toBeTruthy()
+  })
+
   it('opens the palette with ⌘K and a profile from it with Enter', async () => {
     render(<App />)
     await screen.findByText('Thử proxy TW')

@@ -5,7 +5,7 @@
 
 export type PartnerKind = 'proxy' | 'tool'
 export type ProxyType = 'residential' | 'isp' | 'mobile' | 'datacenter'
-export type ToolGroup = 'publish' | 'video' | 'record' | 'audio' | 'image'
+export type ToolGroup = 'publish' | 'video' | 'record' | 'audio' | 'image' | 'craft'
 
 export type Partner = {
   id: string
@@ -24,7 +24,7 @@ export type Partner = {
 }
 
 export const proxyTypes: ProxyType[] = ['residential', 'isp', 'mobile', 'datacenter']
-export const toolGroups: ToolGroup[] = ['publish', 'video', 'record', 'audio', 'image']
+export const toolGroups: ToolGroup[] = ['publish', 'video', 'record', 'audio', 'image', 'craft']
 
 // Recommendation order for long-lived accounts, reviewed 2026-11-05: generalists with
 // published evaluations first, then less-tested options and mobile specialists, then trials.
@@ -64,6 +64,21 @@ export const partners: Partner[] = [
   { id: 'buzz', name: 'Buzz', kind: 'tool', url: 'https://chidiwilliams.github.io/buzz/', group: 'audio', openSource: true },
   { id: 'audacity', name: 'Audacity', kind: 'tool', url: 'https://www.audacityteam.org/', group: 'audio', openSource: true },
   { id: 'upscayl', name: 'Upscayl', kind: 'tool', url: 'https://upscayl.org/', group: 'image', openSource: true },
+  { id: 'photocraft', name: 'PhotoCraft', kind: 'tool', url: 'https://getartcraft.com/apps/photocraft', group: 'craft', openSource: true },
+  { id: 'vectorcraft', name: 'VectorCraft', kind: 'tool', url: 'https://getartcraft.com/apps/vectorcraft', group: 'craft', openSource: true },
+  { id: 'lightcraft', name: 'LightCraft', kind: 'tool', url: 'https://getartcraft.com/apps/lightcraft', group: 'craft', openSource: true },
+  { id: 'pdfcraft', name: 'PdfCraft', kind: 'tool', url: 'https://getartcraft.com/apps/pdfcraft', group: 'craft', openSource: true },
+  { id: 'effectcraft', name: 'EffectCraft', kind: 'tool', url: 'https://getartcraft.com/apps/effectcraft', group: 'craft', openSource: true },
+  { id: 'designcraft', name: 'DesignCraft', kind: 'tool', url: 'https://getartcraft.com/apps/designcraft', group: 'craft', openSource: true },
+  { id: 'figcraft', name: 'FigCraft', kind: 'tool', url: 'https://getartcraft.com/apps/figcraft', group: 'craft', openSource: true },
+  { id: 'wordcraft', name: 'WordCraft', kind: 'tool', url: 'https://getartcraft.com/apps/wordcraft', group: 'craft', openSource: true },
+  { id: 'soundcraft', name: 'SoundCraft', kind: 'tool', url: 'https://getartcraft.com/apps/soundcraft', group: 'craft', openSource: true },
+  { id: 'deckcraft', name: 'DeckCraft', kind: 'tool', url: 'https://getartcraft.com/apps/deckcraft', group: 'craft', openSource: true },
+  { id: 'cadcraft', name: 'CADCraft', kind: 'tool', url: 'https://getartcraft.com/apps/cadcraft', group: 'craft', openSource: true },
+  { id: 'gridcraft', name: 'GridCraft', kind: 'tool', url: 'https://getartcraft.com/apps/gridcraft', group: 'craft', openSource: true },
+  { id: 'texturecraft', name: 'TextureCraft', kind: 'tool', url: 'https://getartcraft.com/apps/texturecraft', group: 'craft', openSource: true },
+  { id: 'craft-anything', name: 'Craft Anything', kind: 'tool', url: 'https://github.com/storytold/craft-anything', group: 'craft', openSource: true },
+  { id: 'solidcraft', name: 'SolidCraft', kind: 'tool', url: 'https://github.com/tangency-labs/solidcraft', group: 'craft', openSource: true },
 ]
 
 export const partnersOf = (kind: PartnerKind) => partners.filter((p) => p.kind === kind)
