@@ -70,6 +70,10 @@ make lint              # SPDX headers, gofmt, vet (also for Windows), govulnchec
 ANYPROFILE_TEST_ANYBROWSER_APP=/path/to/Chromium.app make test-integration
 ```
 
+Signed builds, engine archives, certificates and measurement evidence live in
+`artifacts/` inside the repository — never in `$HOME` or `/tmp`. That folder is
+gitignored and holds a private key. See `docs/artifacts.md`.
+
 ## Help
 
 Settings → Help → Copy diagnostics puts a report on the clipboard with the
