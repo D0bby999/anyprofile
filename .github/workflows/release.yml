@@ -30,10 +30,7 @@ jobs:
   macos:
     needs: version
     runs-on: macos-14
-    # A Developer ID and an App Store Connect API key make the build signed and
-    # notarized, so macOS opens the downloaded app without "Apple could not
-    # verify". Without these secrets the steps below skip and the build is
-    # signed ad hoc, as before (docs/releasing.md: Apple signing).
+    # Public releases require Developer ID signing and Apple notarization.
     env:
       MACOS_CERT_P12: ${{ secrets.MACOS_CERT_P12 }}
       MACOS_CERT_PASSWORD: ${{ secrets.MACOS_CERT_PASSWORD }}
@@ -41,6 +38,11 @@ jobs:
       APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
       APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
     steps:
+      - name: Require signing and notarization credentials
+        run: |
+          for name in MACOS_CERT_P12 MACOS_CERT_PASSWORD APPLE_API_KEY APPLE_API_KEY_ID APPLE_API_ISSUER; do
+            if [ -z "${!name}" ]; then echo "Missing required secret: $name" >&2; exit 1; fi
+          done
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:

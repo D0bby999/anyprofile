@@ -5,6 +5,10 @@ keeps them together.
 
 ## 0.2.1 (unreleased)
 
+- Creator Tools now includes the Craft App Suite, and hides the Pro invitation when Pro is active.
+- Removed Scheduled Posts; the old queue data remains in the database.
+- Updated the proxy recommendations and added Oxylabs.
+
 Agent profile management (261104):
 
 - An agent can now manage profiles, not only drive them: 10 new MCP tools

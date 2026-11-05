@@ -35,7 +35,9 @@ không tự cập nhật được: app báo người dùng chuyển `AnyProfile.
 
 1. Đổi `productVersion` trong `wails.json` và `Current` trong `internal/update/update.go` (test
    `TestCurrentMatchesWailsJSON` bắt khi hai số lệch nhau). Commit.
-2. Tạo tag có ghi chú; ghi chú hiện trong app:
+2. Tạo tag có ghi chú ngắn dành cho người dùng; ghi chú này hiện cả trên GitHub Release và trong app.
+   Chỉ nêu thay đổi quan trọng, vài dòng là đủ; không chép toàn bộ changelog hay lịch sử kỹ thuật.
+   Nếu không có gì cần báo, ghi tên phiên bản là đủ. Giữ chi tiết trong `CHANGELOG.md`:
 
    ```
    git tag -a v0.2.0 -m "Mở profile nhanh hơn. Sửa lỗi proxy SOCKS5."
@@ -59,7 +61,7 @@ AnyProfile…": người dùng phải vào System Settings → Privacy & Securit
 và được Apple công chứng (notarize) mới mở thẳng; đóng gói `.dmg` hay `.pkg` không thay được bước này (đã thử với
 `spctl`: app kéo ra từ DMG chưa công chứng vẫn bị `rejected`).
 
-Workflow đã có sẵn các bước ký và công chứng; chúng tự bỏ qua cho tới khi có đủ secret. Khi có tài khoản:
+Workflow yêu cầu đủ secret ký và công chứng; nếu thiếu, bản phát hành dừng thay vì xuất bản app chưa công chứng. Khi có tài khoản:
 
 1. Đăng ký [Apple Developer Program](https://developer.apple.com/programs/) (99 USD/năm).
 2. Tạo chứng chỉ **Developer ID Application**: Xcode → Settings → Accounts → Manage Certificates → + → Developer
