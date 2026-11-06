@@ -41,10 +41,10 @@ type MergeResult struct {
 }
 
 // Merge adds what the database at path has and this one does not: proxies,
-// profiles with their accounts and extensions, custom platforms, extensions.
-// Nothing here is changed or removed. Added profiles get the next serial
-// numbers. Sessions, snapshots and settings stay behind: they belong to the
-// computer they were made on.
+// profiles with their accounts and extensions, custom platforms, extensions,
+// and portable preferences not yet set here. Nothing here is changed or
+// removed. Added profiles get the next serial numbers. Sessions and snapshots
+// stay behind: they belong to the computer they were made on.
 //
 // The other database must be at this one's schema (Open migrates it).
 // beforeCommit runs inside the transaction with what is about to be added;
@@ -126,6 +126,12 @@ func (s *Store) Merge(ctx context.Context, path string, beforeCommit func(MergeR
 		return res, err
 	}
 	res.Folders, res.Templates = folders, templates
+
+	if _, err := tx.ExecContext(ctx, `INSERT OR IGNORE INTO main.settings (key, value)
+		SELECT key, value FROM bak.settings
+		WHERE key IN ('language','default_engine','default_site','default_proxy','on_open','max_concurrent_launches','profile_order','snapshots_auto','snapshots_keep','update_auto','mobile_fast_start','pro_install_id','pro_state','onboarded')`); err != nil {
+		return res, fmt.Errorf("merge settings: %w", err)
+	}
 
 	// Profiles one by one: each takes the next serial, and brings its accounts
 	// and extensions.

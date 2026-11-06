@@ -163,6 +163,12 @@ func TestDeleteProxyAndPurge(t *testing.T) {
 
 	dir := s.Dirs.Profile(p.ID)
 	os.MkdirAll(filepath.Join(dir, "Default"), 0o700)
+	cbDir := filepath.Join(s.Dirs.Logs(), "cookie-backups")
+	os.MkdirAll(cbDir, 0o700)
+	cbMeta := filepath.Join(cbDir, p.ID+".json")
+	cbDB := filepath.Join(cbDir, p.ID+"-1.db")
+	os.WriteFile(cbMeta, []byte("{}"), 0o600)
+	os.WriteFile(cbDB, []byte("sqlite"), 0o600)
 	sec.Set(secrets.ServiceCookieKey, p.ID, make([]byte, 32))
 	if err := s.Purge(p.ID); err == nil {
 		t.Fatal("purge of a live profile must be refused")
@@ -175,6 +181,11 @@ func TestDeleteProxyAndPurge(t *testing.T) {
 	}
 	if _, err := os.Stat(dir); !os.IsNotExist(err) {
 		t.Fatal("profile folder survived purge")
+	}
+	for _, f := range []string{cbMeta, cbDB} {
+		if _, err := os.Stat(f); !os.IsNotExist(err) {
+			t.Fatalf("cookie backup %s survived purge", f)
+		}
 	}
 	if _, err := sec.Get(secrets.ServiceCookieKey, p.ID); !errors.Is(err, secrets.ErrNotFound) {
 		t.Fatal("cookie key survived purge")

@@ -5,6 +5,9 @@ package service
 import (
 	"bytes"
 	"context"
+	"crypto/aes"
+	"database/sql"
+	"errors"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -173,4 +176,95 @@ type refusing struct{ secrets.Store }
 
 func (refusing) Get(string, string) ([]byte, error) {
 	return nil, os.ErrPermission
+}
+
+func TestBackupRestoresProSettingsAndReencryptsCookies(t *testing.T) {
+	src, sec := newService(t)
+	src.Engines["anybrowser"] = fakeEngine2{}
+	src.Preferred = "anybrowser"
+	src.BrowserCookieKey = func() ([]byte, error) { return []byte("old-mac-safe-storage-pass"), nil }
+
+	ctx := context.Background()
+	if err := src.SetLanguage("vi"); err != nil {
+		t.Fatal(err)
+	}
+	if err := src.SetMaxConcurrentLaunches(3); err != nil {
+		t.Fatal(err)
+	}
+	_ = sec.Set(proVault, proAccount, []byte("APRO-11111-22222-33333-44444"))
+	_ = sec.Set(proVault, proDeviceAcct, bytes.Repeat([]byte{9}, 32))
+	_ = sec.Set(proVault, proCertAccount, []byte("cert-token"))
+
+	p, err := src.CreateProfile(ctx, NewProfile{Name: "AnyBrowser Profile", Sites: []string{"other"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	jarDir := filepath.Join(src.Dirs.Profile(p.ID), "Default")
+	if err := os.MkdirAll(jarDir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	jarPath := filepath.Join(jarDir, "Cookies")
+	srcBlock, err := aes.NewCipher(deriveChromiumMacKey([]byte("old-mac-safe-storage-pass")))
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantPlain := []byte("0123456789abcdef0123456789abcdefSID=secret_session_value")
+	encCookie := encryptChromiumV10(srcBlock, wantPlain)
+	db, err := sql.Open("sqlite", "file:"+jarPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.Exec(`CREATE TABLE cookies (name TEXT, encrypted_value BLOB); INSERT INTO cookies VALUES ('SID', ?)`, encCookie); err != nil {
+		t.Fatal(err)
+	}
+	db.Close()
+
+	file := filepath.Join(t.TempDir(), "move.apbackup")
+	if _, err := src.ExportBackup(file, pw); err != nil {
+		t.Fatal(err)
+	}
+
+	// Destination Mac has a different "Chromium Safe Storage" key in its Keychain.
+	dst, dstSec := newService(t)
+	dst.Engines["anybrowser"] = fakeEngine2{}
+	dst.BrowserCookieKey = func() ([]byte, error) { return []byte("new-mac-safe-storage-pass"), nil }
+
+	if _, err := dst.ImportBackup(ctx, file, pw); err != nil {
+		t.Fatal(err)
+	}
+	if got := dst.Language(); got != "vi" {
+		t.Fatalf("language = %q, want vi", got)
+	}
+	if got := dst.MaxConcurrentLaunches(); got != 3 {
+		t.Fatalf("max concurrent launches = %d, want 3", got)
+	}
+	if k, _ := dstSec.Get(proVault, proAccount); string(k) != "APRO-11111-22222-33333-44444" {
+		t.Fatalf("pro license = %q", k)
+	}
+	if c, _ := dstSec.Get(proVault, proCertAccount); string(c) != "cert-token" {
+		t.Fatalf("pro cert = %q", c)
+	}
+
+	// Verify the cookie jar was re-encrypted to the destination Mac's key.
+	dstJar := filepath.Join(dst.Dirs.Profile(p.ID), "Default", "Cookies")
+	db2, err := sql.Open("sqlite", "file:"+dstJar)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db2.Close()
+	var gotEnc []byte
+	if err := db2.QueryRow(`SELECT encrypted_value FROM cookies WHERE name = 'SID'`).Scan(&gotEnc); err != nil {
+		t.Fatal(err)
+	}
+	dstBlock, err := aes.NewCipher(deriveChromiumMacKey([]byte("new-mac-safe-storage-pass")))
+	if err != nil {
+		t.Fatal(err)
+	}
+	plain, ok := decryptChromiumV10(dstBlock, gotEnc)
+	if !ok || !bytes.Equal(plain, wantPlain) {
+		t.Fatalf("decrypted cookie = %q (ok=%v), want %q", plain, ok, wantPlain)
+	}
+	if _, err := dstSec.Get(serviceChromiumSafeStorage, p.ID); !errors.Is(err, secrets.ErrNotFound) {
+		t.Fatalf("temporary source browser key was not cleaned up: %v", err)
+	}
 }

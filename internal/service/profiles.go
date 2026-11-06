@@ -429,12 +429,20 @@ func (s *Service) Purge(id string) error {
 		return err
 	}
 	os.Remove(filepath.Join(s.Dirs.Logs(), "browser-"+id+".log"))
+	cookieBackups := filepath.Join(s.Dirs.Logs(), "cookie-backups")
+	os.Remove(filepath.Join(cookieBackups, id+".json"))
+	if matches, _ := filepath.Glob(filepath.Join(cookieBackups, id+"-*.db")); len(matches) > 0 {
+		for _, m := range matches {
+			os.Remove(m)
+		}
+	}
 	if err := os.RemoveAll(s.Dirs.ProfileSnapshots(id)); err != nil {
 		return err
 	}
 	if err := s.Secrets.Delete(secrets.ServiceCookieKey, id); err != nil {
 		return err
 	}
+	_ = s.Secrets.Delete(serviceChromiumSafeStorage, id)
 	for _, a := range p.Accounts {
 		if err := s.deleteAccountSecrets(a.SecretKey); err != nil {
 			return err
@@ -496,6 +504,11 @@ func (s *Service) listOrder() ([]string, error) {
 // denies geolocation instead of serving a position that is already wrong. A
 // sticky proxy refreshes the position to the exit this launch will use.
 func (s *Service) RefreshLaunchIdentity(ctx context.Context, id string) {
+	if s.Launcher != nil {
+		if in, ok := s.Launcher.Info(id); ok && in.State == launcher.Running {
+			return
+		}
+	}
 	p, err := s.Store.GetProfile(id)
 	if err != nil || p.ProxyID == "" {
 		return
@@ -519,14 +532,22 @@ func (s *Service) RefreshLaunchIdentity(ctx context.Context, id string) {
 // and are then tiled, so they neither land all on the same spot nor take the
 // focus from each other; the first one keeps the focus.
 func (s *Service) StartMany(ctx context.Context, ids []string) map[string]string {
-	for _, id := range ids {
-		s.RefreshLaunchIdentity(ctx, id)
+	refresh := func(id string) {
+		if s.Launcher.BeforeStart == nil {
+			s.RefreshLaunchIdentity(ctx, id)
+		}
 	}
 	if len(ids) == 1 {
-		errs := parallel(ids, func(id string) error { return s.Launcher.Start(ctx, id) })
+		errs := parallel(ids, func(id string) error {
+			refresh(id)
+			return s.Launcher.Start(ctx, id)
+		})
 		return errs
 	}
-	errs := parallel(ids, func(id string) error { return s.Launcher.StartBehind(ctx, id) })
+	errs := parallel(ids, func(id string) error {
+		refresh(id)
+		return s.Launcher.StartBehind(ctx, id)
+	})
 	opened := make([]string, 0, len(ids))
 	for _, id := range ids {
 		if _, failed := errs[id]; !failed {

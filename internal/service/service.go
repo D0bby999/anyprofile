@@ -60,6 +60,9 @@ type Service struct {
 	Running func(profileID string) bool
 	// Pro reaches the AnyProfile Pro server; the zero value means pro.NewClient().
 	Pro pro.Client
+	// BrowserCookieKey reads this computer's Chromium Safe Storage password on
+	// macOS when backing up or restoring AnyBrowser cookie jars; nil in tests.
+	BrowserCookieKey func() ([]byte, error)
 
 	accountMu    sync.Mutex
 	accountLogin *proAccountLogin

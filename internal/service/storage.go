@@ -30,7 +30,9 @@ type StorageInfo struct {
 // cacheDirs are Chromium caches, safe to delete while the browser is closed.
 var cacheDirs = []string{"Default/Cache", "Default/Code Cache", "Default/GPUCache",
 	"GrShaderCache", "ShaderCache", "GraphiteDawnCache", "GPUPersistentCache",
-	"Default/DawnGraphiteCache", "Default/DawnWebGPUCache"}
+	"Default/DawnGraphiteCache", "Default/DawnWebGPUCache",
+	"Default/Service Worker/CacheStorage", "Default/Service Worker/ScriptCache",
+	"Default/Shared Dictionary"}
 
 // componentDirs are what Chromium's component updater downloads into every
 // profile (speech, suggestions, certificate and safety lists, Widevine). It
@@ -154,6 +156,7 @@ func (s *Service) DeleteOrphans(ids []string) error {
 		// The rows are gone, so every platform's key is tried; deleting a
 		// missing item is not an error.
 		s.Secrets.Delete(secrets.ServiceCookieKey, id)
+		s.Secrets.Delete(serviceChromiumSafeStorage, id)
 		s.deleteAccountSecrets(id)
 		for _, site := range siteIDs {
 			s.deleteAccountSecrets(id + "/" + site)
@@ -178,7 +181,7 @@ func (s *Service) ClearCache() (int64, error) {
 		if run[id] {
 			continue
 		}
-		for _, d := range cacheDirs {
+		for _, d := range append(cacheDirs, downloadCaches...) {
 			p := filepath.Join(s.Dirs.Profile(id), d)
 			total += dirSize(p)
 			if err := os.RemoveAll(p); err != nil {

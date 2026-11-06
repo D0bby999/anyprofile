@@ -311,7 +311,11 @@ func (a *App) ImportBackup(password string) (service.BackupResult, error) {
 	if path == "" {
 		return service.BackupResult{}, apperr.New("backup_none", "choose a backup file first")
 	}
-	return a.svc.ImportBackup(a.ctx, path, password)
+	res, err := a.svc.ImportBackup(a.ctx, path, password)
+	if err == nil {
+		a.setMenuLanguage(a.svc.Language())
+	}
+	return res, err
 }
 
 // Snapshots
@@ -437,7 +441,6 @@ func (a *App) PurgeProfile(id string) error { return a.must(func() error { retur
 func (a *App) StartProfile(id string) error {
 	return a.must(func() error {
 		a.svc.Log.Info("ui asked to start", "profile", id)
-		a.svc.RefreshLaunchIdentity(a.ctx, id)
 		err := a.svc.Launcher.Start(a.ctx, id)
 		a.svc.Log.Info("start returned", "profile", id, "err", err)
 		if errors.Is(err, context.Canceled) && a.ctx.Err() == nil {

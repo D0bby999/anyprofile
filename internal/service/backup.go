@@ -149,6 +149,18 @@ func (s *Service) ExportBackup(path, password string) (BackupResult, error) {
 			}
 		}
 	}
+	for _, acct := range []string{proAccount, proCertAccount, proDeviceAcct} {
+		if err := add(proVault, acct); err != nil {
+			return res, err
+		}
+	}
+	if s.BrowserCookieKey != nil && s.hasBrowserCookies(profiles) {
+		if v, err := s.BrowserCookieKey(); err == nil && len(v) > 0 {
+			sec = append(sec, backupSecret{serviceChromiumSafeStorage, "Chromium", v})
+		} else if err != nil && !errors.Is(err, secrets.ErrNotFound) && s.Log != nil {
+			s.Log.Warn("read browser cookie key for backup", "err", err)
+		}
+	}
 	secJSON, err := json.Marshal(sec)
 	if err != nil {
 		return res, err
@@ -358,6 +370,15 @@ func (s *Service) ImportBackup(ctx context.Context, path, password string) (Back
 			if err := setSecret(secrets.ServiceCookieKey, id); err != nil {
 				return err
 			}
+			if srcPass := theirs[[2]string{serviceChromiumSafeStorage, "Chromium"}]; len(srcPass) > 0 {
+				if _, hasKey := theirs[[2]string{secrets.ServiceCookieKey, id}]; !hasKey &&
+					fileExists(filepath.Join(s.Dirs.Profile(id), "Default", "Cookies")) {
+					if err := s.Secrets.Set(serviceChromiumSafeStorage, id, srcPass); err != nil {
+						return err
+					}
+					set = append(set, [2]string{serviceChromiumSafeStorage, id})
+				}
+			}
 		}
 		for _, id := range r.Extensions {
 			if err := move(filepath.Join(staging, "extensions", id), s.Dirs.Extension(id)); err != nil {
@@ -381,6 +402,16 @@ func (s *Service) ImportBackup(ctx context.Context, path, password string) (Back
 				}
 			}
 		}
+		if s.proKey() == "" && s.proCertToken() == "" {
+			for _, acct := range []string{proDeviceAcct, proAccount, proCertAccount} {
+				if v, ok := theirs[[2]string{proVault, acct}]; ok {
+					if err := s.Secrets.Set(proVault, acct, v); err != nil {
+						return err
+					}
+					set = append(set, [2]string{proVault, acct})
+				}
+			}
+		}
 		return nil
 	})
 	if errors.Is(err, store.ErrNewerDatabase) {
@@ -391,11 +422,17 @@ func (s *Service) ImportBackup(ctx context.Context, path, password string) (Back
 		undo()
 		return res, err
 	}
+	for _, id := range merged.Profiles {
+		s.reencryptProfileCookies(id)
+	}
 	s.importRecipes(filepath.Join(staging, "recipes"))
+	s.ApplyLaunchCeiling()
+	s.OfferMobileRuntime()
+	_ = s.FinishOnboarding()
 	res = BackupResult{Profiles: len(merged.Profiles), Proxies: len(merged.Proxies), Accounts: len(merged.Accounts),
 		Extensions: len(merged.Extensions), ProfilesHere: merged.ProfilesHere, ProxiesHere: merged.ProxiesHere}
 	s.Log.Info("backup restored", "profiles", res.Profiles, "proxies", res.Proxies, "profilesHere", res.ProfilesHere)
-	for _, kind := range []string{"profiles", "proxies", "sites", "extensions", "settings"} {
+	for _, kind := range []string{"profiles", "proxies", "sites", "extensions", "settings", "pro"} {
 		s.notify(kind)
 	}
 	return res, nil

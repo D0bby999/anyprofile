@@ -10,3 +10,5 @@ const furyRuns = false
 // bundledConfigRel is the fury-config helper next to AnyProfile.exe. It
 // serves AnyBrowser profiles too (locale per country).
 const bundledConfigRel = "fury-config.exe"
+
+func browserCookieKey() func() ([]byte, error) { return nil }

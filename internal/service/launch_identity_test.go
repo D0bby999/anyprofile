@@ -52,3 +52,19 @@ func TestRefreshLaunchIdentityDropsAPositionItCannotVerify(t *testing.T) {
 		t.Fatalf("position = %v,%v, want none for a rotating exit", got.Lat, got.Lon)
 	}
 }
+
+func TestBeforeLaunchRefreshesIdentity(t *testing.T) {
+	s, _ := newService(t)
+	px := store.Proxy{ID: "px3", Label: "sticky", Scheme: "http", Host: "gw", Port: 10002, Username: "u"}
+	if err := s.Store.CreateProxy(&px); err != nil {
+		t.Fatal(err)
+	}
+	p := proxyProfile(t, s, px.ID, 37.39, -121.96)
+	if err := s.BeforeLaunch(p.ID); err != nil {
+		t.Fatal(err)
+	}
+	got, _ := s.Store.GetProfile(p.ID)
+	if got.Timezone != "Asia/Ho_Chi_Minh" || got.Lat == nil || *got.Lat != 10.8 {
+		t.Fatalf("after BeforeLaunch = %+v", got)
+	}
+}

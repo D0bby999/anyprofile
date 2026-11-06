@@ -128,8 +128,9 @@ func (a *App) init() error {
 	l.OnData = func(kind string) { runtime.EventsEmit(a.ctx, "data:changed", kind) }
 	a.svc = &service.Service{Dirs: dirs, Store: st, Secrets: sec, Launcher: l, Log: log,
 		Engines: a.engines, Preferred: "anybrowser", Catalog: cat,
-		OnChange:   func(kind string) { runtime.EventsEmit(a.ctx, "data:changed", kind) },
-		CheckProxy: netproxy.Check,
+		OnChange:         func(kind string) { runtime.EventsEmit(a.ctx, "data:changed", kind) },
+		CheckProxy:       netproxy.Check,
+		BrowserCookieKey: browserCookieKey(),
 		Locale: func(ctx context.Context, cc string) (string, []string, error) {
 			loc, err := a.fury.LocaleFor(ctx, cc)
 			return loc.UILocale, loc.Languages, err

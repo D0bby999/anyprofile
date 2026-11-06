@@ -103,9 +103,6 @@ func (s *Service) NewAPIToken() (string, error) {
 // a loopback DevTools port; a profile already running without one is refused
 // rather than restarted behind the user's back.
 func (s *Service) StartProfile(ctx context.Context, id string, devtools bool) error {
-	// Before the row is read: the refresh writes the timezone and position, and
-	// a snapshot taken first would be written back over it below.
-	s.RefreshLaunchIdentity(ctx, id)
 	p, err := s.Store.GetProfile(id)
 	if err != nil {
 		return err
@@ -124,6 +121,9 @@ func (s *Service) StartProfile(ctx context.Context, id string, devtools bool) er
 		if err := s.Store.UpdateProfile(p); err != nil {
 			return err
 		}
+	}
+	if s.Launcher.BeforeStart == nil {
+		s.RefreshLaunchIdentity(ctx, id)
 	}
 	return s.Launcher.StartBehind(ctx, id)
 }

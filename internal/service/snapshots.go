@@ -3,6 +3,7 @@
 package service
 
 import (
+	"context"
 	"crypto/rand"
 	"errors"
 	"fmt"
@@ -35,7 +36,7 @@ const (
 // a close snapshot was ~30 MB.
 var snapshotSkip = append(append(append(append([]string(nil), cacheDirs...), componentDirs...), downloadCaches...),
 	"SingletonLock", "SingletonCookie", "SingletonSocket", "lockfile", "DevToolsActivePort",
-	"Crashpad", "Default/Service Worker/CacheStorage")
+	"Crashpad")
 
 func skipInSnapshot(rel string, _ fs.DirEntry) bool {
 	for _, s := range snapshotSkip {
@@ -306,13 +307,16 @@ func (s *Service) DeleteAllSnapshots() error {
 	return nil
 }
 
-// BeforeLaunch waits for a snapshot of the profile to finish (Launcher.BeforeStart).
+// BeforeLaunch waits for a snapshot of the profile to finish and refreshes the
+// proxy exit identity before the browser reads the profile row (Launcher.BeforeStart).
 func (s *Service) BeforeLaunch(profileID string) error {
 	lock := s.lockFor(profileID)
 	if !lock.acquire(busyWait) {
 		return apperr.New("snapshot_busy", "a snapshot of this profile is in progress")
 	}
 	lock.release()
+	s.reencryptProfileCookies(profileID)
+	s.RefreshLaunchIdentity(context.Background(), profileID)
 	return nil
 }
 
