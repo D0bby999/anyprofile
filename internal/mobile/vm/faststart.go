@@ -113,6 +113,9 @@ func (v *Driver) ramValid(rt Runtime, d mobile.Device) bool {
 	return err == nil && st.Size() > 0
 }
 
+// DropRAM removes a device's saved RAM state (~2.5 GB); the next Start boots.
+func (v *Driver) DropRAM(d mobile.Device) { v.dropRAM(d) }
+
 // dropRAM removes a saved state; the next Start boots.
 func (v *Driver) dropRAM(d mobile.Device) {
 	dir := v.dir(d)

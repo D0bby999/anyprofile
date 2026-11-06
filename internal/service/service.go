@@ -68,6 +68,7 @@ type Service struct {
 	proMu        sync.Mutex // one Pro check or install at a time
 	ctlMu        sync.Mutex
 	controls     map[string]*control.Device // the agent's handle on each running mobile device
+	mobileLocale map[string]string          // the proxy's language set at each device's last open
 	snapLocks    map[string]profileLock     // one per profile: snapshots and launches take turns
 
 	pauseMu     sync.Mutex

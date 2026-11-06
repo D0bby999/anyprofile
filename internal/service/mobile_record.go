@@ -19,6 +19,22 @@ type mobileRecording struct {
 	err    error
 }
 
+// mobileRecording reports whether screenrecord is still running on a device.
+func (s *Service) mobileRecording(id string) bool {
+	s.recMu.Lock()
+	rec := s.recordings[id]
+	s.recMu.Unlock()
+	if rec == nil {
+		return false
+	}
+	select {
+	case <-rec.done:
+		return false
+	default:
+		return true
+	}
+}
+
 // StartMobileRecording records the device screen with Android's screenrecord,
 // capped at three minutes. One recording per device.
 func (s *Service) StartMobileRecording(ctx context.Context, id string) error {
