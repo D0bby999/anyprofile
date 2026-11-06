@@ -91,6 +91,14 @@ done
   `scripts/publish.sh`). Gói và source tar mang `LICENSE`, `THIRD-PARTY-NOTICES.md` và `share/licenses/`; thêm hay
   đổi thành phần thì cập nhật `THIRD-PARTY-NOTICES.md`.
 - Kiểm trước khi phát hành: giải nén gói vào runtime sạch, chạy `TestVM` và `TestControl` như trên.
+- **Bản ghi đã phát là bất biến.** `POST /admin/runtimes` từ chối (409) một version đã có, nên dựng lại cùng
+  version rồi phát lần nữa là không thể: mỗi lần dựng lại phải nâng `anymobile/VERSION`. Bản 1.0.2 đang phát trên
+  máy chủ license có `sha256 aa5b2e8afcdb…` (16.233.236 byte), khác bản 1.0.2 trong `anymobile/dist` ở máy này
+  (`sha256 89ab50ad05dc…`, 16.238.440 byte): người dùng nhận bản trên máy chủ, còn bản local chỉ là bản dựng lại
+  chưa từng phát. Lần sửa runtime kế tiếp phải là **1.0.3**, không dùng lại số 1.0.2.
+- Muốn biết máy chủ đang chào bản nào và hash gì: gọi `/v1/activate` bằng một license còn hiệu lực rồi đọc
+  `runtimes[]` (`engine`, `version`, `platform`, `sha256`, `size`); app lưu kết quả đã kiểm chữ ký ở `pro_state`
+  trong `settings`.
 
 ### ADBKeyBoard, SocksTun
 
