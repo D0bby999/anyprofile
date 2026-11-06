@@ -258,28 +258,28 @@ export function MobilePage({ mobile, onOpenPro, onOpenSettings }: Props) {
             )}
           </div>
         </section>
-        {rows.length > 0 && canUse && avail?.driver === 'vm' && (
-          <div className="mobile-faststart">
-            <label className="row checkrow">
-              <input type="checkbox" checked={fastStart} onChange={(e) => {
-                const on = e.target.checked
-                setFastStart(on)
-                Api.SetMobileFastStart(on).catch((err) => { setFastStart(!on); toast.error(errorText(err)) })
-              }} />
-              {t.mobile.fastStart}
-            </label>
-            <span className="hint">{t.mobile.fastStartHint}</span>
-          </div>
-        )}
         {rows.length > 0 && canUse && (
-          <section className="mobile-help" aria-label={t.mobile.apkHelp}>
-            <strong>{t.mobile.apkHelp}</strong>
-            <p>{t.mobile.apkHint} {avail?.driver === 'vm' && t.mobile.apkWhere}</p>
-            <p><a href="https://f-droid.org/packages/com.aurora.store/" onClick={(e) => { e.preventDefault(); openExternal('https://f-droid.org/packages/com.aurora.store/') }}>Aurora Store</a>{' · '}
+          <footer className="mobile-foot">
+            {avail?.driver === 'vm' && (
+              <div className="mobile-faststart">
+                <label className="row checkrow">
+                  <input type="checkbox" checked={fastStart} onChange={(e) => {
+                    const on = e.target.checked
+                    setFastStart(on)
+                    Api.SetMobileFastStart(on).catch((err) => { setFastStart(!on); toast.error(errorText(err)) })
+                  }} />
+                  {t.mobile.fastStart}
+                </label>
+                <span className="hint">{t.mobile.fastStartHint}</span>
+              </div>
+            )}
+            <section className="mobile-help" aria-label={t.mobile.apkHelp}>
+              <strong>{t.mobile.apkHelp}:</strong> {t.mobile.apkHint} {avail?.driver === 'vm' && t.mobile.apkWhere}{' · '}
+              <a href="https://f-droid.org/packages/com.aurora.store/" onClick={(e) => { e.preventDefault(); openExternal('https://f-droid.org/packages/com.aurora.store/') }}>Aurora Store</a>{' · '}
               <a href="https://f-droid.org/F-Droid.apk" onClick={(e) => { e.preventDefault(); openExternal('https://f-droid.org/F-Droid.apk') }}>F-Droid</a>{' · '}
               <a href={MOBILE_APPS_GUIDE} onClick={(e) => { e.preventDefault(); openExternal(MOBILE_APPS_GUIDE) }}>{t.mobile.apkGuide}</a>
-            </p>
-          </section>
+            </section>
+          </footer>
         )}
       </div>
       {viewing && <MobileViewer row={viewing} onClose={() => setViewing(null)} />}

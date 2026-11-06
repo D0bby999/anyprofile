@@ -7,7 +7,7 @@ import { useConfirm } from './confirm'
 import { Icon } from './icons'
 import { useToast } from './toast'
 
-export const MCP_CLIENTS = ['claude', 'codex', 'gemini', 'opencode', 'cursor', 'vscode', 'windsurf', 'other'] as const
+export const MCP_CLIENTS = ['claude', 'codex', 'gemini', 'antigravity', 'opencode', 'cursor', 'vscode', 'windsurf', 'other'] as const
 export type MCPClient = (typeof MCP_CLIENTS)[number]
 const CLIENT_KEY = 'anyprofile.mcpClient'
 const DOCS = 'https://github.com/D0bby999/anyprofile/blob/master/docs/'

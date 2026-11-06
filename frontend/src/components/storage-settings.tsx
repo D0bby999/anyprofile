@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { useCallback, useEffect, useState } from 'react'
-import { Api, service } from '../api'
+import { Api, onDataChanged, service } from '../api'
 import { t } from '../i18n'
 import { errorText, formatBytes } from '../lib/format'
 import { Icon } from './icons'
@@ -44,6 +44,7 @@ export function StorageSettings() {
     Api.Storage().then(setInfo).catch((e) => setError(errorText(e)))
   }, [])
   useEffect(load, [load])
+  useEffect(() => onDataChanged(['profiles', 'snapshots', 'settings', 'mobile'], load), [load])
 
   const orphanBytes = (info?.orphans ?? []).reduce((n, o) => n + Number(o.bytes), 0)
 

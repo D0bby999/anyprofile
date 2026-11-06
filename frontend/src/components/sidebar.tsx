@@ -7,6 +7,7 @@ import type { Site } from '../lib/sites'
 import type { service } from '../api'
 import { SiteGlyph } from './site-glyph'
 import { Icon, LogoMark, type IconName } from './icons'
+import { BuyProxiesButton } from './partner-grid'
 
 export type Page = 'profiles' | 'mobile' | 'proxies' | 'trash' | 'tools' | 'settings'
 /** What the profile table shows: everything, the running ones, the ones that
@@ -109,6 +110,7 @@ export function Sidebar({ page, view, counts, tags, sites, siteCounts, proxyCoun
             <Icon name="chevron" className="icon xs prostatus-arrow" />
           </button>
         )}
+        <BuyProxiesButton className="navitem nodrag" />
         {item(t.nav.tools, 'spark', page === 'tools', () => onNavigate('tools'))}
         {item(t.nav.settings, 'settings', page === 'settings', () => onNavigate('settings'))}
         {engineLabel && (engineReady ? (

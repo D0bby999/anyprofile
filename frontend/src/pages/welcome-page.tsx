@@ -195,7 +195,7 @@ export function WelcomePage({ sites, fileVaultOn, lang, onLanguage, onDone }: Pr
         {state(1) === 'done' && (
           <details className="wrestore">
             <summary>{t.backup.welcome}</summary>
-            <BackupRestore onRestored={(r) => { if (r.profiles > 0) onDone(null) }} />
+            <BackupRestore onRestored={(r) => { if (r.profiles > 0 || r.proxies > 0 || r.profilesHere > 0) { Api.FinishOnboarding().finally(() => onDone(null)) } }} />
           </details>
         )}
 

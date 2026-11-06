@@ -56,9 +56,11 @@ describe('Sidebar', () => {
     expect(screen.getByRole('button', { name: /tag-14/ })).toBeTruthy()
   })
 
-  it('opens Creator tools from the footer', () => {
+  it('opens Buy proxies and Creator tools from the footer', () => {
     const onNavigate = vi.fn()
     sidebar(onNavigate)
+    fireEvent.click(screen.getByRole('button', { name: t.proxies.buy }))
+    expect(screen.getByRole('dialog', { name: t.proxies.buy })).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: t.nav.tools }))
     expect(onNavigate).toHaveBeenCalledWith('tools')
   })

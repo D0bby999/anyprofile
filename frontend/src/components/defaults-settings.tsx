@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { useEffect, useState } from 'react'
-import { Api, service } from '../api'
+import { Api, onDataChanged, service } from '../api'
 import { t } from '../i18n'
 import { errorText } from '../lib/format'
 import { useSites } from '../hooks/use-sites'
@@ -13,7 +13,9 @@ function useDefaults() {
   const [d, setD] = useState<service.Defaults>(service.Defaults.createFrom({ site: 'other', proxy: 'auto', onOpen: 'start' }))
   const [error, setError] = useState('')
 
-  useEffect(() => { Api.Defaults().then(setD).catch(() => {}) }, [])
+  const load = () => { Api.Defaults().then(setD).catch(() => {}) }
+  useEffect(() => { load() }, [])
+  useEffect(() => onDataChanged(['settings'], load), [])
 
   const set = async (patch: Partial<service.Defaults>) => {
     setD(service.Defaults.createFrom({ ...d, ...patch }))
@@ -58,6 +60,32 @@ export function DefaultsSettings() {
 /** What every profile opens with: the tabs of last time, or its start pages. */
 export function OnOpenSettings() {
   const { d, set, error } = useDefaults()
+  const [maxLaunches, setMaxLaunches] = useState(0)
+  const [maxInput, setMaxInput] = useState('0')
+  const [maxError, setMaxError] = useState('')
+
+  const loadMax = () => {
+    Api.MaxConcurrentLaunches().then((n) => {
+      setMaxLaunches(n)
+      setMaxInput(String(n))
+    }).catch(() => {})
+  }
+  useEffect(() => { loadMax() }, [])
+  useEffect(() => onDataChanged(['settings'], loadMax), [])
+
+  const saveMax = async () => {
+    const val = Math.max(0, parseInt(maxInput, 10) || 0)
+    setMaxInput(String(val))
+    if (val === maxLaunches) return
+    setMaxError('')
+    try {
+      await Api.SetMaxConcurrentLaunches(val)
+      setMaxLaunches(val)
+    } catch (e) {
+      setMaxError(errorText(e))
+    }
+  }
+
   return (
     <div className="field">
       <div className="seg" role="group" aria-label={t.onOpen.title}>
@@ -66,6 +94,23 @@ export function OnOpenSettings() {
       </div>
       <span className="hint">{d.onOpen === 'restore' ? t.onOpen.restoreHint : t.onOpen.startHint}</span>
       <SaveError error={error} />
+
+      <label className="field" style={{ marginTop: 12 }}>
+        <span className="label">{t.onOpen.maxConcurrent}</span>
+        <input
+          className="input"
+          type="number"
+          min={0}
+          max={100}
+          value={maxInput}
+          style={{ maxWidth: 140 }}
+          onChange={(e) => setMaxInput(e.target.value)}
+          onBlur={saveMax}
+          onKeyDown={(e) => { if (e.key === 'Enter') saveMax() }}
+        />
+      </label>
+      <span className="hint">{t.onOpen.maxConcurrentHint}</span>
+      <SaveError error={maxError} />
     </div>
   )
 }

@@ -65,8 +65,16 @@ export default function App() {
     Api.Defaults().then(setDefaults).catch(() => {})
     Api.Engines().then(setEngines).catch(() => {})
   }
-  useEffect(refreshEngines, [])
-  useEffect(() => onDataChanged(['settings'], refreshEngines), [])
+  const refreshSettings = () => {
+    refreshEngines()
+    Api.Language().then((l) => {
+      const next = (l === 'vi' || l === 'en') ? (l as Language) : 'en'
+      setLanguage(next)
+      setLang(next)
+    }).catch(() => {})
+  }
+  useEffect(refreshSettings, [])
+  useEffect(() => onDataChanged(['settings'], refreshSettings), [])
   const refreshProxies = () => { Api.ListProxies().then((p) => setProxyCount((p ?? []).length)).catch(() => {}) }
   useEffect(refreshProxies, [])
   useEffect(() => onDataChanged(['proxies'], refreshProxies), [])
