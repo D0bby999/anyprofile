@@ -28,6 +28,9 @@ const (
 	// setsTZ: the libc clock follows TZ, so the browser's own time code agrees
 	// with --fingerprint-timezone.
 	setsTZ = true
+	// supportsGeolocation: patch 0164 answers navigator.geolocation with
+	// --fingerprint-geolocation instead of CoreLocation.
+	supportsGeolocation = true
 
 	zipName = "anybrowser-156.0.8078.74-macos-arm64.zip"
 	// engineTag names the pre-release the archive is attached to.

@@ -12,6 +12,8 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -66,17 +68,31 @@ func Check(ctx context.Context, up Upstream) (Exit, error) {
 	}
 	e.LatencyMs = time.Since(t0).Milliseconds()
 	e.Timezone = NormalizeTimezone(e.Country, e.Timezone)
-	e.IPv6, e.IPv6Timezone = otherIPv6(ctx, clientVia(up, true), e.IP)
 
-	// Two more fresh connections: a sticky proxy keeps its IP, a rotating one does not.
+	// Measure IPv6 and two fresh connections in parallel so a check finishes in
+	// two round-trips instead of four: a sticky proxy keeps its IP, a rotating
+	// one does not.
 	fresh := clientVia(up, false)
-	for i := 0; i < 2; i++ {
-		ip, err := getText(ctx, fresh, ipifyURL)
-		if err == nil && ip != "" && ip != e.IP {
-			e.Rotating = true
-			break
-		}
+	var (
+		wg       sync.WaitGroup
+		rotating atomic.Bool
+	)
+	wg.Add(3)
+	go func() {
+		defer wg.Done()
+		e.IPv6, e.IPv6Timezone = otherIPv6(ctx, clientVia(up, true), e.IP)
+	}()
+	for range 2 {
+		go func() {
+			defer wg.Done()
+			ip, err := getText(ctx, fresh, ipifyURL)
+			if err == nil && ip != "" && ip != e.IP {
+				rotating.Store(true)
+			}
+		}()
 	}
+	wg.Wait()
+	e.Rotating = rotating.Load()
 	return e, nil
 }
 

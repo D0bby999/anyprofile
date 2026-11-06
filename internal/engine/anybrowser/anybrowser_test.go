@@ -192,8 +192,12 @@ func TestPrepareProfileAllowsAConfiguredPosition(t *testing.T) {
 	if err := a.PrepareProfile(p, engine.Runtime{UserDataDir: udd}); err != nil {
 		t.Fatal(err)
 	}
-	if g := geo(readPrefs(t, prefs)); g != float64(1) {
-		t.Fatalf("geolocation = %v, want allowed for a profile with a position", g)
+	want := float64(2)
+	if supportsGeolocation {
+		want = 1
+	}
+	if g := geo(readPrefs(t, prefs)); g != want {
+		t.Fatalf("geolocation = %v, want %v", g, want)
 	}
 }
 
@@ -206,8 +210,8 @@ func TestBuildLaunchGeolocation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !slices.Contains(spec.Args, "--fingerprint-geolocation=52.520000,13.405000") {
-		t.Fatalf("args = %v, want the profile position", spec.Args)
+	if slices.Contains(spec.Args, "--fingerprint-geolocation=52.520000,13.405000") != supportsGeolocation {
+		t.Fatalf("args = %v, supportsGeolocation = %v", spec.Args, supportsGeolocation)
 	}
 	spec, err = a.BuildLaunch(context.Background(), testProfile(), engine.Runtime{UserDataDir: "/u"})
 	if err != nil {

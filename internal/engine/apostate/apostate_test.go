@@ -39,11 +39,25 @@ func TestIndependentEngine(t *testing.T) {
 	if id.SeedHex != "" {
 		t.Fatalf("apostate identity drew seed %q, want the caller to draw it", id.SeedHex)
 	}
+	lat, lon := 25.03, 121.56
 	p := store.Profile{ID: "p", Engine: "apostate", EngineVersion: Version, PersonaID: id.PersonaID,
-		Platform: id.Platform, SeedHex: "00000000000a11ce", Timezone: "Asia/Taipei", Languages: "zh-TW,zh,en", EngineMeta: id.Meta}
+		Platform: id.Platform, SeedHex: "00000000000a11ce", Timezone: "Asia/Taipei", Languages: "zh-TW,zh,en",
+		Lat: &lat, Lon: &lon, EngineMeta: id.Meta}
+	udd := filepath.Join(dirs.Root, "p")
+	if err := a.PrepareProfile(p, engine.Runtime{UserDataDir: udd}); err != nil {
+		t.Fatal(err)
+	}
+	if b, _ := os.ReadFile(filepath.Join(udd, "Default", "Preferences")); !strings.Contains(string(b), `"geolocation":2`) {
+		t.Fatalf("apostate must keep geolocation denied without patch 0164: %s", b)
+	}
 	spec, err := a.BuildLaunch(ctx, p, engine.Runtime{UserDataDir: "/profiles/p", RelayPort: 41000, CDPPipe: true})
 	if err != nil {
 		t.Fatal(err)
+	}
+	for _, arg := range spec.Args {
+		if strings.HasPrefix(arg, "--fingerprint-geolocation") {
+			t.Fatalf("apostate passed %s without patch 0164", arg)
+		}
 	}
 	r := Builtin()[0]
 	if spec.Binary != filepath.Join(dirs.Engine("apostate", Version), filepath.FromSlash(r.Bin)) || a.AppPath() == fork.AppPath() {

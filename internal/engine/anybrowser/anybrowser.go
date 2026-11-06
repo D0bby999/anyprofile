@@ -88,7 +88,7 @@ func (a *AnyBrowser) NewIdentity(ctx context.Context, roll uint64) (engine.Ident
 // one is denied, so a site never gets this computer's real position. It also
 // keeps the browser out of Google sign-in (engine.StayOutOfChromeSignIn).
 func (a *AnyBrowser) PrepareProfile(p store.Profile, rt engine.Runtime) error {
-	_, _, _, hasFix := geolocationFix(p)
+	_, _, _, hasFix := a.geolocationFix(p)
 	return engine.EditPrefs(filepath.Join(rt.UserDataDir, "Default", "Preferences"), func(m map[string]any) bool {
 		geo := configureGeolocation(m, hasFix)
 		return engine.StayOutOfChromeSignIn(m) || geo
@@ -108,18 +108,26 @@ func configureGeolocation(m map[string]any, allow bool) bool {
 	return true
 }
 
-// geolocationFix returns the position the profile claims, when the app has one
-// (it is copied from the proxy exit). The engine reports it instead of this
-// computer's position, so the answer agrees with the exit IP and the timezone.
-func geolocationFix(p store.Profile) (lat, lon, accuracy float64, ok bool) {
-	if p.Lat == nil || p.Lon == nil {
+// HasGeolocation reports whether AnyBrowser on this host can answer
+// navigator.geolocation with p's coordinates instead of denying the permission.
+func HasGeolocation(p store.Profile) bool {
+	if !supportsGeolocation || p.Lat == nil || p.Lon == nil {
+		return false
+	}
+	lat, lon := *p.Lat, *p.Lon
+	return lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180
+}
+
+// geolocationFix returns the position the profile claims, when the engine and
+// profile have one (it is copied from the proxy exit). The engine reports it
+// instead of this computer's position, so the answer agrees with the exit IP
+// and the timezone. Upstream Apostate (composeSeeds == false) lacks patch 0164
+// and always denies geolocation.
+func (a *AnyBrowser) geolocationFix(p store.Profile) (lat, lon, accuracy float64, ok bool) {
+	if !a.composeSeeds || !HasGeolocation(p) {
 		return 0, 0, 0, false
 	}
-	lat, lon = *p.Lat, *p.Lon
-	if lat < -90 || lat > 90 || lon < -180 || lon > 180 {
-		return 0, 0, 0, false
-	}
-	return lat, lon, 25, true
+	return *p.Lat, *p.Lon, 25, true
 }
 
 var seedRe = regexp.MustCompile(`^[0-9a-f]{16}$`)
@@ -211,7 +219,7 @@ func (a *AnyBrowser) BuildLaunch(ctx context.Context, p store.Profile, rt engine
 			"--fingerprint-webrtc-udp=block",
 		)
 	}
-	if lat, lon, _, ok := geolocationFix(p); ok {
+	if lat, lon, _, ok := a.geolocationFix(p); ok {
 		args = append(args, "--fingerprint-geolocation="+
 			strconv.FormatFloat(lat, 'f', 6, 64)+","+strconv.FormatFloat(lon, 'f', 6, 64))
 	}

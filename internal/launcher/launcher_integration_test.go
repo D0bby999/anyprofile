@@ -463,11 +463,22 @@ func TestAnyBrowserLifecycle(t *testing.T) {
 		t.Fatalf("session not closed after stop: %+v", ss)
 	}
 
-	// Launch 2: same fingerprint, cookie kept.
+	// Launch 2: same fingerprint, cookie kept, and a configured position passes
+	// the geolocation consistency check as granted.
+	prof, err := r.st.GetProfile(id)
+	if err != nil {
+		t.Fatal(err)
+	}
+	lat, lon := 25.033, 121.565
+	prof.Lat, prof.Lon = &lat, &lon
+	if err := r.st.UpdateProfile(prof); err != nil {
+		t.Fatal(err)
+	}
 	if err := l.StartBehind(ctx, id); err != nil {
 		t.Fatal(err)
 	}
 	waitVerdict("match")
+	requireChecksPass(t, r.st, id)
 	p2, pid := conn()
 	raw, err := p2.cdp.Call(ctx, "", "Storage.getCookies", map[string]any{})
 	if err != nil {

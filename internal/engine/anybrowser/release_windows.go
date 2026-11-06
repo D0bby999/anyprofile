@@ -21,6 +21,8 @@ const (
 	// setsTZ is false: the Windows C runtime reads TZ as a POSIX rule such as
 	// "EST5EDT" and would misread an IANA name. --fingerprint-timezone is enough.
 	setsTZ = false
+	// supportsGeolocation is false until the Windows fork carries patch 0164.
+	supportsGeolocation = false
 
 	zipName      = "apostate-155.0.8059.31-windows-x64.zip"
 	zipURL       = "https://github.com/heretic-tech/apostate/releases/download/v0.5.1/" + zipName

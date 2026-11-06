@@ -28,6 +28,7 @@ type Expect struct {
 	Proxied                     bool
 	HWC                         int  // 0: not pinned
 	PrimaryLangOnly             bool // the hidden tab sees only the primary language
+	GeolocationAllowed          bool // the profile answers its own position instead of denying geolocation
 }
 
 // maxChromeHeight is the browser chrome above a page without an info bar;
@@ -68,7 +69,11 @@ func Checks(s Sample, e Expect) []Check {
 		add("chrome_height", "warn", s.ChromeH <= maxChromeHeight, strconv.Itoa(s.ChromeH), "≤ "+strconv.Itoa(maxChromeHeight))
 	}
 	if e.Engine == "anybrowser" || e.Engine == "apostate" {
-		add("geolocation", "warn", s.Geo == "denied" || s.Geo == "prompt", s.Geo, "denied")
+		if e.GeolocationAllowed {
+			add("geolocation", "warn", s.Geo == "granted", s.Geo, "granted")
+		} else {
+			add("geolocation", "warn", s.Geo == "denied" || s.Geo == "prompt", s.Geo, "denied")
+		}
 		if e.HWC > 0 {
 			add("hwc_pin", "warn", s.HWC == e.HWC, strconv.Itoa(s.HWC), strconv.Itoa(e.HWC))
 		}

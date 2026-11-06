@@ -72,6 +72,24 @@ func TestApostateChecksHardwareAndGeolocation(t *testing.T) {
 	}
 }
 
+func TestChecksGeolocationAllowed(t *testing.T) {
+	e := anybrowserExpect()
+	e.GeolocationAllowed = true
+	s := cleanSample()
+	s.Geo = "granted"
+	for _, c := range Checks(s, e) {
+		if !c.OK {
+			t.Fatalf("granted geolocation failed when allowed: %+v", c)
+		}
+	}
+	s.Geo = "denied"
+	for _, c := range Checks(s, e) {
+		if c.ID == "geolocation" && (c.OK || c.Got != "denied" || c.Want != "granted") {
+			t.Fatalf("denied geolocation when allowed = %+v", c)
+		}
+	}
+}
+
 func TestChecksApplyByEngineAndProxy(t *testing.T) {
 	e := anybrowserExpect()
 	e.Engine, e.Proxied, e.PrimaryLangOnly = "fury", false, false
