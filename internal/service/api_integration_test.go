@@ -93,6 +93,7 @@ func TestAPIDrivesARealBrowser(t *testing.T) {
 	log := slog.New(slog.NewTextHandler(io.Discard, nil))
 	sec := secrets.NewMemory()
 	l := launcher.New(st, sec, dirs, []engine.Engine{eng}, nil, log)
+	t.Cleanup(l.StopAll)
 	l.Capture = true
 	if os.Getenv("ANYPROFILE_TEST_HEADLESS") != "" {
 		l.TestArgs = []string{"--headless=new"} // no window on the screen
@@ -149,7 +150,7 @@ func TestAPIDrivesARealBrowser(t *testing.T) {
 	c.Write(ctx, websocket.MessageText, []byte(`{"id":1,"method":"Browser.getVersion"}`))
 	_, msg, err := c.Read(ctx)
 	c.Close(websocket.StatusNormalClosure, "")
-	if err != nil || !strings.Contains(string(msg), "Chrome/155") {
+	if err != nil || !strings.Contains(string(msg), "Chrome/"+anybrowser.Chromium) {
 		t.Fatalf("Browser.getVersion = %s, %v", msg, err)
 	}
 
