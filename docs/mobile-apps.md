@@ -12,24 +12,23 @@ Mọi cách đều cần máy **đang chạy**: trên trang Mobile, bấm **Mở
 |---|---|
 | App phổ biến trên Google Play (TikTok, Facebook, Instagram, Shopee…) | [Cách 2: Aurora Store](#cách-2-aurora-store-tải-từ-google-play) |
 | App mã nguồn mở (trình duyệt, ghi chú, NewPipe…) | [Cách 3: F-Droid](#cách-3-f-droid-app-mã-nguồn-mở) |
-| Một file `.apk` bạn đã có trên máy tính | [Cách 1: nút Cài app](#cách-1-nút-cài-app-file-apk-trên-máy-tính) |
+| File `.apk` hoặc gói chia nhỏ (`.apks`, `.xapk`, `.apkm`) trên máy tính | [Cách 1: nút Cài app](#cách-1-nút-cài-app-file-apk-trên-máy-tính) |
 
-Lần đầu dùng máy, cách nhanh nhất là dùng cách 1 để cài **Aurora Store**, rồi cài mọi app khác từ Aurora Store.
+Lần đầu dùng máy, cách nhanh nhất là bấm menu **⋯ → Cài Aurora Store** ở dòng của máy đang chạy, rồi cài mọi app khác từ Aurora Store.
 
 ## Cách 1: nút Cài app (file APK trên máy tính)
 
-1. Tải file `.apk` về máy tính (nguồn tin được ở [bên dưới](#lấy-file-apk-ở-đâu)).
+1. Tải file `.apk` hoặc gói `.apks`, `.xapk`, `.apkm` về máy tính (nguồn tin được ở [bên dưới](#lấy-file-apk-ở-đâu)).
 2. Trên trang **Mobile** của AnyProfile, ở dòng của máy đang chạy, bấm **Cài app** dưới tên máy.
-3. Chọn một hay nhiều file `.apk`, bấm **Open**.
+3. Chọn một hay nhiều file `.apk`, `.apks`, `.xapk`, `.apkm`, bấm **Open**.
 4. Đợi thông báo **"Đã cài 1 app."** ở góc màn hình. File lớn (vài trăm MB) mất khoảng một phút.
 5. App mới hiện trong danh sách app của điện thoại (vuốt lên từ màn hình chính).
 
-Kéo file `.apk` thả vào cửa sổ điện thoại cũng cài được.
+Kéo file `.apk` đơn thả vào cửa sổ điện thoại cũng cài được.
 
 Lưu ý:
 
-- **Chỉ cài được file `.apk` đơn.** Gói chia nhỏ (`.apks`, `.xapk`, `.apkm`) thì không. Nhiều app lớn (TikTok,
-  YouTube) trên APKMirror chỉ có dạng gói chia nhỏ; khi đó dùng Aurora Store.
+- **Hỗ trợ cả `.apk` đơn lẫn gói chia nhỏ không mã hoá (`.apks`, `.xapk`, `.apkm`).** Gói `.xapk` chứa dữ liệu `.obb` của game nặng chưa được hỗ trợ; khi đó dùng Aurora Store.
 - **Chọn bản `arm64-v8a`** (hoặc bản ghi "universal"/"noarch"). Bản chỉ dành cho `x86` hay `x86_64` báo lỗi
   "APK này không dành cho điện thoại ARM".
 - Cài lại một app đã có thì app được cập nhật, dữ liệu giữ nguyên.
@@ -38,11 +37,10 @@ Lưu ý:
 
 Chỉ tải APK từ nơi bạn tin được: APK sửa đổi có thể chứa mã độc và lấy tài khoản trong máy.
 
-- **Aurora Store:** trang của Aurora trên F-Droid, <https://f-droid.org/packages/com.aurora.store/>, nút
-  "Download APK".
+- **Aurora Store:** bấm **⋯ → Cài Aurora Store** ngay trên dòng máy đang chạy, hoặc tải từ F-Droid tại <https://f-droid.org/packages/com.aurora.store/>.
 - **F-Droid:** <https://f-droid.org/F-Droid.apk>.
 - **APKMirror** (<https://www.apkmirror.com/>): bản gốc do chính hãng ký, APKMirror kiểm chữ ký trước khi đăng.
-  Chọn bản có nhãn **APK** (không phải BUNDLE) và kiến trúc `arm64-v8a`.
+  Chọn kiến trúc `arm64-v8a` (cả bản **APK** lẫn **BUNDLE** đều cài được qua nút **Cài app**).
 
 ## Cách 2: Aurora Store (tải từ Google Play)
 
@@ -51,13 +49,12 @@ của Google Play, kể cả app dạng chia nhỏ.
 
 ### Cài và thiết lập Aurora Store (một lần mỗi máy)
 
-1. Tải Aurora Store về máy tính (xem [Lấy file APK ở đâu](#lấy-file-apk-ở-đâu)) và cài bằng **nút Cài app**.
-2. Trên điện thoại, mở **Aurora Store**.
-3. Màn hình **Welcome**: bấm **Next**.
-4. Màn hình quyền: bấm **Finish**. Các quyền ở đây xin sau cũng được.
-5. Màn hình đăng nhập: chọn **Anonymous**. Aurora dùng một tài khoản ẩn danh dùng chung; bạn không phải đăng
+1. Ở dòng của máy đang chạy trên trang **Mobile**, bấm nút menu **⋯ → Cài Aurora Store** (AnyProfile tải bản chính thức từ F-Droid, kiểm SHA-256, cài và mở sẵn trên điện thoại).
+2. Trên điện thoại, ở màn hình **Welcome** của Aurora Store: bấm **Next**.
+3. Màn hình quyền: bấm **Finish**. Các quyền ở đây xin sau cũng được.
+4. Màn hình đăng nhập: chọn **Anonymous**. Aurora dùng một tài khoản ẩn danh dùng chung; bạn không phải đăng
    nhập Google.
-6. Sau vài giây, Aurora hiện kho app (For you, Top charts…).
+5. Sau vài giây, Aurora hiện kho app (For you, Top charts…).
 
 ### Cài một app
 
@@ -121,8 +118,10 @@ Cần app YouTube thật thì dùng profile Web của AnyProfile, hoặc LDPlaye
 
 ## Ngôn ngữ của app mới cài
 
-AnyProfile đặt ngôn ngữ cho từng app mỗi lần **mở máy**, theo quốc gia của proxy. App cài khi máy đang chạy sẽ hiện
-tiếng Anh tới lần mở máy sau: **Đóng** rồi **Mở** máy là app nhận ngôn ngữ đúng.
+AnyProfile đặt ngôn ngữ cho từng app mỗi lần **mở máy**, theo quốc gia của proxy, và đặt luôn cho app vừa cài bằng
+nút **Cài app**, **Cài Aurora Store** hoặc agent. App cài từ trong máy (Aurora Store, F-Droid) hay máy được nhận lại
+sau khi AnyProfile khởi động lại sẽ hiện tiếng Anh tới lần mở máy sau: **Đóng** rồi **Mở** máy là app nhận ngôn ngữ
+đúng.
 
 ## Gỡ app
 
@@ -134,7 +133,7 @@ Trên điện thoại: giữ biểu tượng app → **App info** → **Uninstal
 | Thấy | Làm |
 |---|---|
 | Nút **Cài app** không có | Máy chưa chạy. Bấm **Mở** trước |
-| "Chỉ cài được file .apk" | File là gói chia nhỏ (`.apks`, `.xapk`, `.apkm`). Tải bản APK đơn, hoặc cài qua Aurora Store |
+| "Chỉ cài được file .apk và gói chia nhỏ…" | File không phải `.apk`, `.apks`, `.xapk`, `.apkm`, hoặc gói bị mã hoá / kèm `.obb`. Dùng Aurora Store |
 | "APK này không dành cho điện thoại ARM" | Tải lại bản `arm64-v8a` |
 | Bấm Install trong Aurora hay F-Droid mà không có gì xảy ra | Chưa bật **Allow from this source**: xem bước 3 của [Cài một app](#cài-một-app) |
 | App mở rồi tự đóng ngay | App cần dịch vụ Google Play. Dùng bản web của app trong Trình duyệt |

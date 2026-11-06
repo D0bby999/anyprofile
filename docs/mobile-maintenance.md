@@ -30,15 +30,16 @@ với mức macOS tối thiểu cố định, và phát qua máy chủ license c
 | gvisor-tap-vsock | Mạng ảo (vnet) của máy macOS | [containers/gvisor-tap-vsock](https://github.com/containers/gvisor-tap-vsock) | Apache-2.0 | v0.9.0 | `go.mod` |
 | gVisor (netstack) | Stack TCP/IP của vnet | [google/gvisor](https://github.com/google/gvisor) | Apache-2.0 | `v0.0.0-20260413194555-9680d69bf798` | `go.mod` |
 | DNS-over-HTTPS | DNS của máy macOS | Cloudflare `1.1.1.1` | — | `https://1.1.1.1/dns-query`, dự phòng TCP 53 | `internal/mobile/vm/vnet/dns.go:27` |
-| ADBKeyBoard | Agent gõ chữ (Unicode) | [senzhk/ADBKeyBoard](https://github.com/senzhk/ADBKeyBoard/releases) | GPL-2.0 | v2.5-dev (`keyboardservice-debug.apk`) | `internal/mobile/control/control.go:38-41` (URL, SHA256) |
+| ADBKeyBoard | Agent gõ chữ (Unicode) | [senzhk/ADBKeyBoard](https://github.com/senzhk/ADBKeyBoard/releases) | GPL-2.0 | v2.5-dev (`keyboardservice-debug.apk`) | `internal/mobile/control/control.go:41-44` (URL, SHA256) |
+| Aurora Store | Cài nhanh kho app Google Play khi người dùng bấm "Cài Aurora Store" | [F-Droid](https://f-droid.org/packages/com.aurora.store/), mã nguồn [GitLab AuroraOSS](https://gitlab.com/AuroraOSS/AuroraStore) | GPL-3.0 | 4.8.4 (`com.aurora.store_76.apk`) | `internal/mobile/control/control.go:46-49` (URL, SHA256) |
 | SocksTun | Đưa mạng LDPlayer qua proxy | [heiher/sockstun](https://github.com/heiher/sockstun/releases) | MIT | 8.0 | `internal/mobile/ldplayer/tunnel.go:23-25` (phiên bản, URL, SHA256) |
 | LDPlayer 9 | Máy Android trên Windows | Người dùng tự cài từ ldplayer.net | Phần mềm đóng | Không ghim | Tìm qua registry `internal/mobile/ldplayer/find_windows.go:15`, dự phòng `C:\LDPlayer\LDPlayer9` (dòng 33) |
 
-App bên thứ ba mà tài liệu cho người dùng gợi ý (AnyProfile không đóng gói, không tải thay người dùng):
+App bên thứ ba mà tài liệu cho người dùng gợi ý:
 
 | App | Nguồn chính thức | Giấy phép | Nhắc ở |
 |---|---|---|---|
-| Aurora Store | [F-Droid](https://f-droid.org/packages/com.aurora.store/), mã nguồn [GitLab AuroraOSS](https://gitlab.com/AuroraOSS/AuroraStore) | GPL-3.0 | `docs/mobile-apps.md` |
+| Aurora Store | [F-Droid](https://f-droid.org/packages/com.aurora.store/), mã nguồn [GitLab AuroraOSS](https://gitlab.com/AuroraOSS/AuroraStore) | GPL-3.0 | `docs/mobile-apps.md` (cũng có nút cài 1 chạm trong menu dòng máy) |
 | F-Droid | <https://f-droid.org/F-Droid.apk> | GPL-3.0 | `docs/mobile-apps.md` |
 | APKMirror | <https://www.apkmirror.com/> | — (trang tải) | `docs/mobile-apps.md` |
 

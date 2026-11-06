@@ -353,7 +353,7 @@ Khi có máy mobile (AnyProfile Pro, `docs/mobile.md`), agent có thêm các too
 | `device_screenshot`, `device_wait_for` | ảnh màn hình; đợi chữ hiện ra hoặc mất đi |
 | `device_list_apps`, `device_launch_app`, `device_open_url` | các app đã cài; mở app theo tên gói; mở địa chỉ http(s) trong trình duyệt của máy |
 | `device_push_file` | chép một file từ thư mục uploads vào ảnh của máy (`DCIM/AnyProfile`), nơi thư viện và ô chọn file của app thấy nó đầu tiên |
-| `device_install_apk` | cài app từ file `.apk` trong thư mục uploads |
+| `device_install_apk` | cài app từ file `.apk` hoặc gói `.apks`, `.xapk`, `.apkm` trong thư mục uploads |
 
 - Màn hình chuyển động liên tục (feed video) không đọc được thành dàn ý: agent dùng `device_screenshot` rồi chạm
   theo toạ độ.

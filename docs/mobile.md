@@ -67,8 +67,8 @@ build. AnyProfile không lưu trữ image.
 
 Máy không có Google Play. Ba cách cài, chi tiết từng bước trong [Cài app trên máy mobile](mobile-apps.md):
 
-- nút **Cài app** trên trang Mobile, chọn file `.apk` trên máy tính (hoặc kéo file vào cửa sổ điện thoại);
-- **Aurora Store** (tải app từ Google Play, không cần tài khoản Google): cách dễ nhất cho TikTok, Facebook, Shopee…;
+- nút **Cài app** trên trang Mobile, chọn file `.apk` hoặc gói `.apks`, `.xapk`, `.apkm` trên máy tính (hoặc kéo file `.apk` vào cửa sổ điện thoại);
+- **Aurora Store** (bấm **⋯ → Cài Aurora Store** ở dòng của máy đang chạy để tải app từ Google Play mà không cần tài khoản Google): cách dễ nhất cho TikTok, Facebook, Shopee…;
 - **F-Droid** cho app mã nguồn mở.
 
 App bắt buộc dịch vụ Google Play không chạy được. Đã kiểm: **app YouTube chính thức mở rồi tự đóng**; dùng
