@@ -32,6 +32,15 @@ const (
 	// --fingerprint-geolocation instead of CoreLocation.
 	supportsGeolocation = true
 
+	// The release this build replaces. It stays in the catalog so a profile
+	// created on it moves here on its next open (same catalogue) instead of
+	// being stranded on a build the pinned catalog no longer names.
+	previousVersion      = "0.5.1.156"
+	previousDate         = "2026-11-04"
+	previousZipSHA256    = "a55179225b861feac2f47f1bf431025e118a7fb744e36c3556be28af76c7cc76"
+	previousBinarySHA256 = "c213832922c57fe424abaa93973a3e474533c4dfa483ed183dbc275bb6f91be9"
+	previousFrameworkSHA = "dac42c8642d1cf49cc32e35887efd0427f6992ddf59fa3c1116eca03f2c17796"
+
 	zipName = "anybrowser-156.0.8078.74-macos-arm64.zip"
 	// engineTag names the pre-release the archive is attached to.
 	engineTag     = "engine-anybrowser-0.5.1.157"

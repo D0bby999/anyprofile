@@ -26,9 +26,11 @@ func TestPinnedEngineArchive(t *testing.T) {
 		t.Skip("set ENGINE_ZIP to an engine archive")
 	}
 	rels := anybrowser.Builtin()
-	if len(rels) != 1 {
-		t.Fatalf("builtin releases: %d", len(rels))
+	if len(rels) == 0 {
+		t.Fatal("no builtin release")
 	}
+	// The archive is the newest release; older entries in the catalog are only
+	// there so a profile created on one moves to this build.
 	rel := rels[0]
 
 	// A "._name" entry is metadata that unzip writes out as a real file: the

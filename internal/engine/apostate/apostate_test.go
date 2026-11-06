@@ -25,8 +25,13 @@ func TestIndependentEngine(t *testing.T) {
 	fork.SetCatalog(cat)
 	for _, e := range []engine.Engine{a, fork} {
 		rels := e.Releases()
-		if len(rels) != 1 || rels[0].Engine != e.ID() {
-			t.Fatalf("%s releases = %+v", e.ID(), rels)
+		if len(rels) == 0 {
+			t.Fatalf("%s has no releases", e.ID())
+		}
+		for _, r := range rels {
+			if r.Engine != e.ID() {
+				t.Fatalf("%s sees release %+v of another engine", e.ID(), r)
+			}
 		}
 	}
 	ctx := context.Background()

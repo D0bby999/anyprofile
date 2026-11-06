@@ -25,10 +25,23 @@ const (
 	HostPersona  = personaID
 )
 
-// Builtin is the pinned release for this OS, as catalog data.
+// Builtin is the pinned release for this OS, as catalog data, newest first.
+//
+// The release this build replaces rides along. pickVersion only moves a profile
+// onto a newer build it can find in this list, so dropping the old entry would
+// leave every profile created on it on the old engine — which is exactly where a
+// fix like the display-scale one would never arrive.
 func Builtin() []engine.Release {
-	return []engine.Release{{Engine: "anybrowser", Version: Version, Chromium: Chromium, Platform: hostPlat,
+	current := engine.Release{Engine: "anybrowser", Version: Version, Chromium: Chromium, Platform: hostPlat,
 		Date: releaseDate, URL: zipURL, SHA256: zipSHA256,
 		Files: map[string]string{binRel: binarySHA256, frameworkRel: frameworkSHA},
-		Bin:   binRel, App: appRel, TeamID: teamID, Catalogue: Catalogue}}
+		Bin:   binRel, App: appRel, TeamID: teamID, Catalogue: Catalogue}
+	previous := current
+	previous.Version = previousVersion
+	previous.Date = previousDate
+	previous.URL = "https://github.com/D0bby999/anyprofile/releases/download/engine-anybrowser-" +
+		previousVersion + "/" + zipName
+	previous.SHA256 = previousZipSHA256
+	previous.Files = map[string]string{binRel: previousBinarySHA256, frameworkRel: previousFrameworkSHA}
+	return []engine.Release{current, previous}
 }

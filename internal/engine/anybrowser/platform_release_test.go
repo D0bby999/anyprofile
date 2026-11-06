@@ -100,3 +100,32 @@ func TestWindowsLegacyTransportContract(t *testing.T) {
 		t.Fatal("Windows CI asset/layout does not match the real upstream pin")
 	}
 }
+
+// A profile created on the release this build replaces has to find that release
+// in the catalog to move onto this one; pickVersion only walks the list it is
+// given. Dropping the old entry would strand those profiles on the old engine.
+func TestBuiltinCarriesThePreviousRelease(t *testing.T) {
+	rels := Builtin()
+	if len(rels) < 2 {
+		t.Fatalf("builtin releases = %d, want the current one and the previous", len(rels))
+	}
+	cur, prev := rels[0], rels[1]
+	if cur.Version != Version {
+		t.Fatalf("newest release is %s, want %s", cur.Version, Version)
+	}
+	if prev.Version != previousVersion || cur.Version == prev.Version {
+		t.Fatalf("previous release = %q, current = %q", prev.Version, cur.Version)
+	}
+	if prev.Catalogue != cur.Catalogue {
+		t.Fatalf("previous catalogue %s != %s: a profile could not move", prev.Catalogue[:12], cur.Catalogue[:12])
+	}
+	if prev.App != cur.App || prev.Bin != cur.Bin || prev.TeamID != cur.TeamID {
+		t.Fatalf("previous release layout differs: %+v", prev)
+	}
+	if prev.URL == cur.URL || prev.SHA256 == cur.SHA256 || prev.Files[binRel] == cur.Files[binRel] {
+		t.Fatal("previous release shares the current archive or hashes")
+	}
+	if len(prev.Files) != 2 {
+		t.Fatalf("previous release files = %v", prev.Files)
+	}
+}

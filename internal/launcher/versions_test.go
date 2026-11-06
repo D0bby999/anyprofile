@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/D0bby999/anyprofile/internal/engine"
+	"github.com/D0bby999/anyprofile/internal/engine/anybrowser"
 	"github.com/D0bby999/anyprofile/internal/paths"
 	"github.com/D0bby999/anyprofile/internal/secrets"
 	"github.com/D0bby999/anyprofile/internal/store"
@@ -18,10 +19,14 @@ import (
 type versionsEngine struct {
 	engine.Engine
 	installed map[string]bool
+	rels      []engine.Release
 }
 
 func (versionsEngine) ID() string { return "stub" }
-func (versionsEngine) Releases() []engine.Release {
+func (e versionsEngine) Releases() []engine.Release {
+	if e.rels != nil {
+		return e.rels
+	}
 	return []engine.Release{
 		{Engine: "stub", Version: "3.0", Chromium: "156.0.1.1", Catalogue: "a"},
 		{Engine: "stub", Version: "2.0", Chromium: "155.0.1.1", Catalogue: "b"},
@@ -29,6 +34,7 @@ func (versionsEngine) Releases() []engine.Release {
 		{Engine: "stub", Version: "1.0", Chromium: "155.0.1.1", Catalogue: "a"},
 	}
 }
+
 func (e versionsEngine) Status(_ context.Context, v string) engine.Status {
 	return engine.Status{Version: engine.Version{Engine: "stub", Version: v}, Installed: e.installed[v]}
 }
@@ -87,5 +93,48 @@ func TestPickVersionMovesWithinACatalogue(t *testing.T) {
 	p, _ := st.GetProfile("pb")
 	if err := l.pickVersion(ctx, eng, &p); err == nil {
 		t.Fatal("opened on a version that is not installed")
+	}
+}
+
+// The shipped catalog has to move a profile off the release this build replaces,
+// otherwise the fix in the new build never reaches a profile created earlier.
+func TestPinnedCatalogMovesThePreviousRelease(t *testing.T) {
+	rels := anybrowser.Builtin()
+	if len(rels) < 2 {
+		t.Fatalf("builtin releases = %d, want current and previous", len(rels))
+	}
+	installed := map[string]bool{}
+	for _, r := range rels {
+		installed[r.Version] = true
+	}
+	eng := versionsEngine{installed: installed, rels: rels}
+	dirs := paths.Dirs{Root: t.TempDir()}
+	if err := dirs.Ensure(); err != nil {
+		t.Fatal(err)
+	}
+	st, err := store.Open(dirs.DB(), dirs.Backups())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer st.Close()
+	if err := st.CreateProfile(&store.Profile{ID: "old", Name: "old", Engine: rels[1].Engine,
+		EngineVersion: rels[1].Version, PersonaID: "x", SeedHex: "00112233aabbccdd", Platform: "macos",
+		Timezone: "UTC", Languages: "en-US", UILocale: "en-US"}); err != nil {
+		t.Fatal(err)
+	}
+	l := New(st, secrets.NewMemory(), dirs, []engine.Engine{eng}, nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	p, err := st.GetProfile("old")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := l.pickVersion(context.Background(), eng, &p); err != nil {
+		t.Fatal(err)
+	}
+	if p.EngineVersion != rels[0].Version {
+		t.Fatalf("profile stayed on %s, want %s", p.EngineVersion, rels[0].Version)
+	}
+	saved, _ := st.GetProfile("old")
+	if saved.EngineVersion != rels[0].Version {
+		t.Fatalf("saved version = %s, want %s", saved.EngineVersion, rels[0].Version)
 	}
 }
