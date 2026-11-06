@@ -23,6 +23,7 @@ Nội dung chép có chứa token, và tự xoá khỏi bộ nhớ tạm sau 90 
 | Claude Code | lệnh | terminal | `claude mcp list`, hoặc gõ `/mcp` trong Claude Code |
 | Codex CLI | cấu hình | `~/.codex/config.toml` | `codex mcp list`, hoặc gõ `/mcp` trong Codex |
 | Gemini CLI | lệnh | terminal | `gemini mcp list` → `Connected` |
+| Antigravity | cấu hình | `~/.gemini/antigravity/mcp_config.json` (Additional Options `⋯` → MCP Servers → View raw config) | danh sách MCP Servers trong Antigravity |
 | OpenCode | cấu hình | `~/.config/opencode/opencode.json` | `opencode mcp list` → `connected` |
 | Cursor | cấu hình | `~/.cursor/mcp.json` | Cursor Settings → MCP |
 | VS Code (Copilot) | cấu hình | `.vscode/mcp.json` của dự án | khung Chat, chế độ Agent, nút công cụ |
@@ -65,6 +66,21 @@ gemini mcp add -s user --transport http anyprofile http://127.0.0.1:51525/mcp --
 
 Gemini chỉ bật MCP trong thư mục bạn đã tin cậy. Nếu `gemini mcp list` báo `Disabled` vì thư mục chưa được tin cậy,
 mở `gemini` trong thư mục đó và chọn tin cậy.
+
+### Antigravity
+
+Trong Antigravity: bấm **Additional Options (`⋯`)** ở khung Agent → **MCP Servers** → **Manage MCP Servers** → **View raw config**, hoặc dán vào `~/.gemini/antigravity/mcp_config.json`. Antigravity dùng `serverUrl`:
+
+```json
+{
+  "mcpServers": {
+    "anyprofile": {
+      "serverUrl": "http://127.0.0.1:51525/mcp",
+      "headers": { "Authorization": "Bearer <token>" }
+    }
+  }
+}
+```
 
 ### OpenCode
 

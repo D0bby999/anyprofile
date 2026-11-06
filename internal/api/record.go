@@ -10,7 +10,7 @@ import (
 // mcpAction maps a tool name to the flow action it becomes. Observation tools
 // are absent on purpose: the MCP wrapper only records non-read-only calls.
 var mcpAction = map[string]string{
-	"navigate": "navigate", "click": "click", "type": "type", "press_key": "press",
+	"navigate": "navigate", "click": "click", "click_text": "click_text", "type": "type", "press_key": "press",
 	"scroll": "scroll", "select_option": "select", "upload_file": "upload",
 	"hover": "hover", "double_click": "double_click", "right_click": "right_click", "drag": "drag",
 	"device_tap": "tap", "device_tap_text": "tap_text", "device_type": "type",

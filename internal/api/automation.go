@@ -244,6 +244,16 @@ func (s *Server) browserAct(ctx context.Context, in actRequest) (any, error) {
 			return nil, err
 		}
 		return b.Click(ctx, in.Tab, ref)
+	case "click_text":
+		t := automation.Target{Text: in.Text}
+		if in.Target != nil {
+			t = *in.Target
+		}
+		m, err := b.FindOne(ctx, in.Tab, t)
+		if err != nil {
+			return nil, err
+		}
+		return b.Click(ctx, in.Tab, m.Ref)
 	case "click_first":
 		// A page can list several controls whose names contain the wanted text
 		// ("Post", "Post audience", "Boost post"); pick the one whose whole
@@ -290,6 +300,12 @@ func (s *Server) browserAct(ctx context.Context, in actRequest) (any, error) {
 		return b.PressKey(ctx, in.Tab, in.Key)
 	case "scroll":
 		return b.Scroll(ctx, in.Tab, in.Ref, in.Pages)
+	case "select", "select_option":
+		ref, err := s.targetRef(ctx, b, in.Tab, in.Ref, in.Target)
+		if err != nil {
+			return nil, err
+		}
+		return b.SelectOption(ctx, in.Tab, ref, in.Option)
 	case "wait":
 		secs := in.Seconds
 		if secs <= 0 || secs > 60 {

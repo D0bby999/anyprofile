@@ -216,7 +216,6 @@ func register[In whoer](s *Server, srv *mcp.Server, name, desc string, readOnly,
 		ctx, cancel := context.WithTimeout(ctx, toolTimeout)
 		defer cancel()
 		start := time.Now()
-		res, err := fn(ctx, in)
 		// The log names the profile by id, as the rest of the log does: what
 		// the agent typed may be a name, and diagnostics carry the log.
 		id := ""
@@ -224,16 +223,15 @@ func register[In whoer](s *Server, srv *mcp.Server, name, desc string, readOnly,
 			id = "?"
 			if p, perr := s.profile(w); perr == nil {
 				id = p.ID
-			}
-		}
-		if sid := mcpSession(ctx); sid != "" && in.who() != "" {
-			if p, perr := s.profile(in.who()); perr == nil {
-				if o := (&s.leases).ownerOf("profile:" + p.ID); o != "" && o != "mcp:"+sid {
-					err = apperr.Newf("profile_busy", "%q is held by another agent session", p.Name).Safe()
-					return nil, nil, retryHint(err)
+				if sid := mcpSession(ctx); sid != "" {
+					if o := (&s.leases).ownerOf("profile:" + p.ID); o != "" && o != "mcp:"+sid {
+						err := apperr.Newf("profile_busy", "%q is held by another agent session", p.Name).Safe()
+						return nil, nil, retryHint(err)
+					}
 				}
 			}
 		}
+		res, err := fn(ctx, in)
 		ms := time.Since(start).Milliseconds()
 		shot := ""
 		if err != nil {
@@ -264,7 +262,7 @@ func retryHint(err error) error {
 
 // MCPClients are the agents Settings writes a setup for; "other" is the
 // address and header in the JSON most clients read.
-var MCPClients = []string{"claude", "codex", "gemini", "opencode", "cursor", "vscode", "windsurf", "other"}
+var MCPClients = []string{"claude", "codex", "gemini", "antigravity", "opencode", "cursor", "vscode", "windsurf", "other"}
 
 // MCPSetup is what connects client to /mcp: a command for a terminal, or the
 // lines for its config file. The token is hex, so the quoted commands work in
@@ -292,7 +290,7 @@ func MCPSetup(client string, port int, token string) (string, error) {
 		return server("mcpServers", map[string]any{"url": url, "headers": headers}), nil
 	case "vscode":
 		return server("servers", map[string]any{"type": "http", "url": url, "headers": headers}), nil
-	case "windsurf":
+	case "antigravity", "windsurf":
 		return server("mcpServers", map[string]any{"serverUrl": url, "headers": headers}), nil
 	case "other":
 		return server("mcpServers", map[string]any{"type": "http", "url": url, "headers": headers}), nil

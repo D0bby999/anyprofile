@@ -242,7 +242,7 @@ func mcpSessionID(t *testing.T, cs interface{ ID() string }) string {
 }
 
 func TestMCPLeaseAcrossSessions(t *testing.T) {
-	_, _, srv := mcpSetup(t)
+	f, _, srv := mcpSetup(t)
 	one, err := connect(t, srv, rewrite{token: token})
 	if err != nil {
 		t.Fatal(err)
@@ -264,6 +264,13 @@ func TestMCPLeaseAcrossSessions(t *testing.T) {
 	}
 	if out, isErr := call(t, two, "snapshot", map[string]any{"profile": "Kênh"}); !isErr || !strings.Contains(out, "profile_busy") {
 		t.Fatalf("foreign snapshot = %q (err %v), want profile_busy", out, isErr)
+	}
+	// A foreign session must be refused BEFORE executing a mutating tool like close_profile.
+	if out, isErr := call(t, two, "close_profile", map[string]any{"profile": "Kênh"}); !isErr || !strings.Contains(out, "profile_busy") {
+		t.Fatalf("foreign close_profile = %q (err %v), want profile_busy", out, isErr)
+	}
+	if len(f.stopped) != 0 {
+		t.Fatalf("foreign close_profile stopped the profile before checking the lease: %v", f.stopped)
 	}
 	if out, isErr := call(t, one, "close_profile", map[string]any{"profile": "Kênh"}); isErr {
 		t.Fatalf("close: %v %s", isErr, out)
@@ -373,7 +380,7 @@ func TestMCPSetup(t *testing.T) {
 		json.Unmarshal([]byte(got), &v)
 		s := v[top]["anyprofile"]
 		addr := s["url"]
-		if c == "windsurf" {
+		if c == "antigravity" || c == "windsurf" {
 			addr = s["serverUrl"]
 		}
 		h, _ := s["headers"].(map[string]any)

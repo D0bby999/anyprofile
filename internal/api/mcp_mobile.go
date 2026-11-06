@@ -209,22 +209,25 @@ func addDevice[In interface{ dev() string }](s *Server, srv *mcp.Server, name, d
 		defer cancel()
 		start := time.Now()
 		d, err := s.device(in.dev())
-		var res *mcp.CallToolResult
 		if err == nil {
-			res, err = fn(ctx, d, in)
-		}
-		if sid := mcpSession(ctx); sid != "" {
-			if d, derr := s.device(in.dev()); derr == nil {
+			if sid := mcpSession(ctx); sid != "" {
 				if o := (&s.leases).ownerOf("device:" + d.ID); o != "" && o != "mcp:"+sid {
 					err = apperr.Newf("device_busy", "%q is held by another agent session", d.Name)
 					return nil, nil, retryHint(err)
 				}
 			}
 		}
+		var res *mcp.CallToolResult
+		if err == nil {
+			res, err = fn(ctx, d, in)
+		}
 		ms := time.Since(start).Milliseconds()
 		shot := ""
 		if err != nil {
 			shot = s.traceShot(name, d.ID, false)
+		}
+		if err == nil && !readOnly {
+			s.recordMCP(ctx, name, in)
 		}
 		s.log.Info("mcp", "tool", name, "device", d.ID, "ms", ms, "ok", err == nil)
 		err = retryHint(err)
@@ -245,7 +248,7 @@ func (s *Server) device(ref string) (MobileDevice, error) {
 	serial, serr := strconv.Atoi(strings.TrimPrefix(ref, "#"))
 	var found []MobileDevice
 	for _, d := range ds {
-		if d.ID == ref || (serr == nil && strings.HasPrefix(ref, "#") && d.Serial == serial) {
+		if d.ID == ref || (serr == nil && d.Serial == serial) {
 			return d, nil
 		}
 		if strings.EqualFold(d.Name, ref) {

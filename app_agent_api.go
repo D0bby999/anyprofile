@@ -258,20 +258,14 @@ func (b apiBackend) resolveProfile(ref string, trashed bool) (store.Profile, err
 		return store.Profile{}, err
 	}
 	ref = strings.TrimSpace(ref)
+	serial, serr := strconv.Atoi(strings.TrimPrefix(ref, "#"))
 	var hits []store.Profile
-	if strings.HasPrefix(ref, "#") {
-		if n, err := strconv.Atoi(ref[1:]); err == nil {
-			for _, r := range rows {
-				if r.Serial == n {
-					hits = append(hits, r.Profile)
-				}
-			}
+	for _, r := range rows {
+		if r.ID == ref || (serr == nil && r.Serial == serial) {
+			return r.Profile, nil
 		}
-	} else {
-		for _, r := range rows {
-			if r.ID == ref || r.Name == ref {
-				hits = append(hits, r.Profile)
-			}
+		if strings.EqualFold(r.Name, ref) {
+			hits = append(hits, r.Profile)
 		}
 	}
 	switch len(hits) {

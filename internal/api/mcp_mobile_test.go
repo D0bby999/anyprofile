@@ -199,6 +199,28 @@ func TestMCPMobileTools(t *testing.T) {
 	if out, isErr = call(t, cs, "open_device", map[string]any{"device": "Spare"}); isErr || !slices.Equal(fm.started, []string{"d2"}) {
 		t.Fatalf("open_device = %q, started %v", out, fm.started)
 	}
+	// Lease check and recording on mobile devices:
+	two, err := connect(t, srv, rewrite{token: token})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer two.Close()
+	fm.ctl.typed = "before"
+	if out, isErr = call(t, two, "device_type", map[string]any{"device": "Spare", "ref": "m1", "text": "intruder"}); !isErr || !strings.Contains(out, "device_busy") {
+		t.Fatalf("foreign device_type = %q (err %v), want device_busy", out, isErr)
+	}
+	if fm.ctl.typed != "before" {
+		t.Fatalf("foreign device_type executed before lease check: typed %q", fm.ctl.typed)
+	}
+	if out, isErr = call(t, cs, "record_start", map[string]any{"device": "Spare"}); isErr {
+		t.Fatalf("record_start device = %q (err %v)", out, isErr)
+	}
+	if out, isErr = call(t, cs, "device_tap", map[string]any{"device": "Spare", "ref": "m1"}); isErr {
+		t.Fatalf("device_tap recorded = %q (err %v)", out, isErr)
+	}
+	if out, isErr = call(t, cs, "record_stop", map[string]any{}); isErr || !strings.Contains(out, `"device": "Spare"`) || !strings.Contains(out, `"tap"`) {
+		t.Fatalf("record_stop device = %q (err %v)", out, isErr)
+	}
 	if out, isErr = call(t, cs, "open_device", map[string]any{"device": "#3"}); !isErr || !strings.Contains(out, "pro_required") {
 		t.Fatalf("open without Pro = %q", out)
 	}

@@ -204,8 +204,9 @@ func (l *leaseStore) setRecord(id, surface string) {
 // recordable actions are intent, not observation: find/read/screenshot are
 // skipped, and a step marked secret keeps only a placeholder.
 var recordable = map[string]bool{
-	"navigate": true, "goto": true, "click": true, "type": true, "press": true, "press_key": true,
-	"scroll": true, "select": true, "hover": true, "double_click": true, "right_click": true, "drag": true,
+	"navigate": true, "goto": true, "click": true, "click_text": true, "type": true, "press": true, "press_key": true,
+	"scroll": true, "select": true, "select_option": true, "upload": true, "upload_file": true,
+	"hover": true, "double_click": true, "right_click": true, "drag": true,
 	"tap": true, "tap_text": true, "swipe": true, "long_press": true, "launch": true, "open_url": true, "pull": true,
 }
 
