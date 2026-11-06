@@ -305,6 +305,7 @@ export const vi: Messages = {
       proxyseller: 'Nhà cung cấp lâu năm: IP ISP và datacenter riêng, IPv4 và IPv6, kèm mobile.',
       marsproxies: 'Chọn IP theo quốc gia, thành phố, mã bưu chính hoặc nhà mạng, hơn 190 quốc gia.',
       evomi: 'Proxy residential, ISP tĩnh và mobile, giá theo GB thấp.',
+      dataimpulse: 'Proxy residential xoay IP, mobile và datacenter.',
       proxyempire: 'Proxy residential, mobile và residential tĩnh, chọn theo thành phố và nhà mạng.',
       infatica: 'Kho residential lớn, kèm proxy ISP tĩnh và datacenter.',
       massive: 'IP residential từ người dùng tự nguyện tham gia, kèm ISP tĩnh.',

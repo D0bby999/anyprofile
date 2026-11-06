@@ -82,6 +82,7 @@ describe('ProxiesPage', () => {
     ['LumiProxy', 'https://www.lumiproxy.com/?invite_code=97EJLV'],
     ['Decodo', 'https://dashboard.decodo.com/register?referral_code=2973fec4bd68c176365c5cf1ef80bade6eaccdde'],
     ['Oxylabs', 'https://oxylabs.go2cloud.org/aff_c?offer_id=7&aff_id=2794'],
+    ['DataImpulse', 'https://dataimpulse.com/?aff=e68ede41-33fe-4532-ab36-2240e6a1142d'],
   ])('lists every provider under Buy proxies and opens %s in the browser', async (provider, url) => {
     render(<ConfirmProvider><ToastProvider><ProxiesPage onChanged={vi.fn()} /></ToastProvider></ConfirmProvider>)
     await screen.findByText('1.2.3.4')

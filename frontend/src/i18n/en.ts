@@ -304,6 +304,7 @@ export const en = {
       proxyseller: 'A long-running provider of dedicated ISP and datacenter IPs, IPv4 and IPv6, plus mobile.',
       marsproxies: 'Pick IPs by country, city, ZIP code or carrier, in 190+ countries.',
       evomi: 'Residential, static ISP and mobile proxies at low per-GB prices.',
+      dataimpulse: 'Rotating residential, mobile and datacenter proxies.',
       proxyempire: 'Residential, mobile and static residential proxies, targeted by city and carrier.',
       infatica: 'A large residential pool, with static ISP and datacenter proxies.',
       massive: 'Residential IPs from people who opted in, plus static ISP.',

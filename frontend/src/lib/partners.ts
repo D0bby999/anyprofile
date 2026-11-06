@@ -26,22 +26,23 @@ export type Partner = {
 export const proxyTypes: ProxyType[] = ['residential', 'isp', 'mobile', 'datacenter']
 export const toolGroups: ToolGroup[] = ['publish', 'video', 'record', 'audio', 'image', 'craft']
 
-// Recommendation order for long-lived accounts, reviewed 2026-11-05: generalists with
-// published evaluations first, then less-tested options and mobile specialists, then trials.
-// This is a use-case preference, not a measured quality score or an affiliate payout ranking.
+// Quality-first recommendation order, reviewed 2026-11-05: public infrastructure tests,
+// reliability, coverage and support before price; less-evidenced options and specialists follow.
+// This is an editorial recommendation, not our own benchmark or an affiliate payout ranking.
 // SOAX, Massive and Froxy link to their home pages until their referral links arrive.
 const all = ['residential', 'isp', 'mobile', 'datacenter'] satisfies ProxyType[]
 export const partners: Partner[] = [
+  { id: 'oxylabs', name: 'Oxylabs', kind: 'proxy', url: 'https://oxylabs.go2cloud.org/aff_c?offer_id=7&aff_id=2794', types: all },
   { id: 'decodo', name: 'Decodo', kind: 'proxy', url: 'https://dashboard.decodo.com/register?referral_code=2973fec4bd68c176365c5cf1ef80bade6eaccdde', types: all },
+  { id: 'soax', name: 'SOAX', kind: 'proxy', url: 'https://soax.com/', types: all },
+  { id: 'evomi', name: 'Evomi', kind: 'proxy', url: 'https://evomi.com/?p=5Z7DMFN3ME', types: all },
+  { id: 'proxyempire', name: 'ProxyEmpire', kind: 'proxy', url: 'https://proxyempire.io/?ref=oddhngm', types: all },
   { id: 'nodemaven', name: 'NodeMaven', kind: 'proxy', url: 'https://nodemaven.com/?a_aid=anyprofile', types: ['residential', 'isp', 'mobile'] },
+  { id: 'webshare', name: 'Webshare', kind: 'proxy', url: 'https://www.webshare.io/?referral_code=e18t5gbij3d3', types: ['residential', 'isp', 'datacenter'] },
   { id: 'iproyal', name: 'IPRoyal', kind: 'proxy', url: 'https://iproyal.sjv.io/X4aYqG', types: all },
   { id: 'proxyseller', name: 'Proxy-Seller', kind: 'proxy', url: 'https://proxy-seller.com/?partner=JUJ9ZRI3NSJI1N', types: all },
-  { id: 'webshare', name: 'Webshare', kind: 'proxy', url: 'https://www.webshare.io/?referral_code=e18t5gbij3d3', types: ['residential', 'isp', 'datacenter'] },
-  { id: 'evomi', name: 'Evomi', kind: 'proxy', url: 'https://evomi.com/?p=5Z7DMFN3ME', types: all },
-  { id: 'soax', name: 'SOAX', kind: 'proxy', url: 'https://soax.com/', types: all },
-  { id: 'oxylabs', name: 'Oxylabs', kind: 'proxy', url: 'https://oxylabs.go2cloud.org/aff_c?offer_id=7&aff_id=2794', types: all },
-  { id: 'proxyempire', name: 'ProxyEmpire', kind: 'proxy', url: 'https://proxyempire.io/?ref=oddhngm', types: all },
   { id: 'massive', name: 'Massive', kind: 'proxy', url: 'https://www.joinmassive.com/', types: ['residential', 'isp'] },
+  { id: 'dataimpulse', name: 'DataImpulse', kind: 'proxy', url: 'https://dataimpulse.com/?aff=e68ede41-33fe-4532-ab36-2240e6a1142d', types: ['residential', 'mobile', 'datacenter'] },
   { id: 'infatica', name: 'Infatica', kind: 'proxy', url: 'https://dashboard.infatica.io/aff.php?aff=902', types: ['residential', 'isp', 'datacenter'] },
   { id: 'marsproxies', name: 'MarsProxies', kind: 'proxy', url: 'https://marsproxies.sjv.io/bkJz7g', types: all },
   { id: 'proxycheap', name: 'Proxy-Cheap', kind: 'proxy', url: 'https://app.proxy-cheap.com/r/NZNb2Ik0', types: all },
