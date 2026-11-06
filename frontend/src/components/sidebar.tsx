@@ -9,7 +9,7 @@ import { SiteGlyph } from './site-glyph'
 import { Icon, LogoMark, type IconName } from './icons'
 import { BuyProxiesButton } from './partner-grid'
 
-export type Page = 'profiles' | 'mobile' | 'proxies' | 'trash' | 'tools' | 'settings'
+export type Page = 'profiles' | 'mobile' | 'proxies' | 'trash' | 'settings'
 /** What the profile table shows: everything, the running ones, the ones that
  *  need attention (both picked from the status bar), one platform, or one tag. */
 export type View = 'all' | 'running' | 'attention' | `site:${string}` | `tag:${string}`
@@ -32,9 +32,10 @@ type Props = {
   onOpenPro?: () => void
   onNavigate: (page: Page, view?: View) => void
   onNewProfile: () => void
+  onOpenTools: () => void
 }
 
-export function Sidebar({ page, view, counts, tags, sites, siteCounts, proxyCount, mobileCount, engineLabel, engineReady, pro, onOpenPro, onNavigate, onNewProfile }: Props) {
+export function Sidebar({ page, view, counts, tags, sites, siteCounts, proxyCount, mobileCount, engineLabel, engineReady, pro, onOpenPro, onNavigate, onNewProfile, onOpenTools }: Props) {
   const [tagsOpen, setTagsOpen] = useState(true)
   const [allTags, setAllTags] = useState(false)
   const item = (label: string, icon: IconName, active: boolean, onClick: () => void, count?: number, tone: '' | 'live' | 'warn' = '') => (
@@ -111,7 +112,7 @@ export function Sidebar({ page, view, counts, tags, sites, siteCounts, proxyCoun
           </button>
         )}
         <BuyProxiesButton className="navitem nodrag" />
-        {item(t.nav.tools, 'spark', page === 'tools', () => onNavigate('tools'))}
+        {item(t.nav.tools, 'spark', false, onOpenTools)}
         {item(t.nav.settings, 'settings', page === 'settings', () => onNavigate('settings'))}
         {engineLabel && (engineReady ? (
           <div className="enginechip"><span className="state ok" />{engineLabel}</div>

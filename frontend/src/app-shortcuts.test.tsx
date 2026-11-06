@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { t } from './i18n'
 
 const profile = {
@@ -29,6 +29,7 @@ vi.mock('./api', async (orig) => ({
   onLaunchChanged: () => () => {},
   onMobileChanged: () => () => {},
   onEngineProgress: () => () => {},
+  onUpdateProgress: () => () => {},
   Api: new Proxy({}, { get: (_, name: string) => api[name] ?? (() => Promise.resolve([])) }),
 }))
 // jsdom has no matchMedia; the app reads it to follow the system theme.
@@ -44,9 +45,40 @@ describe('App shortcuts', () => {
     render(<App />)
     await screen.findByText('Thử proxy TW')
     fireEvent.click(screen.getByRole('button', { name: t.nav.tools }))
-    await screen.findByRole('heading', { name: t.tools.title })
-    if (active) expect(screen.queryByRole('button', { name: t.tools.proOpen })).toBeNull()
-    else expect(await screen.findByRole('button', { name: t.tools.proOpen })).toBeTruthy()
+    const dialog = await screen.findByRole('dialog', { name: t.tools.title })
+    if (active) expect(within(dialog).queryByRole('button', { name: t.tools.proOpen })).toBeNull()
+    else {
+      fireEvent.click(await within(dialog).findByRole('button', { name: t.tools.proOpen }))
+      expect(screen.queryByRole('dialog', { name: t.tools.title })).toBeNull()
+      expect(screen.getByRole('button', { name: t.nav.settings }).getAttribute('aria-current')).toBe('page')
+    }
+  })
+
+  it('opens Creator Tools without leaving the current page and closes it', async () => {
+    render(<App />)
+    await screen.findByText('Thử proxy TW')
+    const web = screen.getByRole('button', { name: new RegExp(t.nav.all) })
+    fireEvent.click(screen.getByRole('button', { name: t.nav.tools }))
+    expect(screen.getByRole('dialog', { name: t.tools.title })).toBeTruthy()
+    expect(web.getAttribute('aria-current')).toBe('page')
+    fireEvent.click(within(screen.getByRole('dialog', { name: t.tools.title })).getByText(t.common.close))
+    expect(screen.queryByRole('dialog', { name: t.tools.title })).toBeNull()
+    expect(screen.getByText('Thử proxy TW')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: t.nav.tools }))
+    fireEvent.keyDown(window, { key: 'Escape' })
+    expect(screen.queryByRole('dialog', { name: t.tools.title })).toBeNull()
+  })
+
+  it('opens Creator Tools as a dialog from the command palette', async () => {
+    render(<App />)
+    await screen.findByText('Thử proxy TW')
+    fireEvent.keyDown(document.body, { key: 'k', metaKey: true })
+    const input = await screen.findByRole('combobox', { name: t.palette.title })
+    fireEvent.change(input, { target: { value: t.nav.tools } })
+    fireEvent.keyDown(input, { key: 'Enter' })
+    expect(await screen.findByRole('dialog', { name: t.tools.title })).toBeTruthy()
+    expect(screen.queryByRole('dialog', { name: t.palette.title })).toBeNull()
+    expect(screen.getByRole('button', { name: new RegExp(t.nav.all) }).getAttribute('aria-current')).toBe('page')
   })
 
   it('opens the palette with ⌘K and a profile from it with Enter', async () => {

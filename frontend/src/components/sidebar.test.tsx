@@ -16,10 +16,10 @@ const rows = [
   { ...base, tags: [] },
 ]
 
-const sidebar = (onNavigate = vi.fn(), many = 0) => render(
+const sidebar = (onNavigate = vi.fn(), many = 0, onOpenTools = vi.fn()) => render(
   <Sidebar page="profiles" view="all" counts={countProfiles(rows)}
     tags={many ? Array.from({ length: many }, (_, i) => [`tag-${i}`, 1] as [string, number]) : tagCounts(rows)}
-    sites={[]} siteCounts={new Map()} proxyCount={0} mobileCount={2} engineLabel="" engineReady onNavigate={onNavigate} onNewProfile={vi.fn()} />,
+    sites={[]} siteCounts={new Map()} proxyCount={0} mobileCount={2} engineLabel="" engineReady onNavigate={onNavigate} onNewProfile={vi.fn()} onOpenTools={onOpenTools} />,
 )
 
 describe('Sidebar', () => {
@@ -58,10 +58,13 @@ describe('Sidebar', () => {
 
   it('opens Buy proxies and Creator tools from the footer', () => {
     const onNavigate = vi.fn()
-    sidebar(onNavigate)
+    const onOpenTools = vi.fn()
+    sidebar(onNavigate, 0, onOpenTools)
     fireEvent.click(screen.getByRole('button', { name: t.proxies.buy }))
     expect(screen.getByRole('dialog', { name: t.proxies.buy })).toBeTruthy()
+    fireEvent.keyDown(window, { key: 'Escape' })
     fireEvent.click(screen.getByRole('button', { name: t.nav.tools }))
-    expect(onNavigate).toHaveBeenCalledWith('tools')
+    expect(onOpenTools).toHaveBeenCalledOnce()
+    expect(onNavigate).not.toHaveBeenCalled()
   })
 })

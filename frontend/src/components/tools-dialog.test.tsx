@@ -7,14 +7,14 @@ import { partnersOf } from '../lib/partners'
 
 const openExternal = vi.fn()
 vi.mock('../api', async (orig) => ({ ...(await orig<typeof import('../api')>()), openExternal: (u: string) => openExternal(u) }))
-const { ToolsPage } = await import('./tools-page')
+const { ToolsDialog } = await import('./tools-dialog')
 
 afterEach(cleanup)
 
-describe('ToolsPage', () => {
+describe('ToolsDialog', () => {
   it('shows every tool under its section and opens PostClaw with UTM tags', () => {
-    render(<ToolsPage />)
-    expect(screen.getByRole('heading', { name: t.tools.title })).toBeTruthy()
+    render(<ToolsDialog onClose={vi.fn()} />)
+    expect(screen.getByRole('dialog', { name: t.tools.title })).toBeTruthy()
     expect(screen.getAllByRole('listitem')).toHaveLength(partnersOf('tool').length)
     expect(screen.getByRole('heading', { name: t.partners.groups.publish })).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: /PostClaw/ }))
@@ -23,15 +23,15 @@ describe('ToolsPage', () => {
 
   it('shows the Pro invitation only when an upgrade action is available', () => {
     const openPro = vi.fn()
-    const { rerender } = render(<ToolsPage onOpenPro={openPro} />)
+    const { rerender } = render(<ToolsDialog onClose={vi.fn()} onOpenPro={openPro} />)
     fireEvent.click(screen.getByRole('button', { name: t.tools.proOpen }))
     expect(openPro).toHaveBeenCalledOnce()
-    rerender(<ToolsPage />)
+    rerender(<ToolsDialog onClose={vi.fn()} />)
     expect(screen.queryByRole('button', { name: t.tools.proOpen })).toBeNull()
   })
 
   it('opens an open-source tool at its own page, untagged', () => {
-    render(<ToolsPage />)
+    render(<ToolsDialog onClose={vi.fn()} />)
     fireEvent.click(screen.getByRole('button', { name: /FilmCraft/ }))
     expect(openExternal).toHaveBeenLastCalledWith('https://getartcraft.com/apps/filmcraft')
     fireEvent.click(screen.getByRole('button', { name: /Craft Anything/ }))

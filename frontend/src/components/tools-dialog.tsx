@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { t } from '../i18n'
-import { Icon } from '../components/icons'
-import { PageHead } from '../components/page-head'
-import { PartnerGrid } from '../components/partner-grid'
+import { Icon } from './icons'
+import { Dialog } from './dialog'
+import { PartnerGrid } from './partner-grid'
 import { partnersOf, toolGroups } from '../lib/partners'
 
 /** onOpenPro goes to Settings → Pro, where the Pro pack is bought and managed. */
-export function ToolsPage({ onOpenPro }: { onOpenPro?: () => void }) {
+export function ToolsDialog({ onClose, onOpenPro }: { onClose: () => void; onOpenPro?: () => void }) {
   const tools = partnersOf('tool')
   return (
-    <>
-      <PageHead title={t.tools.title} sub={t.tools.sub} />
-      <div className="pagebody">
+    <Dialog title={t.tools.title} icon="spark" onClose={onClose} className="partnerdialog"
+      footer={<button type="button" className="btn" autoFocus onClick={onClose}>{t.common.close}</button>}>
+        <p className="partner-guide muted">{t.tools.sub}</p>
         {onOpenPro && (
           <div className="banner pro-banner">
             <Icon name="spark" />
@@ -28,7 +28,6 @@ export function ToolsPage({ onOpenPro }: { onOpenPro?: () => void }) {
             </section>
           )
         })}
-      </div>
-    </>
+    </Dialog>
   )
 }

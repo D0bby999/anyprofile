@@ -16,7 +16,7 @@ import { ProfilesPage } from './pages/profiles-page'
 import { ProxiesPage } from './pages/proxies-page'
 import { MobilePage } from './pages/mobile-page'
 import { TrashPage } from './pages/trash-page'
-import { ToolsPage } from './pages/tools-page'
+import { ToolsDialog } from './components/tools-dialog'
 import { SettingsPage } from './pages/settings-page'
 import { scrollSettingsTo } from './lib/scroll'
 import { WelcomePage } from './pages/welcome-page'
@@ -35,6 +35,7 @@ export default function App() {
   const [onboarded, setOnboarded] = useState<boolean | null>(null)
   const [palette, setPalette] = useState(false)
   const [sheet, setSheet] = useState(false)
+  const [toolsOpen, setToolsOpen] = useState(false)
   const [whatsNew, setWhatsNew] = useState<service.WhatsNew | null>(null)
   const [checkUpdate, setCheckUpdate] = useState(0) // bumped by the menu bar's Check for Updates
   const toast = useToast()
@@ -183,7 +184,7 @@ export default function App() {
     { id: 'attention', label: t.nav.attention, icon: 'alert', run: () => navigate('profiles', 'attention') },
     { id: 'proxies', label: t.nav.proxies, icon: 'proxy', run: () => setPage('proxies') },
     { id: 'trash', label: t.nav.trash, icon: 'trash', run: () => setPage('trash') },
-    { id: 'tools', label: t.nav.tools, icon: 'spark', run: () => setPage('tools') },
+    { id: 'tools', label: t.nav.tools, icon: 'spark', run: () => setToolsOpen(true) },
     { id: 'settings', label: t.nav.settings, icon: 'settings', run: () => setPage('settings') },
   ]
   const openProfile = (id: string) => { setPage('profiles'); setActiveId(id) }
@@ -199,7 +200,7 @@ export default function App() {
         pro={pro} onOpenPro={() => openSettings('settings-pro')}
         engineReady={engineReady}
         engineLabel={defaultEngine ? (engineReady ? t.engines.ready(engineName, defaultEngine.version) : t.engines.missing(engineName)) : ''}
-        onNavigate={navigate} onNewProfile={newProfile} />
+        onNavigate={navigate} onNewProfile={newProfile} onOpenTools={() => setToolsOpen(true)} />
       <main className="main">
         {page === 'profiles' && (
           <ProfilesPage rows={profiles.rows} sites={sites} view={view} engineReady={engines === null || engineReady}
@@ -210,12 +211,13 @@ export default function App() {
         {page === 'mobile' && <MobilePage mobile={mobile} onOpenPro={() => openSettings('settings-pro')} onOpenSettings={() => openSettings()} />}
         {page === 'proxies' && <ProxiesPage onChanged={() => { refreshProxies(); profiles.reload(); mobile.reload() }} />}
         {page === 'trash' && <TrashPage onChanged={() => { profiles.reload(); mobile.reload() }} />}
-        {page === 'tools' && <ToolsPage onOpenPro={pro && !pro.active ? () => openSettings('settings-pro') : undefined} />}
         {page === 'settings' && (
           <SettingsPage engines={engines ?? []} engineCounts={engineCounts} defaults={defaults} onEnginesChanged={refreshEngines} theme={theme} onTheme={setTheme} fileVaultOn={fileVaultOn}
             lang={lang} onLanguage={changeLanguage} openProfiles={profiles.rows.filter((r) => r.state === 'running').length} checkUpdate={checkUpdate} />
         )}
       </main>
+      {toolsOpen && <ToolsDialog onClose={() => setToolsOpen(false)}
+        onOpenPro={pro && !pro.active ? () => { setToolsOpen(false); openSettings('settings-pro') } : undefined} />}
       {whatsNew && (
         <Dialog title={t.update.whatsNew(whatsNew.version)} icon="spark" onClose={() => setWhatsNew(null)}
           footer={<button type="button" className="btn primary" autoFocus onClick={() => setWhatsNew(null)}>{t.update.gotIt}</button>}>
