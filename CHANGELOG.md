@@ -9,6 +9,19 @@ keeps them together.
 - Removed Scheduled Posts; the old queue data remains in the database.
 - Updated the proxy recommendations and added Oxylabs.
 
+Engine 0.5.1.157 (261107):
+
+- A window no longer paints at the pixel ratio its persona claims. The profile's
+  device pixel ratio was written into the screen info the renderer lays out and
+  rasterises with — a rendering scale, not a fact a page reads. A seed that drew a
+  1x panel (an external 1080p or QHD display on a Mac mini) therefore painted the
+  whole browser at half the density of a 2x display and let macOS upscale it, so
+  every page arrived soft with faint text, the same look the colour-gamut fix
+  removed from a different surface. The ratio is now the display's own, while
+  screen.width and height, colour depth, gamut and HDR still come from the
+  profile: what a page reads about its display is unchanged. Existing profiles
+  move to this build on their next open, because the catalogue digest is the same.
+
 Agent profile management (261104):
 
 - An agent can now manage profiles, not only drive them: 10 new MCP tools

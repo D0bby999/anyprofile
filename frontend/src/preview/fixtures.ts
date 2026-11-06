@@ -9,7 +9,7 @@ const ago = (minutes: number) => new Date(now.getTime() - minutes * 60000).toISO
 
 const row = (p: Partial<service.ProfileRow> & { id: string; name: string }): service.ProfileRow => ({
   engine: 'anybrowser',
-  engineVersion: '0.5.1.156',
+  engineVersion: '0.5.1.157',
   engineMeta: { hwc: 12, memGiB: 24, canvasNoise: false },
   personaId: 'anybrowser-macos',
   seedHex: '9be5d655392a8efc',
@@ -68,7 +68,7 @@ export const proxies = [
 ]
 
 export const engines = [
-  { engine: 'anybrowser', version: '0.5.1.156', installed: true } as never,
+  { engine: 'anybrowser', version: '0.5.1.157', installed: true } as never,
   { engine: 'fury', version: '0.4.5', installed: true } as never,
 ]
 

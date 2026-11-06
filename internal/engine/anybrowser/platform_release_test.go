@@ -25,7 +25,7 @@ func TestBuiltinPlatformPin(t *testing.T) {
 			strings.Contains(r.URL, "example.invalid") || !strings.Contains(r.URL, "/apostate-155.") {
 			t.Fatalf("Windows upstream pin replaced by an unpublished fork: %+v", r)
 		}
-	} else if Version != "0.5.1.156" || Chromium != "156.0.8078.74" || legacyGoogleKeyEnv {
+	} else if Version != "0.5.1.157" || Chromium != "156.0.8078.74" || legacyGoogleKeyEnv {
 		t.Fatal("macOS candidate pin/keyless policy changed")
 	}
 }

@@ -16,10 +16,10 @@ import (
 // hashes; a build that is not hosted yet keeps the placeholder URL and ad-hoc
 // hashes, so installs fail closed instead of fetching some other build.
 const (
-	Version  = "0.5.1.156"
+	Version  = "0.5.1.157"
 	Chromium = "156.0.8078.74"
 
-	releaseDate        = "2026-11-04"
+	releaseDate        = "2026-11-07"
 	legacyGoogleKeyEnv = false
 	platform           = "macos"
 	// hostPlat is the release's platform in the engine catalog.
@@ -34,11 +34,11 @@ const (
 
 	zipName = "anybrowser-156.0.8078.74-macos-arm64.zip"
 	// engineTag names the pre-release the archive is attached to.
-	engineTag     = "engine-anybrowser-0.5.1.156"
+	engineTag     = "engine-anybrowser-0.5.1.157"
 	defaultZipURL = "https://github.com/D0bby999/anyprofile/releases/download/" + engineTag + "/" + zipName
-	zipSHA256     = "a55179225b861feac2f47f1bf431025e118a7fb744e36c3556be28af76c7cc76"
-	binarySHA256  = "c213832922c57fe424abaa93973a3e474533c4dfa483ed183dbc275bb6f91be9"
-	frameworkSHA  = "dac42c8642d1cf49cc32e35887efd0427f6992ddf59fa3c1116eca03f2c17796"
+	zipSHA256     = "d022da32a82a078eedb1f7ab6730d07e0dfd1eb567025edc69885fa4023a34c5"
+	binarySHA256  = "da649b02d3daed2cd2b5785e91ca9aaf60c4e727036aa756415adeda80736849"
+	frameworkSHA  = "28e9691caf659331de5a617b67519ce7f1f418e7153dff3b81cdd9ca572e2933"
 	// teamID is the Developer ID team the bundle's signature must name.
 	teamID = "25C8SNXS6Q"
 
