@@ -23,15 +23,18 @@ import (
 
 // fakeMobile is a driver that runs nothing and records what it was asked.
 type fakeMobile struct {
-	mu        sync.Mutex
-	avail     error
-	createErr error
-	running   map[string]chan struct{}
-	opts      mobile.StartOptions
-	deleted   []string
-	backedUp  string
-	restored  string
+	mu         sync.Mutex
+	avail      error
+	createErr  error
+	running    map[string]chan struct{}
+	opts       mobile.StartOptions
+	deleted    []string
+	backedUp   string
+	restored   string
+	droppedRAM []string
 }
+
+func (f *fakeMobile) DropRAM(d mobile.Device) { f.droppedRAM = append(f.droppedRAM, d.ID) }
 
 func (f *fakeMobile) Name() string     { return "vm" }
 func (f *fakeMobile) Available() error { return f.avail }
@@ -141,6 +144,9 @@ func TestMobileLapsedKeepsData(t *testing.T) {
 	}
 	if err := s.TrashMobileDevice(ctx, d.ID); err != nil {
 		t.Fatal(err)
+	}
+	if len(f.droppedRAM) != 1 || f.droppedRAM[0] != d.ID {
+		t.Fatalf("trash kept the saved RAM state: %v", f.droppedRAM)
 	}
 	if err := s.PurgeMobileDevice(ctx, d.ID); err != nil {
 		t.Fatal(err)
@@ -293,12 +299,51 @@ func TestInstallMobileApps(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := s.InstallMobileApps(ctx, d.ID, []string{"/x/app.apk", "/x/app.xapk"}); code(err) != "mobile_apk" {
-		t.Fatalf("not an apk: %v", err)
+	if _, err := s.InstallMobileApps(ctx, d.ID, []string{"/x/app.apk", "/x/app.zip"}); code(err) != "mobile_apk" {
+		t.Fatalf("not an app package: %v", err)
 	}
 	// The fake driver has no adb; real ones refuse a closed device with mobile_not_running.
-	if n, err := s.InstallMobileApps(ctx, d.ID, []string{"/x/app.APK"}); err == nil || n != 0 {
-		t.Fatalf("installed on a device it cannot reach: %d %v", n, err)
+	for _, ext := range []string{".APK", ".apks", ".xapk", ".apkm"} {
+		if n, err := s.InstallMobileApps(ctx, d.ID, []string{"/x/app" + ext}); err == nil || code(err) == "mobile_apk" || n != 0 {
+			t.Fatalf("installed %s on a device it cannot reach: %d %v", ext, n, err)
+		}
+	}
+	if err := s.InstallMobileAurora(ctx, d.ID); err == nil {
+		t.Fatal("installed Aurora on a device it cannot reach")
+	}
+}
+
+// A running screenrecord holds off the idle freeze; a finished one does not,
+// and closing the device forgets it.
+func TestMobileRecordingState(t *testing.T) {
+	ctx := context.Background()
+	s, _ := newMobileService(t, "active")
+	d, err := s.CreateMobileDevice(ctx, MobileInput{Name: "a"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.StartMobileDevice(ctx, d.ID); err != nil {
+		t.Fatal(err)
+	}
+	if s.mobileLocale[d.ID] == "" {
+		t.Fatal("open did not remember the device's language for new apps")
+	}
+	rec := &mobileRecording{done: make(chan struct{})}
+	s.recordings = map[string]*mobileRecording{d.ID: rec}
+	if !s.mobileRecording(d.ID) {
+		t.Fatal("a running recording is not seen")
+	}
+	close(rec.done)
+	if s.mobileRecording(d.ID) {
+		t.Fatal("a finished recording still holds off the freeze")
+	}
+	rec2 := &mobileRecording{done: make(chan struct{})}
+	s.recordings[d.ID] = rec2
+	if err := s.StopMobileDevice(ctx, d.ID); err != nil {
+		t.Fatal(err)
+	}
+	if s.mobileRecording(d.ID) {
+		t.Fatal("closing the device left its recording behind")
 	}
 }
 

@@ -206,6 +206,10 @@ export function InstallMobileApps(arg1) {
   return window['go']['main']['App']['InstallMobileApps'](arg1);
 }
 
+export function InstallMobileAurora(arg1) {
+  return window['go']['main']['App']['InstallMobileAurora'](arg1);
+}
+
 export function InstallMobileRuntime() {
   return window['go']['main']['App']['InstallMobileRuntime']();
 }

@@ -132,6 +132,8 @@ export function MobilePage({ mobile, onOpenPro, onOpenSettings }: Props) {
     if (n > 0) toast.success(t.mobile.appsInstalled(n))
   })
 
+  const installAurora = (id: string) => run(id, () => Api.InstallMobileAurora(id), t.mobile.auroraInstalled)
+
   return (
     <>
       <PageHead title={t.mobile.title} badge={t.mobile.beta} sub={t.mobile.total(rows.length)}>
@@ -209,8 +211,6 @@ export function MobilePage({ mobile, onOpenPro, onOpenSettings }: Props) {
                           <span className="mobile-device-copy">
                             <b className="selectable mobile-name" title={r.name}>{r.name}</b>
                             <span className="sub mobile-meta">#{r.serial} · {r.ramMb / 1024} GB · {r.cpus} CPU</span>
-                            {running && <button className="btn sm mobile-install" disabled={working} onClick={() => installApps(r.id)}>
-                              <Icon name="download" />{t.mobile.installApps}</button>}
                             {r.tags.length > 0 && <span className="row mobile-tags">{r.tags.map((tag) => (
                               <span key={tag} className="chip"><span className="tagdot" style={{ background: `var(--tag-${tagColor(tag)})` }} />{tag}</span>
                             ))}</span>}
@@ -224,10 +224,16 @@ export function MobilePage({ mobile, onOpenPro, onOpenSettings }: Props) {
                           {r.backedUpAt && <small className="faint">{t.mobile.backedUp(relativeTime(r.backedUpAt))}</small>}</td>
                         <td className="muted nowrap mobile-last">{r.lastOpenAt ? relativeTime(r.lastOpenAt) : t.mobile.never}</td>
                         <td className="col-actions"><span className="row mobile-actions">
+                          {running && (
+                            <button className="iconbtn sm" disabled={working} onClick={() => installApps(r.id)} aria-label={t.mobile.installApps} title={t.mobile.installApps}>
+                              <Icon name="download" />
+                            </button>
+                          )}
                           <button className={`iconbtn sm${running ? '' : ' slot'}`} disabled={!running}
                             onClick={() => run(r.id, () => Api.ShowMobileDevice(r.id))} aria-label={t.mobile.show} title={running ? t.mobile.show : undefined}
                             aria-hidden={!running || undefined} tabIndex={running ? undefined : -1}><Icon name="monitor" /></button>
                           <MobileRowMenu row={r} running={running} busy={working} recording={recording.has(r.id)}
+                            onAurora={() => installAurora(r.id)}
                             onView={() => setViewing(r)}
                             onScreenshot={() => screenshot(r.id)} onRecord={() => toggleRecording(r.id)}
                             onTop={() => toggleTop(r.id)} onEdit={() => setEditing(r)}
@@ -287,9 +293,9 @@ export function MobilePage({ mobile, onOpenPro, onOpenSettings }: Props) {
 
 
 /** The row's controls stay one action + one overflow menu, like the profile table. */
-function MobileRowMenu({ row, running, busy, recording, onView, onScreenshot, onRecord, onTop, onEdit, onBackup, onRestore, onTrash }: {
+function MobileRowMenu({ row, running, busy, recording, onAurora, onView, onScreenshot, onRecord, onTop, onEdit, onBackup, onRestore, onTrash }: {
   row: service.MobileRow; running: boolean; busy: boolean; recording: boolean
-  onView: () => void; onScreenshot: () => void; onRecord: () => void; onTop: () => void
+  onAurora: () => void; onView: () => void; onScreenshot: () => void; onRecord: () => void; onTop: () => void
   onEdit: () => void; onBackup: () => void; onRestore: () => void; onTrash: () => void
 }) {
   const [open, setOpen] = useState(false)
@@ -307,6 +313,7 @@ function MobileRowMenu({ row, running, busy, recording, onView, onScreenshot, on
         disabled={busy} onClick={() => setOpen(!open)}><Icon name="more" /></button>
       {open && (
         <div role="menu" className="rowmenu">
+          {running && <button role="menuitem" onClick={() => act(onAurora)}>{t.mobile.installAurora}</button>}
           {running && <button role="menuitem" onClick={() => act(onView)}>{t.mobile.viewInApp}</button>}
           {running && <button role="menuitem" onClick={() => act(onScreenshot)}>{t.mobile.screenshot}</button>}
           {running && <button role="menuitem" onClick={() => act(onRecord)}>{recording ? t.mobile.stopRecording : t.mobile.recordScreen}</button>}

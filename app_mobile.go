@@ -118,21 +118,26 @@ func (a *App) InstallMobileRuntime() error {
 	})
 }
 
-var apkDialogTitle = map[string]string{"en": "Install apps (.apk)", "vi": "Cài app (.apk)"}
+var apkDialogTitle = map[string]string{"en": "Install apps (.apk, .apks, .xapk, .apkm)", "vi": "Cài app (.apk, .apks, .xapk, .apkm)"}
 
-// InstallMobileApps asks for APK files and installs them on a running device.
-// Cancelling installs nothing and returns 0.
+// InstallMobileApps asks for APK or split bundle files and installs them on a
+// running device. Cancelling installs nothing and returns 0.
 func (a *App) InstallMobileApps(id string) (int, error) {
 	if err := a.ready(); err != nil {
 		return 0, err
 	}
 	files, err := runtime.OpenMultipleFilesDialog(a.ctx, runtime.OpenDialogOptions{Title: apkDialogTitle[a.svc.Language()],
-		Filters: []runtime.FileFilter{{DisplayName: "Android apps (*.apk)", Pattern: "*.apk"}}})
+		Filters: []runtime.FileFilter{{DisplayName: "Android apps (*.apk, *.apks, *.xapk, *.apkm)", Pattern: "*.apk;*.apks;*.xapk;*.apkm"}}})
 	if err != nil || len(files) == 0 {
 		return 0, err
 	}
 	n, err := a.svc.InstallMobileApps(a.ctx, id, files)
 	return n, err
+}
+
+// InstallMobileAurora downloads and installs Aurora Store on a running device.
+func (a *App) InstallMobileAurora(id string) error {
+	return a.must(func() error { return a.svc.InstallMobileAurora(a.ctx, id) })
 }
 
 // ShowMobileDevice opens a running device's window again.

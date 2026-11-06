@@ -698,10 +698,10 @@ func (s *Server) addMobileTools(srv *mcp.Server) {
 			return text("Copied to " + remote + "."), nil
 		})
 
-	addDevice(s, srv, "device_install_apk", "Install an app from an .apk file in list_uploads.", false,
+	addDevice(s, srv, "device_install_apk", "Install an app from an .apk, .apks, .xapk or .apkm file in list_uploads.", false,
 		func(ctx context.Context, d MobileDevice, in deviceFileIn) (*mcp.CallToolResult, error) {
-			if !strings.EqualFold(filepath.Ext(in.File), ".apk") {
-				return nil, apperr.New("mobile_apk", "only .apk files install")
+			if !control.IsAppPackage(in.File) {
+				return nil, apperr.New("mobile_apk", "only .apk, .apks, .xapk and .apkm files install")
 			}
 			c, err := s.control(d)
 			if err != nil {
@@ -714,6 +714,6 @@ func (s *Server) addMobileTools(srv *mcp.Server) {
 			if err := c.Install(ctx, files[0]); err != nil {
 				return nil, err
 			}
-			return text("Installed " + filepath.Base(files[0]) + ". The app takes the device's language at the next open."), nil
+			return text("Installed " + filepath.Base(files[0]) + "."), nil
 		})
 }

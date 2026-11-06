@@ -3,9 +3,11 @@
 package control
 
 import (
+	"archive/zip"
 	"context"
 	"errors"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"testing"
@@ -116,6 +118,73 @@ func TestRefusals(t *testing.T) {
 	}
 	if err := d.Swipe(ctx, "sideways", 0, 0, 0, 0); err == nil {
 		t.Error("sideways swipe")
+	}
+	if err := d.Install(ctx, "/tmp/app.zip"); code(err) != "mobile_apk" {
+		t.Errorf("install zip: %v", err)
+	}
+}
+
+func TestSplitAPKBundles(t *testing.T) {
+	dir := t.TempDir()
+	writeZip := func(name string, files map[string]string) string {
+		p := filepath.Join(dir, name)
+		f, err := os.Create(p)
+		if err != nil {
+			t.Fatal(err)
+		}
+		zw := zip.NewWriter(f)
+		for k, v := range files {
+			w, err := zw.Create(k)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if _, err := w.Write([]byte(v)); err != nil {
+				t.Fatal(err)
+			}
+		}
+		if err := zw.Close(); err != nil {
+			t.Fatal(err)
+		}
+		if err := f.Close(); err != nil {
+			t.Fatal(err)
+		}
+		return p
+	}
+
+	apks := writeZip("app.xapk", map[string]string{
+		"base.apk":                "base-bytes",
+		"splits/config.arm64.apk": "arm64-bytes",
+		"manifest.json":           "{}",
+		"icon.png":                "png",
+		"__MACOSX/._base.apk":     "junk",
+		".hidden.apk":             "junk",
+	})
+	outDir := filepath.Join(dir, "out")
+	if err := os.MkdirAll(outDir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	splits, err := extractSplitAPKs(apks, outDir)
+	if err != nil || len(splits) != 2 {
+		t.Fatalf("extractSplitAPKs = %v, %v", splits, err)
+	}
+
+	withOBB := writeZip("game.xapk", map[string]string{
+		"base.apk":                   "base",
+		"Android/obb/com.x/main.obb": "obb",
+	})
+	if _, err := extractSplitAPKs(withOBB, outDir); code(err) != "mobile_apk" {
+		t.Fatalf("expected mobile_apk for obb bundle, got %v", err)
+	}
+
+	empty := writeZip("empty.apks", map[string]string{"manifest.json": "{}"})
+	if _, err := extractSplitAPKs(empty, outDir); code(err) != "mobile_apk" {
+		t.Fatalf("expected mobile_apk for empty bundle, got %v", err)
+	}
+
+	bad := filepath.Join(dir, "encrypted.apkm")
+	os.WriteFile(bad, []byte("not-a-zip"), 0o600)
+	if _, err := extractSplitAPKs(bad, outDir); code(err) != "mobile_apk" {
+		t.Fatalf("expected mobile_apk for non-zip bundle, got %v", err)
 	}
 }
 

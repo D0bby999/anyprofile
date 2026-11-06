@@ -2,7 +2,7 @@
 // Answers the generated Wails bindings with fixtures so the UI renders in a
 // plain browser. Loaded before src/main.tsx by preview.html; never bundled into
 // the app (Vite only builds index.html).
-import { defaults, engines, profiles, proxies } from './fixtures'
+import { defaults, engines, mobileAvailability, mobileDevices, profiles, proxies } from './fixtures'
 
 let proActive = true
 // ?theme=light|dark and ?pro=0 pin the two states a screenshot needs.
@@ -34,8 +34,9 @@ const answers: Record<string, unknown> = {
     { id: 'youtube', name: 'YouTube', group: 'video', domains: ['youtube.com'], startUrl: 'https://www.youtube.com/', icon: 'youtube', color: '#FF0000' },
     { id: 'other', name: 'Other', group: '', domains: [], startUrl: '', icon: '', color: '#64748B' },
   ],
-  ListMobileDevices: async () => [],
-  MobileAvailability: async () => ({ available: false, reason: 'not installed' }),
+  ListMobileDevices: async () => mobileDevices,
+  MobileAvailability: async () => mobileAvailability,
+  MobileFastStart: async () => true,
   AgentProfiles: async () => [],
   ListExtensions: async () => [],
   APIStatus: async () => ({ enabled: false, port: 0, running: false }),

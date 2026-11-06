@@ -450,9 +450,9 @@ func (s *Service) scheduleMobilePause(id string) {
 		if s.Mobile.Info(id).State != mobile.Running {
 			return
 		}
-		if p.Windowed(id) {
-			// A window is open: check again next round. Once it closes, the
-			// device becomes a headless one and can freeze.
+		if p.Windowed(id) || s.mobileRecording(id) {
+			// A window is open or the screen is being recorded: check again
+			// next round. Once both end, the device can freeze.
 			s.scheduleMobilePause(id)
 			return
 		}
@@ -549,6 +549,12 @@ func (s *Service) startMobile(ctx context.Context, id string, headless bool) (Mo
 	if err := s.Mobile.Start(ctx, mobileDevice(d), o); err != nil {
 		return res, err
 	}
+	s.ctlMu.Lock()
+	if s.mobileLocale == nil {
+		s.mobileLocale = map[string]string{}
+	}
+	s.mobileLocale[id] = o.Locale
+	s.ctlMu.Unlock()
 	s.Log.Info("mobile open timing", "device", id, "proxy_ms", proxyMS, "total_ms", time.Since(started).Milliseconds())
 	if err := s.Store.MarkMobileOpened(id); err != nil {
 		s.Log.Warn("mark mobile device opened", "device", id, "err", err)
@@ -670,6 +676,9 @@ func (s *Service) StopMobileDevice(ctx context.Context, id string) error {
 		return err
 	}
 	s.forgetControl(id)
+	s.recMu.Lock()
+	delete(s.recordings, id) // the recording died with the device
+	s.recMu.Unlock()
 	s.notify("mobile")
 	return nil
 }
@@ -811,12 +820,13 @@ func (s *Service) ShowMobileDevice(ctx context.Context, id string) error {
 	return nil
 }
 
-// InstallMobileApps installs APK files from this computer on a running
-// device, in order, and stops at the first that fails.
+// InstallMobileApps installs APK or split bundle (.apks, .xapk, .apkm) files
+// from this computer on a running device, in order, and stops at the first
+// that fails.
 func (s *Service) InstallMobileApps(ctx context.Context, id string, apks []string) (int, error) {
 	for _, f := range apks {
-		if !strings.EqualFold(filepath.Ext(f), ".apk") {
-			return 0, apperr.New("mobile_apk", "only .apk files install")
+		if !control.IsAppPackage(f) {
+			return 0, apperr.New("mobile_apk", "only .apk, .apks, .xapk and .apkm files install")
 		}
 	}
 	c, err := s.MobileControl(id)
@@ -835,6 +845,21 @@ func (s *Service) InstallMobileApps(ctx context.Context, id string, apks []strin
 		}
 	}
 	return len(apks), nil
+}
+
+// InstallMobileAurora downloads Aurora Store from F-Droid, checks its SHA-256,
+// and installs and opens it on a running device.
+func (s *Service) InstallMobileAurora(ctx context.Context, id string) error {
+	c, err := s.MobileControl(id)
+	if err != nil {
+		return err
+	}
+	s.forgetMobilePause(id)
+	defer s.scheduleMobilePause(id)
+	if err := c.InstallAurora(ctx); err != nil {
+		return apperr.New("mobile_install", "Aurora Store: "+err.Error())
+	}
+	return nil
 }
 
 // MobileControl is the agent's handle on a running device; it keeps the
@@ -869,7 +894,8 @@ func (s *Service) MobileControl(id string) (*control.Device, error) {
 	} else if c != nil {
 		c.Close()
 	}
-	c := &control.Device{ADB: a, Runtime: s.Dirs.MobileRuntime()}
+	// shortcut: a device adopted after an app restart has no locale here, so new apps stay in English until its next open.
+	c := &control.Device{ADB: a, Runtime: s.Dirs.MobileRuntime(), Locale: s.mobileLocale[id]}
 	s.controls[id] = c
 	return c, nil
 }
@@ -903,6 +929,12 @@ func (s *Service) TrashMobileDevice(ctx context.Context, id string) error {
 	}
 	if err := s.Store.TrashMobileDevice(id); err != nil {
 		return err
+	}
+	// A saved RAM state is ~2.5 GB; the disks stay, so a restored device just cold-boots.
+	if d, err := s.Store.GetMobileDevice(id); err == nil && s.Mobile != nil && d.Platform == runtime.GOOS && d.Driver == s.Mobile.Driver().Name() {
+		if r, ok := s.Mobile.Driver().(interface{ DropRAM(mobile.Device) }); ok {
+			r.DropRAM(mobileDevice(d))
+		}
 	}
 	s.notify("mobile")
 	return nil

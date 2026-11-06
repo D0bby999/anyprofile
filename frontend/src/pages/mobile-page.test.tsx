@@ -11,6 +11,7 @@ const api = {
   StartMobileDevice: vi.fn(() => Promise.resolve({ warning: '' })),
   BackupMobileDevice: vi.fn(() => Promise.resolve()),
   InstallMobileApps: vi.fn(() => Promise.resolve(2)),
+  InstallMobileAurora: vi.fn(() => Promise.resolve()),
   ShowMobileDevice: vi.fn(() => Promise.resolve()),
   InstallMobileRuntime: vi.fn(() => Promise.resolve()),
   CreateMobileDevice: vi.fn(() => Promise.resolve({ id: 'n' })),
@@ -171,6 +172,10 @@ describe('MobilePage', () => {
     fireEvent.click(screen.getByRole('button', { name: t.mobile.installApps }))
     await waitFor(() => expect(api.InstallMobileApps).toHaveBeenCalledWith('d1'))
     expect(await screen.findByText(t.mobile.appsInstalled(2))).toBeTruthy()
+    await openRowMenu()
+    fireEvent.click(screen.getByRole('menuitem', { name: t.mobile.installAurora }))
+    await waitFor(() => expect(api.InstallMobileAurora).toHaveBeenCalledWith('d1'))
+    expect(await screen.findByText(t.mobile.auroraInstalled)).toBeTruthy()
     cleanup()
     page([device()], avail())
     expect(screen.queryByRole('button', { name: t.mobile.installApps })).toBeNull()

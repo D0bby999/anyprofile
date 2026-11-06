@@ -183,6 +183,10 @@ func TestMCPMobileTools(t *testing.T) {
 	if out, isErr = call(t, cs, "device_install_apk", map[string]any{"device": "d1", "file": "clip.mp4"}); !isErr {
 		t.Fatalf("installed a video: %q", out)
 	}
+	os.WriteFile(filepath.Join(s.Uploads, "bundle.apks"), []byte("zip"), 0o600)
+	if out, isErr = call(t, cs, "device_install_apk", map[string]any{"device": "d1", "file": "bundle.apks"}); isErr || !strings.Contains(out, "Installed bundle.apks") {
+		t.Fatalf("device_install_apk (.apks) = %q (err %v)", out, isErr)
+	}
 	if out, isErr = call(t, cs, "device_show", map[string]any{"device": "d1"}); isErr {
 		t.Fatalf("device_show = %q", out)
 	}

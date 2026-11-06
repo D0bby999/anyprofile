@@ -62,9 +62,9 @@ export const profiles: service.ProfileRow[] = [
 ]
 
 export const proxies = [
-  { id: 'px1', label: 'Amsterdam 3', scheme: 'socks5', host: 'nl3.example.net', port: 1080, username: 'u1', exitIp: '185.104.2.31', country: 'NL', timezone: 'Europe/Amsterdam', exitIp6: '', timezone6: '', lat: 52.37, lon: 4.89, rotating: false, checkedAt: ago(30), failedAt: '' },
-  { id: 'px2', label: 'Ashburn 2', scheme: 'http', host: 'us2.example.net', port: 8080, username: 'u2', exitIp: '45.33.70.12', country: 'US', timezone: 'America/New_York', exitIp6: '', timezone6: '', lat: 39.04, lon: -77.48, rotating: true, checkedAt: ago(45), failedAt: '' },
-  { id: 'px3', label: 'Frankfurt 1', scheme: 'socks5', host: 'de1.example.net', port: 1080, username: 'u3', exitIp: '91.198.174.5', country: 'DE', timezone: 'Europe/Berlin', exitIp6: '', timezone6: '', lat: 50.11, lon: 8.68, rotating: false, checkedAt: ago(90), failedAt: ago(90) },
+  { id: 'px1', label: 'Amsterdam 3', scheme: 'socks5', host: 'nl3.example.net', port: 1080, username: 'u1', exitIp: '185.104.2.31', country: 'NL', timezone: 'Europe/Amsterdam', exitIp6: '', timezone6: '', lat: 52.37, lon: 4.89, rotating: false, checkedAt: ago(30), failedAt: '', usedBy: ['p1'], assignable: true },
+  { id: 'px2', label: 'Ashburn 2', scheme: 'http', host: 'us2.example.net', port: 8080, username: 'u2', exitIp: '45.33.70.12', country: 'US', timezone: 'America/New_York', exitIp6: '', timezone6: '', lat: 39.04, lon: -77.48, rotating: true, checkedAt: ago(45), failedAt: '', usedBy: ['p2'], assignable: false },
+  { id: 'px3', label: 'Frankfurt 1', scheme: 'socks5', host: 'de1.example.net', port: 1080, username: 'u3', exitIp: '91.198.174.5', country: 'DE', timezone: 'Europe/Berlin', exitIp6: '', timezone6: '', lat: 50.11, lon: 8.68, rotating: false, checkedAt: ago(90), failedAt: ago(90), usedBy: ['p3'], assignable: true },
 ]
 
 export const engines = [
@@ -76,3 +76,26 @@ export const defaults = {
   engine: 'anybrowser', site: 'facebook', proxy: 'auto', onOpen: 'start',
   timezone: 'auto', languages: 'auto', tags: [], folder: '',
 } as never
+
+export const mobileAvailability = {
+  supported: true, driver: 'vm', pro: true, ready: true, reason: '', message: '',
+  install: {
+    runtime: { engine: 'anymobile', installed: '1.3.0', latest: '1.3.0' },
+    image: { engine: 'anymobile-image', installed: '23.2.20261019', latest: '23.2.20261019' },
+  },
+} as never
+
+export const mobileDevices = [
+  {
+    id: 'm1', name: 'TikTok — NL', driver: 'vm', platform: 'darwin', driverRef: 'm1', proxyId: 'px1',
+    ramMb: 3072, cpus: 4, imageVersion: '23.2.20261019', notes: '', tags: ['ads', 'tiktok'],
+    pinned: false, serial: 1, createdAt: ago(2400), updatedAt: ago(15), lastOpenAt: ago(5),
+    backedUpAt: ago(720), deletedAt: '', state: 'running', error: '',
+  },
+  {
+    id: 'm2', name: 'Shopee — US', driver: 'vm', platform: 'darwin', driverRef: 'm2', proxyId: 'px2',
+    ramMb: 3072, cpus: 4, imageVersion: '23.2.20261019', notes: '', tags: ['client-a'],
+    pinned: false, serial: 2, createdAt: ago(4800), updatedAt: ago(300), lastOpenAt: ago(300),
+    backedUpAt: '', deletedAt: '', state: 'stopped', error: '',
+  },
+] as never

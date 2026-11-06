@@ -9,6 +9,7 @@
 package control
 
 import (
+	"archive/zip"
 	"bytes"
 	"context"
 	"encoding/base64"
@@ -16,8 +17,10 @@ import (
 	"fmt"
 	"image/jpeg"
 	"image/png"
+	"io"
 	"math/rand/v2"
 	"net/url"
+	"os"
 	"path"
 	"path/filepath"
 	"strconv"
@@ -33,12 +36,19 @@ import (
 // ADBKeyBoard (github.com/senzhk/ADBKeyBoard, GPL-2.0) is an input method
 // that types what it receives in a broadcast, base64 encoded: Vietnamese,
 // emoji, anything. It is installed on first use and set only while typing.
-// Updating the pin: docs/mobile-maintenance.md.
+// Aurora Store (gitlab.com/AuroraOSS/AuroraStore, GPL-3.0, F-Droid build) is
+// downloaded on demand when the user asks to install it.
+// Updating the pins: docs/mobile-maintenance.md.
 const (
 	keyboardIME    = "com.android.adbkeyboard/.AdbIME"
 	keyboardPkg    = "com.android.adbkeyboard"
 	keyboardURL    = "https://github.com/senzhk/ADBKeyBoard/releases/download/v2.5-dev/keyboardservice-debug.apk"
 	keyboardSHA256 = "41a8a0996d7397a2390d1ca16a75cb66c4a7bdaa89cf4e63600a4d3fb346fbbb"
+
+	auroraPkg    = "com.aurora.store"
+	auroraFile   = "aurora-store-4.8.4.apk"
+	auroraURL    = "https://f-droid.org/repo/com.aurora.store_76.apk"
+	auroraSHA256 = "fd9c75d90d0f4a7c132b9b4a5a2cf1992a45e03b8d8ff988b7dcfbc0db2c4d11"
 
 	dumpPath  = "/data/local/tmp/anyprofile-ui.xml"
 	pushDir   = "/sdcard/DCIM/AnyProfile"
@@ -50,6 +60,8 @@ type Device struct {
 	ADB adb.Client
 	// Runtime is where downloaded helper apps are kept.
 	Runtime string
+	// Locale is the BCP-47 language tag (e.g. "vi-VN") applied to newly installed apps.
+	Locale string
 
 	mu   sync.Mutex
 	refs map[string]Rect
@@ -82,12 +94,12 @@ var errNoRef = apperr.New("mobile_ref", "that ref is not on the screen any more;
 // wake turns the screen on before an action that needs it. A headless device's
 // screen turns off after 15 s (the VM driver sets that); a sleeping Android
 // still answers adb, but a screenshot would be black and a tap could land on
-// the lock screen. The 4 s window keeps a burst of taps from paying the
-// keyevent every time; the screen timeout is 15 s, so the next burst after a
-// pause wakes it again.
+// the lock screen. The 10 s window keeps a burst of taps or the 400 ms preview
+// loop from paying the keyevent every time; the screen timeout is 15 s, so the
+// next burst after a pause wakes it again.
 func (d *Device) wake(ctx context.Context) {
 	d.wakeMu.Lock()
-	if time.Since(d.wokeAt) < 4*time.Second {
+	if time.Since(d.wokeAt) < 10*time.Second {
 		d.wakeMu.Unlock()
 		return
 	}
@@ -429,18 +441,132 @@ func (d *Device) scan(ctx context.Context, remote string) error {
 	return err
 }
 
-// Install installs an APK from this computer.
-func (d *Device) Install(ctx context.Context, apk string) error {
+// IsAppPackage reports whether path has an Android app extension (.apk or a
+// split bundle: .apks, .xapk, .apkm).
+func IsAppPackage(path string) bool {
+	switch strings.ToLower(filepath.Ext(path)) {
+	case ".apk", ".apks", ".xapk", ".apkm":
+		return true
+	}
+	return false
+}
+
+// Install installs an .apk or split bundle (.apks, .xapk, .apkm) from this computer.
+func (d *Device) Install(ctx context.Context, pkgPath string) error {
+	if !IsAppPackage(pkgPath) {
+		return apperr.New("mobile_apk", "only .apk, .apks, .xapk and .apkm files install")
+	}
 	ictx, cancel := context.WithTimeout(ctx, 5*time.Minute)
 	defer cancel()
-	out, err := d.ADB.Run(ictx, "install", "-r", apk)
+	args := []string{"install", "-r", pkgPath}
+	if !strings.EqualFold(filepath.Ext(pkgPath), ".apk") {
+		tmp, err := os.MkdirTemp("", "anyprofile-apks-*")
+		if err != nil {
+			return err
+		}
+		defer os.RemoveAll(tmp)
+		splits, err := extractSplitAPKs(pkgPath, tmp)
+		if err != nil {
+			return err
+		}
+		args = append([]string{"install-multiple", "-r"}, splits...)
+	}
+	out, err := d.ADB.Run(ictx, args...)
 	if err != nil {
 		return err
 	}
 	if !strings.Contains(out, "Success") {
 		return errors.New(out)
 	}
+	d.syncAppLocales(ctx)
 	return nil
+}
+
+func (d *Device) syncAppLocales(ctx context.Context) {
+	if !mobile.ValidLocale(d.Locale) {
+		return
+	}
+	pkgs, err := d.Apps(ctx)
+	if err != nil || len(pkgs) == 0 {
+		return
+	}
+	var cmds []string
+	for _, p := range pkgs {
+		if mobile.ValidPackage(p) {
+			cmds = append(cmds, "cmd locale set-app-locales "+p+" --locales "+d.Locale)
+		}
+	}
+	if len(cmds) > 0 {
+		_, _ = d.shell(ctx, strings.Join(cmds, "; "))
+	}
+}
+
+// InstallAurora downloads Aurora Store from F-Droid (cached in Runtime and
+// checked by SHA-256) and installs and opens it on the device.
+func (d *Device) InstallAurora(ctx context.Context) error {
+	apk, err := adb.FetchAPK(ctx, d.Runtime, auroraFile, auroraURL, auroraSHA256)
+	if err != nil {
+		return err
+	}
+	if err := d.Install(ctx, apk); err != nil {
+		return err
+	}
+	_ = d.Launch(ctx, auroraPkg)
+	return nil
+}
+
+func extractSplitAPKs(bundlePath, dir string) ([]string, error) {
+	zr, err := zip.OpenReader(bundlePath)
+	if err != nil {
+		return nil, apperr.New("mobile_apk", "corrupted or encrypted bundle; use an unencrypted .apk, .apks or .xapk file")
+	}
+	defer zr.Close()
+	const maxSplits = 64
+	var rem int64 = 2 << 30 // 2 GiB cap across extracted splits
+	var out []string
+	for _, f := range zr.File {
+		if f.FileInfo().IsDir() || strings.HasPrefix(f.Name, "__MACOSX/") || strings.HasPrefix(filepath.Base(f.Name), ".") {
+			continue
+		}
+		ext := strings.ToLower(filepath.Ext(f.Name))
+		if ext == ".obb" {
+			return nil, apperr.New("mobile_apk", "bundles with .obb data files are not supported")
+		}
+		if ext != ".apk" {
+			continue
+		}
+		if len(out) >= maxSplits {
+			return nil, apperr.New("mobile_apk", "bundle has too many split APKs")
+		}
+		rc, err := f.Open()
+		if err != nil {
+			return nil, err
+		}
+		dst := filepath.Join(dir, fmt.Sprintf("split-%02d.apk", len(out)))
+		wf, err := os.OpenFile(dst, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o600)
+		if err != nil {
+			rc.Close()
+			return nil, err
+		}
+		n, copyErr := io.Copy(wf, io.LimitReader(rc, rem+1))
+		rc.Close()
+		closeErr := wf.Close()
+		if copyErr != nil {
+			return nil, copyErr
+		}
+		if closeErr != nil {
+			return nil, closeErr
+		}
+		rem -= n
+		if rem < 0 {
+			return nil, apperr.New("mobile_apk", "bundle is larger than 2 GB")
+		}
+		out = append(out, dst)
+	}
+	if len(out) == 0 {
+		return nil, apperr.New("mobile_apk", "bundle contains no .apk files")
+	}
+	return out, nil
 }
 
 // WaitFor waits until text shows on the screen (or is gone), at most seconds.
