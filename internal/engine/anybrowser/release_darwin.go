@@ -45,7 +45,7 @@ const (
 	// engineTag names the pre-release the archive is attached to.
 	engineTag     = "engine-anybrowser-0.5.1.157"
 	defaultZipURL = "https://github.com/D0bby999/anyprofile/releases/download/" + engineTag + "/" + zipName
-	zipSHA256     = "d022da32a82a078eedb1f7ab6730d07e0dfd1eb567025edc69885fa4023a34c5"
+	zipSHA256     = "acdc6ad19835ba6317254a00ff119bde73dc5d4857a82c7a0eca99cfeaea26e7"
 	binarySHA256  = "da649b02d3daed2cd2b5785e91ca9aaf60c4e727036aa756415adeda80736849"
 	frameworkSHA  = "28e9691caf659331de5a617b67519ce7f1f418e7153dff3b81cdd9ca572e2933"
 	// teamID is the Developer ID team the bundle's signature must name.
