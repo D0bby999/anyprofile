@@ -19,6 +19,9 @@ tools/fury-config/target
 .env*
 frontend/package.json.md5
 
+# Generated local knowledge graph, reports and extraction cache.
+/graphify-out/
+
 # macOS screenshots shared while testing; never committed
 Screenshot *.png
 /test-artifacts/
