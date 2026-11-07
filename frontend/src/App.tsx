@@ -197,7 +197,7 @@ export default function App() {
   return (
     <div className={`app${pro?.active ? ' is-pro' : ''}`} key={lang}>
       <Sidebar page={page} view={view} counts={counts} tags={tags} sites={sites} siteCounts={siteCounts} proxyCount={proxyCount} mobileCount={mobile.rows.length}
-        pro={pro} onOpenPro={() => openSettings('settings-pro')}
+        pro={pro}
         engineReady={engineReady}
         engineLabel={defaultEngine ? (engineReady ? t.engines.ready(engineName, defaultEngine.version) : t.engines.missing(engineName)) : ''}
         onNavigate={navigate} onNewProfile={newProfile} onOpenTools={() => setToolsOpen(true)} />

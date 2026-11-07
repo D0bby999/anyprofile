@@ -20,7 +20,7 @@ vi.mock('../api', async (orig) => ({
     proxy('4', { exitIp: '9.9.9.9', timezone: 'Europe/Paris', checkedAt: '2026-10-24T08:00:00Z', failedAt: '2026-10-24T08:00:00Z' }),
     proxy('5', { checkedAt: '2026-10-24T08:00:00Z', failedAt: '2026-10-24T08:00:00Z' })]),
     CheckAllProxies: () => Promise.resolve(2),
-    ImportProxies: () => Promise.resolve({ added: 0, failed: [{ line: 1, err: 'expected host:port or host:port:user:pass', code: 'format', display: '' }], unreachable: [] }) },
+    ImportProxies: () => Promise.resolve({ added: 0, failed: [{ line: 1, err: 'expected host:port or host:port:user:pass', code: 'format', display: '' }], unreachable: ['gw.example:10010'] }) },
 }))
 const { ProxiesPage } = await import('./proxies-page')
 
@@ -58,12 +58,13 @@ describe('ProxiesPage', () => {
     expect(await screen.findByText(t.proxies.failedCount(2))).toBeTruthy()
   })
 
-  it('puts a pasted line that is not a proxy in words', async () => {
+  it('puts a pasted line that is not a proxy and an unreachable proxy in words', async () => {
     render(<ConfirmProvider><ToastProvider><ProxiesPage onChanged={vi.fn()} /></ToastProvider></ConfirmProvider>)
     await screen.findByText('1.2.3.4')
     fireEvent.change(screen.getByRole('textbox', { name: t.proxies.addTitle }), { target: { value: 'proxy cua toi' } })
     fireEvent.click(screen.getByRole('button', { name: t.proxies.import }))
     expect(await screen.findByText(t.proxies.failedLine(1, t.proxies.parseErr.format))).toBeTruthy()
+    expect(await screen.findByText(`gw.example:10010: ${t.errors.proxy_unreachable}`)).toBeTruthy()
   })
 
   it('warns when sites with IPv6 see the proxy in another timezone', async () => {
@@ -90,6 +91,7 @@ describe('ProxiesPage', () => {
     const dialog = screen.getByRole('dialog', { name: t.proxies.buy })
     expect(within(dialog).getAllByRole('listitem').map((item) => item.querySelector('b')?.textContent))
       .toEqual(partnersOf('proxy').map((p) => p.name))
+    expect(within(dialog).getAllByRole('listitem')[0].textContent).toContain(t.partners.recommended)
     expect(within(dialog).queryByText('PostClaw')).toBeNull()
     fireEvent.click(within(dialog).getByRole('button', { name: new RegExp(provider) }))
     expect(openExternal).toHaveBeenCalledWith(url)

@@ -29,13 +29,12 @@ type Props = {
   engineLabel: string
   engineReady: boolean
   pro?: service.ProStatus | null
-  onOpenPro?: () => void
   onNavigate: (page: Page, view?: View) => void
   onNewProfile: () => void
   onOpenTools: () => void
 }
 
-export function Sidebar({ page, view, counts, tags, sites, siteCounts, proxyCount, mobileCount, engineLabel, engineReady, pro, onOpenPro, onNavigate, onNewProfile, onOpenTools }: Props) {
+export function Sidebar({ page, view, counts, tags, sites, siteCounts, proxyCount, mobileCount, engineLabel, engineReady, pro, onNavigate, onNewProfile, onOpenTools }: Props) {
   const [tagsOpen, setTagsOpen] = useState(true)
   const [allTags, setAllTags] = useState(false)
   const item = (label: string, icon: IconName, active: boolean, onClick: () => void, count?: number, tone: '' | 'live' | 'warn' = '') => (
@@ -57,6 +56,21 @@ export function Sidebar({ page, view, counts, tags, sites, siteCounts, proxyCoun
       <div className="brandrow">
         <LogoMark />
         <b>{t.appName}</b>
+        {pro?.active && (
+          <span className="brand-tier" aria-label="Pro">
+            <svg className="brand-tier-star" viewBox="0 0 16 16" aria-hidden="true">
+              <defs>
+                <linearGradient id="pro-star-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#4f8bff" />
+                  <stop offset="52%" stopColor="#e07b8b" />
+                  <stop offset="100%" stopColor="#e8b455" />
+                </linearGradient>
+              </defs>
+              <path fill="url(#pro-star-grad)" d="M8 1.2c.35 3.1 1.6 4.95 2.75 5.45.55.25 1.75.65 4.05 1.35-2.3.7-3.5 1.1-4.05 1.35C9.6 9.85 8.35 11.7 8 14.8c-.35-3.1-1.6-4.95-2.75-5.45-.55-.25-1.75-.65-4.05-1.35 2.3-.7 3.5-1.1 4.05-1.35C6.4 6.15 7.65 4.3 8 1.2z" />
+            </svg>
+            <span className="brand-tier-text">PRO</span>
+          </span>
+        )}
       </div>
       <button className="btn primary block newbtn nodrag" onClick={onNewProfile} title={`${t.nav.newProfile} ${modLabel}N`}>
         <Icon name="plus" />
@@ -104,13 +118,6 @@ export function Sidebar({ page, view, counts, tags, sites, siteCounts, proxyCoun
         )}
       </nav>
       <div className="sidefoot">
-        {pro?.active && (
-          <button type="button" className="prostatus nodrag" onClick={() => onOpenPro?.()} title={t.pro.title}>
-            <span className="seal" aria-hidden="true"><Icon name="spark" className="icon xs" /></span>
-            <span className="prostatus-copy"><b>{t.pro.title}</b><small>{pro.kind === 'lifetime' ? t.pro.kindLifetime : pro.kind === 'gift' ? t.pro.kindGift : t.pro.stateActive('')}</small></span>
-            <Icon name="chevron" className="icon xs prostatus-arrow" />
-          </button>
-        )}
         <BuyProxiesButton className="navitem nodrag" />
         {item(t.nav.tools, 'spark', false, onOpenTools)}
         {item(t.nav.settings, 'settings', page === 'settings', () => onNavigate('settings'))}

@@ -16,10 +16,12 @@ const rows = [
   { ...base, tags: [] },
 ]
 
-const sidebar = (onNavigate = vi.fn(), many = 0, onOpenTools = vi.fn()) => render(
+const sidebar = (onNavigate = vi.fn(), many = 0, onOpenTools = vi.fn(), proActive = false) => render(
   <Sidebar page="profiles" view="all" counts={countProfiles(rows)}
     tags={many ? Array.from({ length: many }, (_, i) => [`tag-${i}`, 1] as [string, number]) : tagCounts(rows)}
-    sites={[]} siteCounts={new Map()} proxyCount={0} mobileCount={2} engineLabel="" engineReady onNavigate={onNavigate} onNewProfile={vi.fn()} onOpenTools={onOpenTools} />,
+    sites={[]} siteCounts={new Map()} proxyCount={0} mobileCount={2} engineLabel="" engineReady
+    pro={proActive ? ({ active: true, kind: 'lifetime' } as never) : undefined}
+    onNavigate={onNavigate} onNewProfile={vi.fn()} onOpenTools={onOpenTools} />,
 )
 
 describe('Sidebar', () => {
@@ -66,5 +68,15 @@ describe('Sidebar', () => {
     fireEvent.click(screen.getByRole('button', { name: t.nav.tools }))
     expect(onOpenTools).toHaveBeenCalledOnce()
     expect(onNavigate).not.toHaveBeenCalled()
+  })
+
+  it('shows the Pro mark next to AnyProfile only when Pro is active', () => {
+    const { container } = sidebar(vi.fn(), 0, vi.fn(), false)
+    expect(container.querySelector('.brand-tier')).toBeNull()
+    expect(container.querySelector('.prostatus')).toBeNull()
+    cleanup()
+    const { container: proContainer } = sidebar(vi.fn(), 0, vi.fn(), true)
+    expect(proContainer.querySelector('.brand-tier')?.textContent).toBe('PRO')
+    expect(proContainer.querySelector('.prostatus')).toBeNull()
   })
 })

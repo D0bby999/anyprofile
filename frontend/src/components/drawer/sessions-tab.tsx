@@ -8,7 +8,12 @@ import { countryName, flagText } from '../../lib/flags'
 /** Notes for one session, compared with the next older session that measured an exit. */
 function notesFor(list: store.Session[], i: number): { text: string; tone: string }[] {
   const s = list[i]
-  if (s.exitError) return [{ text: flagText({ id: 'exit_failed', level: 'warn', params: {} }).label, tone: 'warn' }]
+  if (s.exitError) {
+    const rejected = /407|401|unauthorized|authentication/i.test(s.exitError)
+    const id = rejected ? 'proxy_rejected' : 'exit_failed'
+    const tone = rejected ? 'danger' : 'warn'
+    return [{ text: flagText({ id, level: tone, params: {} }).label, tone }]
+  }
   const prev = list.slice(i + 1).find((x) => x.exitIp && x.proxyId === s.proxyId)
   if (!s.exitIp || !prev) return []
   if (prev.exitCountry !== s.exitCountry) return [{ text: t.flags.country_changed as string, tone: 'danger' }]

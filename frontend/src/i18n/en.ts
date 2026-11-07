@@ -192,6 +192,7 @@ export const en = {
     ip_changed: 'New IP', ip_changedText: 'New IP address since last time, same country.',
     ipv6_elsewhere: 'IPv6 exits elsewhere', ipv6_elsewhereText: (profile: string, ip: string) => `Sites with IPv6 see this proxy at another address, in ${ip}; the profile uses ${profile}. Ask the provider for IPv4 only, or use another proxy.`,
     tz_mismatch: 'Timezone mismatch', tz_mismatchText: (profile: string, ip: string) => `The profile\u2019s timezone (${profile}) does not match the IP\u2019s location (${ip}).`,
+    proxy_rejected: 'Proxy rejected', proxy_rejectedText: 'The proxy rejected the connection at launch (wrong password or out of traffic). Check with the provider.',
     exit_failed: 'IP not checked', exit_failedText: (err: string) => `Could not check the IP at launch: ${err}.`,
     direct: 'Real IP', directText: 'Opens with your real IP.',
   } as Record<string, string | ((...a: string[]) => string)>,
@@ -295,6 +296,7 @@ export const en = {
     groups: { publish: 'Post and schedule', video: 'Edit video', record: 'Record the screen', audio: 'Captions and audio', image: 'Images', craft: 'The Craft App Suite' } as Record<string, string>,
     openSource: 'Open source',
     ours: 'From the AnyProfile team',
+    recommended: 'Recommended',
     desc: {
       iproyal: 'Residential traffic that never expires, plus static ISP, mobile and datacenter.',
       nodemaven: 'Residential IPs filtered for quality, with sticky sessions up to 24 hours. Made for antidetect browsers.',
@@ -659,6 +661,7 @@ export const en = {
     anymobile_runtime_unavailable: 'The Android VM runtime is not out yet. Once it is, AnyProfile picks it up without a reinstall.',
     disk_full_image: 'Free at least 4 GB of disk space to download Android.',
     proxy_unreachable: 'The proxy did not answer. Check the address, port and password, or ask the provider.',
+    proxy_rejected: 'The proxy rejected the connection. Check the username, password or remaining traffic.',
     cookie_key_lost: `This profile\u2019s cookie key is missing from ${vaultShort}. Opening it with a new key would sign it out of every site.`,
     cookie_key_mismatch: `${isWindows ? 'Windows Credential Manager' : 'The Keychain'} holds a different cookie key than this profile was created with.`,
     engine_missing: 'The browser engine is not installed. Install it in Settings.',

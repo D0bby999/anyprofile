@@ -16,6 +16,8 @@ export type Partner = {
   urlVi?: string
   /** Our own products: their links carry UTM tags so the visits can be counted there. */
   own?: boolean
+  /** Highlighted editorial recommendation at the top of the list. */
+  recommended?: boolean
   /** Proxy providers: what they sell. */
   types?: ProxyType[]
   /** Creator tools: the section they sit in. */
@@ -32,7 +34,7 @@ export const toolGroups: ToolGroup[] = ['publish', 'video', 'record', 'audio', '
 // SOAX, Massive and Froxy link to their home pages until their referral links arrive.
 const all = ['residential', 'isp', 'mobile', 'datacenter'] satisfies ProxyType[]
 export const partners: Partner[] = [
-  { id: 'oxylabs', name: 'Oxylabs', kind: 'proxy', url: 'https://oxylabs.go2cloud.org/aff_c?offer_id=7&aff_id=2794', types: all },
+  { id: 'oxylabs', name: 'Oxylabs', kind: 'proxy', url: 'https://oxylabs.go2cloud.org/aff_c?offer_id=7&aff_id=2794', recommended: true, types: all },
   { id: 'decodo', name: 'Decodo', kind: 'proxy', url: 'https://dashboard.decodo.com/register?referral_code=2973fec4bd68c176365c5cf1ef80bade6eaccdde', types: all },
   { id: 'soax', name: 'SOAX', kind: 'proxy', url: 'https://soax.com/', types: all },
   { id: 'evomi', name: 'Evomi', kind: 'proxy', url: 'https://evomi.com/?p=5Z7DMFN3ME', types: all },

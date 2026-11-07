@@ -193,6 +193,7 @@ export const vi: Messages = {
     ip_changed: 'IP mới', ip_changedText: 'Địa chỉ IP mới so với lần trước, cùng quốc gia.',
     ipv6_elsewhere: 'IPv6 ra nơi khác', ipv6_elsewhereText: (profile: string, ip: string) => `Trang có IPv6 thấy proxy ở một địa chỉ khác, múi giờ ${ip}; profile dùng ${profile}. Hãy hỏi nhà cung cấp cách chỉ dùng IPv4, hoặc dùng proxy khác.`,
     tz_mismatch: 'Lệch múi giờ', tz_mismatchText: (profile: string, ip: string) => `Múi giờ của profile (${profile}) không khớp vị trí của IP (${ip}).`,
+    proxy_rejected: 'Proxy từ chối', proxy_rejectedText: 'Proxy từ chối kết nối lúc mở (sai mật khẩu hoặc hết dung lượng). Hãy kiểm tra lại với nhà cung cấp.',
     exit_failed: 'Chưa kiểm IP', exit_failedText: (err: string) => `Không kiểm được IP lúc mở: ${err}.`,
     direct: 'IP thật', directText: 'Mở bằng IP thật của bạn.',
   } as Record<string, string | ((...a: string[]) => string)>,
@@ -296,6 +297,7 @@ export const vi: Messages = {
     groups: { publish: 'Đăng và lên lịch', video: 'Dựng video', record: 'Quay màn hình', audio: 'Phụ đề và âm thanh', image: 'Hình ảnh', craft: 'Bộ ứng dụng Craft' } as Record<string, string>,
     openSource: 'Mã nguồn mở',
     ours: 'Cùng đội AnyProfile',
+    recommended: 'Khuyên dùng',
     desc: {
       iproyal: 'Lưu lượng residential không hết hạn, kèm ISP tĩnh, mobile và datacenter.',
       nodemaven: 'IP residential được lọc chất lượng, phiên sticky đến 24 giờ. Làm riêng cho trình duyệt antidetect.',
@@ -660,6 +662,7 @@ export const vi: Messages = {
     anymobile_runtime_unavailable: 'Bộ chạy máy ảo Android chưa được phát hành. Khi phát hành, AnyProfile tự nhận mà không cần cài lại.',
     disk_full_image: 'Hãy giải phóng ít nhất 4 GB ổ đĩa để tải Android.',
     proxy_unreachable: 'Proxy không phản hồi. Kiểm tra địa chỉ, cổng và mật khẩu, hoặc hỏi nhà cung cấp.',
+    proxy_rejected: 'Proxy từ chối kết nối. Kiểm tra lại tài khoản, mật khẩu hoặc dung lượng proxy.',
     cookie_key_lost: `Khoá cookie của profile này không còn trong ${vaultShort}. Mở bằng khoá mới sẽ đăng xuất mọi trang.`,
     cookie_key_mismatch: `${vaultShort} đang giữ khoá cookie khác với khoá profile được tạo.`,
     engine_missing: 'Chưa cài engine trình duyệt. Hãy cài trong mục Cài đặt.',

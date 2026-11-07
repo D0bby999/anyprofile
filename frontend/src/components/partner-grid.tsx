@@ -19,7 +19,13 @@ export function PartnerGrid({ items }: { items: Partner[] }) {
                 ? <img className="partner-mark" src={logo} alt="" draggable={false} />
                 : <span className="partner-mark letter" aria-hidden="true">{p.name[0]}</span>}
               <span className="partner-main">
-                <b>{p.name}</b>
+                <span className="partner-head">
+                  <b>{p.name}</b>
+                  <span className="partner-corner">
+                    {p.recommended && <span className="chip accent">{t.partners.recommended}</span>}
+                    <Icon name="external" className="icon sm" />
+                  </span>
+                </span>
                 <span className="muted">{t.partners.desc[p.id]}</span>
                 {(p.types || p.own || p.openSource) && (
                   <span className="partner-tags">
@@ -29,7 +35,6 @@ export function PartnerGrid({ items }: { items: Partner[] }) {
                   </span>
                 )}
               </span>
-              <Icon name="external" className="icon sm" />
             </button>
           </li>
         )

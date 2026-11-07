@@ -72,8 +72,9 @@ describe('partners', () => {
     }
   })
 
-  it('uses the Oxylabs affiliate URL in both app languages', () => {
+  it('uses the Oxylabs affiliate URL in both app languages and marks it recommended', () => {
     const oxylabs = partnersOf('proxy').find((p) => p.id === 'oxylabs')!
+    expect(oxylabs.recommended).toBe(true)
     for (const lang of ['en', 'vi']) {
       expect(partnerLink(oxylabs, lang)).toBe('https://oxylabs.go2cloud.org/aff_c?offer_id=7&aff_id=2794')
     }
