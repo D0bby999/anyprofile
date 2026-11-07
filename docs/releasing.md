@@ -125,29 +125,30 @@ người dùng. Chạy trong `pro/chrome`, với Chromium đã build (`scripts/b
 
    ```
    SIGN_IDENTITY="Developer ID Application: … (TEAMID)" \
-   RELEASE_URL_BASE="https://github.com/D0bby999/anyprofile/releases/download/engine-anybrowser-0.5.1.156" \
-   PACKAGE_OUT="$HOME/chromium-work/dist-0.5.1.156" \
-     scripts/package.sh 0.5.1.156
+   RELEASE_URL_BASE="https://github.com/D0bby999/anyprofile/releases/download/engine-anybrowser-0.5.1.157" \
+   PACKAGE_OUT="$PWD/../../artifacts/anybrowser/engine/dist-0.5.1.157" \
+     scripts/package.sh 0.5.1.157
    ```
 
    Kết quả: `.zip`, `.zip.release.json` (URL, hash file nén, hash `Chromium` và `Chromium Framework`, `teamId`,
-   `catalogue`) và `.zip.build-record.txt`. `package.sh` không ghi đè artifact đã có: đổi `PACKAGE_OUT` cho mỗi lần.
+   `catalogue`) và `.zip.build-record.txt`. Sau khi gửi công chứng và đóng dấu (`notarize-engine.sh`) sang
+   `artifacts/anybrowser/engine/dist-stapled-0.5.1.157`, xoá bản `dist-0.5.1.157` chưa staple để tránh rác.
 
 2. **Cắt source tương ứng.** GPLv3 đòi bản source đi kèm; `SOURCE.txt` trong zip cũng hứa như vậy. Tarball cắt từ
    HEAD của `pro/`, nên commit phần `chrome/` trước (script từ chối chạy khi còn file chưa commit).
 
    ```
-   scripts/source-tarball.sh 0.5.1.156 "$HOME/chromium-work/dist-source"
+   scripts/source-tarball.sh 0.5.1.157 "$PWD/../../artifacts/anybrowser/engine/dist-source-157"
    ```
 
 3. **Tạo một release riêng cho engine, đánh dấu pre-release.** `/releases/latest` phải vẫn trỏ vào bản phát hành
    app, vì app đọc `latest.json` ở đúng URL đó; một release engine không đánh dấu sẽ che mất nó.
 
    ```
-   gh release create engine-anybrowser-0.5.1.156 \
-     "$HOME/chromium-work/dist-0.5.1.156/anybrowser-156.0.8078.74-macos-arm64.zip" \
-     "$HOME/chromium-work/dist-source/anybrowser-0.5.1.156-source.tar.gz" \
-     --prerelease --title "AnyBrowser 0.5.1.156" --notes-file <ghi chú> -R D0bby999/anyprofile
+   gh release create engine-anybrowser-0.5.1.157 \
+     "artifacts/anybrowser/engine/dist-stapled-0.5.1.157/anybrowser-156.0.8078.74-macos-arm64.zip" \
+     "artifacts/anybrowser/engine/dist-source-157/anybrowser-0.5.1.157-source.tar.gz" \
+     --prerelease --title "AnyBrowser 0.5.1.157" --notes-file <ghi chú> -R D0bby999/anyprofile
    ```
 
 4. **Pin lại bản đó** trong `internal/engine/anybrowser/release_darwin.go` (mọi giá trị đọc từ `.zip.release.json`;
@@ -155,12 +156,13 @@ người dùng. Chạy trong `pro/chrome`, với Chromium đã build (`scripts/b
    `frameworkSHA`, `teamID`. `Catalogue` chỉ đổi khi bộ máy giả lập đổi (digest của `--fingerprint-explain` khác
    bản trước); giữ nguyên thì profile cũ tự chuyển sang bản mới, đổi thì chúng ở lại bản cũ.
 
-5. **Kiểm trước khi phát hành app.** Tải lại đúng asset vừa đăng rồi chạy kiểm tra của chính app (giải nén bằng
-   `engine.ExtractZip`, so hash từng file với pin, `codesign --verify --deep --strict` và so Team ID):
+5. **Kiểm trước khi phát hành app.** Tải lại đúng asset vừa đăng về `artifacts/local-test/` rồi chạy kiểm tra của chính app (giải nén bằng
+   `engine.ExtractZip`, so hash từng file với pin, `codesign --verify --deep --strict` và so Team ID), xong thì xoá file zip tải thử:
 
    ```
-   curl -sSL -o /tmp/engine.zip "<URL ở bước 1>"
-   ENGINE_ZIP=/tmp/engine.zip go test ./internal/engine/ -run TestPinnedEngineArchive -v
+   curl -sSL -o artifacts/local-test/engine.zip "<URL ở bước 1>"
+   ENGINE_ZIP=artifacts/local-test/engine.zip go test ./internal/engine/ -run TestPinnedEngineArchive -v
+   rm -f artifacts/local-test/engine.zip
    ```
 
    Cách khác: `scripts/dev-anybrowser-server.sh <zip> 8765` phục vụ đúng zip trên loopback (script in ra
