@@ -3,11 +3,15 @@
 The notes of each release tag are shown in the app's update prompt; this file
 keeps them together.
 
-## 0.2.1 (unreleased)
+## 0.2.1 (2026-11-07)
 
-- Creator Tools now includes the Craft App Suite, and hides the Pro invitation when Pro is active.
+- Creator Tools opens in a modal dialog, includes the Craft App Suite, and hides the Pro invitation when Pro is active.
+- Settings adds a concurrent launch ceiling, live language switching, and live storage path refresh.
+- MCP adds Antigravity client setup and improves lease and recording automation.
+- Mobile supports split APK bundles (`.apks`, `.xapk`, `.apkm`), 1-click Aurora Store installation, and keeps recording active without idle pause.
+- Backups re-encrypt cookies across machines and carry the Pro license state cleanly.
 - Removed Scheduled Posts; the old queue data remains in the database.
-- Updated the proxy recommendations and added Oxylabs.
+- Updated the proxy recommendations and added Oxylabs and DataImpulse.
 
 Engine 0.5.1.157 (261107):
 
