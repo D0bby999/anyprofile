@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
+	"strings"
 	"time"
 
 	"github.com/D0bby999/anyprofile/internal/apperr"
@@ -87,6 +89,9 @@ func (l *Launcher) start(ctx context.Context, p *proc) error {
 		}
 	}
 	if urls := prof.StartURLs(); len(urls) > 0 && (rt.FreshStart || !hadSession) {
+		if slices.ContainsFunc(l.TestArgs, func(a string) bool { return strings.HasPrefix(a, "--headless") }) {
+			urls = urls[:1] // Chromium headless refuses more than one target URL in argv
+		}
 		rt.StartURLs = urls
 	}
 	if err := eng.PrepareProfile(prof, rt); err != nil {
