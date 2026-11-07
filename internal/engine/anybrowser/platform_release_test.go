@@ -106,6 +106,12 @@ func TestWindowsLegacyTransportContract(t *testing.T) {
 // given. Dropping the old entry would strand those profiles on the old engine.
 func TestBuiltinCarriesThePreviousRelease(t *testing.T) {
 	rels := Builtin()
+	if previousVersion == "" {
+		if len(rels) != 1 {
+			t.Fatalf("builtin releases = %d, want 1 when no previous release is set", len(rels))
+		}
+		return
+	}
 	if len(rels) < 2 {
 		t.Fatalf("builtin releases = %d, want the current one and the previous", len(rels))
 	}

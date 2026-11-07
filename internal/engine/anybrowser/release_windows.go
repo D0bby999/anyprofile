@@ -24,6 +24,14 @@ const (
 	// supportsGeolocation is false until the Windows fork carries patch 0164.
 	supportsGeolocation = false
 
+	// Windows still pins the first upstream release, so there is no replaced
+	// build to keep in the catalog yet.
+	previousVersion      = ""
+	previousDate         = ""
+	previousZipSHA256    = ""
+	previousBinarySHA256 = ""
+	previousFrameworkSHA = ""
+
 	zipName      = "apostate-155.0.8059.31-windows-x64.zip"
 	zipURL       = "https://github.com/heretic-tech/apostate/releases/download/v0.5.1/" + zipName
 	zipSHA256    = "8e55e44fb7f58619461e1d42a947446dcc08a2b46493c420c8e62ae27ab9c7e5"

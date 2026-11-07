@@ -36,6 +36,9 @@ func Builtin() []engine.Release {
 		Date: releaseDate, URL: zipURL, SHA256: zipSHA256,
 		Files: map[string]string{binRel: binarySHA256, frameworkRel: frameworkSHA},
 		Bin:   binRel, App: appRel, TeamID: teamID, Catalogue: Catalogue}
+	if previousVersion == "" {
+		return []engine.Release{current}
+	}
 	previous := current
 	previous.Version = previousVersion
 	previous.Date = previousDate
