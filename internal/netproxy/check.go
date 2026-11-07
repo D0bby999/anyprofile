@@ -61,8 +61,14 @@ func Check(ctx context.Context, up Upstream) (Exit, error) {
 	t0 := time.Now()
 	e, err := geoIPInfo(ctx, clientVia(up, true))
 	if err != nil {
+		if IsAuthError(err) {
+			return Exit{}, ErrUpstreamAuth
+		}
 		var err2 error
 		if e, err2 = geoIPWho(ctx, clientVia(up, true)); err2 != nil {
+			if IsAuthError(err2) {
+				return Exit{}, ErrUpstreamAuth
+			}
 			return Exit{}, fmt.Errorf("geoip through proxy: %v; fallback: %v", err, err2)
 		}
 	}

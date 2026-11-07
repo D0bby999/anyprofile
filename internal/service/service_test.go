@@ -529,6 +529,12 @@ func TestProxyCheckErrorHasCode(t *testing.T) {
 	if _, err := s.CheckProxyByID(ctx, rows[0].ID); err == nil || !strings.HasPrefix(err.Error(), "anyprofile:proxy_unreachable:") {
 		t.Fatalf("err = %v", err)
 	}
+	s.CheckProxy = func(context.Context, netproxy.Upstream) (netproxy.Exit, error) {
+		return netproxy.Exit{}, netproxy.ErrUpstreamAuth
+	}
+	if _, err := s.CheckProxyByID(ctx, rows[0].ID); err == nil || !strings.HasPrefix(err.Error(), "anyprofile:proxy_rejected:") {
+		t.Fatalf("rejected err = %v", err)
+	}
 	res, err := s.ImportProxies(ctx, "gw.example:10010:u:pw", "")
 	if err != nil || len(res.Unreachable) != 1 || res.Unreachable[0] != "gw.example:10010" {
 		t.Fatalf("import of an unreachable proxy = %+v %v", res, err)

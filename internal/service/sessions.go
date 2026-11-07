@@ -4,6 +4,7 @@ package service
 
 import (
 	"context"
+	"errors"
 
 	"github.com/D0bby999/anyprofile/internal/netproxy"
 	"github.com/D0bby999/anyprofile/internal/store"
@@ -12,7 +13,7 @@ import (
 // Flag is a warning about a profile's exit; the UI turns ID and Params into
 // a sentence, so no English is built here.
 type Flag struct {
-	ID     string            `json:"id"`    // country_changed, ip_changed, tz_mismatch, ipv6_elsewhere, exit_failed, direct
+	ID     string            `json:"id"`    // country_changed, ip_changed, tz_mismatch, ipv6_elsewhere, exit_failed, proxy_rejected, direct
 	Level  string            `json:"level"` // danger, warn or info
 	Params map[string]string `json:"params"`
 }
@@ -38,6 +39,9 @@ func exitFlags(p store.Profile, latest, previous *store.Session) []Flag {
 		return flags
 	}
 	if latest.ExitError != "" {
+		if netproxy.IsAuthError(errors.New(latest.ExitError)) {
+			return append(flags, Flag{ID: "proxy_rejected", Level: "danger", Params: map[string]string{}})
+		}
 		msg := latest.ExitError
 		if len(msg) > maxErrorParam {
 			msg = msg[:maxErrorParam] + "…"

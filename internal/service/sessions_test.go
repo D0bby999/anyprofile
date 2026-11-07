@@ -39,6 +39,7 @@ func TestExitFlags(t *testing.T) {
 		{"ipv6 in the same zone", prof, &store.Session{ID: 1, ProxyID: "px", ExitIP: "1.1.1.1", ExitCountry: "US", ExitTZ: "America/New_York",
 			ExitIP6: "2001:db8::7", ExitTZ6: "America/New_York"}, nil, nil},
 		{"exit failed", prof, &store.Session{ID: 2, ProxyID: "px", ExitError: "timeout"}, us, []string{"exit_failed:warn"}},
+		{"proxy rejected", prof, &store.Session{ID: 2, ProxyID: "px", ExitError: `Get "https://ipinfo.io/json": Unauthorized`}, us, []string{"proxy_rejected:danger"}},
 		{"only one session", prof, us, &store.Session{}, nil},
 		{"another proxy since last time", prof, &store.Session{ID: 2, ProxyID: "py", ExitIP: "2.2.2.2", ExitCountry: "DE", ExitTZ: "America/New_York"}, us, nil},
 		{"no proxy", store.Profile{Timezone: "UTC"}, us, us, []string{"direct:info"}},

@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 
 	"golang.org/x/net/proxy"
@@ -67,6 +68,21 @@ func (c *bufConn) Read(p []byte) (int, error) { return c.r.Read(p) }
 
 var ErrUpstreamAuth = errors.New("upstream proxy rejected the credentials (407)")
 
+// IsAuthError reports whether err is a proxy authentication rejection (407, 401 or SOCKS5 auth).
+func IsAuthError(err error) bool {
+	if err == nil {
+		return false
+	}
+	if errors.Is(err, ErrUpstreamAuth) {
+		return true
+	}
+	s := err.Error()
+	return strings.Contains(s, "Proxy Authentication Required") ||
+		strings.Contains(s, "407") ||
+		strings.Contains(s, "Unauthorized") ||
+		strings.Contains(s, "username/password authentication failed")
+}
+
 // DialTunnel opens a TCP stream to target ("host:port") through the upstream.
 func (u Upstream) DialTunnel(ctx context.Context, target string) (net.Conn, error) {
 	ctx, cancel := context.WithTimeout(ctx, dialTimeout)
@@ -106,7 +122,7 @@ func (u Upstream) DialTunnel(ctx context.Context, target string) (net.Conn, erro
 			return nil, err
 		}
 		resp.Body.Close()
-		if resp.StatusCode == http.StatusProxyAuthRequired {
+		if resp.StatusCode == http.StatusProxyAuthRequired || resp.StatusCode == http.StatusUnauthorized {
 			c.Close()
 			return nil, ErrUpstreamAuth
 		}

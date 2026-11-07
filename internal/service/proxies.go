@@ -130,6 +130,9 @@ func (s *Service) CheckProxyByID(ctx context.Context, id string) (store.Proxy, e
 		if ferr := s.Store.SaveProxyFailure(id); ferr == nil {
 			s.notify("proxies")
 		}
+		if netproxy.IsAuthError(err) {
+			return px, apperr.Newf("proxy_rejected", "%v", err)
+		}
 		// The network detail goes to the log; the user gets a sentence.
 		return px, apperr.Newf("proxy_unreachable", "%v", err)
 	}
