@@ -114,6 +114,13 @@ func TestInstall(t *testing.T) {
 	if err := d.Install(context.Background(), func(string, int64, int64) {}); err != nil {
 		t.Fatal(err)
 	}
+	// If qemu is cleared while the image stays, reinstalling qemu keeps the image.
+	if err := os.RemoveAll(filepath.Join(root, "qemu")); err != nil {
+		t.Fatal(err)
+	}
+	if err := d.Install(context.Background(), func(string, int64, int64) {}); err != nil {
+		t.Fatal(err)
+	}
 	// Pro gone: nothing is offered, what is installed stays.
 	if err := d.OfferRuntime(nil); err != nil {
 		t.Fatal(err)

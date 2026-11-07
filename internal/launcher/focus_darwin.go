@@ -63,18 +63,20 @@ static int passFocus(void) {
 static int workArea(int *x, int *y, int *w, int *h) {
 	__block int ok = 0;
 	void (^read)(void) = ^{
-		NSScreen *s = [NSScreen mainScreen];
-		NSArray *all = [NSScreen screens];
-		if (s == nil || all.count == 0) return;
-		NSRect v = s.visibleFrame;
-		CGFloat top = ((NSScreen *)all[0]).frame.size.height;
-		*x = (int)v.origin.x;
-		*y = (int)(top - (v.origin.y + v.size.height));
-		*w = (int)v.size.width;
-		*h = (int)v.size.height;
-		ok = 1;
+		@autoreleasepool {
+			NSScreen *s = [NSScreen mainScreen];
+			NSArray *all = [NSScreen screens];
+			if (s == nil || all.count == 0) return;
+			NSRect v = s.visibleFrame;
+			CGFloat top = ((NSScreen *)all[0]).frame.size.height;
+			*x = (int)v.origin.x;
+			*y = (int)(top - (v.origin.y + v.size.height));
+			*w = (int)v.size.width;
+			*h = (int)v.size.height;
+			ok = 1;
+		}
 	};
-	if ([NSThread isMainThread]) read(); else dispatch_sync(dispatch_get_main_queue(), read);
+	if ([NSThread isMainThread] || NSApp == nil) read(); else dispatch_sync(dispatch_get_main_queue(), read);
 	return ok;
 }
 

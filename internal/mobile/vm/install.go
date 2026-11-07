@@ -121,6 +121,7 @@ func (v *Driver) Install(ctx context.Context, progress func(engine string, done,
 		if err := os.WriteFile(filepath.Join(dir, "VERSION"), []byte(r.Version+"\n"), 0o600); err != nil {
 			return err
 		}
+		st = v.InstallStatus()
 	}
 	if st.Image.Installed == "" {
 		rs := v.cat.For(ImageEngine)

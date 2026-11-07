@@ -37,17 +37,19 @@ static int windowBounds(int pid, int *x, int *y, int *w, int *h) {
 static int workArea(int *x, int *y, int *w, int *h) {
 	__block int ok = 0;
 	void (^read)(void) = ^{
-		NSScreen *s = [NSScreen mainScreen];
-		if (s == nil) return;
-		NSRect v = s.visibleFrame;
-		CGFloat top = s.frame.size.height;
-		*x = (int)v.origin.x;
-		*y = (int)(top - (v.origin.y + v.size.height));
-		*w = (int)v.size.width;
-		*h = (int)v.size.height;
-		ok = *w > 0 && *h > 0;
+		@autoreleasepool {
+			NSScreen *s = [NSScreen mainScreen];
+			if (s == nil) return;
+			NSRect v = s.visibleFrame;
+			CGFloat top = s.frame.size.height;
+			*x = (int)v.origin.x;
+			*y = (int)(top - (v.origin.y + v.size.height));
+			*w = (int)v.size.width;
+			*h = (int)v.size.height;
+			ok = *w > 0 && *h > 0;
+		}
 	};
-	if ([NSThread isMainThread]) read(); else dispatch_sync(dispatch_get_main_queue(), read);
+	if ([NSThread isMainThread] || NSApp == nil) read(); else dispatch_sync(dispatch_get_main_queue(), read);
 	return ok;
 }
 */
