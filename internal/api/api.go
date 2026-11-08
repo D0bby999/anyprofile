@@ -225,6 +225,7 @@ func (s *Server) stop(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, statusOf(err), err)
 		return
 	}
+	(&s.leases).releaseKey("profile:" + id)
 	s.get(w, r)
 }
 

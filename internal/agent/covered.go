@@ -44,8 +44,12 @@ func (b *Browser) ensureClickable(ctx context.Context, t *tab, ref string) error
 			} `json:"result"`
 		}
 		fn := `function(x, y) {
-			const el = document.elementFromPoint(x, y);
+			let el = document.elementFromPoint(x, y);
 			if (!el) return 'nothing';
+			if (el.tagName.toLowerCase() === 'tp-yt-iron-overlay-backdrop' && (!el.classList.contains('opened') || window.getComputedStyle(el).opacity === '0')) {
+				el.style.pointerEvents = 'none';
+				el = document.elementFromPoint(x, y) || el;
+			}
 			const ok = el === this || this.contains(el);
 			return ok ? 'ok' : (el.tagName.toLowerCase() + (el.id ? '#' + el.id : ''));
 		}`

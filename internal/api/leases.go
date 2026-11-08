@@ -120,6 +120,18 @@ func (l *leaseStore) releaseFor(key, owner string) bool {
 	return true
 }
 
+func (l *leaseStore) releaseKey(key string) bool {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	x := l.byKey[key]
+	if x == nil {
+		return false
+	}
+	delete(l.byID, x.id)
+	delete(l.byKey, key)
+	return true
+}
+
 func (l *leaseStore) release(id string) bool {
 	l.mu.Lock()
 	defer l.mu.Unlock()
