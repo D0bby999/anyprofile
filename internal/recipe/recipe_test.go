@@ -64,3 +64,23 @@ func TestLoad(t *testing.T) {
 		t.Fatal("a missing folder has no recipes and no errors")
 	}
 }
+
+func TestValidateProPackRecipes(t *testing.T) {
+	for _, folder := range []string{"../../pro/pack/recipes", "../../examples/recipes"} {
+		if _, err := os.Stat(folder); err != nil {
+			continue
+		}
+		rs, errs := Load(folder)
+		if len(errs) > 0 {
+			t.Fatalf("%s has recipe errors: %v", folder, errs)
+		}
+		if len(rs) == 0 {
+			t.Fatalf("%s returned no recipes", folder)
+		}
+		for _, r := range rs {
+			if r.Name == "" || r.Description == "" || r.Body == "" {
+				t.Fatalf("recipe %s incomplete: %+v", r.File, r)
+			}
+		}
+	}
+}

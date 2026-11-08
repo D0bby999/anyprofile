@@ -253,8 +253,8 @@ func TestSites(t *testing.T) {
 			builtin++
 		}
 	}
-	if builtin != 45 {
-		t.Fatalf("builtin sites = %d, want 45", builtin)
+	if builtin != 46 {
+		t.Fatalf("builtin sites = %d, want 46", builtin)
 	}
 
 	got, err := s.CreateSite(SiteInput{Name: "Tiki", Domains: []string{" https://www.Tiki.vn/abc "}, Color: "#1a94ff"})
