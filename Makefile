@@ -23,7 +23,7 @@ dev: fury-config
 # exists; ad hoc otherwise. Without an Apple Team ID, macOS still keys
 # Keychain "Always Allow" to each build's cdhash, so a rebuild asks again,
 # once, at launch (secrets.Vault: one Keychain item for every secret).
-SIGN_ID ?= $(shell security find-identity -v -p codesigning 2>/dev/null | grep -q '"AnyProfile Dev"' && echo 'AnyProfile Dev' || echo -)
+SIGN_ID ?= $(shell security find-identity -v -p codesigning 2>/dev/null | sed -n 's/.*"\(Developer ID Application: [^"]*\)".*/\1/p' | head -n 1 | grep . || (security find-identity -v -p codesigning 2>/dev/null | grep -q '"AnyProfile Dev"' && echo 'AnyProfile Dev' || echo -))
 # A release signed with a Developer ID adds the hardened runtime and a secure
 # timestamp, which notarization requires (release.yml sets both).
 SIGN_FLAGS ?=
