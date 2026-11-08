@@ -33,6 +33,8 @@ type ImportResult struct {
 	Failed []netproxy.ParsedLine `json:"failed"`
 	// Unreachable lists the labels of added proxies whose first check failed.
 	Unreachable []string `json:"unreachable"`
+	// Rejected lists the subset of Unreachable whose upstream rejected authentication.
+	Rejected []string `json:"rejected,omitempty"`
 }
 
 func (s *Service) ListProxies() ([]ProxyRow, error) {
@@ -69,7 +71,7 @@ func (s *Service) ImportProxies(ctx context.Context, text, expiresOn string) (Im
 		}
 		up := line.Upstream
 		px := store.Proxy{ID: randomHex(8), Label: fmt.Sprintf("%s:%d", up.Host, up.Port), Scheme: up.Scheme, Host: up.Host,
-			Port: up.Port, Username: up.Username, ExpiresOn: expiresOn}
+			Port: up.Port, Username: up.Username, Note: line.Note, ExpiresOn: expiresOn}
 		if up.Password != "" {
 			if err := s.Secrets.Set(secrets.ServiceProxy, px.ID, []byte(up.Password)); err != nil {
 				return res, err
@@ -82,9 +84,13 @@ func (s *Service) ImportProxies(ctx context.Context, text, expiresOn string) (Im
 		added = append(added, px.ID)
 	}
 	res.Added = len(added)
-	for _, id := range s.checkMany(ctx, added) {
+	failed, rejected := s.checkMany(ctx, added)
+	for _, id := range failed {
 		if px, err := s.Store.GetProxy(id); err == nil {
 			res.Unreachable = append(res.Unreachable, px.Label)
+			if rejected[id] {
+				res.Rejected = append(res.Rejected, px.Label)
+			}
 		}
 	}
 	s.notify("proxies")
@@ -92,11 +98,12 @@ func (s *Service) ImportProxies(ctx context.Context, text, expiresOn string) (Im
 }
 
 // checkMany checks proxies eight at a time and returns the ids that failed.
-func (s *Service) checkMany(ctx context.Context, ids []string) []string {
+func (s *Service) checkMany(ctx context.Context, ids []string) ([]string, map[string]bool) {
 	sem := make(chan struct{}, 8)
 	var wg sync.WaitGroup
 	var mu sync.Mutex
 	var failed []string
+	rejected := map[string]bool{}
 	for _, id := range ids {
 		wg.Add(1)
 		sem <- struct{}{}
@@ -106,13 +113,16 @@ func (s *Service) checkMany(ctx context.Context, ids []string) []string {
 				s.Log.Warn("proxy check", "proxy", id, "err", err)
 				mu.Lock()
 				failed = append(failed, id)
+				if strings.HasPrefix(err.Error(), "anyprofile:proxy_rejected:") {
+					rejected[id] = true
+				}
 				mu.Unlock()
 			}
 		}(id)
 	}
 	wg.Wait()
 	sort.Strings(failed)
-	return failed
+	return failed, rejected
 }
 
 // CheckProxyByID measures the exit through the proxy and stores it.
@@ -155,7 +165,8 @@ func (s *Service) CheckAllProxies(ctx context.Context) (int, error) {
 	for i, p := range ps {
 		ids[i] = p.ID
 	}
-	return len(s.checkMany(ctx, ids)), nil
+	failed, _ := s.checkMany(ctx, ids)
+	return len(failed), nil
 }
 
 // ProxyMeta is what the proxy edit form sends.

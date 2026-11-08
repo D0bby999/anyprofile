@@ -52,9 +52,10 @@ export function ProxiesPage({ onChanged }: { onChanged: () => void }) {
   const importList = () => run('import', async () => {
     const res = await Api.ImportProxies(text, expiresOn)
     if (res.added > 0) toast.success(t.proxies.added(res.added))
+    const rejected = new Set((res as { rejected?: string[] }).rejected ?? [])
     setFailedLines([
       ...(res.failed ?? []).map(proxyLineError),
-      ...(res.unreachable ?? []).map((label) => `${label}: ${t.errors.proxy_unreachable}`),
+      ...(res.unreachable ?? []).map((label) => `${label}: ${rejected.has(label) ? t.errors.proxy_rejected : t.errors.proxy_unreachable}`),
     ])
     setText('') // pasted passwords should not linger on screen
     setExpiresOn('')

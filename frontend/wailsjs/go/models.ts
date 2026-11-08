@@ -559,6 +559,7 @@ export namespace service {
 	    added: number;
 	    failed: netproxy.ParsedLine[];
 	    unreachable: string[];
+	    rejected?: string[];
 	
 	    static createFrom(source: any = {}) {
 	        return new ImportResult(source);
@@ -569,6 +570,7 @@ export namespace service {
 	        this.added = source["added"];
 	        this.failed = this.convertValues(source["failed"], netproxy.ParsedLine);
 	        this.unreachable = source["unreachable"];
+	        this.rejected = source["rejected"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {

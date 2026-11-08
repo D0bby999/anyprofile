@@ -4,6 +4,7 @@ package netproxy
 
 import (
 	"fmt"
+	"net"
 	"net/url"
 	"strconv"
 	"strings"
@@ -13,6 +14,7 @@ import (
 type ParsedLine struct {
 	Line     int      `json:"line"`
 	Upstream Upstream `json:"-"`
+	Note     string   `json:"-"`
 	Display  string   `json:"display"` // redacted
 	Err      string   `json:"err"`
 	// Code names the problem for the UI to put in words: not_url, scheme,
@@ -41,7 +43,11 @@ func ParseList(text string) []ParsedLine {
 			continue
 		}
 		up, err := parseOne(line)
-		p := ParsedLine{Line: i + 1, Upstream: up}
+		var note string
+		if err == nil {
+			up, note = normalizeOxylabs(up)
+		}
+		p := ParsedLine{Line: i + 1, Upstream: up, Note: note}
 		if err != nil {
 			p.Err = err.Error()
 			if pe, ok := err.(parseError); ok {
@@ -93,4 +99,38 @@ func check(up Upstream) (Upstream, error) {
 		return up, errf("host_port", "bad host or port")
 	}
 	return up, nil
+}
+
+// normalizeOxylabs fixes Oxylabs dashboard CSV exports, which write the
+// assigned exit IP instead of the gateway (disp/isp/ddc.oxylabs.io) and omit
+// the mandatory user-/customer- username prefix.
+func normalizeOxylabs(up Upstream) (Upstream, string) {
+	if up.Username == "" {
+		return up, ""
+	}
+	raw := strings.TrimPrefix(up.Username, "user-")
+	var gw string
+	switch {
+	case strings.HasPrefix(raw, "disp_"):
+		gw = "disp.oxylabs.io"
+	case strings.HasPrefix(raw, "isp_"):
+		gw = "isp.oxylabs.io"
+	case strings.HasPrefix(raw, "ddc_"):
+		gw = "ddc.oxylabs.io"
+	}
+	if gw != "" && up.Port >= 8000 && up.Port <= 8999 && net.ParseIP(up.Host) != nil {
+		assignedIP := up.Host
+		up.Host = gw
+		up.Username = "user-" + raw
+		return up, assignedIP
+	}
+	host := strings.ToLower(up.Host)
+	if strings.HasSuffix(host, ".oxylabs.io") && !strings.HasPrefix(up.Username, "user-") && !strings.HasPrefix(up.Username, "customer-") {
+		if host == "pr.oxylabs.io" {
+			up.Username = "customer-" + up.Username
+		} else {
+			up.Username = "user-" + up.Username
+		}
+	}
+	return up, ""
 }

@@ -199,4 +199,11 @@ host-only
 			t.Errorf("display leaks password: %q", p.Display)
 		}
 	}
+	oxy := ParseList("205.188.182.232:8001:disp_demo123:demo_pass=1\ndisp.oxylabs.io:8002:disp_demo123:pass\npr.oxylabs.io:7777:myuser:pass")
+	if len(oxy) != 3 ||
+		oxy[0].Upstream.Host != "disp.oxylabs.io" || oxy[0].Upstream.Username != "user-disp_demo123" || oxy[0].Upstream.Password != "demo_pass=1" ||
+		oxy[1].Upstream.Host != "disp.oxylabs.io" || oxy[1].Upstream.Username != "user-disp_demo123" ||
+		oxy[2].Upstream.Host != "pr.oxylabs.io" || oxy[2].Upstream.Username != "customer-myuser" {
+		t.Fatalf("oxylabs normalization = %+v", oxy)
+	}
 }
