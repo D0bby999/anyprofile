@@ -83,9 +83,42 @@ func main() {
 			if text, ok := content.(*mcp.TextContent); ok {
 				fmt.Println(text.Text)
 			}
+			if img, ok := content.(*mcp.ImageContent); ok {
+				_ = os.WriteFile("screenshot.png", img.Data, 0o644)
+				fmt.Printf("Saved image (%d bytes) to screenshot.png\n", len(img.Data))
+			}
 		}
 		if res.IsError {
 			os.Exit(1)
+		}
+	case "batch":
+		for i := 2; i < len(os.Args); i += 2 {
+			tool := os.Args[i]
+			args := map[string]any{}
+			if i+1 < len(os.Args) && os.Args[i+1] != "{}" {
+				if err := json.Unmarshal([]byte(os.Args[i+1]), &args); err != nil {
+					fmt.Fprintln(os.Stderr, "arguments for", tool, err)
+					os.Exit(2)
+				}
+			}
+			fmt.Printf("=== %s ===\n", tool)
+			res, err := sess.CallTool(ctx, &mcp.CallToolParams{Name: tool, Arguments: args})
+			if err != nil {
+				fmt.Fprintln(os.Stderr, "call error:", err)
+				os.Exit(1)
+			}
+			for _, content := range res.Content {
+				if text, ok := content.(*mcp.TextContent); ok {
+					fmt.Println(text.Text)
+				}
+				if img, ok := content.(*mcp.ImageContent); ok {
+					_ = os.WriteFile("screenshot.png", img.Data, 0o644)
+					fmt.Printf("Saved image (%d bytes) to screenshot.png\n", len(img.Data))
+				}
+			}
+			if res.IsError {
+				os.Exit(1)
+			}
 		}
 	default:
 		fmt.Fprintln(os.Stderr, "unknown command", os.Args[1])
