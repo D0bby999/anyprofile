@@ -4,6 +4,7 @@ import { Api, service } from '../api'
 import { t } from '../i18n'
 import { errorText } from '../lib/format'
 import { Dialog } from './dialog'
+import { Icon } from './icons'
 import { ProxySelect, RealIpWarning } from './proxy-select'
 
 type Props = {
@@ -23,6 +24,66 @@ const PRESETS = {
 type Preset = keyof typeof PRESETS
 
 const splitTags = (s: string) => s.split(',').map((x) => x.trim()).filter(Boolean)
+
+/** Shows step-by-step progress and elapsed time while initializing a new Android device. */
+function MobileCreatingProgress() {
+  const [elapsed, setElapsed] = useState(0)
+
+  useEffect(() => {
+    const timer = setInterval(() => setElapsed((s) => s + 1), 1000)
+    return () => clearInterval(timer)
+  }, [])
+
+  const currentStep = elapsed < 5 ? 0 : elapsed < 14 ? 1 : elapsed < 26 ? 2 : 3
+  const steps = [
+    t.mobile.creatingStep1,
+    t.mobile.creatingStep2,
+    t.mobile.creatingStep3,
+    t.mobile.creatingStep4,
+  ]
+
+  const mins = Math.floor(elapsed / 60)
+  const secs = elapsed % 60
+  const timeStr = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`
+
+  return (
+    <div className="mobile-creating-panel" role="status" aria-live="polite">
+      <div className="mobile-creating-head">
+        <div className="mobile-creating-title">
+          <Icon name="refresh" className="icon spin" />
+          <span>{t.mobile.creatingTitle}</span>
+        </div>
+        <span className="mobile-creating-timer" title="Elapsed time">{timeStr}</span>
+      </div>
+
+      <div className="mobile-creating-progress" role="progressbar" aria-label={t.mobile.creatingTitle}>
+        <div />
+      </div>
+
+      <div className="mobile-creating-steps">
+        {steps.map((label, idx) => {
+          const status = idx < currentStep ? 'done' : idx === currentStep ? 'active' : 'pending'
+          return (
+            <div key={idx} className={`mobile-step ${status}`}>
+              <span className="mobile-step-bullet">
+                {idx < currentStep ? (
+                  <Icon name="check" className="icon" />
+                ) : idx === currentStep ? (
+                  <span className="pulse-dot" />
+                ) : (
+                  <span className="pending-dot" />
+                )}
+              </span>
+              <span className="mobile-step-text">{label}</span>
+            </div>
+          )
+        })}
+      </div>
+
+      <p className="mobile-creating-hint">{t.mobile.creatingNote}</p>
+    </div>
+  )
+}
 
 /** Creates a mobile device or edits one. The proxy, memory and cores are
  *  locked while the device runs. */
@@ -83,23 +144,30 @@ export function MobileDialog({ row, onClose, onSaved }: Props) {
       footer={<>
         <button type="button" className="btn ghost" onClick={onClose} disabled={busy && !row}>{t.common.cancel}</button>
         <button type="submit" className={`btn primary${busy ? ' busy' : ''}`} aria-busy={busy} disabled={!name.trim() || busy}>
-          {row ? t.common.save : t.mobile.create}
+          {busy && !row ? (
+            <>
+              <Icon name="refresh" className="icon spin" />
+              <span>{t.mobile.creatingBtn}</span>
+            </>
+          ) : (
+            row ? t.common.save : t.mobile.create
+          )}
         </button>
       </>}>
       <label className="field">
         <span className="label">{t.mobile.name}</span>
-        <input className="input" autoFocus value={name} placeholder={t.mobile.namePlaceholder} onChange={(e) => setName(e.target.value)} />
+        <input className="input" autoFocus disabled={busy} value={name} placeholder={t.mobile.namePlaceholder} onChange={(e) => setName(e.target.value)} />
       </label>
       <div className="field">
         <span className="label">{t.mobile.proxy}</span>
         {locked ? <span className="muted">{proxies.find((p) => p.id === proxyId)?.label ?? t.common.direct}</span> : (
-          <ProxySelect value={proxyId} onChange={setProxyId} proxies={proxies} allowAuto={!row} currentProfile={row?.name} />
+          <ProxySelect value={proxyId} onChange={setProxyId} proxies={proxies} allowAuto={!row} currentProfile={row?.name} disabled={busy} />
         )}
         {proxyId === '' && !locked && <RealIpWarning text={t.mobile.realIpWarning} />}
       </div>
       <label className="field">
         <span className="label">{t.mobile.preset}</span>
-        <select className="select" value={preset} disabled={locked} onChange={(e) => choosePreset(e.target.value as Preset)}>
+        <select className="select" value={preset} disabled={locked || busy} onChange={(e) => choosePreset(e.target.value as Preset)}>
           <option value="automation">{t.mobile.presetAutomation}</option>
           <option value="balanced">{t.mobile.presetBalanced}</option>
           <option value="interactive">{t.mobile.presetInteractive}</option>
@@ -109,29 +177,33 @@ export function MobileDialog({ row, onClose, onSaved }: Props) {
       <div className="row">
         <label className="field grow">
           <span className="label">{t.mobile.ram}</span>
-          <select className="select" value={ram} disabled={locked} onChange={(e) => setRam(Number(e.target.value))}>
+          <select className="select" value={ram} disabled={locked || busy} onChange={(e) => setRam(Number(e.target.value))}>
             {RAM_CHOICES.map((mb) => <option key={mb} value={mb}>{mb / 1024} GB</option>)}
           </select>
         </label>
         <label className="field grow">
           <span className="label">{t.mobile.cpus}</span>
-          <select className="select" value={cpus} disabled={locked} onChange={(e) => setCpus(Number(e.target.value))}>
+          <select className="select" value={cpus} disabled={locked || busy} onChange={(e) => setCpus(Number(e.target.value))}>
             {CPU_CHOICES.map((n) => <option key={n} value={n}>{n}</option>)}
           </select>
         </label>
       </div>
       <span className="hint">{t.mobile.screen(screenW, screenH, density)}</span>
+      <div className="mobile-store-hint" role="note">
+        <Icon name="cart" />
+        <span>{t.mobile.dialogStoreHint}</span>
+      </div>
       {locked && <span className="hint">{t.mobile.closedOnly}</span>}
       <label className="field">
         <span className="label">{t.mobile.notes}</span>
-        <textarea className="textarea" rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} />
+        <textarea className="textarea" rows={2} disabled={busy} value={notes} onChange={(e) => setNotes(e.target.value)} />
       </label>
       <label className="field">
         <span className="label">{t.mobile.tags}</span>
-        <input className="input" value={tags} onChange={(e) => setTags(e.target.value)} />
+        <input className="input" disabled={busy} value={tags} onChange={(e) => setTags(e.target.value)} />
         <span className="hint">{t.mobile.tagsHint}</span>
       </label>
-      {busy && !row && <div className="banner" role="status">{t.mobile.creating}</div>}
+      {busy && !row && <MobileCreatingProgress />}
       {error && <div className="banner danger" role="alert">{error}</div>}
     </Dialog>
   )

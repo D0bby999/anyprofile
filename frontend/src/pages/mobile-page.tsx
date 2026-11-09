@@ -225,9 +225,14 @@ export function MobilePage({ mobile, onOpenPro, onOpenSettings }: Props) {
                         <td className="muted nowrap mobile-last">{r.lastOpenAt ? relativeTime(r.lastOpenAt) : t.mobile.never}</td>
                         <td className="col-actions"><span className="row mobile-actions">
                           {running && (
-                            <button className="iconbtn sm" disabled={working} onClick={() => installApps(r.id)} aria-label={t.mobile.installApps} title={t.mobile.installApps}>
-                              <Icon name="download" />
-                            </button>
+                            <>
+                              <button className="iconbtn sm" disabled={working} onClick={() => installAurora(r.id)} aria-label={t.mobile.installAurora} title={t.mobile.installAurora}>
+                                <Icon name="cart" />
+                              </button>
+                              <button className="iconbtn sm" disabled={working} onClick={() => installApps(r.id)} aria-label={t.mobile.installApps} title={t.mobile.installApps}>
+                                <Icon name="download" />
+                              </button>
+                            </>
                           )}
                           <button className={`iconbtn sm${running ? '' : ' slot'}`} disabled={!running}
                             onClick={() => run(r.id, () => Api.ShowMobileDevice(r.id))} aria-label={t.mobile.show} title={running ? t.mobile.show : undefined}

@@ -4,16 +4,16 @@ import { t } from '../i18n'
 import { Icon } from './icons'
 import { BuyProxiesButton } from './partner-grid'
 
-type Props = { value: string; onChange: (v: string) => void; proxies: service.ProxyRow[]; allowAuto?: boolean; currentProfile?: string }
+type Props = { value: string; onChange: (v: string) => void; proxies: service.ProxyRow[]; allowAuto?: boolean; currentProfile?: string; disabled?: boolean }
 
 export const freeProxies = (proxies: service.ProxyRow[]) => proxies.filter((p) => p.assignable).length
 
 /** Proxy picker. Rotating proxies are listed but disabled: they cannot hold an identity.
  *  Labels never carry the proxy username: they are host:port or the user's own name. */
-export function ProxySelect({ value, onChange, proxies, allowAuto, currentProfile }: Props) {
+export function ProxySelect({ value, onChange, proxies, allowAuto, currentProfile, disabled }: Props) {
   const free = freeProxies(proxies)
   return (
-    <select className="select" value={value} onChange={(e) => onChange(e.target.value)} aria-label={t.create.proxy}>
+    <select className="select" disabled={disabled} value={value} onChange={(e) => onChange(e.target.value)} aria-label={t.create.proxy}>
       {allowAuto && <option value="auto" disabled={free === 0}>{free ? t.create.proxyAutoFree(free) : t.create.proxyAutoEmpty}</option>}
       <option value="">{t.create.proxyDirect}</option>
       {proxies.map((p) => {
