@@ -511,6 +511,10 @@ func (d *Device) InstallAurora(ctx context.Context) error {
 	if err := d.Install(ctx, apk); err != nil {
 		return err
 	}
+	_, _ = d.shell(ctx, "appops set "+auroraPkg+" REQUEST_INSTALL_PACKAGES allow")
+	_, _ = d.shell(ctx, "appops set "+auroraPkg+" MANAGE_EXTERNAL_STORAGE allow")
+	_, _ = d.shell(ctx, "appops set "+auroraPkg+" SYSTEM_ALERT_WINDOW allow")
+	_, _ = d.shell(ctx, "pm grant "+auroraPkg+" android.permission.POST_NOTIFICATIONS")
 	_ = d.Launch(ctx, auroraPkg)
 	return nil
 }

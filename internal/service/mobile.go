@@ -549,6 +549,7 @@ func (s *Service) startMobile(ctx context.Context, id string, headless bool) (Mo
 	if err := s.Mobile.Start(ctx, mobileDevice(d), o); err != nil {
 		return res, err
 	}
+	firstOpen := d.LastOpenAt == ""
 	s.ctlMu.Lock()
 	if s.mobileLocale == nil {
 		s.mobileLocale = map[string]string{}
@@ -558,6 +559,18 @@ func (s *Service) startMobile(ctx context.Context, id string, headless bool) (Mo
 	s.Log.Info("mobile open timing", "device", id, "proxy_ms", proxyMS, "total_ms", time.Since(started).Milliseconds())
 	if err := s.Store.MarkMobileOpened(id); err != nil {
 		s.Log.Warn("mark mobile device opened", "device", id, "err", err)
+	}
+	if firstOpen {
+		go func() {
+			time.Sleep(5 * time.Second)
+			actx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+			defer cancel()
+			if err := s.InstallMobileAurora(actx, id); err != nil {
+				s.Log.Warn("auto-install aurora store on first open", "device", id, "err", err)
+			} else {
+				s.Log.Info("auto-installed aurora store on first open", "device", id)
+			}
+		}()
 	}
 	s.scheduleMobilePause(id)
 	s.notify("mobile")
