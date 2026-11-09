@@ -54,6 +54,7 @@ type DeviceControl interface {
 	RevokePermission(ctx context.Context, pkg, permission string) error
 	OpenURL(ctx context.Context, url string) error
 	WaitFor(ctx context.Context, text string, gone bool, seconds int) (bool, error)
+	InstallAurora(ctx context.Context) error
 }
 
 // MobileBackend is the app's mobile devices; nil leaves the tools out.
@@ -718,5 +719,17 @@ func (s *Server) addMobileTools(srv *mcp.Server) {
 				return nil, err
 			}
 			return text("Installed " + filepath.Base(files[0]) + "."), nil
+		})
+
+	addDevice(s, srv, "device_install_aurora", "Install and open Aurora Store (anonymous Google Play client) on the device.", false,
+		func(ctx context.Context, d MobileDevice, _ deviceArg) (*mcp.CallToolResult, error) {
+			c, err := s.control(d)
+			if err != nil {
+				return nil, err
+			}
+			if err := c.InstallAurora(ctx); err != nil {
+				return nil, err
+			}
+			return text("Aurora Store installed and opened."), nil
 		})
 }

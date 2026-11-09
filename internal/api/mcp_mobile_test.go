@@ -106,6 +106,7 @@ func (c *fakeControl) Apps(context.Context) ([]string, error) {
 }
 func (c *fakeControl) Launch(context.Context, string) error                     { return nil }
 func (c *fakeControl) Install(context.Context, string) error                    { return nil }
+func (c *fakeControl) InstallAurora(context.Context) error                      { return nil }
 func (c *fakeControl) WaitFor(context.Context, string, bool, int) (bool, error) { return true, nil }
 func (c *fakeControl) Push(_ context.Context, local string) (string, error) {
 	c.mu.Lock()
@@ -186,6 +187,9 @@ func TestMCPMobileTools(t *testing.T) {
 	os.WriteFile(filepath.Join(s.Uploads, "bundle.apks"), []byte("zip"), 0o600)
 	if out, isErr = call(t, cs, "device_install_apk", map[string]any{"device": "d1", "file": "bundle.apks"}); isErr || !strings.Contains(out, "Installed bundle.apks") {
 		t.Fatalf("device_install_apk (.apks) = %q (err %v)", out, isErr)
+	}
+	if out, isErr = call(t, cs, "device_install_aurora", map[string]any{"device": "d1"}); isErr || !strings.Contains(out, "Aurora Store installed") {
+		t.Fatalf("device_install_aurora = %q (err %v)", out, isErr)
 	}
 	if out, isErr = call(t, cs, "device_show", map[string]any{"device": "d1"}); isErr {
 		t.Fatalf("device_show = %q", out)
