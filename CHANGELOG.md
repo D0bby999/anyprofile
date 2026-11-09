@@ -3,6 +3,14 @@
 The notes of each release tag are shown in the app's update prompt; this file
 keeps them together.
 
+## 0.2.2 (2026-11-09)
+
+- Mobile: added real-time creation progress bar, 1-click Aurora Store installation in UI, auto-install Aurora Store on first boot with app permissions, and `device_install_aurora` MCP tool.
+- Proxies: auto-normalizes Oxylabs endpoints, surfaces auth rejection and upstream 401/407 on import and checks, and adds Oxylabs recommended badge.
+- Catalog & Recipes: added Meta Business Suite platform and recipe for Facebook and Instagram Reels.
+- Agent automation: handles clickable container ancestors in element coverage, ignores `iron-overlay` backdrop coverage, and automatically releases lease on profile stop.
+- Build & Signing: prefers Developer ID certificate for local build signing.
+
 ## 0.2.1 (2026-11-07)
 
 - Creator Tools opens in a modal dialog, includes the Craft App Suite, and hides the Pro invitation when Pro is active.
