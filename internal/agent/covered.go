@@ -50,8 +50,15 @@ func (b *Browser) ensureClickable(ctx context.Context, t *tab, ref string) error
 				el.style.pointerEvents = 'none';
 				el = document.elementFromPoint(x, y) || el;
 			}
-			const ok = el === this || this.contains(el);
-			return ok ? 'ok' : (el.tagName.toLowerCase() + (el.id ? '#' + el.id : ''));
+			const p1 = this.parentElement;
+			const p2 = p1 ? p1.parentElement : null;
+			const p3 = p2 ? p2.parentElement : null;
+			const ok = el === this || this.contains(el) || el.contains(this) ||
+				(p1 && p1.contains(el)) ||
+				(p2 && p2.contains(el)) ||
+				(p3 && p3.contains(el));
+			const cls = (el.className && typeof el.className === 'string') ? ('.' + el.className.trim().split(/\s+/).slice(0, 3).join('.')) : '';
+			return ok ? 'ok' : (el.tagName.toLowerCase() + (el.id ? '#' + el.id : '') + cls);
 		}`
 		err := b.call(ctx, t.session, "Runtime.callFunctionOn", map[string]any{
 			"objectId": obj.Object.ObjectID, "functionDeclaration": fn, "returnByValue": true,
