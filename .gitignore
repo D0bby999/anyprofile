@@ -4,6 +4,7 @@ research/
 !/plans/261027-1406-anyprofile-upgrade-roadmap/
 # The paid recipe pack: kept beside the code, never pushed
 /pro
+/promo-videos
 .DS_Store
 build/bin
 # Binaries built in the repo root (go build, GOOS=windows go vet …)

@@ -10,6 +10,10 @@ Status: beta. macOS 13+ on Apple Silicon, and Windows 10/11 x64.
 Website: [anytools.world/anyprofile](https://anytools.world/en/anyprofile)
 ([Tiếng Việt](https://anytools.world/vi/anyprofile)).
 
+[![Watch AnyProfile Demo](https://anytools.world/apps/anyprofile-demo-poster.jpg)](https://anytools.world/en/anyprofile)
+
+*Watch the 60-second walkthrough video on [anytools.world](https://anytools.world/en/anyprofile) or download from [GitHub Releases](https://github.com/D0bby999/anyprofile/releases/tag/v0.2.2).*
+
 ## How it works
 
 - **Engines:** AnyBrowser (default, macOS and Windows), the official upstream
