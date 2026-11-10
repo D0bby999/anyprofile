@@ -27,7 +27,7 @@ describe('partners', () => {
 
   it('keeps the quality-first recommendation order, including specialist and trial providers', () => {
     expect(partnersOf('proxy').map((p) => p.id)).toEqual([
-      'oxylabs', 'decodo', 'soax', 'evomi', 'proxyempire', 'nodemaven',
+      'oxylabs', 'decodo', 'brightdata', 'soax', 'evomi', 'proxyempire', 'nodemaven',
       'webshare', 'iproyal', 'proxyseller', 'massive', 'dataimpulse', 'rayobyte', 'infatica',
       'marsproxies', 'proxycheap',
       'froxy', 'coronium', 'ltesocks', '9proxy', 'lumiproxy', 'rapidproxy',
@@ -60,6 +60,7 @@ describe('partners', () => {
   it.each([
     ['marsproxies', 'https://marsproxies.sjv.io/bkJz7g'],
     ['proxycheap', 'https://app.proxy-cheap.com/r/NZNb2Ik0'],
+    ['brightdata', 'https://get.brightdata.com/nhyeetzbk27n'],
     ['webshare', 'https://www.webshare.io/?referral_code=e18t5gbij3d3'],
     ['rapidproxy', 'https://www.rapidproxy.io/?code=GN72DW2EP'],
     ['dataimpulse', 'https://dataimpulse.com/?aff=e68ede41-33fe-4532-ab36-2240e6a1142d'],

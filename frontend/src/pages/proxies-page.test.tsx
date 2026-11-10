@@ -81,6 +81,7 @@ describe('ProxiesPage', () => {
     ['Webshare', 'https://www.webshare.io/?referral_code=e18t5gbij3d3'],
     ['Rapidproxy', 'https://www.rapidproxy.io/?code=GN72DW2EP'],
     ['LumiProxy', 'https://www.lumiproxy.com/?invite_code=97EJLV'],
+    ['Bright Data', 'https://get.brightdata.com/nhyeetzbk27n'],
     ['Decodo', 'https://dashboard.decodo.com/register?referral_code=2973fec4bd68c176365c5cf1ef80bade6eaccdde'],
     ['Oxylabs', 'https://oxylabs.go2cloud.org/aff_c?offer_id=7&aff_id=2794'],
     ['DataImpulse', 'https://dataimpulse.com/?aff=e68ede41-33fe-4532-ab36-2240e6a1142d'],

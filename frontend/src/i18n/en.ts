@@ -301,6 +301,7 @@ export const en = {
       iproyal: 'Residential traffic that never expires, plus static ISP, mobile and datacenter.',
       nodemaven: 'Residential IPs filtered for quality, with sticky sessions up to 24 hours. Made for antidetect browsers.',
       decodo: 'Formerly Smartproxy. Large residential and mobile pools, static ISP and sticky sessions.',
+      brightdata: 'Global enterprise proxy network with residential, ISP, mobile and datacenter IPs in 195 countries.',
       soax: 'Residential and mobile IPs you can target by city and carrier.',
       oxylabs: 'Residential, mobile, ISP and datacenter proxies.',
       proxyseller: 'A long-running provider of dedicated ISP and datacenter IPs, IPv4 and IPv6, plus mobile.',

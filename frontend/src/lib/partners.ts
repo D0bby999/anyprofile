@@ -36,6 +36,7 @@ const all = ['residential', 'isp', 'mobile', 'datacenter'] satisfies ProxyType[]
 export const partners: Partner[] = [
   { id: 'oxylabs', name: 'Oxylabs', kind: 'proxy', url: 'https://oxylabs.go2cloud.org/aff_c?offer_id=7&aff_id=2794', recommended: true, types: all },
   { id: 'decodo', name: 'Decodo', kind: 'proxy', url: 'https://dashboard.decodo.com/register?referral_code=2973fec4bd68c176365c5cf1ef80bade6eaccdde', types: all },
+  { id: 'brightdata', name: 'Bright Data', kind: 'proxy', url: 'https://get.brightdata.com/nhyeetzbk27n', types: all },
   { id: 'soax', name: 'SOAX', kind: 'proxy', url: 'https://soax.com/', types: all },
   { id: 'evomi', name: 'Evomi', kind: 'proxy', url: 'https://evomi.com/?p=5Z7DMFN3ME', types: all },
   { id: 'proxyempire', name: 'ProxyEmpire', kind: 'proxy', url: 'https://proxyempire.io/?ref=oddhngm', types: all },

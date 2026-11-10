@@ -302,6 +302,7 @@ export const vi: Messages = {
       iproyal: 'Lưu lượng residential không hết hạn, kèm ISP tĩnh, mobile và datacenter.',
       nodemaven: 'IP residential được lọc chất lượng, phiên sticky đến 24 giờ. Làm riêng cho trình duyệt antidetect.',
       decodo: 'Tên cũ là Smartproxy. Kho residential và mobile lớn, có ISP tĩnh và phiên sticky.',
+      brightdata: 'Hạ tầng proxy quy mô doanh nghiệp với IP residential, ISP, mobile và datacenter tại 195 quốc gia.',
       soax: 'IP residential và mobile, chọn được thành phố và nhà mạng.',
       oxylabs: 'Proxy residential, mobile, ISP và datacenter.',
       proxyseller: 'Nhà cung cấp lâu năm: IP ISP và datacenter riêng, IPv4 và IPv6, kèm mobile.',
