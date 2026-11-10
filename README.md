@@ -1,9 +1,11 @@
 # AnyProfile
 
-A multi-profile browser manager for creators, on macOS and Windows. Each
-profile is a separate browser identity with its own cookies, its own proxy and
-a consistent device fingerprint, so several TikTok, YouTube or seller accounts
-can be worked on side by side without their sessions mixing.
+[![GitHub Release](https://img.shields.io/github/v/release/D0bby999/anyprofile?style=flat-square&color=blue)](https://github.com/D0bby999/anyprofile/releases)
+[![License: AGPL-3.0](https://img.shields.io/badge/license-AGPL--3.0-green.svg?style=flat-square)](https://github.com/D0bby999/anyprofile/blob/master/LICENSE)
+[![Platform: macOS & Windows](https://img.shields.io/badge/platform-macOS%20%7C%20Windows-lightgrey?style=flat-square)](#install)
+[![Language: Go & TypeScript](https://img.shields.io/badge/stack-Go%20%7C%20Wails%20%7C%20React-cyan?style=flat-square)](#build)
+
+**AnyProfile** is a free, open-source **antidetect browser and multi-profile manager** for creators, marketers, and e-commerce teams on macOS and Windows. Each profile operates as an isolated browser identity with its own cookies, dedicated proxy relay, and consistent hardware fingerprint, allowing multiple TikTok, YouTube, Facebook, Shopee, or Amazon accounts to run side by side without session mixing or detection bans.
 
 Status: beta. macOS 13+ on Apple Silicon, and Windows 10/11 x64.
 
@@ -12,7 +14,19 @@ Website: [anytools.world/anyprofile](https://anytools.world/en/anyprofile)
 
 [![Watch AnyProfile Demo](https://anytools.world/apps/anyprofile-demo-poster.jpg)](https://anytools.world/en/anyprofile)
 
-*Watch the 60-second walkthrough video on [anytools.world](https://anytools.world/en/anyprofile) or download from [GitHub Releases](https://github.com/D0bby999/anyprofile/releases/tag/v0.2.2).*
+*Watch the 60-second walkthrough video on [anytools.world](https://anytools.world/en/anyprofile) or download from [GitHub Releases](https://github.com/D0bby999/anyprofile/releases/latest).*
+
+## Why AnyProfile?
+
+| Feature | AnyProfile | Commercial Antidetect Browsers (Multilogin, GoLogin, AdsPower, HideMyAcc) |
+|---|---|---|
+| **Cost** | **100% Free & Open Source (AGPL-3.0)** | $50 to $200+ monthly recurring subscriptions |
+| **Profile Limits** | **Unlimited** local profiles | Tiered limits (e.g. 10, 50, 100 profiles paywalls) |
+| **Data Privacy** | **100% Local SQLite storage** (cookies/secrets encrypted in Keychain) | Profiles, logins, and cookies stored on vendor's cloud |
+| **Performance** | **Native Go + Wails + Chromium** desktop performance | Heavy Electron wrappers or remote cloud browsers |
+| **Proxy Security** | **Loopback proxy relay (`127.0.0.1`)** with fail-closed protection | Browser exposes credentials or requires third-party plugins |
+| **AI Automation** | **Native MCP protocol** for AI agents (Claude, Codex, Gemini) | Paid proprietary RPA bots or custom scripts |
+| **Mobile Profiles** | **Android VM (macOS) & LDPlayer (Windows)** with proxy isolation | High per-profile mobile device surcharges |
 
 ## How it works
 
