@@ -28,7 +28,7 @@ describe('partners', () => {
   it('keeps the quality-first recommendation order, including specialist and trial providers', () => {
     expect(partnersOf('proxy').map((p) => p.id)).toEqual([
       'oxylabs', 'decodo', 'soax', 'evomi', 'proxyempire', 'nodemaven',
-      'webshare', 'iproyal', 'proxyseller', 'massive', 'dataimpulse', 'infatica',
+      'webshare', 'iproyal', 'proxyseller', 'massive', 'dataimpulse', 'rayobyte', 'infatica',
       'marsproxies', 'proxycheap',
       'froxy', 'coronium', 'ltesocks', '9proxy', 'lumiproxy', 'rapidproxy',
     ])
@@ -63,6 +63,7 @@ describe('partners', () => {
     ['webshare', 'https://www.webshare.io/?referral_code=e18t5gbij3d3'],
     ['rapidproxy', 'https://www.rapidproxy.io/?code=GN72DW2EP'],
     ['dataimpulse', 'https://dataimpulse.com/?aff=e68ede41-33fe-4532-ab36-2240e6a1142d'],
+    ['rayobyte', 'https://rayobyte.com/products/residential-proxies/?ref=chau-d11bd8'],
     ['lumiproxy', 'https://www.lumiproxy.com/?invite_code=97EJLV'],
     ['decodo', 'https://dashboard.decodo.com/register?referral_code=2973fec4bd68c176365c5cf1ef80bade6eaccdde'],
   ])('uses the %s affiliate URL in both app languages', (id, url) => {

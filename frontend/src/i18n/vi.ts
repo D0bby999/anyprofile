@@ -308,6 +308,7 @@ export const vi: Messages = {
       marsproxies: 'Chọn IP theo quốc gia, thành phố, mã bưu chính hoặc nhà mạng, hơn 190 quốc gia.',
       evomi: 'Proxy residential, ISP tĩnh và mobile, giá theo GB thấp.',
       dataimpulse: 'Proxy residential xoay IP, mobile và datacenter.',
+      rayobyte: 'Proxy residential, ISP, mobile và datacenter từ hạ tầng tại Mỹ.',
       proxyempire: 'Proxy residential, mobile và residential tĩnh, chọn theo thành phố và nhà mạng.',
       infatica: 'Kho residential lớn, kèm proxy ISP tĩnh và datacenter.',
       massive: 'IP residential từ người dùng tự nguyện tham gia, kèm ISP tĩnh.',

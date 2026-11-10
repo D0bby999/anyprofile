@@ -45,6 +45,7 @@ export const partners: Partner[] = [
   { id: 'proxyseller', name: 'Proxy-Seller', kind: 'proxy', url: 'https://proxy-seller.com/?partner=JUJ9ZRI3NSJI1N', types: all },
   { id: 'massive', name: 'Massive', kind: 'proxy', url: 'https://www.joinmassive.com/', types: ['residential', 'isp'] },
   { id: 'dataimpulse', name: 'DataImpulse', kind: 'proxy', url: 'https://dataimpulse.com/?aff=e68ede41-33fe-4532-ab36-2240e6a1142d', types: ['residential', 'mobile', 'datacenter'] },
+  { id: 'rayobyte', name: 'Rayobyte', kind: 'proxy', url: 'https://rayobyte.com/products/residential-proxies/?ref=chau-d11bd8', types: all },
   { id: 'infatica', name: 'Infatica', kind: 'proxy', url: 'https://dashboard.infatica.io/aff.php?aff=902', types: ['residential', 'isp', 'datacenter'] },
   { id: 'marsproxies', name: 'MarsProxies', kind: 'proxy', url: 'https://marsproxies.sjv.io/bkJz7g', types: all },
   { id: 'proxycheap', name: 'Proxy-Cheap', kind: 'proxy', url: 'https://app.proxy-cheap.com/r/NZNb2Ik0', types: all },

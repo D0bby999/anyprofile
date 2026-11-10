@@ -307,6 +307,7 @@ export const en = {
       marsproxies: 'Pick IPs by country, city, ZIP code or carrier, in 190+ countries.',
       evomi: 'Residential, static ISP and mobile proxies at low per-GB prices.',
       dataimpulse: 'Rotating residential, mobile and datacenter proxies.',
+      rayobyte: 'Residential, ISP, mobile and datacenter proxies from US infrastructure.',
       proxyempire: 'Residential, mobile and static residential proxies, targeted by city and carrier.',
       infatica: 'A large residential pool, with static ISP and datacenter proxies.',
       massive: 'Residential IPs from people who opted in, plus static ISP.',
