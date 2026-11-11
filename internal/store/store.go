@@ -156,19 +156,43 @@ func (s *Store) migrate(path, backupDir string, existed bool, maxVer int) error 
 		if err != nil {
 			return err
 		}
-		tx, err := s.db.Begin()
-		if err != nil {
+		if err := s.applyMigration(f.Name(), ver, string(body)); err != nil {
 			return err
 		}
-		if _, err := tx.Exec(string(body)); err != nil {
-			tx.Rollback()
-			return fmt.Errorf("migration %s: %w", f.Name(), err)
-		}
-		if _, err := tx.Exec(`INSERT INTO schema_version (version) VALUES (?)`, ver); err != nil {
-			tx.Rollback()
+	}
+	return nil
+}
+
+func (s *Store) applyMigration(name string, ver int, body string) error {
+	noFK := strings.Contains(body, "-- pragma:no-foreign-keys")
+	if noFK {
+		if _, err := s.db.Exec(`PRAGMA foreign_keys = OFF`); err != nil {
 			return err
 		}
-		if err := tx.Commit(); err != nil {
+		defer func() { _, _ = s.db.Exec(`PRAGMA foreign_keys = ON`) }()
+	}
+	tx, err := s.db.Begin()
+	if err != nil {
+		return err
+	}
+	if _, err := tx.Exec(body); err != nil {
+		tx.Rollback()
+		return fmt.Errorf("migration %s: %w", name, err)
+	}
+	if _, err := tx.Exec(`INSERT INTO schema_version (version) VALUES (?)`, ver); err != nil {
+		tx.Rollback()
+		return err
+	}
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+	if noFK {
+		var table, ref, to string
+		var rowid int64
+		if err := s.db.QueryRow(`PRAGMA foreign_key_check`).Scan(&table, &rowid, &ref, &to); err != sql.ErrNoRows {
+			if err == nil {
+				return fmt.Errorf("migration %s: foreign key mismatch on %s", name, table)
+			}
 			return err
 		}
 	}

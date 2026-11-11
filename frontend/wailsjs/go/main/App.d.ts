@@ -13,6 +13,8 @@ export function APIStatus():Promise<main.APIStatus>;
 
 export function AddExtension(arg1:boolean):Promise<store.Extension>;
 
+export function AddProxy(arg1:service.ProxyInput):Promise<service.AddProxyResult>;
+
 export function AddTagMany(arg1:Array<string>,arg2:string):Promise<void>;
 
 export function AgentProfiles():Promise<Array<string>>;

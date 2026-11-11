@@ -27,7 +27,7 @@ func TestLegacyDefaultEngineMigrates(t *testing.T) {
 	}
 	defer s.Close()
 	var version int
-	if err := s.db.QueryRow(`SELECT MAX(version) FROM schema_version`).Scan(&version); err != nil || version != 28 {
+	if err := s.db.QueryRow(`SELECT MAX(version) FROM schema_version`).Scan(&version); err != nil || version != 29 {
 		t.Fatalf("schema version = %d, err = %v", version, err)
 	}
 	value, err := s.GetSetting("default_engine")

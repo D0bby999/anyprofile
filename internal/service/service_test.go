@@ -436,6 +436,59 @@ func TestProxyMeta(t *testing.T) {
 	}
 }
 
+func TestAddProxy(t *testing.T) {
+	s, sec := newService(t)
+	ctx := context.Background()
+
+	for _, bad := range []struct {
+		in   ProxyInput
+		code string
+	}{
+		{ProxyInput{Scheme: "ftp", Host: "gw.example", Port: 21}, "proxy_scheme"},
+		{ProxyInput{Scheme: "https", Host: "http://gw.example", Port: 443}, "proxy_host"},
+		{ProxyInput{Scheme: "https", Host: "gw.example", Port: 70000}, "proxy_port"},
+		{ProxyInput{Scheme: "https", Host: "gw.example", Port: 443, ExpiresOn: "bad"}, "bad_date"},
+		{ProxyInput{Scheme: "https", Host: "gw.example", Port: 443, Note: strings.Repeat("a", 501)}, "note_too_long"},
+	} {
+		if _, err := s.AddProxy(ctx, bad.in); err == nil || !strings.Contains(err.Error(), bad.code) {
+			t.Fatalf("AddProxy(%+v) err = %v, want %s", bad.in, err, bad.code)
+		}
+	}
+
+	res, err := s.AddProxy(ctx, ProxyInput{
+		Scheme:   "HTTPS",
+		Host:     "gw.example",
+		Port:     10001,
+		Username: "u",
+		Password: "secret",
+		Note:     "single modal add",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.CheckErr != "" || res.Proxy.Scheme != "https" || res.Proxy.Label != "gw.example:10001" || !res.Proxy.Assignable {
+		t.Fatalf("AddProxy(valid) = %+v", res)
+	}
+	if got, err := sec.Get(secrets.ServiceProxy, res.Proxy.ID); err != nil || string(got) != "secret" {
+		t.Fatalf("secret = %q, err = %v", got, err)
+	}
+
+	s.CheckProxy = func(_ context.Context, _ netproxy.Upstream) (netproxy.Exit, error) {
+		return netproxy.Exit{}, netproxy.ErrUpstreamAuth
+	}
+	rej, err := s.AddProxy(ctx, ProxyInput{
+		Label:    "auth-fail",
+		Scheme:   "http",
+		Host:     "gw.example",
+		Port:     10010,
+		Username: "u",
+		Password: "bad",
+	})
+	if err != nil || rej.CheckErr != "proxy_rejected" || rej.Proxy.Label != "auth-fail" || rej.Proxy.FailedAt == "" {
+		t.Fatalf("AddProxy(rejected) = %+v, err = %v", rej, err)
+	}
+}
+
 func TestDefaultEngine(t *testing.T) {
 	s, _ := newService(t)
 	if got := s.DefaultEngine(); got != "fury" {

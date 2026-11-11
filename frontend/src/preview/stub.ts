@@ -14,13 +14,43 @@ if (params.get('pro') === '0') proActive = false
 const noop = () => {}
 const unsubscribe = () => noop
 
+const previewProxies = [...proxies]
+
 const answers: Record<string, unknown> = {
   Language: async () => 'en',
   Onboarded: async () => true,
   StartupError: async () => '',
   FileVaultOn: async () => true,
   ListProfiles: async () => profiles,
-  ListProxies: async () => proxies,
+  ListProxies: async () => previewProxies,
+  AddProxy: async (input: { label?: string; scheme?: string; host: string; port: number; username?: string; note?: string; expiresOn?: string }) => {
+    const row = {
+      id: `px-${Date.now()}`,
+      label: input.label?.trim() || `${input.host}:${input.port}`,
+      scheme: input.scheme || 'http',
+      host: input.host,
+      port: input.port,
+      username: input.username || '',
+      exitIp: '198.51.100.42',
+      country: 'US',
+      timezone: 'America/New_York',
+      exitIp6: '',
+      timezone6: '',
+      lat: 40.71,
+      lon: -74.0,
+      rotating: false,
+      checkedAt: new Date().toISOString(),
+      failedAt: '',
+      createdAt: new Date().toISOString(),
+      note: input.note || '',
+      expiresOn: input.expiresOn || '',
+      usedBy: [],
+      expiry: '',
+      assignable: true,
+    }
+    previewProxies.push(row)
+    return { proxy: row, checkErr: '' }
+  },
   Engines: async () => engines,
   Defaults: async () => defaults,
   ProStatus: async () => ({ active: proActive, plan: 'Lifetime', expiresAt: '', seats: 3, devices: [] }),

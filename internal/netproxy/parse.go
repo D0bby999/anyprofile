@@ -31,7 +31,7 @@ func errf(code, format string, a ...any) error { return parseError{code, fmt.Spr
 
 // ParseList accepts one proxy per line, in either form:
 //
-//	scheme://user:pass@host:port   (scheme http, https→http, socks5, socks5h)
+//	scheme://user:pass@host:port   (scheme http, https, socks5, socks5h)
 //	host:port[:user:pass]          (http assumed)
 //
 // Blank lines and lines starting with # are skipped.
@@ -61,14 +61,20 @@ func ParseList(text string) []ParsedLine {
 	return out
 }
 
+// NormalizeScheme returns the canonical proxy scheme ("http", "https", "socks5").
+func NormalizeScheme(s string) (string, bool) {
+	canon, ok := map[string]string{"http": "http", "https": "https", "socks5": "socks5", "socks5h": "socks5"}[strings.ToLower(strings.TrimSpace(s))]
+	return canon, ok
+}
+
 func parseOne(line string) (Upstream, error) {
 	if strings.Contains(line, "://") {
 		u, err := url.Parse(line)
 		if err != nil {
 			return Upstream{}, errf("not_url", "not a proxy URL")
 		}
-		scheme := map[string]string{"http": "http", "https": "http", "socks5": "socks5", "socks5h": "socks5"}[u.Scheme]
-		if scheme == "" {
+		scheme, ok := NormalizeScheme(u.Scheme)
+		if !ok {
 			return Upstream{}, errf("scheme", "unsupported scheme %q", u.Scheme)
 		}
 		port, err := strconv.Atoi(u.Port())

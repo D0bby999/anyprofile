@@ -10,6 +10,7 @@ import { partnersOf } from '../lib/partners'
 const proxy = (id: string, extra = {}) => ({ id, label: `gw.example:${id}`, scheme: 'http', host: 'gw.example', port: 10001, note: '',
   country: 'US', exitIp: '', timezone: '', status: 'unchecked', checkedAt: '', expiresAt: '', rotating: false, usedBy: [], ...extra })
 const openExternal = vi.fn()
+const addProxy = vi.fn()
 vi.mock('../api', async (orig) => ({
   ...(await orig<typeof import('../api')>()),
   openExternal: (u: string) => openExternal(u),
@@ -19,12 +20,13 @@ vi.mock('../api', async (orig) => ({
     proxy('3', { exitIp: '5.6.7.8', timezone: 'America/New_York', exitIp6: '2001:db8::7', timezone6: 'America/Chicago' }),
     proxy('4', { exitIp: '9.9.9.9', timezone: 'Europe/Paris', checkedAt: '2026-10-24T08:00:00Z', failedAt: '2026-10-24T08:00:00Z' }),
     proxy('5', { checkedAt: '2026-10-24T08:00:00Z', failedAt: '2026-10-24T08:00:00Z' })]),
+    AddProxy: (inArg: unknown) => addProxy(inArg),
     CheckAllProxies: () => Promise.resolve(2),
     ImportProxies: () => Promise.resolve({ added: 0, failed: [{ line: 1, err: 'expected host:port or host:port:user:pass', code: 'format', display: '' }], unreachable: ['gw.example:10010'] }) },
 }))
 const { ProxiesPage } = await import('./proxies-page')
 
-afterEach(cleanup)
+afterEach(() => { cleanup(); addProxy.mockReset() })
 
 describe('ProxiesPage', () => {
   it('shows the exit IP with its timezone in one column', async () => {
@@ -112,5 +114,41 @@ describe('ProxiesPage', () => {
     fireEvent.click(within(dialog).getByRole('button', { name: t.partners.all }))
     expect(within(dialog).getAllByRole('listitem').map((item) => item.querySelector('b')?.textContent))
       .toEqual(partnersOf('proxy').map((p) => p.name))
+  })
+
+  it('adds a single https proxy through the Add proxy modal and shows check failures or inline errors', async () => {
+    addProxy
+      .mockRejectedValueOnce('anyprofile:proxy_host: bad host')
+      .mockResolvedValueOnce({ proxy: proxy('6', { label: 'TLS Gate', scheme: 'https', host: 'tls.example', port: 443 }), checkErr: '' })
+
+    render(<ConfirmProvider><ToastProvider><ProxiesPage onChanged={vi.fn()} /></ToastProvider></ConfirmProvider>)
+    await screen.findByText('1.2.3.4')
+
+    fireEvent.click(screen.getByRole('button', { name: t.proxies.newBtn }))
+    const dialog = screen.getByRole('dialog', { name: t.proxies.newTitle })
+    const schemeSelect = within(dialog).getByLabelText(t.proxies.scheme) as HTMLSelectElement
+    expect([...schemeSelect.options].map((o) => o.value)).toEqual(['http', 'https', 'socks5'])
+
+    fireEvent.change(within(dialog).getByLabelText(t.proxies.label), { target: { value: 'TLS Gate' } })
+    fireEvent.change(schemeSelect, { target: { value: 'https' } })
+    fireEvent.change(within(dialog).getByLabelText(t.proxies.host), { target: { value: 'tls.example' } })
+    fireEvent.change(within(dialog).getByLabelText(t.proxies.port), { target: { value: '443' } })
+    fireEvent.change(within(dialog).getByLabelText(t.proxies.username), { target: { value: 'u1' } })
+    fireEvent.change(within(dialog).getByLabelText(t.proxies.password), { target: { value: 's3cr3t' } })
+
+    fireEvent.click(within(dialog).getByRole('button', { name: t.proxies.addSubmit }))
+    expect(await within(dialog).findByText(t.errors.proxy_host)).toBeTruthy()
+
+    fireEvent.click(within(dialog).getByRole('button', { name: t.proxies.addSubmit }))
+    expect(addProxy).toHaveBeenLastCalledWith(expect.objectContaining({
+      label: 'TLS Gate',
+      scheme: 'https',
+      host: 'tls.example',
+      port: 443,
+      username: 'u1',
+      password: 's3cr3t',
+    }))
+    expect(await screen.findByText(t.proxies.added(1))).toBeTruthy()
+    expect(screen.queryByRole('dialog', { name: t.proxies.newTitle })).toBeNull()
   })
 })

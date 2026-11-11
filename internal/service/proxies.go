@@ -37,6 +37,43 @@ type ImportResult struct {
 	Rejected []string `json:"rejected,omitempty"`
 }
 
+// ProxyInput is what the single-proxy dialog sends.
+type ProxyInput struct {
+	Label     string `json:"label"`
+	Scheme    string `json:"scheme"` // "http" | "https" | "socks5"
+	Host      string `json:"host"`
+	Port      int    `json:"port"`
+	Username  string `json:"username"`
+	Password  string `json:"password"`
+	Note      string `json:"note"`
+	ExpiresOn string `json:"expiresOn"` // "YYYY-MM-DD" or ""
+}
+
+// AddProxyResult returns the saved proxy row and any initial check failure code.
+type AddProxyResult struct {
+	Proxy    ProxyRow `json:"proxy"`
+	CheckErr string   `json:"checkErr,omitempty"`
+}
+
+func (s *Service) proxyRowFrom(p store.Proxy, usedBy []string) ProxyRow {
+	r := ProxyRow{Proxy: p, UsedBy: append([]string{}, usedBy...), Expiry: expiry(p.ExpiresOn, s.now())}
+	r.Assignable = len(r.UsedBy) == 0 && !p.Rotating && p.ExitIP != "" && p.FailedAt == "" && r.Expiry != "expired"
+	return r
+}
+
+func (s *Service) createProxy(px store.Proxy, password string) error {
+	if password != "" {
+		if err := s.Secrets.Set(secrets.ServiceProxy, px.ID, []byte(password)); err != nil {
+			return err
+		}
+	}
+	if err := s.Store.CreateProxy(&px); err != nil {
+		s.Secrets.Delete(secrets.ServiceProxy, px.ID)
+		return err
+	}
+	return nil
+}
+
 func (s *Service) ListProxies() ([]ProxyRow, error) {
 	ps, err := s.Store.ListProxies()
 	if err != nil {
@@ -48,11 +85,65 @@ func (s *Service) ListProxies() ([]ProxyRow, error) {
 	}
 	out := make([]ProxyRow, 0, len(ps))
 	for _, p := range ps {
-		r := ProxyRow{Proxy: p, UsedBy: append([]string{}, use[p.ID]...), Expiry: expiry(p.ExpiresOn, s.now())}
-		r.Assignable = len(r.UsedBy) == 0 && !p.Rotating && p.ExitIP != "" && p.FailedAt == "" && r.Expiry != "expired"
-		out = append(out, r)
+		out = append(out, s.proxyRowFrom(p, use[p.ID]))
 	}
 	return out, nil
+}
+
+// AddProxy validates and stores one proxy, stores its password in the Keychain,
+// then runs the initial check. Unreachable/rejected proxies stay saved so they can be retried.
+func (s *Service) AddProxy(ctx context.Context, in ProxyInput) (AddProxyResult, error) {
+	scheme, ok := netproxy.NormalizeScheme(in.Scheme)
+	if !ok {
+		return AddProxyResult{}, apperr.New("proxy_scheme", "only http, https or socks5")
+	}
+	host := strings.TrimSpace(in.Host)
+	host = strings.TrimSuffix(strings.TrimPrefix(host, "["), "]")
+	if host == "" || strings.ContainsAny(host, " \t\r\n/@") {
+		return AddProxyResult{}, apperr.New("proxy_host", "type a valid proxy host")
+	}
+	if in.Port < 1 || in.Port > 65535 {
+		return AddProxyResult{}, apperr.New("proxy_port", "port must be between 1 and 65535")
+	}
+	if len([]rune(in.Note)) > 500 {
+		return AddProxyResult{}, apperr.New("note_too_long", "at most 500 characters")
+	}
+	if err := checkDate(in.ExpiresOn); err != nil {
+		return AddProxyResult{}, err
+	}
+	label := strings.TrimSpace(in.Label)
+	if label == "" {
+		label = fmt.Sprintf("%s:%d", host, in.Port)
+	}
+	px := store.Proxy{
+		ID:        randomHex(8),
+		Label:     label,
+		Scheme:    scheme,
+		Host:      host,
+		Port:      in.Port,
+		Username:  strings.TrimSpace(in.Username),
+		Note:      in.Note,
+		ExpiresOn: in.ExpiresOn,
+	}
+	if err := s.createProxy(px, in.Password); err != nil {
+		return AddProxyResult{}, err
+	}
+	var checkErr string
+	if checked, err := s.CheckProxyByID(ctx, px.ID); err != nil {
+		s.Log.Warn("proxy check", "proxy", px.ID, "err", err)
+		if strings.HasPrefix(err.Error(), "anyprofile:proxy_rejected:") {
+			checkErr = "proxy_rejected"
+		} else {
+			checkErr = "proxy_unreachable"
+		}
+		if latest, gerr := s.Store.GetProxy(px.ID); gerr == nil {
+			px = latest
+		}
+	} else {
+		px = checked
+	}
+	s.notify("proxies")
+	return AddProxyResult{Proxy: s.proxyRowFrom(px, nil), CheckErr: checkErr}, nil
 }
 
 // ImportProxies stores each valid line (password into the Keychain) with the
@@ -72,13 +163,7 @@ func (s *Service) ImportProxies(ctx context.Context, text, expiresOn string) (Im
 		up := line.Upstream
 		px := store.Proxy{ID: randomHex(8), Label: fmt.Sprintf("%s:%d", up.Host, up.Port), Scheme: up.Scheme, Host: up.Host,
 			Port: up.Port, Username: up.Username, Note: line.Note, ExpiresOn: expiresOn}
-		if up.Password != "" {
-			if err := s.Secrets.Set(secrets.ServiceProxy, px.ID, []byte(up.Password)); err != nil {
-				return res, err
-			}
-		}
-		if err := s.Store.CreateProxy(&px); err != nil {
-			s.Secrets.Delete(secrets.ServiceProxy, px.ID)
+		if err := s.createProxy(px, up.Password); err != nil {
 			return res, err
 		}
 		added = append(added, px.ID)

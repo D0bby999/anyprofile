@@ -10,6 +10,10 @@ export function AddExtension(arg1) {
   return window['go']['main']['App']['AddExtension'](arg1);
 }
 
+export function AddProxy(arg1) {
+  return window['go']['main']['App']['AddProxy'](arg1);
+}
+
 export function AddTagMany(arg1, arg2) {
   return window['go']['main']['App']['AddTagMany'](arg1, arg2);
 }

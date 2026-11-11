@@ -6,6 +6,7 @@ import { errorText, formatDate, proxyLineError, relativeTime } from '../lib/form
 import { EmptyState } from '../components/empty-state'
 import { Icon } from '../components/icons'
 import { PageHead } from '../components/page-head'
+import { ProxyAddDialog } from '../components/proxy-add-dialog'
 import { ProxyEditDialog } from '../components/proxy-edit-dialog'
 import { BuyProxiesButton } from '../components/partner-grid'
 import { useToast } from '../components/toast'
@@ -28,6 +29,7 @@ export function ProxiesPage({ onChanged }: { onChanged: () => void }) {
   const [failedLines, setFailedLines] = useState<string[]>([])
   const toast = useToast()
   const confirm = useConfirm()
+  const [adding, setAdding] = useState(false)
   const [editing, setEditing] = useState<service.ProxyRow | null>(null)
   const [expiresOn, setExpiresOn] = useState('')
 
@@ -73,6 +75,9 @@ export function ProxiesPage({ onChanged }: { onChanged: () => void }) {
           <Icon name="refresh" />{t.proxies.checkAll}
         </button>
         <BuyProxiesButton className="btn buy nodrag" />
+        <button type="button" className="btn primary nodrag" disabled={!!busy} onClick={() => setAdding(true)}>
+          <Icon name="plus" />{t.proxies.newBtn}
+        </button>
       </PageHead>
       <div className="pagebody">
         <section className="card pad">
@@ -96,9 +101,14 @@ export function ProxiesPage({ onChanged }: { onChanged: () => void }) {
         <section className="card fill" style={{ minHeight: 220 }}>
           <div className="tablewrap">
             {rows.length === 0 ? (
-              // The paste box sits right above, so the empty state only points to buying.
+              // The paste box sits right above, so the empty state points to single add or buying.
               <EmptyState icon="proxy" title={t.proxies.emptyTitle}>
-                <BuyProxiesButton />
+                <div className="row">
+                  <BuyProxiesButton />
+                  <button type="button" className="btn primary" disabled={!!busy} onClick={() => setAdding(true)}>
+                    <Icon name="plus" />{t.proxies.newBtn}
+                  </button>
+                </div>
               </EmptyState>
             ) : (
               /* Fixed column widths: a long host, label or profile name is cut
@@ -156,6 +166,18 @@ export function ProxiesPage({ onChanged }: { onChanged: () => void }) {
           </div>
         </section>
       </div>
+      {adding && (
+        <ProxyAddDialog
+          onClose={() => setAdding(false)}
+          onAdded={(res) => {
+            setAdding(false)
+            if (res.checkErr) toast.error(`${res.proxy.label}: ${t.errors[res.checkErr] ?? res.checkErr}`)
+            else toast.success(t.proxies.added(1))
+            load()
+            onChanged()
+          }}
+        />
+      )}
       {editing && <ProxyEditDialog row={editing} onClose={() => setEditing(null)} onSaved={() => { setEditing(null); load(); onChanged() }} />}
     </>
   )

@@ -369,6 +369,92 @@ export namespace service {
 	        this.agentManage = source["agentManage"];
 	    }
 	}
+	export class ProxyRow {
+	    id: string;
+	    label: string;
+	    scheme: string;
+	    host: string;
+	    port: number;
+	    username: string;
+	    exitIp: string;
+	    country: string;
+	    timezone: string;
+	    exitIp6: string;
+	    timezone6: string;
+	    lat?: number;
+	    lon?: number;
+	    rotating: boolean;
+	    checkedAt: string;
+	    failedAt: string;
+	    createdAt: string;
+	    note: string;
+	    expiresOn: string;
+	    usedBy: string[];
+	    expiry: string;
+	    assignable: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new ProxyRow(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.label = source["label"];
+	        this.scheme = source["scheme"];
+	        this.host = source["host"];
+	        this.port = source["port"];
+	        this.username = source["username"];
+	        this.exitIp = source["exitIp"];
+	        this.country = source["country"];
+	        this.timezone = source["timezone"];
+	        this.exitIp6 = source["exitIp6"];
+	        this.timezone6 = source["timezone6"];
+	        this.lat = source["lat"];
+	        this.lon = source["lon"];
+	        this.rotating = source["rotating"];
+	        this.checkedAt = source["checkedAt"];
+	        this.failedAt = source["failedAt"];
+	        this.createdAt = source["createdAt"];
+	        this.note = source["note"];
+	        this.expiresOn = source["expiresOn"];
+	        this.usedBy = source["usedBy"];
+	        this.expiry = source["expiry"];
+	        this.assignable = source["assignable"];
+	    }
+	}
+	export class AddProxyResult {
+	    proxy: ProxyRow;
+	    checkErr?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new AddProxyResult(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.proxy = this.convertValues(source["proxy"], ProxyRow);
+	        this.checkErr = source["checkErr"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class BackupResult {
 	    profiles: number;
 	    proxies: number;
@@ -1004,6 +1090,32 @@ export namespace service {
 		}
 	}
 	
+	export class ProxyInput {
+	    label: string;
+	    scheme: string;
+	    host: string;
+	    port: number;
+	    username: string;
+	    password: string;
+	    note: string;
+	    expiresOn: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new ProxyInput(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.label = source["label"];
+	        this.scheme = source["scheme"];
+	        this.host = source["host"];
+	        this.port = source["port"];
+	        this.username = source["username"];
+	        this.password = source["password"];
+	        this.note = source["note"];
+	        this.expiresOn = source["expiresOn"];
+	    }
+	}
 	export class ProxyMeta {
 	    label: string;
 	    note: string;
@@ -1020,60 +1132,7 @@ export namespace service {
 	        this.expiresOn = source["expiresOn"];
 	    }
 	}
-	export class ProxyRow {
-	    id: string;
-	    label: string;
-	    scheme: string;
-	    host: string;
-	    port: number;
-	    username: string;
-	    exitIp: string;
-	    country: string;
-	    timezone: string;
-	    exitIp6: string;
-	    timezone6: string;
-	    lat?: number;
-	    lon?: number;
-	    rotating: boolean;
-	    checkedAt: string;
-	    failedAt: string;
-	    createdAt: string;
-	    note: string;
-	    expiresOn: string;
-	    usedBy: string[];
-	    expiry: string;
-	    assignable: boolean;
 	
-	    static createFrom(source: any = {}) {
-	        return new ProxyRow(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.id = source["id"];
-	        this.label = source["label"];
-	        this.scheme = source["scheme"];
-	        this.host = source["host"];
-	        this.port = source["port"];
-	        this.username = source["username"];
-	        this.exitIp = source["exitIp"];
-	        this.country = source["country"];
-	        this.timezone = source["timezone"];
-	        this.exitIp6 = source["exitIp6"];
-	        this.timezone6 = source["timezone6"];
-	        this.lat = source["lat"];
-	        this.lon = source["lon"];
-	        this.rotating = source["rotating"];
-	        this.checkedAt = source["checkedAt"];
-	        this.failedAt = source["failedAt"];
-	        this.createdAt = source["createdAt"];
-	        this.note = source["note"];
-	        this.expiresOn = source["expiresOn"];
-	        this.usedBy = source["usedBy"];
-	        this.expiry = source["expiry"];
-	        this.assignable = source["assignable"];
-	    }
-	}
 	export class SiteInput {
 	    name: string;
 	    domains: string[];

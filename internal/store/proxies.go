@@ -12,7 +12,7 @@ import (
 type Proxy struct {
 	ID       string `json:"id"`
 	Label    string `json:"label"`
-	Scheme   string `json:"scheme"` // "http" | "socks5"
+	Scheme   string `json:"scheme"` // "http" | "https" | "socks5"
 	Host     string `json:"host"`
 	Port     int    `json:"port"`
 	Username string `json:"username"`

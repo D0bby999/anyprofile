@@ -509,6 +509,13 @@ func (a *App) ListProxies() ([]service.ProxyRow, error) {
 	return a.svc.ListProxies()
 }
 
+func (a *App) AddProxy(in service.ProxyInput) (service.AddProxyResult, error) {
+	if err := a.ready(); err != nil {
+		return service.AddProxyResult{}, err
+	}
+	return a.svc.AddProxy(a.ctx, in)
+}
+
 func (a *App) ImportProxies(text, expiresOn string) (service.ImportResult, error) {
 	if err := a.ready(); err != nil {
 		return service.ImportResult{}, err

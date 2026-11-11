@@ -128,10 +128,10 @@ func (r *Relay) tunnel(c net.Conn, br *bufio.Reader, target string) {
 func (r *Relay) forwardHTTP(c net.Conn, br *bufio.Reader, req *http.Request) {
 	var up net.Conn
 	var err error
-	if r.up.Scheme == "http" {
-		var d net.Dialer
+	httpProxy := r.up.IsHTTPFamily()
+	if httpProxy {
 		ctx, cancel := context.WithTimeout(context.Background(), dialTimeout)
-		up, err = d.DialContext(ctx, "tcp", r.up.Addr())
+		up, err = r.up.dialHTTPConn(ctx)
 		cancel()
 	} else {
 		up, err = r.up.DialTunnel(context.Background(), hostPort(req))
@@ -147,7 +147,7 @@ func (r *Relay) forwardHTTP(c net.Conn, br *bufio.Reader, req *http.Request) {
 	for {
 		req.Header.Del("Proxy-Authorization")
 		req.Header.Del("Proxy-Connection")
-		if r.up.Scheme == "http" {
+		if httpProxy {
 			if a := r.up.basicAuth(); a != "" {
 				req.Header.Set("Proxy-Authorization", a)
 			}
@@ -162,7 +162,7 @@ func (r *Relay) forwardHTTP(c net.Conn, br *bufio.Reader, req *http.Request) {
 		if req, err = http.ReadRequest(br); err != nil {
 			return
 		}
-		if r.up.Scheme != "http" && req.URL.Host != host {
+		if !httpProxy && req.URL.Host != host {
 			return // a SOCKS tunnel is bound to one host; the browser reconnects
 		}
 	}

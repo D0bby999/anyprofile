@@ -74,6 +74,30 @@ func TestRelayHTTPUpstream(t *testing.T) {
 	}
 }
 
+func TestRelayHTTPSUpstream(t *testing.T) {
+	tg := target(t)
+	up, denied := fakeHTTPSProxy(t)
+	r, err := StartRelay(up, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer r.Close()
+	if got := getVia(t, r, tg.URL+"/tls-a", true); got != "hello /tls-a" {
+		t.Fatalf("HTTPS CONNECT got %q", got)
+	}
+	if got := getVia(t, r, tg.URL+"/tls-b", false); got != "hello /tls-b" {
+		t.Fatalf("HTTPS plain got %q", got)
+	}
+	if denied.Load() != 0 {
+		t.Fatalf("upstream denied %d requests", denied.Load())
+	}
+	bad := up
+	bad.Password = "wrong"
+	if _, err := bad.DialTunnel(context.Background(), strings.TrimPrefix(tg.URL, "http://")); err != ErrUpstreamAuth {
+		t.Fatalf("wrong password err = %v", err)
+	}
+}
+
 func TestRelaySOCKS5Upstream(t *testing.T) {
 	tg := target(t)
 	r, err := StartRelay(fakeSOCKS5(t), 0)
@@ -169,9 +193,10 @@ func TestParseList(t *testing.T) {
 http://u:p@gw.example.com:10001
 socks5h://a:b@1.2.3.4:1080
 gw.example.com:823:user:pa:ss
+https://su:sp@tls.example.com:443
 host-only
 1.2.3.4:99999`)
-	if len(got) != 5 {
+	if len(got) != 6 {
 		t.Fatalf("lines = %d", len(got))
 	}
 	if got[0].Upstream.Port != 10001 || got[0].Upstream.Password != "p" || got[0].Display != "http://u@gw.example.com:10001" {
@@ -183,11 +208,14 @@ host-only
 	if got[2].Upstream.Password != "pa:ss" || got[2].Upstream.Scheme != "http" {
 		t.Errorf("colon form = %+v", got[2])
 	}
-	if got[3].Err == "" || got[4].Err == "" {
-		t.Errorf("bad lines not rejected: %+v %+v", got[3], got[4])
+	if got[3].Upstream.Scheme != "https" || got[3].Upstream.Port != 443 || got[3].Display != "https://su@tls.example.com:443" {
+		t.Errorf("https form = %+v", got[3])
 	}
-	if got[3].Code != "format" || got[4].Code != "host_port" {
-		t.Errorf("codes = %q %q", got[3].Code, got[4].Code)
+	if got[4].Err == "" || got[5].Err == "" {
+		t.Errorf("bad lines not rejected: %+v %+v", got[4], got[5])
+	}
+	if got[4].Code != "format" || got[5].Code != "host_port" {
+		t.Errorf("codes = %q %q", got[4].Code, got[5].Code)
 	}
 	for line, code := range map[string]string{"ftp://h:21": "scheme", "http://:80": "host_port", "h:port": "port", "proxy cua toi": "format"} {
 		if g := ParseList(line); len(g) != 1 || g[0].Code != code {

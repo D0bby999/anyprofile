@@ -6,6 +6,7 @@ package netproxy
 import (
 	"bufio"
 	"context"
+	"crypto/tls"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -21,14 +22,31 @@ import (
 
 const dialTimeout = 20 * time.Second
 
+// tlsConfigFor builds the TLS config when dialing an https upstream proxy. Overridable in tests.
+var tlsConfigFor = func(host string) *tls.Config {
+	return &tls.Config{ServerName: host, MinVersion: tls.VersionTLS12}
+}
+
 // Upstream is a proxy the relay forwards to. Password is filled from the
 // Keychain just before use and must never be logged; use Redacted.
 type Upstream struct {
-	Scheme   string // "http" | "socks5"
+	Scheme   string // "http" | "https" | "socks5"
 	Host     string
 	Port     int
 	Username string
 	Password string
+}
+
+// IsHTTPFamily reports whether the upstream speaks HTTP proxy semantics (plain HTTP or HTTPS over TLS).
+func (u Upstream) IsHTTPFamily() bool { return u.Scheme == "http" || u.Scheme == "https" }
+
+func (u Upstream) dialHTTPConn(ctx context.Context) (net.Conn, error) {
+	var d net.Dialer
+	if u.Scheme == "https" {
+		td := tls.Dialer{NetDialer: &d, Config: tlsConfigFor(u.Host)}
+		return td.DialContext(ctx, "tcp", u.Addr())
+	}
+	return d.DialContext(ctx, "tcp", u.Addr())
 }
 
 func (u Upstream) Addr() string { return net.JoinHostPort(u.Host, strconv.Itoa(u.Port)) }
@@ -98,9 +116,8 @@ func (u Upstream) DialTunnel(ctx context.Context, target string) (net.Conn, erro
 			return nil, err
 		}
 		return d.(proxy.ContextDialer).DialContext(ctx, "tcp", target)
-	case "http":
-		var d net.Dialer
-		c, err := d.DialContext(ctx, "tcp", u.Addr())
+	case "http", "https":
+		c, err := u.dialHTTPConn(ctx)
 		if err != nil {
 			return nil, err
 		}

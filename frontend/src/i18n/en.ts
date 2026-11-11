@@ -259,9 +259,15 @@ export const en = {
   },
   proxies: {
     title: 'Proxies', total: (n: number) => `${n} proxies`,
+    newBtn: 'Add proxy', newTitle: 'Add proxy',
+    label: 'Name (optional)', labelPlaceholder: 'e.g. US residential 1 (or host:port)',
+    scheme: 'Type', host: 'Host', hostPlaceholder: '127.0.0.1', port: 'Port',
+    username: 'Username (optional)', password: 'Password (optional)',
+    notePlaceholder: 'Provider, order ID or note',
+    addSubmit: 'Add & check', addSubmitting: 'Checking…',
     addTitle: 'Add proxies',
     addDesc: 'Paste one proxy per line. Use sticky proxies, which keep one IP for hours or days; rotating ones change IP on every connection.',
-    pastePlaceholder: 'http://user:pass@host:port\nhost:port:user:pass\nsocks5://user:pass@host:port',
+    pastePlaceholder: 'http://user:pass@host:port\nhttps://user:pass@host:port\nhost:port:user:pass\nsocks5://user:pass@host:port',
     import: 'Add and check', importing: 'Adding and checking…',
     added: (n: number) => `Added ${n} proxies.`,
     failedLine: (line: number, err: string) => `Line ${line}: ${err}`,
@@ -717,6 +723,9 @@ export const en = {
     bad_date: 'Use a date like 2026-12-31.',
     proxy_label: 'Type a name for the proxy.',
     note_too_long: 'The note can have at most 500 characters.',
+    proxy_scheme: 'Type must be http, https or socks5.',
+    proxy_host: 'Type a valid proxy host or IP.',
+    proxy_port: 'The port must be a number from 1 to 65535.',
   } as Record<string, string>,
 }
 

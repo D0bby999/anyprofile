@@ -649,3 +649,34 @@ func TestBackupDaily(t *testing.T) {
 		t.Fatalf("backup misses the profile: %v", err)
 	}
 }
+
+func TestHTTPSProxyMigrationPreservesRefs(t *testing.T) {
+	s, _ := upgradeFrom(t, 28, func(o *Store) {
+		if err := o.CreateProxy(&Proxy{ID: "px1", Label: "gw:8080", Scheme: "http", Host: "gw", Port: 8080, Username: "u"}); err != nil {
+			t.Fatal(err)
+		}
+		p := sample("p1")
+		p.ProxyID = "px1"
+		if err := o.CreateProfile(p); err != nil {
+			t.Fatal(err)
+		}
+		if err := o.CreateMobileDevice(&MobileDevice{ID: "m1", Name: "Droid", Driver: "vm", Platform: "macos", ProxyID: "px1", RAMMB: 2048, CPUs: 2}); err != nil {
+			t.Fatal(err)
+		}
+	})
+	if p, err := s.GetProfile("p1"); err != nil || p.ProxyID != "px1" {
+		t.Fatalf("profile lost proxy reference after migration: %+v, err=%v", p, err)
+	}
+	if m, err := s.GetMobileDevice("m1"); err != nil || m.ProxyID != "px1" {
+		t.Fatalf("mobile lost proxy reference after migration: %+v, err=%v", m, err)
+	}
+	if err := s.CreateProxy(&Proxy{ID: "px2", Label: "tls:443", Scheme: "https", Host: "tls.example", Port: 443, Username: "u"}); err != nil {
+		t.Fatalf("create https proxy failed: %v", err)
+	}
+	if got, err := s.GetProxy("px2"); err != nil || got.Scheme != "https" {
+		t.Fatalf("GetProxy(px2) = %+v, err=%v", got, err)
+	}
+	if err := s.CreateProxy(&Proxy{ID: "px3", Label: "bad:21", Scheme: "ftp", Host: "ftp.example", Port: 21}); err == nil {
+		t.Fatal("expected CHECK constraint error for unsupported scheme ftp")
+	}
+}

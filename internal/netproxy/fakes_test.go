@@ -4,11 +4,14 @@ package netproxy
 
 import (
 	"bufio"
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/base64"
 	"encoding/binary"
 	"io"
 	"net"
 	"net/http"
+	"net/http/httptest"
 	"strconv"
 	"sync/atomic"
 	"testing"
@@ -16,54 +19,81 @@ import (
 
 const testUser, testPass = "user__cr.us", "p:ss"
 
-// fakeHTTPProxy is an authenticating upstream that supports CONNECT and absolute-URI requests.
-func fakeHTTPProxy(t *testing.T) (Upstream, *atomic.Int32) {
-	t.Helper()
-	var denied atomic.Int32
+func serveHTTPProxyConn(c net.Conn, want string, denied *atomic.Int32) {
+	defer c.Close()
+	br := bufio.NewReader(c)
+	for {
+		req, err := http.ReadRequest(br)
+		if err != nil {
+			return
+		}
+		if req.Header.Get("Proxy-Authorization") != want {
+			denied.Add(1)
+			io.WriteString(c, "HTTP/1.1 407 Proxy Authentication Required\r\nContent-Length: 0\r\n\r\n")
+			return
+		}
+		if req.Method == http.MethodConnect {
+			t2, err := net.Dial("tcp", req.Host)
+			if err != nil {
+				return
+			}
+			io.WriteString(c, "HTTP/1.1 200 OK\r\n\r\n")
+			go io.Copy(t2, br)
+			io.Copy(c, t2)
+			return
+		}
+		req.RequestURI = ""
+		req.Header.Del("Proxy-Authorization")
+		resp, err := http.DefaultTransport.RoundTrip(req)
+		if err != nil {
+			return
+		}
+		resp.Write(c)
+		resp.Body.Close()
+	}
+}
+
+func acceptProxyLoop(ln net.Listener, denied *atomic.Int32) {
 	want := "Basic " + base64.StdEncoding.EncodeToString([]byte(testUser+":"+testPass))
-	ln := listen(t)
 	go func() {
 		for {
 			c, err := ln.Accept()
 			if err != nil {
 				return
 			}
-			go func() {
-				defer c.Close()
-				br := bufio.NewReader(c)
-				for {
-					req, err := http.ReadRequest(br)
-					if err != nil {
-						return
-					}
-					if req.Header.Get("Proxy-Authorization") != want {
-						denied.Add(1)
-						io.WriteString(c, "HTTP/1.1 407 Proxy Authentication Required\r\nContent-Length: 0\r\n\r\n")
-						return
-					}
-					if req.Method == http.MethodConnect {
-						t2, err := net.Dial("tcp", req.Host)
-						if err != nil {
-							return
-						}
-						io.WriteString(c, "HTTP/1.1 200 OK\r\n\r\n")
-						go io.Copy(t2, br)
-						io.Copy(c, t2)
-						return
-					}
-					req.RequestURI = ""
-					req.Header.Del("Proxy-Authorization")
-					resp, err := http.DefaultTransport.RoundTrip(req)
-					if err != nil {
-						return
-					}
-					resp.Write(c)
-					resp.Body.Close()
-				}
-			}()
+			go serveHTTPProxyConn(c, want, denied)
 		}
 	}()
+}
+
+// fakeHTTPProxy is an authenticating upstream that supports CONNECT and absolute-URI requests.
+func fakeHTTPProxy(t *testing.T) (Upstream, *atomic.Int32) {
+	t.Helper()
+	var denied atomic.Int32
+	ln := listen(t)
+	acceptProxyLoop(ln, &denied)
 	return upstreamFor(ln, "http"), &denied
+}
+
+// fakeHTTPSProxy is a TLS-wrapped authenticating HTTP proxy upstream for tests.
+func fakeHTTPSProxy(t *testing.T) (Upstream, *atomic.Int32) {
+	t.Helper()
+	var denied atomic.Int32
+	// Borrow httptest's ephemeral 127.0.0.1 leaf cert instead of hand-rolling x509.
+	certSrv := httptest.NewTLSServer(http.NotFoundHandler())
+	certSrv.Close()
+	pool := x509.NewCertPool()
+	pool.AddCert(certSrv.Certificate())
+	prevTLS := tlsConfigFor
+	tlsConfigFor = func(host string) *tls.Config {
+		return &tls.Config{ServerName: host, RootCAs: pool, MinVersion: tls.VersionTLS12}
+	}
+	t.Cleanup(func() { tlsConfigFor = prevTLS })
+
+	ln := tls.NewListener(listen(t), certSrv.TLS.Clone())
+	t.Cleanup(func() { ln.Close() })
+	acceptProxyLoop(ln, &denied)
+	return upstreamFor(ln, "https"), &denied
 }
 
 // fakeSOCKS5 implements RFC 1928/1929 with username/password, CONNECT only.
