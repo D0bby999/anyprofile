@@ -113,4 +113,3 @@ func formatTrayState(lang string, browsers, mobile int, apiRunning bool) traySta
 		Tooltip:       tooltip,
 	}
 }
-

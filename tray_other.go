@@ -11,4 +11,3 @@ func updateTrayState(_ trayState) {}
 func stopTray() {}
 
 func wakeTrayRunLoop() {}
-

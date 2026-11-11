@@ -134,4 +134,3 @@ func TestBeforeCloseIdleAndShutdown(t *testing.T) {
 	app.shutdown(context.Background())
 	app.shutdown(context.Background())
 }
-

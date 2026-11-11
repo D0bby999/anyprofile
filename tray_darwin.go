@@ -146,4 +146,3 @@ func anyprofileTrayMenuAction(action C.int) {
 		go app.requestQuit()
 	}
 }
-
