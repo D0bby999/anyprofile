@@ -3,6 +3,11 @@
 The notes of each release tag are shown in the app's update prompt; this file
 keeps them together.
 
+## 0.2.3 (2026-11-11)
+
+- Proxies: added an **Add proxy** button and modal dialog to add individual proxies directly, and added full support for **HTTPS** upstream proxies (relay, GeoIP check, SQLite schema, Keychain).
+- macOS: closing the window (`X` or `Cmd+W`) now hides AnyProfile to the menu bar instead of quitting, with a menu bar tray icon showing live session status and quick actions (Open, Settings, Check for Updates, Stop All Sessions, Quit).
+
 ## 0.2.2 (2026-11-09)
 
 - Mobile: added real-time creation progress bar, 1-click Aurora Store installation in UI, auto-install Aurora Store on first boot with app permissions, and `device_install_aurora` MCP tool.
