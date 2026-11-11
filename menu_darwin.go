@@ -22,13 +22,13 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
-var menuText = map[string]struct{ About, Updates, Settings, Hide, Quit string }{
-	"en": {"About AnyProfile", "Check for Updates…", "Settings…", "Hide AnyProfile", "Quit AnyProfile"},
-	"vi": {"Giới thiệu AnyProfile", "Kiểm tra bản cập nhật…", "Cài đặt…", "Ẩn AnyProfile", "Thoát AnyProfile"},
+var menuText = map[string]struct{ About, Updates, Settings, Hide, Quit, File, CloseWindow string }{
+	"en": {"About AnyProfile", "Check for Updates…", "Settings…", "Hide AnyProfile", "Quit AnyProfile", "File", "Close Window"},
+	"vi": {"Giới thiệu AnyProfile", "Kiểm tra bản cập nhật…", "Cài đặt…", "Ẩn AnyProfile", "Thoát AnyProfile", "Tệp", "Đóng cửa sổ"},
 }
 
 // appMenu is the macOS menu bar: the app menu with Check for Updates and
-// Settings, as Mac apps have them, then Edit (copy and paste) and Window.
+// Settings, as Mac apps have them, then File, Edit (copy and paste) and Window.
 // The UI hears the choices as "menu" events.
 func appMenu(a *App, lang string) *menu.Menu {
 	tx, ok := menuText[lang]
@@ -37,8 +37,7 @@ func appMenu(a *App, lang string) *menu.Menu {
 	}
 	emit := func(what string) func(*menu.CallbackData) {
 		return func(*menu.CallbackData) {
-			runtime.WindowShow(a.ctx)
-			runtime.EventsEmit(a.ctx, "menu", what)
+			a.openMenuDestination(what)
 		}
 	}
 	m := menu.NewMenu()
@@ -49,7 +48,9 @@ func appMenu(a *App, lang string) *menu.Menu {
 	app.AddText(tx.Settings, keys.CmdOrCtrl(","), emit("settings"))
 	app.AddSeparator()
 	app.AddText(tx.Hide, keys.CmdOrCtrl("h"), func(*menu.CallbackData) { runtime.Hide(a.ctx) })
-	app.AddText(tx.Quit, keys.CmdOrCtrl("q"), func(*menu.CallbackData) { runtime.Quit(a.ctx) })
+	app.AddText(tx.Quit, keys.CmdOrCtrl("q"), func(*menu.CallbackData) { a.requestQuit() })
+	file := m.AddSubmenu(tx.File)
+	file.AddText(tx.CloseWindow, keys.CmdOrCtrl("w"), func(*menu.CallbackData) { a.hideMainWindow() })
 	m.Append(menu.EditMenu())
 	m.Append(menu.WindowMenu())
 	return m
@@ -57,6 +58,9 @@ func appMenu(a *App, lang string) *menu.Menu {
 
 // setMenuLanguage rebuilds the menu bar in the app's language.
 func (a *App) setMenuLanguage(lang string) {
-	runtime.MenuSetApplicationMenu(a.ctx, appMenu(a, lang))
-	runtime.MenuUpdateApplicationMenu(a.ctx)
+	if a.ctx != nil {
+		runtime.MenuSetApplicationMenu(a.ctx, appMenu(a, lang))
+		runtime.MenuUpdateApplicationMenu(a.ctx)
+	}
+	a.updateTray()
 }

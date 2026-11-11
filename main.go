@@ -5,12 +5,12 @@ package main
 import (
 	"embed"
 	"log"
+	goruntime "runtime"
 
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
 	"github.com/wailsapp/wails/v2/pkg/options/mac"
-	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 //go:embed all:frontend/dist
@@ -28,15 +28,16 @@ func main() {
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 		},
-		Menu:          appMenu(app, "en"),
-		OnStartup:     app.startup,
-		OnBeforeClose: app.beforeClose,
+		Menu:              appMenu(app, "en"),
+		HideWindowOnClose: goruntime.GOOS == "darwin",
+		OnStartup:         app.startup,
+		OnBeforeClose:     app.beforeClose,
+		OnShutdown:        app.shutdown,
 		// Two instances would each try to manage the same browsers.
 		SingleInstanceLock: &options.SingleInstanceLock{
 			UniqueId: "dev.anyprofile.app",
 			OnSecondInstanceLaunch: func(options.SecondInstanceData) {
-				runtime.WindowUnminimise(app.ctx)
-				runtime.WindowShow(app.ctx)
+				app.showMainWindow()
 			},
 		},
 		// The sidebar runs under the traffic lights, like a native Mac app.

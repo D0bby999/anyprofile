@@ -10,6 +10,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	goruntime "runtime"
 	"sort"
 	"sync"
 	"time"
@@ -38,9 +39,10 @@ type App struct {
 	engines map[string]engine.Engine
 	// fury stays reachable on its own for LocaleFor and Personas: both use the
 	// bundled fury-config helper and work before any engine is installed.
-	fury     *fury.Fury
-	startErr error
-	api      apiState
+	fury         *fury.Fury
+	startErr     error
+	api          apiState
+	shutdownOnce sync.Once
 	// agent is what the MCP endpoint knows of each browser; it lives as long
 	// as the app, across restarts of the API server.
 	agent *agent.Hub
@@ -121,7 +123,12 @@ func (a *App) init() error {
 		}
 	}()
 	l := launcher.New(st, sec, dirs, engineList(a.engines),
-		func(in launcher.Info) { runtime.EventsEmit(a.ctx, "launch:changed", in) }, log)
+		func(in launcher.Info) {
+			if a.ctx != nil {
+				runtime.EventsEmit(a.ctx, "launch:changed", in)
+			}
+			a.updateTray()
+		}, log)
 	l.Capture = true
 	l.Screen = launcher.WorkArea
 	l.CheckExit = netproxy.Check
@@ -137,7 +144,12 @@ func (a *App) init() error {
 		}}
 	if drv := mobileDriver(dirs, log, cat); drv != nil {
 		a.svc.Mobile = mobile.NewManager(drv, st, log,
-			func(in mobile.Info) { runtime.EventsEmit(a.ctx, "mobile:changed", in) })
+			func(in mobile.Info) {
+				if a.ctx != nil {
+					runtime.EventsEmit(a.ctx, "mobile:changed", in)
+				}
+				a.updateTray()
+			})
 		a.svc.OfferMobileRuntime()
 	}
 	l.BeforeStart, l.AfterExit = a.svc.BeforeLaunch, a.svc.AfterExit
@@ -155,6 +167,7 @@ func (a *App) init() error {
 	a.restartAPI()
 	a.svc.CleanUpdates()
 	a.setMenuLanguage(a.svc.Language())
+	initTray(a, a.currentTrayState())
 	go a.svc.WatchMobileProxies(a.ctx)
 	go func() {
 		// Looked at every few hours, so an app left open for days still
@@ -202,19 +215,31 @@ func (a *App) beforeClose(ctx context.Context) (prevent bool) {
 	defer func() {
 		if !prevent {
 			launcher.PassFocus() // stay on this desktop as the app quits
+			if goruntime.GOOS == "darwin" {
+				stopTray()
+				if a.ctx != nil {
+					runtime.Hide(a.ctx)
+				}
+				// Wake Cocoa runloop in case Quit came from the menu bar while hidden.
+				time.AfterFunc(25*time.Millisecond, wakeTrayRunLoop)
+			}
 		}
 	}()
 	if a.svc == nil {
 		return false
 	}
-	n := len(a.svc.Launcher.List())
-	if a.svc.Mobile != nil {
-		n += a.svc.Mobile.Running()
-	}
+	browsers, mobileCount := a.runningCounts()
+	n := browsers + mobileCount
 	if n == 0 {
 		return false
 	}
-	q := quitText[a.svc.Language()]
+	if a.ctx != nil {
+		a.showMainWindow()
+	}
+	q, ok := quitText[a.svc.Language()]
+	if !ok {
+		q = quitText["en"]
+	}
 	choice, err := runtime.MessageDialog(ctx, runtime.MessageDialogOptions{
 		Type:          runtime.QuestionDialog,
 		Title:         q.Title,
@@ -226,9 +251,107 @@ func (a *App) beforeClose(ctx context.Context) (prevent bool) {
 	if err != nil || choice != q.Confirm {
 		return true
 	}
-	a.svc.Launcher.StopAll()
+	if a.svc.Launcher != nil {
+		a.svc.Launcher.StopAll()
+	}
 	a.svc.StopAllMobile(ctx)
 	return false
+}
+
+func (a *App) shutdown(ctx context.Context) {
+	a.shutdownOnce.Do(func() {
+		stopTray()
+		a.api.mu.Lock()
+		srv := a.api.srv
+		a.api.srv = nil
+		a.api.mu.Unlock()
+		if srv != nil {
+			srv.Close()
+		}
+		if a.svc != nil {
+			if a.svc.Launcher != nil {
+				a.svc.Launcher.StopAll()
+			}
+			a.svc.StopAllMobile(ctx)
+		}
+	})
+}
+
+func (a *App) runningCounts() (browsers, mobileCount int) {
+	if a.svc == nil {
+		return 0, 0
+	}
+	if a.svc.Launcher != nil {
+		browsers = len(a.svc.Launcher.List())
+	}
+	if a.svc.Mobile != nil {
+		mobileCount = a.svc.Mobile.Running()
+	}
+	return browsers, mobileCount
+}
+
+func (a *App) apiRunning() bool {
+	a.api.mu.Lock()
+	defer a.api.mu.Unlock()
+	return a.api.srv != nil
+}
+
+func (a *App) currentTrayState() trayState {
+	lang := "en"
+	if a.svc != nil {
+		lang = a.svc.Language()
+	}
+	browsers, mobileCount := a.runningCounts()
+	return formatTrayState(lang, browsers, mobileCount, a.apiRunning())
+}
+
+func (a *App) updateTray() {
+	updateTrayState(a.currentTrayState())
+}
+
+func (a *App) showMainWindow() {
+	if a.ctx == nil {
+		return
+	}
+	runtime.Show(a.ctx)
+	runtime.WindowUnminimise(a.ctx)
+	runtime.WindowShow(a.ctx)
+}
+
+func (a *App) hideMainWindow() {
+	if a.ctx == nil {
+		return
+	}
+	runtime.Hide(a.ctx)
+}
+
+func (a *App) openMenuDestination(what string) {
+	a.showMainWindow()
+	if a.ctx != nil {
+		runtime.EventsEmit(a.ctx, "menu", what)
+	}
+}
+
+func (a *App) stopAllFromTray() {
+	if a.svc == nil {
+		return
+	}
+	ctx := a.ctx
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if a.svc.Launcher != nil {
+		a.svc.Launcher.StopAll()
+	}
+	a.svc.StopAllMobile(ctx)
+	a.updateTray()
+}
+
+func (a *App) requestQuit() {
+	if a.ctx == nil {
+		return
+	}
+	runtime.Quit(a.ctx)
 }
 
 // furyConfigPath finds the helper by absolute path inside the app bundle

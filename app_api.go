@@ -123,6 +123,7 @@ func (m apiMobile) MobileControl(id string) (api.DeviceControl, error) {
 
 // restartAPI stops the server and starts it again when Settings has it on.
 func (a *App) restartAPI() {
+	defer a.updateTray()
 	a.api.mu.Lock()
 	defer a.api.mu.Unlock()
 	if a.api.srv != nil {
