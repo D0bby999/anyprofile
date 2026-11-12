@@ -68,31 +68,62 @@ func NormalizeScheme(s string) (string, bool) {
 }
 
 func parseOne(line string) (Upstream, error) {
-	if strings.Contains(line, "://") {
-		u, err := url.Parse(line)
-		if err != nil {
-			return Upstream{}, errf("not_url", "not a proxy URL")
-		}
-		scheme, ok := NormalizeScheme(u.Scheme)
+	line = strings.TrimSpace(line)
+	scheme := "http"
+
+	if idx := strings.Index(line, "://"); idx != -1 {
+		rawScheme := line[:idx]
+		norm, ok := NormalizeScheme(rawScheme)
 		if !ok {
-			return Upstream{}, errf("scheme", "unsupported scheme %q", u.Scheme)
+			return Upstream{}, errf("scheme", "unsupported scheme %q", rawScheme)
 		}
-		port, err := strconv.Atoi(u.Port())
-		if err != nil || u.Hostname() == "" {
-			return Upstream{}, errf("host_port", "needs host:port")
+		scheme = norm
+		rest := line[idx+3:]
+		if strings.Contains(rest, "@") {
+			u, err := url.Parse(scheme + "://" + rest)
+			if err != nil {
+				return Upstream{}, errf("not_url", "not a proxy URL")
+			}
+			port, err := strconv.Atoi(u.Port())
+			if err != nil || u.Hostname() == "" {
+				return Upstream{}, errf("host_port", "needs host:port")
+			}
+			pass, _ := u.User.Password()
+			return check(Upstream{Scheme: scheme, Host: u.Hostname(), Port: port, Username: u.User.Username(), Password: pass})
 		}
-		pass, _ := u.User.Password()
-		return check(Upstream{Scheme: scheme, Host: u.Hostname(), Port: port, Username: u.User.Username(), Password: pass})
+		line = rest
+	} else if idx := strings.Index(line, ":"); idx != -1 {
+		if norm, ok := NormalizeScheme(line[:idx]); ok {
+			scheme = norm
+			line = strings.TrimPrefix(line[idx+1:], "//")
+		}
 	}
+
 	parts := strings.Split(line, ":")
+
+	if len(parts) == 3 {
+		if norm, ok := NormalizeScheme(parts[2]); ok {
+			scheme = norm
+			parts = parts[:2]
+		}
+	} else if len(parts) >= 5 {
+		if norm, ok := NormalizeScheme(parts[len(parts)-1]); ok {
+			scheme = norm
+			parts = parts[:len(parts)-1]
+		}
+	}
+
 	if len(parts) != 2 && len(parts) < 4 {
 		return Upstream{}, errf("format", "expected host:port or host:port:user:pass")
+	}
+	if parts[0] == "" {
+		return Upstream{}, errf("host_port", "needs host:port")
 	}
 	port, err := strconv.Atoi(parts[1])
 	if err != nil {
 		return Upstream{}, errf("port", "bad port %q", parts[1])
 	}
-	up := Upstream{Scheme: "http", Host: parts[0], Port: port}
+	up := Upstream{Scheme: scheme, Host: parts[0], Port: port}
 	if len(parts) >= 4 {
 		// A password may itself contain ':'.
 		up.Username, up.Password = parts[2], strings.Join(parts[3:], ":")

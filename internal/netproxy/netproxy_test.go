@@ -234,4 +234,42 @@ host-only
 		oxy[2].Upstream.Host != "pr.oxylabs.io" || oxy[2].Upstream.Username != "customer-myuser" {
 		t.Fatalf("oxylabs normalization = %+v", oxy)
 	}
+
+	httpsList := ParseList(`
+https://1.2.3.4:8443:myuser:mypass
+1.2.3.4:8443:myuser:mypass:https
+1.2.3.4:8443:https
+https:1.2.3.4:8443:myuser:mypass
+socks5://5.6.7.8:1080:s5user:s5pass
+5.6.7.8:1080:s5user:s5pass:socks5
+5.6.7.8:1080:socks5
+https://tls.example.com:443`)
+	if len(httpsList) != 8 {
+		t.Fatalf("httpsList length = %d, want 8", len(httpsList))
+	}
+	for i, item := range httpsList[:4] {
+		if item.Err != "" {
+			t.Errorf("[%d] err = %v", i, item.Err)
+		}
+		if item.Upstream.Scheme != "https" || item.Upstream.Host != "1.2.3.4" || item.Upstream.Port != 8443 {
+			t.Errorf("[%d] upstream = %+v", i, item.Upstream)
+		}
+		if i != 2 && (item.Upstream.Username != "myuser" || item.Upstream.Password != "mypass") {
+			t.Errorf("[%d] auth = %q:%q", i, item.Upstream.Username, item.Upstream.Password)
+		}
+	}
+	for i, item := range httpsList[4:7] {
+		if item.Err != "" {
+			t.Errorf("[%d] err = %v", i+4, item.Err)
+		}
+		if item.Upstream.Scheme != "socks5" || item.Upstream.Host != "5.6.7.8" || item.Upstream.Port != 1080 {
+			t.Errorf("[%d] upstream = %+v", i+4, item.Upstream)
+		}
+		if i != 2 && (item.Upstream.Username != "s5user" || item.Upstream.Password != "s5pass") {
+			t.Errorf("[%d] auth = %q:%q", i+4, item.Upstream.Username, item.Upstream.Password)
+		}
+	}
+	if httpsList[7].Upstream.Scheme != "https" || httpsList[7].Upstream.Host != "tls.example.com" || httpsList[7].Upstream.Port != 443 {
+		t.Errorf("[7] upstream = %+v", httpsList[7].Upstream)
+	}
 }
