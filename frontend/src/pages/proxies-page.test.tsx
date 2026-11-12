@@ -11,6 +11,11 @@ const proxy = (id: string, extra = {}) => ({ id, label: `gw.example:${id}`, sche
   country: 'US', exitIp: '', timezone: '', status: 'unchecked', checkedAt: '', expiresAt: '', rotating: false, usedBy: [], ...extra })
 const openExternal = vi.fn()
 const addProxy = vi.fn()
+const importProxies = vi.fn().mockImplementation(() => Promise.resolve({
+  added: 0,
+  failed: [{ line: 1, err: 'expected host:port or host:port:user:pass', code: 'format', display: '' }],
+  unreachable: ['gw.example:10010'],
+}))
 vi.mock('../api', async (orig) => ({
   ...(await orig<typeof import('../api')>()),
   openExternal: (u: string) => openExternal(u),
@@ -22,11 +27,11 @@ vi.mock('../api', async (orig) => ({
     proxy('5', { checkedAt: '2026-10-24T08:00:00Z', failedAt: '2026-10-24T08:00:00Z' })]),
     AddProxy: (inArg: unknown) => addProxy(inArg),
     CheckAllProxies: () => Promise.resolve(2),
-    ImportProxies: () => Promise.resolve({ added: 0, failed: [{ line: 1, err: 'expected host:port or host:port:user:pass', code: 'format', display: '' }], unreachable: ['gw.example:10010'] }) },
+    ImportProxies: (text: string, exp: string) => importProxies(text, exp) },
 }))
 const { ProxiesPage } = await import('./proxies-page')
 
-afterEach(() => { cleanup(); addProxy.mockReset() })
+afterEach(() => { cleanup(); addProxy.mockReset(); importProxies.mockClear() })
 
 describe('ProxiesPage', () => {
   it('shows the exit IP with its timezone in one column', async () => {
@@ -150,5 +155,79 @@ describe('ProxiesPage', () => {
     }))
     expect(await screen.findByText(t.proxies.added(1))).toBeTruthy()
     expect(screen.queryByRole('dialog', { name: t.proxies.newTitle })).toBeNull()
+  })
+
+  it('imports proxy list with explicit https scheme or defaultScheme selector', async () => {
+    importProxies.mockResolvedValueOnce({ added: 2, failed: [], unreachable: [] })
+    render(<ConfirmProvider><ToastProvider><ProxiesPage onChanged={vi.fn()} /></ToastProvider></ConfirmProvider>)
+    await screen.findByText('1.2.3.4')
+
+    const textarea = screen.getByRole('textbox', { name: t.proxies.addTitle })
+    const schemeSelect = screen.getByLabelText(t.proxies.scheme) as HTMLSelectElement
+    expect([...schemeSelect.options].map((o) => o.value)).toEqual(['auto', 'http', 'https', 'socks5'])
+
+    fireEvent.change(schemeSelect, { target: { value: 'https' } })
+    fireEvent.change(textarea, { target: { value: 'gw.example:10001:u:p\nhttp://gw.example:10002:u:p' } })
+
+    const importBtn = screen.getByRole('button', { name: t.proxies.import })
+    fireEvent.click(importBtn)
+
+    expect(importProxies).toHaveBeenCalledWith(
+      'https://gw.example:10001:u:p\nhttp://gw.example:10002:u:p',
+      '',
+    )
+  })
+
+  it('opens the rightbar drawer when clicking a proxy row or clicking edit button', async () => {
+    render(<ConfirmProvider><ToastProvider><ProxiesPage onChanged={vi.fn()} /></ToastProvider></ConfirmProvider>)
+    const ip = await screen.findByText('1.2.3.4')
+    const row = ip.closest('tr')!
+
+    // Clicking row opens drawer
+    fireEvent.click(row)
+    const drawer = await screen.findByRole('complementary', { name: t.proxies.drawerLabel('gw.example:1') })
+    expect(drawer).toBeTruthy()
+    expect(screen.queryByRole('dialog', { name: t.proxies.editTitle })).toBeNull()
+
+    // Close drawer
+    fireEvent.click(within(drawer).getByRole('button', { name: t.drawer.close }))
+    expect(screen.queryByRole('complementary')).toBeNull()
+
+    // Clicking pencil button opens drawer
+    const editBtn = within(row).getByRole('button', { name: t.proxies.rename })
+    fireEvent.click(editBtn)
+    expect(await screen.findByRole('complementary', { name: t.proxies.drawerLabel('gw.example:1') })).toBeTruthy()
+  })
+
+  it('filters proxies via search field in the toolbar', async () => {
+    render(<ConfirmProvider><ToastProvider><ProxiesPage onChanged={vi.fn()} /></ToastProvider></ConfirmProvider>)
+    await screen.findByText('1.2.3.4')
+
+    const searchInput = screen.getByLabelText(t.proxies.search)
+    fireEvent.change(searchInput, { target: { value: '9.9.9.9' } })
+
+    expect(screen.getByText('9.9.9.9')).toBeTruthy()
+    expect(screen.queryByText('1.2.3.4')).toBeNull()
+
+    fireEvent.change(searchInput, { target: { value: 'nonexistent-proxy' } })
+    expect(screen.getByText(t.profiles.noMatchTitle)).toBeTruthy()
+  })
+
+  it('switches tabs in the proxy drawer to view network and used-by profiles', async () => {
+    render(<ConfirmProvider><ToastProvider><ProxiesPage onChanged={vi.fn()} /></ToastProvider></ConfirmProvider>)
+    const ip = await screen.findByText('1.2.3.4')
+    fireEvent.click(ip.closest('tr')!)
+
+    const drawer = await screen.findByRole('complementary', { name: t.proxies.drawerLabel('gw.example:1') })
+    expect(within(drawer).getByText(t.proxies.connection)).toBeTruthy()
+
+    // Switch to Network & Location tab
+    fireEvent.click(within(drawer).getByRole('tab', { name: t.proxies.tabNetwork }))
+    expect(within(drawer).getByText('America/New_York')).toBeTruthy()
+
+    // Switch to Used By tab
+    fireEvent.click(within(drawer).getByRole('tab', { name: new RegExp(t.proxies.tabUsedBy) }))
+    expect(within(drawer).getByText('Kênh A')).toBeTruthy()
+    expect(within(drawer).getByText('Kênh E')).toBeTruthy()
   })
 })

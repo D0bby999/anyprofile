@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { t } from '../i18n'
 import { ConfirmProvider } from '../components/confirm'
 import { ToastProvider } from '../components/toast'
@@ -28,6 +28,7 @@ const api = {
   StopMobileRecording: vi.fn(() => Promise.resolve('/tmp/clip.mp4')),
   MobileWindowOnTop: vi.fn(() => Promise.resolve(false)),
   SetMobileWindowOnTop: vi.fn(() => Promise.resolve()),
+  UpdateMobileDevice: vi.fn(() => Promise.resolve()),
 }
 const openExternal = vi.fn()
 vi.mock('../api', async (orig) => ({
@@ -46,7 +47,7 @@ const device = (extra = {}) => ({
   imageVersion: '', notes: '', tags: ['jp'], pinned: false, serial: 1, createdAt: '', updatedAt: '', lastOpenAt: '',
   backedUpAt: '', deletedAt: '', state: 'stopped', error: '', ...extra,
 })
-const openRowMenu = async () => fireEvent.click(screen.getByRole('button', { name: t.menu.more }))
+const openRowMenu = async (index = 0) => fireEvent.click(screen.getAllByRole('button', { name: t.menu.more })[index])
 const avail = (extra = {}) => ({ supported: true, driver: 'vm', pro: true, ready: true, reason: '', message: '', ...extra })
 
 function page(rows: object[], a: object, onOpenPro = vi.fn()) {
@@ -205,5 +206,102 @@ describe('MobilePage', () => {
     await waitFor(() => expect(api.CreateMobileDevice).toHaveBeenCalled())
     const input = (api.CreateMobileDevice.mock.calls[0] as unknown[])[0] as { name: string; ramMb: number; proxyId: string }
     expect(input).toMatchObject({ name: 'Phone 2', ramMb: 3072, proxyId: 'auto' })
+  })
+
+  it('opens the rightbar drawer when clicking a row or selecting Edit in row menu', async () => {
+    page([device({ id: 'd1', name: 'Phone 1' }), device({ id: 'd2', name: 'Phone 2' })], avail())
+    expect(screen.queryByRole('complementary')).toBeNull()
+
+    // Clicking row opens drawer
+    fireEvent.click(screen.getByText('Phone 1'))
+    const drawer = await screen.findByRole('complementary', { name: t.mobile.drawerLabel('Phone 1') })
+    expect(drawer).toBeTruthy()
+    expect(screen.queryByRole('dialog')).toBeNull() // Not a modal!
+
+    // Close drawer
+    fireEvent.click(screen.getByRole('button', { name: t.drawer.close }))
+    expect(screen.queryByRole('complementary')).toBeNull()
+
+    // Row menu Edit opens drawer
+    await openRowMenu()
+    fireEvent.click(screen.getByRole('menuitem', { name: t.mobile.edit }))
+    expect(await screen.findByRole('complementary', { name: t.mobile.drawerLabel('Phone 1') })).toBeTruthy()
+  })
+
+  it('filters mobile devices via search field', () => {
+    page([device({ id: 'd1', name: 'TikTok US', serial: 101 }), device({ id: 'd2', name: 'Shopee VN', serial: 202 })], avail())
+    expect(screen.getByText('TikTok US')).toBeTruthy()
+    expect(screen.getByText('Shopee VN')).toBeTruthy()
+
+    const searchInput = screen.getByLabelText(t.mobile.search)
+    fireEvent.change(searchInput, { target: { value: 'tiktok' } })
+    expect(screen.getByText('TikTok US')).toBeTruthy()
+    expect(screen.queryByText('Shopee VN')).toBeNull()
+
+    fireEvent.change(searchInput, { target: { value: '#202' } })
+    expect(screen.queryByText('TikTok US')).toBeNull()
+    expect(screen.getByText('Shopee VN')).toBeTruthy()
+  })
+
+  it('switches tabs in the mobile rightbar drawer and updates device configuration', async () => {
+    page([device({ id: 'd1', name: 'Phone 1', ramMb: 3072, cpus: 4, preset: 'balanced' })], avail())
+    fireEvent.click(screen.getByText('Phone 1'))
+    const drawer = await screen.findByRole('complementary')
+
+    // Switch to Hardware tab
+    fireEvent.click(screen.getByRole('tab', { name: t.mobile.hardware }))
+    expect(screen.getByText(t.mobile.presetAutomation + ' (2 CPU · 2 GB)')).toBeTruthy()
+
+    // Switch to Activity tab
+    fireEvent.click(screen.getByRole('tab', { name: t.mobile.activity }))
+    expect(within(drawer).getAllByText('#1').length).toBeGreaterThanOrEqual(1)
+    expect(within(drawer).getByRole('button', { name: t.mobile.backupNow })).toBeTruthy()
+  })
+
+  it('renders order numbering and drag grip for each mobile device', () => {
+    page([
+      device({ id: 'd1', name: 'Phone 1', serial: 1 }),
+      device({ id: 'd2', name: 'Phone 2', serial: 2 }),
+    ], avail())
+
+    expect(screen.getByRole('columnheader', { name: t.profiles.colNo })).toBeTruthy()
+    const grips = screen.getAllByLabelText(/Move Phone/)
+    expect(grips.length).toBe(2)
+    expect(screen.getByText('1')).toBeTruthy()
+    expect(screen.getByText('2')).toBeTruthy()
+  })
+
+  it('supports selecting individual rows and bulk deletion', async () => {
+    page([
+      device({ id: 'd1', name: 'Phone 1' }),
+      device({ id: 'd2', name: 'Phone 2' }),
+    ], avail())
+
+    const box1 = screen.getByRole('checkbox', { name: 'Phone 1' })
+    fireEvent.click(box1)
+
+    // Selection bar appears
+    expect(screen.getByText(t.profiles.selected(1))).toBeTruthy()
+    const delBtn = screen.getByRole('button', { name: t.common.delete })
+    fireEvent.click(delBtn)
+
+    await waitFor(() => expect(api.TrashMobileDevice).toHaveBeenCalledWith('d1'))
+  })
+
+  it('toggles all devices via the header checkbox', () => {
+    page([
+      device({ id: 'd1', name: 'Phone 1' }),
+      device({ id: 'd2', name: 'Phone 2' }),
+    ], avail())
+
+    const selectAll = screen.getByRole('checkbox', { name: t.profiles.selectAll(2) }) as HTMLInputElement
+    expect(selectAll.checked).toBe(false)
+
+    fireEvent.click(selectAll)
+    expect(screen.getByText(t.profiles.selected(2))).toBeTruthy()
+
+    // Clicking cancel clears selection
+    fireEvent.click(screen.getByRole('button', { name: t.common.cancel }))
+    expect(screen.queryByText(t.profiles.selected(2))).toBeNull()
   })
 })

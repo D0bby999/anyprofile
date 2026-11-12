@@ -274,6 +274,7 @@ kbd { display: inline-flex; align-items: center; min-width: 22px; height: 20px; 
    used to spill out of its cell as soon as the table was narrower than the
    text). The actions column keeps the room its three buttons need. */
 .table.proxies { table-layout: fixed; }
+.table.proxies tbody tr { cursor: pointer; transition: background .15s var(--ease); }
 /* Eight points a side, not twelve: the extra 8px per cell is what keeps the
    date and the status chip whole at the smallest window. */
 .table.proxies th, .table.proxies td { padding-left: 8px; padding-right: 8px; }
@@ -658,7 +659,7 @@ kbd { display: inline-flex; align-items: center; min-width: 22px; height: 20px; 
 .mobile-table th { height: 40px; }
 .mobile-table td { padding-top: 14px; padding-bottom: 14px; vertical-align: middle; }
 .mobile-table .cellname { overflow: hidden; }
-.mobile-table tbody tr { transition: background .15s var(--ease); }
+.mobile-table tbody tr { cursor: pointer; transition: background .15s var(--ease); }
 .mobile-device-cell { display: flex; align-items: center; gap: 12px; min-width: 0; width: 100%; overflow: hidden; }
 .mobile-device-avatar {
   display: grid; place-items: center; flex: 0 0 auto; width: 38px; height: 38px;
