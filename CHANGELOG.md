@@ -3,6 +3,12 @@
 The notes of each release tag are shown in the app's update prompt; this file
 keeps them together.
 
+## 0.2.4 (2026-11-12)
+
+- Mobile: synchronized UX with Web profiles using a 2-column split layout and rightbar drawer (`MobileDrawer`), with batch selection checkboxes, bulk action bar, numbered serial `#`, drag-and-drop reordering, and container query responsive layout.
+- Proxies: synchronized UX with Web profiles using a split-layout rightbar drawer (`ProxyDrawer`) with Overview, Network & Location, and Used By tabs, and added support for `https://` and `socks5://` schemes when importing proxy lists.
+- Launcher: closing browser sessions now exits silently in the background without stealing focus or activating AnyProfile when AnyProfile is minimized, hidden, or running in the menu bar.
+
 ## 0.2.3 (2026-11-11)
 
 - Proxies: added an **Add proxy** button and modal dialog to add individual proxies directly, and added full support for **HTTPS** upstream proxies (relay, GeoIP check, SQLite schema, Keychain).
