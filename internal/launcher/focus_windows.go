@@ -12,6 +12,8 @@ func setHidden(int, bool) bool { return false }
 
 func activateSelf() {}
 
+func selfVisible() bool { return false }
+
 func PassFocus() int { return 0 }
 
 // workArea is the primary screen without the taskbar, in DIPs: the app is

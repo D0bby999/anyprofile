@@ -94,6 +94,14 @@ static int onScreen(int pid) {
 	}
 }
 
+// selfVisible reports whether this app (AnyProfile) is visible on screen and not hidden.
+static int selfVisible(void) {
+	@autoreleasepool {
+		if (NSApp == nil || [NSApp isHidden]) return 0;
+		return onScreen(getpid());
+	}
+}
+
 static int frontPID(void) {
 	@autoreleasepool {
 		NSRunningApplication *app = [[NSWorkspace sharedWorkspace] frontmostApplication];
@@ -117,6 +125,9 @@ func activate(pid int) bool { return C.activatePID(C.int(pid)) == 1 }
 
 // activateSelf brings AnyProfile itself back in front.
 func activateSelf() { C.activateSelf() }
+
+// selfVisible reports whether AnyProfile is currently visible on screen.
+func selfVisible() bool { return C.selfVisible() == 1 }
 
 // PassFocus hands the focus, while AnyProfile still has it, to the app
 // owning the frontmost window on the current desktop. Called as the app

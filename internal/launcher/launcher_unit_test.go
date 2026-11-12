@@ -142,3 +142,15 @@ func TestStoppedCarriesNoDevToolsPort(t *testing.T) {
 		t.Fatalf("events = %+v", got)
 	}
 }
+
+func TestLeaveBrowserWhenHidden(t *testing.T) {
+	wasCanLeave := canLeaveToSelf
+	defer func() { canLeaveToSelf = wasCanLeave }()
+
+	// When AnyProfile is running in the background (hidden or no window on screen),
+	// leaveBrowser must return true immediately without activating AnyProfile.
+	canLeaveToSelf = func() bool { return false }
+	if !leaveBrowser(99999) {
+		t.Fatal("leaveBrowser must return true when AnyProfile is not visible")
+	}
+}

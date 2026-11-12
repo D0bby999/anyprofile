@@ -25,10 +25,17 @@ const (
 	emptyChecks = 2
 )
 
+// canLeaveToSelf reports whether AnyProfile is visible on screen and able to
+// take focus; tests replace it.
+var canLeaveToSelf = selfVisible
+
 // leaveBrowser gives the focus to AnyProfile when the browser pid is in
 // front, and reports whether the browser is out of front; tests replace it.
 var leaveBrowser = func(pid int) bool {
 	if pid == 0 || frontPID() != pid {
+		return true
+	}
+	if !canLeaveToSelf() {
 		return true
 	}
 	activateSelf()
