@@ -333,15 +333,6 @@ export function MobilePage({ mobile, onOpenPro, onOpenSettings }: Props) {
                 <EmptyState icon="search" title={t.profiles.noMatchTitle} />
               ) : (
                 <table className={`table mobile-table${dragging ? ' reordering' : ''}`}>
-                  <colgroup>
-                    <col style={{ width: 44 }} />
-                    <col style={{ width: 54 }} />
-                    <col className="mob-col-name" />
-                    <col className="mob-col-proxy" />
-                    <col className="mob-col-state" />
-                    <col className="mob-col-last" />
-                    <col className="mob-col-actions" />
-                  </colgroup>
                   <thead>
                     <tr>
                       <th className="col-check">
@@ -353,10 +344,10 @@ export function MobilePage({ mobile, onOpenPro, onOpenSettings }: Props) {
                         />
                       </th>
                       <th className="col-no">{t.profiles.colNo}</th>
-                      <th>{t.mobile.colName}</th>
-                      <th>{t.mobile.colProxy}</th>
-                      <th>{t.mobile.colState}</th>
-                      <th>{t.mobile.colLastOpen}</th>
+                      <th className="col-name">{t.mobile.colName}</th>
+                      <th className="col-proxy mobile-proxy">{t.mobile.colProxy}</th>
+                      <th className="col-status mobile-state">{t.mobile.colState}</th>
+                      <th className="col-last mobile-last">{t.mobile.colLastOpen}</th>
                       <th className="col-actions" />
                     </tr>
                   </thead>
@@ -422,7 +413,14 @@ export function MobilePage({ mobile, onOpenPro, onOpenSettings }: Props) {
                             <span className="mobile-device-avatar"><Icon name="mobile" /></span>
                             <span className="mobile-device-copy">
                               <b className="selectable mobile-name" title={r.name}>{r.name}</b>
-                              <span className="sub mobile-meta">#{r.serial} · {r.ramMb / 1024} GB · {r.cpus} CPU</span>
+                              <span className="sub mobile-meta">
+                                #{r.serial} · {r.ramMb / 1024} GB · {r.cpus} CPU
+                                {r.proxyId && (
+                                  <span className="mobile-proxy-inline" title={proxies.find((x) => x.id === r.proxyId)?.label}>
+                                    · <Icon name="proxy" className="icon xs" />{proxies.find((x) => x.id === r.proxyId)?.label || '…'}
+                                  </span>
+                                )}
+                              </span>
                               {r.tags.length > 0 && <span className="row mobile-tags">{r.tags.map((tag) => (
                                 <span key={tag} className="chip"><span className="tagdot" style={{ background: `var(--tag-${tagColor(tag)})` }} />{tag}</span>
                               ))}</span>}
@@ -430,11 +428,11 @@ export function MobilePage({ mobile, onOpenPro, onOpenSettings }: Props) {
                             </span>
                             </span>
                           </td>
-                          <td className="stack mobile-proxy">{proxyLabel(r)}</td>
-                          <td className="stack mobile-state"><StateChip r={r} />
+                          <td className="stack mobile-proxy col-proxy">{proxyLabel(r)}</td>
+                          <td className="stack mobile-state col-status"><StateChip r={r} />
                             {r.state === 'starting' && mobile.phases?.[r.id] && <small role="status" className="faint">{t.mobile.startPhase[mobile.phases[r.id]]}</small>}
                             {r.backedUpAt && <small className="faint">{t.mobile.backedUp(relativeTime(r.backedUpAt))}</small>}</td>
-                          <td className="muted nowrap mobile-last">{r.lastOpenAt ? relativeTime(r.lastOpenAt) : t.mobile.never}</td>
+                          <td className="muted nowrap mobile-last col-last">{r.lastOpenAt ? relativeTime(r.lastOpenAt) : t.mobile.never}</td>
                           <td className="col-actions"><span className="row mobile-actions">
                             {running && (
                               <>

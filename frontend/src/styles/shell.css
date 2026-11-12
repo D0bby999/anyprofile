@@ -648,18 +648,47 @@ kbd { display: inline-flex; align-items: center; min-width: 22px; height: 20px; 
 .prostatus:hover .prostatus-arrow { color: var(--ink-soft); }
 
 /* Mobile device table: identity first, then proxy/status, actions last. */
-.mobile-table { min-width: 820px; table-layout: fixed; }
-.mobile-table .mob-col-name { width: 28%; }
-.mobile-table .mob-col-proxy { width: 22%; }
-.mobile-table .mob-col-state { width: 15%; }
-.mobile-table .mob-col-last { width: 15%; }
-.mobile-table .mob-col-actions { width: 20%; }
-.mobile-table .cellname { width: auto; max-width: none; }
-.mobile-table .col-actions { width: auto; }
+.mobile-table { width: 100%; min-width: 0; table-layout: fixed; }
+.mobile-table th.col-check, .mobile-table td.col-check { width: 44px; }
+.mobile-table th.col-no, .mobile-table td.col-no { width: 50px; }
+.mobile-table th.col-actions, .mobile-table td.col-actions { width: 150px; }
+.mobile-table .cellname { width: auto; min-width: 0; }
+.mobile-table .mobile-proxy { width: 24%; min-width: 0; }
+.mobile-table .mobile-state { width: 16%; min-width: 0; }
+.mobile-table .mobile-last { width: 14%; min-width: 0; }
 .mobile-table th { height: 40px; }
-.mobile-table td { padding-top: 14px; padding-bottom: 14px; vertical-align: middle; }
+.mobile-table td { padding-top: 12px; padding-bottom: 12px; vertical-align: middle; }
 .mobile-table .cellname { overflow: hidden; }
 .mobile-table tbody tr { cursor: pointer; transition: background .15s var(--ease); }
+
+/* Keep actions reachable at the right edge when table content is narrow or drawer opens. */
+.mobile-table th.col-actions, .mobile-table td.col-actions { position: sticky; right: 0; background: var(--surface); }
+.mobile-table th.col-actions { z-index: 2; }
+:where(.mobile-table tbody tr:hover) td.col-actions { background: var(--surface-hover); }
+:where(.mobile-table tbody tr.active) td.col-actions { background: var(--accent-soft); }
+:where(.mobile-table tbody tr.selected) td.col-actions { background: var(--accent-soft); }
+
+.mobile-proxy-inline { display: none; }
+
+/* Responsive adjustments inside .tablewrap container */
+@container (max-width: 860px) {
+  .mobile-table .mobile-last,
+  .mobile-table .col-no { display: none; }
+  .mobile-table .mobile-proxy { width: 28%; }
+  .mobile-table .mobile-state { width: 20%; }
+}
+
+@container (max-width: 700px) {
+  .mobile-table .mobile-proxy { display: none; }
+  .mobile-table .mobile-proxy-inline { display: inline-flex; align-items: center; gap: 3px; color: var(--muted); font-size: 11px; }
+  .mobile-table .mobile-state { width: 26%; }
+}
+
+@container (max-width: 520px) {
+  .mobile-table .mobile-state { display: none; }
+  .mobile-table th.col-actions, .mobile-table td.col-actions { width: 110px; }
+  .mobile-table .mobile-actions .btn.open { min-width: 60px; padding: 0 8px; }
+}
 .mobile-device-cell { display: flex; align-items: center; gap: 12px; min-width: 0; width: 100%; overflow: hidden; }
 .mobile-device-avatar {
   display: grid; place-items: center; flex: 0 0 auto; width: 38px; height: 38px;
@@ -680,9 +709,6 @@ kbd { display: inline-flex; align-items: center; min-width: 22px; height: 20px; 
 .mobile-last { font-size: 12px; }
 .mobile-actions { justify-content: flex-end; gap: 6px; flex-wrap: nowrap; }
 .mobile-actions .btn.open { min-width: 74px; }
-@media (max-width: 920px) {
-  .mobile-table { min-width: 760px; }
-}
 
 /* App sources and installation guidance under the device table. */
 .mobile-foot { display: flex; flex-direction: column; gap: 4px; margin-top: -4px; }
