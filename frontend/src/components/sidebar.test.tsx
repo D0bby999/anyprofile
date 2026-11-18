@@ -70,6 +70,24 @@ describe('Sidebar', () => {
     expect(onNavigate).not.toHaveBeenCalled()
   })
 
+  it('shows eight platforms until asked for all, and collapses them', () => {
+    const sites = Array.from({ length: 10 }, (_, i) => ({
+      id: `site-${i}`, name: `Platform ${String(i).padStart(2, '0')}`, domains: [], startUrl: '', color: '#000',
+      group: 'other' as const, icon: '', custom: false,
+    }))
+    const siteCounts = new Map(sites.map((s) => [s.id, 1]))
+    render(
+      <Sidebar page="profiles" view="all" counts={countProfiles(rows)}
+        tags={[]} sites={sites} siteCounts={siteCounts} proxyCount={0} mobileCount={0} engineLabel="" engineReady
+        onNavigate={vi.fn()} onNewProfile={vi.fn()} onOpenTools={vi.fn()} />,
+    )
+    expect(screen.queryByRole('button', { name: /Platform 09/ })).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: t.nav.showAll(10) }))
+    expect(screen.getByRole('button', { name: /Platform 09/ })).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: t.nav.sites }))
+    expect(screen.queryByRole('button', { name: /Platform 00/ })).toBeNull()
+  })
+
   it('shows the Pro mark next to AnyProfile only when Pro is active', () => {
     const { container } = sidebar(vi.fn(), 0, vi.fn(), false)
     expect(container.querySelector('.brand-tier')).toBeNull()

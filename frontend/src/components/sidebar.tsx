@@ -14,6 +14,7 @@ export type Page = 'profiles' | 'mobile' | 'proxies' | 'trash' | 'settings'
  *  need attention (both picked from the status bar), one platform, or one tag. */
 export type View = 'all' | 'running' | 'attention' | `site:${string}` | `tag:${string}`
 
+const SITES_SHOWN = 8
 const TAGS_SHOWN = 12
 
 type Props = {
@@ -35,12 +36,14 @@ type Props = {
 }
 
 export function Sidebar({ page, view, counts, tags, sites, siteCounts, proxyCount, mobileCount, engineLabel, engineReady, pro, onNavigate, onNewProfile, onOpenTools }: Props) {
+  const [sitesOpen, setSitesOpen] = useState(true)
+  const [allSites, setAllSites] = useState(false)
   const [tagsOpen, setTagsOpen] = useState(true)
   const [allTags, setAllTags] = useState(false)
   const item = (label: string, icon: IconName, active: boolean, onClick: () => void, count?: number, tone: '' | 'live' | 'warn' = '') => (
     <button className="navitem nodrag" aria-current={active ? 'page' : undefined} onClick={onClick}>
       <Icon name={icon} />
-      <span>{label}</span>
+      <span className="navlabel">{label}</span>
       {count !== undefined && <span className={`cnt${tone && count > 0 ? ` ${tone}` : ''}`}>{count}</span>}
     </button>
   )
@@ -50,6 +53,7 @@ export function Sidebar({ page, view, counts, tags, sites, siteCounts, proxyCoun
   const usedSites = sites
     .filter((s) => (siteCounts.get(s.id) ?? 0) > 0)
     .sort((a, b) => (siteCounts.get(b.id)! - siteCounts.get(a.id)!) || a.name.localeCompare(b.name))
+  const shownSites = allSites ? usedSites : usedSites.slice(0, SITES_SHOWN)
 
   return (
     <aside className="sidebar drag">
@@ -77,44 +81,57 @@ export function Sidebar({ page, view, counts, tags, sites, siteCounts, proxyCoun
         {t.nav.newProfile}
       </button>
       <nav className="sidenav" aria-label={t.appName}>
-        {item(t.nav.all, 'profiles', onProfiles('all'), () => onNavigate('profiles', 'all'), counts.all)}
-        {item(t.nav.mobile, 'mobile', page === 'mobile', () => onNavigate('mobile'), mobileCount)}
-        {item(t.nav.proxies, 'proxy', page === 'proxies', () => onNavigate('proxies'), proxyCount)}
-        {item(t.nav.trash, 'trash', page === 'trash', () => onNavigate('trash'))}
+        <div className="navprimary">
+          {item(t.nav.all, 'profiles', onProfiles('all'), () => onNavigate('profiles', 'all'), counts.all)}
+          {item(t.nav.mobile, 'mobile', page === 'mobile', () => onNavigate('mobile'), mobileCount)}
+          {item(t.nav.proxies, 'proxy', page === 'proxies', () => onNavigate('proxies'), proxyCount)}
+          {item(t.nav.trash, 'trash', page === 'trash', () => onNavigate('trash'))}
+        </div>
 
-        {usedSites.length > 0 && (
-          <>
-            <div className="navsection">{t.nav.sites}</div>
-            {usedSites.map((s) => (
-              <button key={s.id} className="navitem nodrag" aria-current={onProfiles(`site:${s.id}`) ? 'page' : undefined}
-                onClick={() => onNavigate('profiles', `site:${s.id}`)}>
-                <SiteGlyph site={s} />
-                <span>{s.name}</span>
-                <span className="cnt">{siteCounts.get(s.id)}</span>
-              </button>
-            ))}
-          </>
-        )}
-
-        {tags.length > 0 && (
-          <>
-            <button type="button" className="navsection navtoggle nodrag" aria-expanded={tagsOpen} onClick={() => setTagsOpen(!tagsOpen)}>
-              <Icon name="chevron" className="icon xs" />{t.nav.tags}
-            </button>
-            {tagsOpen && shownTags.map(([tag, n]) => (
-              <button key={tag} className="navitem nodrag" aria-current={onProfiles(`tag:${tag}`) ? 'page' : undefined}
-                onClick={() => onNavigate('profiles', `tag:${tag}`)}>
-                <span className="tagdot" style={{ background: `var(--tag-${tagColor(tag)})` }} />
-                <span className="navlabel">{tag}</span>
-                <span className="cnt">{n}</span>
-              </button>
-            ))}
-            {tagsOpen && tags.length > TAGS_SHOWN && (
-              <button type="button" className="navmore nodrag" onClick={() => setAllTags(!allTags)}>
-                {allTags ? t.nav.showFewer : t.nav.showAll(tags.length)}
-              </button>
+        {(usedSites.length > 0 || tags.length > 0) && (
+          <div className="navscroll">
+            {usedSites.length > 0 && (
+              <>
+                <button type="button" className="navsection navtoggle nodrag" aria-expanded={sitesOpen} onClick={() => setSitesOpen(!sitesOpen)}>
+                  <Icon name="chevron" className="icon xs" />{t.nav.sites}
+                </button>
+                {sitesOpen && shownSites.map((s) => (
+                  <button key={s.id} className="navitem nodrag" aria-current={onProfiles(`site:${s.id}`) ? 'page' : undefined}
+                    onClick={() => onNavigate('profiles', `site:${s.id}`)}>
+                    <SiteGlyph site={s} />
+                    <span className="navlabel">{s.name}</span>
+                    <span className="cnt">{siteCounts.get(s.id)}</span>
+                  </button>
+                ))}
+                {sitesOpen && usedSites.length > SITES_SHOWN && (
+                  <button type="button" className="navmore nodrag" onClick={() => setAllSites(!allSites)}>
+                    {allSites ? t.nav.showFewer : t.nav.showAll(usedSites.length)}
+                  </button>
+                )}
+              </>
             )}
-          </>
+
+            {tags.length > 0 && (
+              <>
+                <button type="button" className="navsection navtoggle nodrag" aria-expanded={tagsOpen} onClick={() => setTagsOpen(!tagsOpen)}>
+                  <Icon name="chevron" className="icon xs" />{t.nav.tags}
+                </button>
+                {tagsOpen && shownTags.map(([tag, n]) => (
+                  <button key={tag} className="navitem nodrag" aria-current={onProfiles(`tag:${tag}`) ? 'page' : undefined}
+                    onClick={() => onNavigate('profiles', `tag:${tag}`)}>
+                    <span className="tagdot" style={{ background: `var(--tag-${tagColor(tag)})` }} />
+                    <span className="navlabel">{tag}</span>
+                    <span className="cnt">{n}</span>
+                  </button>
+                ))}
+                {tagsOpen && tags.length > TAGS_SHOWN && (
+                  <button type="button" className="navmore nodrag" onClick={() => setAllTags(!allTags)}>
+                    {allTags ? t.nav.showFewer : t.nav.showAll(tags.length)}
+                  </button>
+                )}
+              </>
+            )}
+          </div>
         )}
       </nav>
       <div className="sidefoot">
