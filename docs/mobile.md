@@ -29,13 +29,13 @@ Cài app trong máy: xem [Cài app trên máy mobile](mobile-apps.md). Nguồn, 
 
 ## Automation
 
-Máy mobile có ba preset:
+Máy mobile có ba preset (toàn bộ theo chuẩn khung hình **iPhone 19.5:9**):
 
-| Preset | RAM | CPU | Màn hình | Dùng cho |
-|---|---:|---:|---|---|
-| Automation | 2 GB | 2 | 540×960 | script, tool, chạy nhiều máy |
-| Balanced | 3 GB | 4 | 720×1600 | mặc định, dùng tay và agent |
-| Interactive | 4 GB | 4 | 720×1600 | app nặng, xem video |
+| Preset | RAM | CPU | Màn hình | Google Play & Danh tính | Dùng cho |
+|---|---:|---:|---|---|---|
+| Automation | 2 GB | 2 | 540×1170 | Tắt (nhẹ nhất) | script, tool, chạy nhiều máy |
+| Balanced | 4 GB | 4 | 780×1688 | Bật (GMS + danh tính) | mặc định, dùng tay, YouTube & TikTok |
+| Interactive | 4 GB | 6 | 780×1688 (tùy chọn Retina 1170×2532) | Bật (GMS + danh tính, 60 fps, âm thanh) | app nặng, xem video mượt |
 
 - Agent và script mở máy **headless** (không cửa sổ scrcpy) để nhẹ CPU; người dùng bấm **Mở** vẫn thấy cửa sổ.
 - `device_show` mở cửa sổ khi cần xem.

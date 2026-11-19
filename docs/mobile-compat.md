@@ -1,17 +1,16 @@
 # Ứng dụng chạy được trên máy mobile
 
-Cập nhật: 01/11/2026. Máy: macOS Apple Silicon, image LineageOS 23.2.20261019.
+Cập nhật: 19/11/2026. Máy: macOS Apple Silicon, image LineageOS 23.2.20261019 + lớp nền MindTheGapps & danh tính thiết bị (mặc định bật cho máy mới ở preset Cân bằng / Tương tác).
 
-Cách thử: cài APK (hoặc Aurora Store), mở, đăng nhập bằng email/số điện thoại, dùng 10 phút, thoát rồi mở lại.
-Ghi lại app tự đóng, hộp thoại đòi Google Play, hay mất mạng khi gọi video.
+Cách thử: cài từ Google Play Store / Aurora Store (hoặc APK), mở, đăng nhập bằng email/số điện thoại, dùng 10 phút, thoát rồi mở lại.
 
 ## Kết quả
 
 | App | Trạng thái | Ghi chú |
 |---|---|---|
-| TikTok | Chạy | Cài và mở được; đăng nhập bằng email/số điện thoại |
+| TikTok | Hỗ trợ (cần proxy dân cư/4G sạch) | Đã ẩn CPU Apple (`midr`), áp danh tính thiết bị thật (`release-keys`, `user`, `verifiedbootstate=green`), SIM/nhà mạng theo quốc gia proxy, pin thực tế và Magisk DenyList. Vẫn cần proxy dân cư/4G sạch khi đăng ký mới |
+| YouTube (app) | Hỗ trợ (trên máy bật Google Play / GMS) | Máy mới tạo (Cân bằng / Tương tác) cài sẵn MindTheGapps (Google Play Services + Play Store) và bật âm thanh scrcpy opus. Máy tạo trước bản nâng cấp không có GMS vẫn dùng `m.youtube.com` |
 | Chrome | Chạy | Dùng bình thường; Google có thể hỏi captcha theo IP |
-| YouTube (app) | Không chạy | Mở rồi tự đóng vì cần dịch vụ Google Play; dùng `m.youtube.com` |
 | YouTube (web) | Chạy | Trong Chrome |
 | Google Search | Chạy, có captcha | Captcha theo IP; proxy dân cư/4G giảm bị hỏi |
 | Shopee | Chưa kiểm | Cần tài khoản thật để thử |
