@@ -88,14 +88,16 @@ export const mobileAvailability = {
 export const mobileDevices = [
   {
     id: 'm1', name: 'TikTok — NL', driver: 'vm', platform: 'darwin', driverRef: 'm1', proxyId: 'px1',
-    ramMb: 3072, cpus: 4, imageVersion: '23.2.20261019', notes: '', tags: ['ads', 'tiktok'],
+    ramMb: 4096, cpus: 6, preset: 'interactive', screenW: 780, screenH: 1688, density: 320, withGms: true,
+    identityJson: '{"model":"Pixel 8"}', imageVersion: '23.2.20261019', notes: '', tags: ['ads', 'tiktok'],
     pinned: false, serial: 1, createdAt: ago(2400), updatedAt: ago(15), lastOpenAt: ago(5),
     backedUpAt: ago(720), deletedAt: '', state: 'running', error: '',
   },
   {
-    id: 'm2', name: 'Shopee — US', driver: 'vm', platform: 'darwin', driverRef: 'm2', proxyId: 'px2',
-    ramMb: 3072, cpus: 4, imageVersion: '23.2.20261019', notes: '', tags: ['client-a'],
-    pinned: false, serial: 2, createdAt: ago(4800), updatedAt: ago(300), lastOpenAt: ago(300),
+    id: 'm2', name: 'YouTube — US', driver: 'vm', platform: 'darwin', driverRef: 'm2', proxyId: 'px2',
+    ramMb: 4096, cpus: 4, preset: 'balanced', screenW: 780, screenH: 1688, density: 320, withGms: true,
+    identityJson: '{"model":"SM-S928B"}', imageVersion: '23.2.20261019', notes: '', tags: ['client-a'],
+    pinned: true, serial: 2, createdAt: ago(4800), updatedAt: ago(300), lastOpenAt: ago(300),
     backedUpAt: '', deletedAt: '', state: 'stopped', error: '',
   },
 ] as never

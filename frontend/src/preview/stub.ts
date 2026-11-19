@@ -10,6 +10,17 @@ const params = new URLSearchParams(location.search)
 const wanted = params.get('theme')
 if (wanted === 'light' || wanted === 'dark') localStorage.setItem('anyprofile.theme', wanted)
 if (params.get('pro') === '0') proActive = false
+const wantedTab = params.get('tab')
+if (wantedTab) {
+  window.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => {
+      const btn = [...document.querySelectorAll('nav button, .nav button')].find((b) =>
+        (b.textContent || '').toLowerCase().includes(wantedTab.toLowerCase()),
+      ) as HTMLButtonElement | undefined
+      btn?.click()
+    }, 350)
+  })
+}
 
 const noop = () => {}
 const unsubscribe = () => noop

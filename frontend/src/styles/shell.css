@@ -714,15 +714,150 @@ kbd { display: inline-flex; align-items: center; min-width: 22px; height: 20px; 
 .mobile-actions { justify-content: flex-end; gap: 6px; flex-wrap: nowrap; }
 .mobile-actions .btn.open { min-width: 74px; }
 
+/* MuMu-style visual device list */
+.mumu-listwrap { display: flex; flex-direction: column; min-height: 0; flex: 1 1 auto; overflow: auto; }
+.mumu-listhead { display: flex; align-items: center; justify-content: space-between; padding: 8px 16px; border-bottom: 1px solid var(--line); font-size: var(--t-xs); }
+.mumu-list { display: flex; flex-direction: column; padding: 10px 14px; gap: 10px; }
+.mumu-card {
+  display: flex; align-items: center; gap: 16px;
+  padding: 12px 16px 12px 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  cursor: pointer;
+  transition: background .15s var(--ease), border-color .15s var(--ease), box-shadow .15s var(--ease);
+}
+.mumu-card:hover { background: var(--surface-hover); border-color: var(--line-strong, var(--line)); }
+.mumu-card.active, .mumu-card.selected { background: var(--accent-soft); border-color: var(--accent-line); }
+.mumu-card.dragging { opacity: .6; }
+.mumu-card-lead { display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 0 0 auto; width: 22px; }
+.mumu-card-idx { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+/* Mini phone thumbnail matching MuMuPlayer Pro's dark stage + frosted status bar */
+.mumu-thumb {
+  position: relative; flex: 0 0 auto;
+  width: 132px; height: 82px;
+  border-radius: 10px;
+  background: #23252a;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+}
+.mumu-thumb-phone {
+  position: relative;
+  width: 38px; height: 78px;
+  border-radius: 6px;
+  background: linear-gradient(160deg, #0b1c36 0%, #10325c 52%, #0a1426 100%);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+}
+.mumu-thumb.is-running .mumu-thumb-phone {
+  background: linear-gradient(160deg, #0d2b4c 0%, #155e75 55%, #0b2436 100%);
+}
+.mumu-thumb-notch {
+  position: absolute; top: 3px; left: 50%; transform: translateX(-50%);
+  width: 12px; height: 3px; border-radius: 99px; background: rgba(0, 0, 0, 0.85);
+}
+.mumu-thumb-glow {
+  position: absolute; bottom: 14px; right: 5px;
+  width: 16px; height: 16px; border-radius: 99px;
+  background: radial-gradient(circle, rgba(250, 204, 21, 0.85) 0%, rgba(245, 158, 11, 0) 72%);
+}
+.mumu-thumb-app {
+  position: absolute; top: 13px; left: 5px;
+  width: 7px; height: 7px; border-radius: 2px;
+  background: #34d399;
+}
+.mumu-thumb-bar {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 24px;
+  display: flex; align-items: center; justify-content: center; gap: 5px;
+  padding: 0 6px;
+  background: rgba(24, 26, 30, 0.78);
+  backdrop-filter: blur(6px);
+  color: #f3f4f6; font-size: 11px; font-weight: 500;
+}
+.mumu-thumb-dot {
+  width: 7px; height: 7px; border-radius: 99px;
+  background: #9ca3af; flex: 0 0 auto;
+}
+.mumu-thumb.is-running .mumu-thumb-dot { background: #22c55e; box-shadow: 0 0 6px rgba(34, 197, 94, 0.75); }
+.mumu-thumb.is-busy .mumu-thumb-dot { background: #f59e0b; }
+.mumu-thumb-status { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.mumu-card-info { display: flex; flex-direction: column; gap: 6px; min-width: 0; flex: 1 1 auto; }
+.mumu-card-title { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-width: 0; }
+.mumu-name { font-size: 15px; font-weight: 600; line-height: 1.25; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.mumu-tag { height: 18px; padding: 0 6px; font-size: 10px; }
+.mumu-card-pills { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.mumu-spec-pill {
+  display: inline-flex; align-items: center; height: 22px; padding: 0 8px;
+  border-radius: 6px;
+  background: var(--surface-sunken);
+  border: 1px solid var(--line);
+  color: var(--ink-soft);
+  font-size: 11.5px; font-weight: 500; font-variant-numeric: tabular-nums;
+}
+.mumu-spec-pill.gms { color: var(--accent); border-color: var(--accent-line); background: var(--accent-soft); }
+.mumu-proxy-wrap { display: inline-flex; align-items: center; }
+.mumu-card-sub {
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums;
+}
+
+.mumu-card-actions { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+.mumu-power-btn {
+  width: 38px; height: 38px; border-radius: 999px;
+  display: inline-grid; place-items: center;
+  border: 1px solid var(--line);
+  cursor: pointer;
+  transition: transform .12s var(--ease), background .15s var(--ease), opacity .15s var(--ease);
+}
+.mumu-power-btn:disabled { opacity: .45; cursor: not-allowed; }
+.mumu-power-btn:not(:disabled):hover { transform: scale(1.04); }
+.mumu-power-btn.is-play { background: var(--ink); color: var(--surface); border-color: transparent; }
+.mumu-power-btn.is-stop { background: var(--danger, #dc2626); color: #fff; border-color: transparent; }
+.mumu-card-actions .rowmenu-wrap > .iconbtn {
+  width: 34px; height: 34px; border-radius: 999px;
+  background: var(--surface-sunken); border: 1px solid var(--line);
+}
+
 /* App sources and installation guidance under the device table. */
 .mobile-foot { display: flex; flex-direction: column; gap: 4px; margin-top: -4px; }
 .mobile-help { color: var(--muted); font-size: var(--t-xs); line-height: 1.45; }
 .mobile-help > strong { color: var(--ink-soft); }
 .mobile-faststart { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.mobileviewer { width: 430px; }
-.mobileviewer .dialog-body { padding: 0; background: #000; gap: 0; }
-.mobileviewer-image { display: block; width: 100%; max-height: 68vh; object-fit: contain; cursor: crosshair; }
-.mobileviewer .hint { padding: 8px 12px; }
+.mobileviewer { width: 520px; }
+.mobileviewer .dialog-body { padding: 14px 16px 6px; background: var(--surface-2, #111); gap: 8px; }
+.mobileviewer-stage { display: flex; justify-content: center; align-items: stretch; gap: 12px; }
+.mobileviewer-sidebar { display: flex; flex-direction: column; gap: 6px; width: 132px; justify-content: center; }
+.mobileviewer-sidebar .btn { width: 100%; justify-content: flex-start; text-align: left; }
+.mobileviewer-bezel {
+  position: relative;
+  height: min(66vh, 640px);
+  aspect-ratio: 390 / 844;
+  background: #000;
+  border-radius: 36px;
+  border: 6px solid #1e1e22;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12), 0 14px 32px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.mobileviewer-notch {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 72px;
+  height: 18px;
+  background: #000;
+  border-radius: 999px;
+  z-index: 2;
+  pointer-events: none;
+}
+.mobileviewer-image { display: block; width: 100%; height: 100%; object-fit: cover; cursor: crosshair; }
+.mobileviewer .hint { padding: 4px 2px; text-align: center; }
 .mobile-faststart .checkrow { font-size: var(--t-xs); color: var(--ink-soft); }
 
 .mobile-store-hint {

@@ -205,7 +205,7 @@ describe('MobilePage', () => {
     fireEvent.click(screen.getByRole('button', { name: t.mobile.create }))
     await waitFor(() => expect(api.CreateMobileDevice).toHaveBeenCalled())
     const input = (api.CreateMobileDevice.mock.calls[0] as unknown[])[0] as { name: string; ramMb: number; proxyId: string }
-    expect(input).toMatchObject({ name: 'Phone 2', ramMb: 3072, proxyId: 'auto' })
+    expect(input).toMatchObject({ name: 'Phone 2', ramMb: 4096, proxyId: 'auto', screenW: 780, screenH: 1688, withGms: true })
   })
 
   it('opens the rightbar drawer when clicking a row or selecting Edit in row menu', async () => {
@@ -264,7 +264,9 @@ describe('MobilePage', () => {
       device({ id: 'd2', name: 'Phone 2', serial: 2 }),
     ], avail())
 
-    expect(screen.getByRole('columnheader', { name: t.profiles.colNo })).toBeTruthy()
+    expect(screen.getByRole('list')).toBeTruthy()
+    expect(screen.getAllByRole('listitem').length).toBe(2)
+    expect(screen.getAllByText('4 Cores').length).toBe(2)
     const grips = screen.getAllByLabelText(/Move Phone/)
     expect(grips.length).toBe(2)
     expect(screen.getByText('1')).toBeTruthy()

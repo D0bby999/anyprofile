@@ -71,6 +71,87 @@ export namespace fury {
 
 }
 
+export namespace macro {
+	
+	export class PlayOptions {
+	    loops: number;
+	    speed: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new PlayOptions(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.loops = source["loops"];
+	        this.speed = source["speed"];
+	    }
+	}
+	export class Step {
+	    kind: string;
+	    delayMs: number;
+	    rx?: number;
+	    ry?: number;
+	    rx2?: number;
+	    ry2?: number;
+	    durationMs?: number;
+	    key?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Step(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.kind = source["kind"];
+	        this.delayMs = source["delayMs"];
+	        this.rx = source["rx"];
+	        this.ry = source["ry"];
+	        this.rx2 = source["rx2"];
+	        this.ry2 = source["ry2"];
+	        this.durationMs = source["durationMs"];
+	        this.key = source["key"];
+	    }
+	}
+	export class Script {
+	    id: string;
+	    name: string;
+	    createdAt: string;
+	    steps: Step[];
+	
+	    static createFrom(source: any = {}) {
+	        return new Script(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.name = source["name"];
+	        this.createdAt = source["createdAt"];
+	        this.steps = this.convertValues(source["steps"], Step);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+
+}
+
 export namespace main {
 	
 	export class APIStatus {
@@ -505,6 +586,22 @@ export namespace service {
 	        this.tags = source["tags"];
 	    }
 	}
+	export class BulkMobileResult {
+	    ok: number;
+	    failed: number;
+	    errors?: string[];
+	
+	    static createFrom(source: any = {}) {
+	        return new BulkMobileResult(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.ok = source["ok"];
+	        this.failed = source["failed"];
+	        this.errors = source["errors"];
+	    }
+	}
 	export class CookieImport {
 	    imported: number;
 	    skipped: number;
@@ -728,6 +825,8 @@ export namespace service {
 	    screenW: number;
 	    screenH: number;
 	    density: number;
+	    withGms?: boolean;
+	    identityTemplate?: string;
 	    notes: string;
 	    tags: string[];
 	    pinned: boolean;
@@ -746,6 +845,8 @@ export namespace service {
 	        this.screenW = source["screenW"];
 	        this.screenH = source["screenH"];
 	        this.density = source["density"];
+	        this.withGms = source["withGms"];
+	        this.identityTemplate = source["identityTemplate"];
 	        this.notes = source["notes"];
 	        this.tags = source["tags"];
 	        this.pinned = source["pinned"];
@@ -764,6 +865,8 @@ export namespace service {
 	    screenW: number;
 	    screenH: number;
 	    density: number;
+	    withGms: boolean;
+	    identityJson?: string;
 	    imageVersion: string;
 	    notes: string;
 	    tags: string[];
@@ -796,6 +899,8 @@ export namespace service {
 	        this.screenW = source["screenW"];
 	        this.screenH = source["screenH"];
 	        this.density = source["density"];
+	        this.withGms = source["withGms"];
+	        this.identityJson = source["identityJson"];
 	        this.imageVersion = source["imageVersion"];
 	        this.notes = source["notes"];
 	        this.tags = source["tags"];
@@ -1380,6 +1485,8 @@ export namespace store {
 	    screenW: number;
 	    screenH: number;
 	    density: number;
+	    withGms: boolean;
+	    identityJson?: string;
 	    imageVersion: string;
 	    notes: string;
 	    tags: string[];
@@ -1409,6 +1516,8 @@ export namespace store {
 	        this.screenW = source["screenW"];
 	        this.screenH = source["screenH"];
 	        this.density = source["density"];
+	        this.withGms = source["withGms"];
+	        this.identityJson = source["identityJson"];
 	        this.imageVersion = source["imageVersion"];
 	        this.notes = source["notes"];
 	        this.tags = source["tags"];
@@ -1684,6 +1793,65 @@ export namespace store {
 	        this.createdAt = source["createdAt"];
 	        this.updatedAt = source["updatedAt"];
 	    }
+	}
+
+}
+
+export namespace sync {
+	
+	export class Jitter {
+	    enabled: boolean;
+	    delayMinMs: number;
+	    delayMaxMs: number;
+	    offsetPx: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new Jitter(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.enabled = source["enabled"];
+	        this.delayMinMs = source["delayMinMs"];
+	        this.delayMaxMs = source["delayMaxMs"];
+	        this.offsetPx = source["offsetPx"];
+	    }
+	}
+	export class Status {
+	    active: boolean;
+	    masterId: string;
+	    followers: string[];
+	    jitter: Jitter;
+	
+	    static createFrom(source: any = {}) {
+	        return new Status(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.active = source["active"];
+	        this.masterId = source["masterId"];
+	        this.followers = source["followers"];
+	        this.jitter = this.convertValues(source["jitter"], Jitter);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
 	}
 
 }

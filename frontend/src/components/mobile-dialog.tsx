@@ -14,13 +14,31 @@ type Props = {
   onSaved: (name: string) => void
 }
 
-const RAM_CHOICES = [2048, 3072, 4096, 6144]
+const RAM_CHOICES = [2048, 3072, 4096, 6144, 8192]
 const CPU_CHOICES = [2, 4, 6, 8]
 const PRESETS = {
-  automation: { ram: 2048, cpus: 2, screenW: 540, screenH: 960, density: 240 },
-  balanced: { ram: 3072, cpus: 4, screenW: 720, screenH: 1600, density: 280 },
-  interactive: { ram: 4096, cpus: 4, screenW: 720, screenH: 1600, density: 280 },
+  automation: { ram: 2048, cpus: 2, screenW: 540, screenH: 1170, density: 220, withGms: false },
+  balanced: { ram: 4096, cpus: 4, screenW: 780, screenH: 1688, density: 320, withGms: true },
+  interactive: { ram: 4096, cpus: 6, screenW: 780, screenH: 1688, density: 320, withGms: true },
 } as const
+const SCREEN_CHOICES = [
+  { key: 'iphone2x', w: 780, h: 1688, dpi: 320 },
+  { key: 'iphone3x', w: 1170, h: 2532, dpi: 460 },
+  { key: 'light', w: 540, h: 1170, dpi: 220 },
+] as const
+const MODEL_CHOICES = [
+  { value: '', label: () => t.mobile.modelAuto },
+  { value: 'pixel8', label: () => 'Google Pixel 8' },
+  { value: 'pixel9', label: () => 'Google Pixel 9' },
+  { value: 's24ultra', label: () => 'Samsung Galaxy S24 Ultra' },
+  { value: 's24', label: () => 'Samsung Galaxy S24' },
+  { value: 's23ultra', label: () => 'Samsung Galaxy S23 Ultra' },
+  { value: 'a54', label: () => 'Samsung Galaxy A54 5G' },
+  { value: 'xiaomi14pro', label: () => 'Xiaomi 14 Pro' },
+  { value: 'xiaomi13ultra', label: () => 'Xiaomi 13 Ultra' },
+  { value: 'oneplus12', label: () => 'OnePlus 12' },
+  { value: 'oppofindx6pro', label: () => 'OPPO Find X6 Pro' },
+] as const
 type Preset = keyof typeof PRESETS
 
 const splitTags = (s: string) => s.split(',').map((x) => x.trim()).filter(Boolean)
@@ -96,6 +114,8 @@ export function MobileDialog({ row, onClose, onSaved }: Props) {
   const [screenW, setScreenW] = useState(row?.screenW ?? PRESETS.balanced.screenW)
   const [screenH, setScreenH] = useState(row?.screenH ?? PRESETS.balanced.screenH)
   const [density, setDensity] = useState(row?.density ?? PRESETS.balanced.density)
+  const [withGms, setWithGms] = useState(row ? !!row.withGms : PRESETS.balanced.withGms)
+  const [identityTemplate, setIdentityTemplate] = useState('')
   const [notes, setNotes] = useState(row?.notes ?? '')
   const [tags, setTags] = useState((row?.tags ?? []).join(', '))
   const [proxies, setProxies] = useState<service.ProxyRow[]>([])
@@ -119,7 +139,18 @@ export function MobileDialog({ row, onClose, onSaved }: Props) {
     setScreenW(p.screenW)
     setScreenH(p.screenH)
     setDensity(p.density)
+    if (!row) setWithGms(p.withGms)
   }
+
+  const chooseScreen = (key: string) => {
+    const s = SCREEN_CHOICES.find((x) => x.key === key)
+    if (!s) return
+    setScreenW(s.w)
+    setScreenH(s.h)
+    setDensity(s.dpi)
+  }
+
+  const screenKey = SCREEN_CHOICES.find((x) => x.w === screenW && x.h === screenH)?.key ?? 'iphone2x'
 
   const save = async () => {
     if (!name.trim() || busy) return
@@ -127,6 +158,7 @@ export function MobileDialog({ row, onClose, onSaved }: Props) {
     setError('')
     const input = service.MobileInput.createFrom({
       name: name.trim(), proxyId, ramMb: ram, cpus, preset, screenW, screenH, density,
+      withGms, identityTemplate,
       notes, tags: splitTags(tags), pinned: row?.pinned ?? false,
     })
     try {
@@ -188,7 +220,32 @@ export function MobileDialog({ row, onClose, onSaved }: Props) {
           </select>
         </label>
       </div>
-      <span className="hint">{t.mobile.screen(screenW, screenH, density)}</span>
+      <label className="field">
+        <span className="label">{t.mobile.screenPreset}</span>
+        <select className="select" value={screenKey} disabled={locked || busy} onChange={(e) => chooseScreen(e.target.value)}>
+          <option value="iphone2x">{t.mobile.screenIphone2x}</option>
+          <option value="iphone3x">{t.mobile.screenIphone3x}</option>
+          <option value="light">{t.mobile.screenLight}</option>
+        </select>
+        <span className="hint">{t.mobile.screen(screenW, screenH, density)}</span>
+      </label>
+      {!row && (
+        <>
+          <label className="row checkrow">
+            <input type="checkbox" checked={withGms} disabled={busy} onChange={(e) => setWithGms(e.target.checked)} />
+            <span>{t.mobile.withGms}</span>
+          </label>
+          <span className="hint">{t.mobile.withGmsHint}</span>
+          {withGms && (
+            <label className="field">
+              <span className="label">{t.mobile.deviceModel}</span>
+              <select className="select" value={identityTemplate} disabled={busy} onChange={(e) => setIdentityTemplate(e.target.value)}>
+                {MODEL_CHOICES.map((m) => <option key={m.value} value={m.value}>{m.label()}</option>)}
+              </select>
+            </label>
+          )}
+        </>
+      )}
       <div className="mobile-store-hint" role="note">
         <Icon name="cart" />
         <span>{t.mobile.dialogStoreHint}</span>

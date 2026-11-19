@@ -15,12 +15,12 @@ import { MOBILE_APPS_GUIDE } from './api-settings'
 type Tab = 'overview' | 'hardware' | 'activity'
 const TABS: Tab[] = ['overview', 'hardware', 'activity']
 
-const RAM_CHOICES = [2048, 3072, 4096, 6144]
+const RAM_CHOICES = [2048, 3072, 4096, 6144, 8192]
 const CPU_CHOICES = [2, 4, 6, 8]
 const PRESETS = {
-  automation: { ram: 2048, cpus: 2, screenW: 540, screenH: 960, density: 240 },
-  balanced: { ram: 3072, cpus: 4, screenW: 720, screenH: 1600, density: 280 },
-  interactive: { ram: 4096, cpus: 4, screenW: 720, screenH: 1600, density: 280 },
+  automation: { ram: 2048, cpus: 2, screenW: 540, screenH: 1170, density: 220 },
+  balanced: { ram: 4096, cpus: 4, screenW: 780, screenH: 1688, density: 320 },
+  interactive: { ram: 4096, cpus: 6, screenW: 780, screenH: 1688, density: 320 },
 } as const
 type Preset = keyof typeof PRESETS
 

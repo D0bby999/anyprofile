@@ -22,6 +22,10 @@ export function AgentProfiles() {
   return window['go']['main']['App']['AgentProfiles']();
 }
 
+export function ArrangeMobileWindows(arg1) {
+  return window['go']['main']['App']['ArrangeMobileWindows'](arg1);
+}
+
 export function ArrangeWindows() {
   return window['go']['main']['App']['ArrangeWindows']();
 }
@@ -32,6 +36,18 @@ export function AssignProxiesMany(arg1, arg2) {
 
 export function BackupMobileDevice(arg1) {
   return window['go']['main']['App']['BackupMobileDevice'](arg1);
+}
+
+export function BulkInstallMobileApps(arg1) {
+  return window['go']['main']['App']['BulkInstallMobileApps'](arg1);
+}
+
+export function BulkStartMobileDevices(arg1) {
+  return window['go']['main']['App']['BulkStartMobileDevices'](arg1);
+}
+
+export function BulkStopMobileDevices(arg1) {
+  return window['go']['main']['App']['BulkStopMobileDevices'](arg1);
 }
 
 export function CheckAllProxies() {
@@ -116,6 +132,10 @@ export function DeleteExtension(arg1) {
 
 export function DeleteFolder(arg1, arg2) {
   return window['go']['main']['App']['DeleteFolder'](arg1, arg2);
+}
+
+export function DeleteMobileMacro(arg1) {
+  return window['go']['main']['App']['DeleteMobileMacro'](arg1);
 }
 
 export function DeleteOrphans(arg1) {
@@ -238,6 +258,10 @@ export function ListMobileDevices(arg1) {
   return window['go']['main']['App']['ListMobileDevices'](arg1);
 }
 
+export function ListMobileMacros() {
+  return window['go']['main']['App']['ListMobileMacros']();
+}
+
 export function ListProfiles(arg1) {
   return window['go']['main']['App']['ListProfiles'](arg1);
 }
@@ -270,12 +294,24 @@ export function MobileFastStart() {
   return window['go']['main']['App']['MobileFastStart']();
 }
 
+export function MobileMacroRecording() {
+  return window['go']['main']['App']['MobileMacroRecording']();
+}
+
 export function MobileMetrics(arg1) {
   return window['go']['main']['App']['MobileMetrics'](arg1);
 }
 
 export function MobilePreviewFrame(arg1) {
   return window['go']['main']['App']['MobilePreviewFrame'](arg1);
+}
+
+export function MobileSyncStatus() {
+  return window['go']['main']['App']['MobileSyncStatus']();
+}
+
+export function MobileWindowMuted(arg1) {
+  return window['go']['main']['App']['MobileWindowMuted'](arg1);
 }
 
 export function MobileWindowOnTop(arg1) {
@@ -300,6 +336,10 @@ export function OpenAgentFolder(arg1) {
 
 export function OpenMobileRuntimeSource() {
   return window['go']['main']['App']['OpenMobileRuntimeSource']();
+}
+
+export function OpenMobileSharedFolder(arg1) {
+  return window['go']['main']['App']['OpenMobileSharedFolder'](arg1);
 }
 
 export function Personas() {
@@ -398,6 +438,10 @@ export function PurgeProfile(arg1) {
   return window['go']['main']['App']['PurgeProfile'](arg1);
 }
 
+export function PushMobileMedia(arg1) {
+  return window['go']['main']['App']['PushMobileMedia'](arg1);
+}
+
 export function QuickCreate(arg1) {
   return window['go']['main']['App']['QuickCreate'](arg1);
 }
@@ -422,6 +466,10 @@ export function ResetMobileDevice(arg1, arg2) {
   return window['go']['main']['App']['ResetMobileDevice'](arg1, arg2);
 }
 
+export function ResetMobileLocationToProxy(arg1) {
+  return window['go']['main']['App']['ResetMobileLocationToProxy'](arg1);
+}
+
 export function RestoreMobileBackup(arg1) {
   return window['go']['main']['App']['RestoreMobileBackup'](arg1);
 }
@@ -436,6 +484,14 @@ export function RestoreProfile(arg1) {
 
 export function RestoreSnapshot(arg1) {
   return window['go']['main']['App']['RestoreSnapshot'](arg1);
+}
+
+export function RotateMobileDevice(arg1) {
+  return window['go']['main']['App']['RotateMobileDevice'](arg1);
+}
+
+export function RunMobileMacro(arg1, arg2, arg3) {
+  return window['go']['main']['App']['RunMobileMacro'](arg1, arg2, arg3);
 }
 
 export function ScreenshotMobileDevice(arg1) {
@@ -480,6 +536,14 @@ export function SetMaxConcurrentLaunches(arg1) {
 
 export function SetMobileFastStart(arg1) {
   return window['go']['main']['App']['SetMobileFastStart'](arg1);
+}
+
+export function SetMobileLocation(arg1, arg2, arg3) {
+  return window['go']['main']['App']['SetMobileLocation'](arg1, arg2, arg3);
+}
+
+export function SetMobileWindowMuted(arg1, arg2) {
+  return window['go']['main']['App']['SetMobileWindowMuted'](arg1, arg2);
 }
 
 export function SetMobileWindowOnTop(arg1, arg2) {
@@ -530,12 +594,20 @@ export function Snapshots(arg1) {
   return window['go']['main']['App']['Snapshots'](arg1);
 }
 
+export function StartMacroRecord(arg1, arg2) {
+  return window['go']['main']['App']['StartMacroRecord'](arg1, arg2);
+}
+
 export function StartMobileDevice(arg1) {
   return window['go']['main']['App']['StartMobileDevice'](arg1);
 }
 
 export function StartMobileRecording(arg1) {
   return window['go']['main']['App']['StartMobileRecording'](arg1);
+}
+
+export function StartMobileSync(arg1, arg2, arg3) {
+  return window['go']['main']['App']['StartMobileSync'](arg1, arg2, arg3);
 }
 
 export function StartProfile(arg1) {
@@ -550,12 +622,24 @@ export function StartupError() {
   return window['go']['main']['App']['StartupError']();
 }
 
+export function StopMacroRecord() {
+  return window['go']['main']['App']['StopMacroRecord']();
+}
+
 export function StopMobileDevice(arg1) {
   return window['go']['main']['App']['StopMobileDevice'](arg1);
 }
 
+export function StopMobileMacro() {
+  return window['go']['main']['App']['StopMobileMacro']();
+}
+
 export function StopMobileRecording(arg1) {
   return window['go']['main']['App']['StopMobileRecording'](arg1);
+}
+
+export function StopMobileSync() {
+  return window['go']['main']['App']['StopMobileSync']();
 }
 
 export function StopProfile(arg1) {
@@ -568,6 +652,14 @@ export function StopProfiles(arg1) {
 
 export function Storage() {
   return window['go']['main']['App']['Storage']();
+}
+
+export function SwipeMobileDevice(arg1, arg2, arg3, arg4, arg5, arg6) {
+  return window['go']['main']['App']['SwipeMobileDevice'](arg1, arg2, arg3, arg4, arg5, arg6);
+}
+
+export function SyncMobileSharedFolder(arg1, arg2) {
+  return window['go']['main']['App']['SyncMobileSharedFolder'](arg1, arg2);
 }
 
 export function TOTPCode(arg1, arg2) {

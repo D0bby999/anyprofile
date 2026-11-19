@@ -12,7 +12,10 @@ import { Icon } from '../components/icons'
 import { InstallProgress } from '../components/install-progress'
 import { MOBILE_APPS_GUIDE } from '../components/api-settings'
 import { MobileDialog } from '../components/mobile-dialog'
-import { MobileDrawer, StateChip } from '../components/mobile-drawer'
+import { MobileDrawer } from '../components/mobile-drawer'
+import { MobileGpsDialog } from '../components/mobile-gps-dialog'
+import { MobileMacroPanel } from '../components/mobile-macro-panel'
+import { MobileSyncDialog } from '../components/mobile-sync-dialog'
 import { MobileViewer } from '../components/mobile-viewer'
 import { PageHead } from '../components/page-head'
 import { useToast } from '../components/toast'
@@ -59,6 +62,10 @@ export function MobilePage({ mobile, onOpenPro, onOpenSettings }: Props) {
   const [fastStart, setFastStart] = useState(true)
   const [recording, setRecording] = useState<Set<string>>(new Set())
   const [viewing, setViewing] = useState<service.MobileRow | null>(null)
+  const [gpsRow, setGpsRow] = useState<service.MobileRow | null>(null)
+  const [syncOpen, setSyncOpen] = useState(false)
+  const [macroOpen, setMacroOpen] = useState(false)
+  const [syncActive, setSyncActive] = useState(false)
   const [order, setOrder] = useState<Map<string, number>>(readMobileOrder)
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [lastToggled, setLastToggled] = useState<string | null>(null)
@@ -245,6 +252,54 @@ export function MobilePage({ mobile, onOpenPro, onOpenSettings }: Props) {
     toast.success(on ? t.mobile.topOff : t.mobile.topOn)
   })
 
+  const toggleAudio = (id: string) => run(id, async () => {
+    const muted = await Api.MobileWindowMuted(id)
+    await Api.SetMobileWindowMuted(id, !muted)
+    toast.success(muted ? t.mobile.audioOn : t.mobile.audioOff)
+  })
+
+  const pushMedia = (id: string) => run(id, async () => {
+    const n = await Api.PushMobileMedia(id)
+    if (n > 0) toast.success(t.mobile.mediaPushed(n))
+  })
+
+  const openShared = (id: string) => run(id, async () => {
+    await Api.OpenMobileSharedFolder(id)
+  })
+
+  const arrange = async (layout: string) => {
+    try {
+      const n = await Api.ArrangeMobileWindows(layout)
+      toast.success(t.mobile.arranged(n))
+    } catch (e) {
+      toast.error(errorText(e))
+    }
+  }
+
+  const bulkStart = async () => {
+    const ids = [...selected]
+    const res = await Api.BulkStartMobileDevices(ids)
+    toast.success(t.mobile.bulkDone(res.ok, res.failed))
+    setSelected(new Set())
+    reload()
+  }
+
+  const bulkStop = async () => {
+    const ids = [...selected]
+    const res = await Api.BulkStopMobileDevices(ids)
+    toast.success(t.mobile.bulkDone(res.ok, res.failed))
+    setSelected(new Set())
+    reload()
+  }
+
+  const bulkInstall = async () => {
+    const ids = [...selected]
+    const res = await Api.BulkInstallMobileApps(ids)
+    if (res.ok + res.failed > 0) toast.success(t.mobile.bulkDone(res.ok, res.failed))
+  }
+
+  const runningRows = rows.filter((r) => r.state === 'running')
+
   const installApps = (id: string) => run(id, async () => {
     const n = await Api.InstallMobileApps(id)
     if (n > 0) toast.success(t.mobile.appsInstalled(n))
@@ -255,6 +310,16 @@ export function MobilePage({ mobile, onOpenPro, onOpenSettings }: Props) {
   return (
     <>
       <PageHead title={t.mobile.title} badge={t.mobile.beta} sub={t.mobile.total(rows.length)}>
+        {runningRows.length > 0 && (
+          <>
+            <button className="btn sm nodrag" onClick={() => arrange('row')} title={t.mobile.arrangeRow}>{t.mobile.arrangeRow}</button>
+            <button className="btn sm nodrag" onClick={() => arrange('grid2x2')} title={t.mobile.arrangeGrid}>{t.mobile.arrangeGrid}</button>
+            <button className={`btn sm nodrag${syncActive ? ' primary' : ''}`} disabled={runningRows.length < 2} onClick={() => setSyncOpen(true)}>
+              {syncActive ? t.mobile.syncActive : t.mobile.sync}
+            </button>
+            <button className="btn sm nodrag" onClick={() => setMacroOpen(true)}>{t.mobile.macro}</button>
+          </>
+        )}
         <button className="btn primary nodrag" disabled={!canUse} onClick={() => setEditing('new')}>
           <Icon name="plus" />{t.mobile.newDevice}
         </button>
@@ -303,6 +368,9 @@ export function MobilePage({ mobile, onOpenPro, onOpenSettings }: Props) {
             {selected.size > 0 ? (
               <div className="toolbar selbar" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span className="selcount" style={{ fontWeight: 600 }}>{t.profiles.selected(selected.size)}</span>
+                <button type="button" className="btn sm" disabled={!!busy || !canUse} onClick={bulkStart}>{t.mobile.bulkOpen}</button>
+                <button type="button" className="btn sm" disabled={!!busy} onClick={bulkStop}>{t.mobile.bulkClose}</button>
+                <button type="button" className="btn sm" disabled={!!busy} onClick={bulkInstall}>{t.mobile.bulkInstall}</button>
                 <button type="button" className="btn sm danger" disabled={!!busy} onClick={trashSelected}>
                   <Icon name="trash" className="icon sm" />{t.common.delete}
                 </button>
@@ -324,7 +392,7 @@ export function MobilePage({ mobile, onOpenPro, onOpenSettings }: Props) {
                 )}
               </div>
             )}
-            <div className="tablewrap">
+            <div className="mumu-listwrap">
               {rows.length === 0 ? (
                 <EmptyState icon="mobile" title={t.mobile.emptyTitle} text={canUse ? t.mobile.emptyText : undefined}>
                   {canUse && <button className="btn primary" onClick={() => setEditing('new')}><Icon name="plus" />{t.mobile.newDevice}</button>}
@@ -332,42 +400,39 @@ export function MobilePage({ mobile, onOpenPro, onOpenSettings }: Props) {
               ) : visibleRows.length === 0 ? (
                 <EmptyState icon="search" title={t.profiles.noMatchTitle} />
               ) : (
-                <table className={`table mobile-table${dragging ? ' reordering' : ''}`}>
-                  <thead>
-                    <tr>
-                      <th className="col-check">
-                        <input
-                          type="checkbox"
-                          checked={allSelected}
-                          onChange={toggleAll}
-                          aria-label={t.profiles.selectAll(visibleRows.length)}
-                        />
-                      </th>
-                      <th className="col-no">{t.profiles.colNo}</th>
-                      <th className="col-name">{t.mobile.colName}</th>
-                      <th className="col-proxy mobile-proxy">{t.mobile.colProxy}</th>
-                      <th className="col-status mobile-state">{t.mobile.colState}</th>
-                      <th className="col-last mobile-last">{t.mobile.colLastOpen}</th>
-                      <th className="col-actions" />
-                    </tr>
-                  </thead>
-                  <tbody ref={body}>
+                <>
+                  <div className="mumu-listhead">
+                    <label className="row checkrow">
+                      <input
+                        type="checkbox"
+                        checked={allSelected}
+                        onChange={toggleAll}
+                        aria-label={t.profiles.selectAll(visibleRows.length)}
+                      />
+                      <span className="faint">{t.mobile.total(visibleRows.length)}</span>
+                    </label>
+                  </div>
+                  <div ref={body as never} className={`mumu-list${dragging ? ' reordering' : ''}`} role="list">
                     {visibleRows.map((r, i) => {
                       const working = busy === r.id || busyStates.includes(r.state)
                       const running = r.state === 'running'
                       const isSelected = selected.has(r.id)
                       const isActive = activeId === r.id
                       const isDragging = dragging === r.id
+                      const model = modelOf((r as service.MobileRow & { identityJson?: string }).identityJson)
                       const cls = [
+                        'mumu-card',
                         isSelected ? 'selected' : '',
                         isActive ? 'active' : '',
                         isDragging ? 'dragging' : '',
+                        running ? 'running' : '',
                       ].filter(Boolean).join(' ')
                       return (
-                        <tr
+                        <div
                           key={r.id}
+                          role="listitem"
                           data-id={r.id}
-                          className={cls || undefined}
+                          className={cls}
                           onPointerDown={(e) => {
                             if (!(e.target as HTMLElement).closest(CONTROLS) || (e.target as HTMLElement).closest('.grip')) {
                               press(e, r.id)
@@ -379,7 +444,7 @@ export function MobilePage({ mobile, onOpenPro, onOpenSettings }: Props) {
                             }
                           }}
                         >
-                          <td className="col-check">
+                          <div className="mumu-card-lead">
                             <input
                               type="checkbox"
                               checked={isSelected}
@@ -387,55 +452,62 @@ export function MobilePage({ mobile, onOpenPro, onOpenSettings }: Props) {
                               onChange={() => {}}
                               aria-label={r.name}
                             />
-                          </td>
-                          <td className="col-no">
-                            <span className="serialcell">
-                              <button
-                                type="button"
-                                className="grip"
-                                data-grip={r.id}
-                                aria-label={t.profiles.dragRow(r.name)}
-                                title={t.profiles.dragHint}
-                                onKeyDown={(e) => keyMove(e, r.id)}
-                              >
-                                <Icon name="grip" className="icon xs" />
-                              </button>
-                              {i + 1}
+                            <button
+                              type="button"
+                              className="grip"
+                              data-grip={r.id}
+                              aria-label={t.profiles.dragRow(r.name)}
+                              title={t.profiles.dragHint}
+                              onKeyDown={(e) => keyMove(e, r.id)}
+                            >
+                              <Icon name="grip" className="icon xs" />
+                            </button>
+                            <span className="mumu-card-idx">{i + 1}</span>
+                          </div>
+
+                          <DeviceThumb row={r} phase={mobile.phases?.[r.id]} />
+
+                          <div className="mumu-card-info">
+                            <div className="mumu-card-title">
+                              <b className="selectable mumu-name" title={r.name}>{r.name}</b>
                               {r.pinned && (
                                 <span className="pinmark" title={t.menu.pinned} aria-label={t.menu.pinned}>
                                   <Icon name="pin" className="icon xs" />
                                 </span>
                               )}
-                            </span>
-                          </td>
-                          <td className="cellname">
-                            <span className="mobile-device-cell">
-                            <span className="mobile-device-avatar"><Icon name="mobile" /></span>
-                            <span className="mobile-device-copy">
-                              <b className="selectable mobile-name" title={r.name}>{r.name}</b>
-                              <span className="sub mobile-meta">
-                                #{r.serial} · {r.ramMb / 1024} GB · {r.cpus} CPU
-                                {r.proxyId && (
-                                  <span className="mobile-proxy-inline" title={proxies.find((x) => x.id === r.proxyId)?.label}>
-                                    · <Icon name="proxy" className="icon xs" />{proxies.find((x) => x.id === r.proxyId)?.label || '…'}
-                                  </span>
-                                )}
-                              </span>
-                              {r.tags.length > 0 && <span className="row mobile-tags">{r.tags.map((tag) => (
-                                <span key={tag} className="chip"><span className="tagdot" style={{ background: `var(--tag-${tagColor(tag)})` }} />{tag}</span>
-                              ))}</span>}
-                              {r.error && <small className="danger">{r.error}</small>}
-                            </span>
-                            </span>
-                          </td>
-                          <td className="stack mobile-proxy col-proxy">{proxyLabel(r)}</td>
-                          <td className="stack mobile-state col-status"><StateChip r={r} />
-                            {r.state === 'starting' && mobile.phases?.[r.id] && <small role="status" className="faint">{t.mobile.startPhase[mobile.phases[r.id]]}</small>}
-                            {r.backedUpAt && <small className="faint">{t.mobile.backedUp(relativeTime(r.backedUpAt))}</small>}</td>
-                          <td className="muted nowrap mobile-last col-last">{r.lastOpenAt ? relativeTime(r.lastOpenAt) : t.mobile.never}</td>
-                          <td className="col-actions"><span className="row mobile-actions">
+                              {r.tags.map((tag) => (
+                                <span key={tag} className="chip mumu-tag">
+                                  <span className="tagdot" style={{ background: `var(--tag-${tagColor(tag)})` }} />{tag}
+                                </span>
+                              ))}
+                            </div>
+
+                            <div className="mumu-card-pills">
+                              <span className="mumu-spec-pill">{r.cpus} Cores</span>
+                              <span className="mumu-spec-pill">{r.ramMb / 1024} GB</span>
+                              {r.withGms && <span className="mumu-spec-pill gms">Google Play</span>}
+                              <span className="mumu-proxy-wrap">{proxyLabel(r)}</span>
+                            </div>
+
+                            <div className="mumu-card-sub">
+                              <span>{r.screenW || 780} × {r.screenH || 1688} | {r.density || 320} DPI</span>
+                              {model && <span>· {model}</span>}
+                              <span>· {r.lastOpenAt ? relativeTime(r.lastOpenAt) : t.mobile.never}</span>
+                              {r.backedUpAt && <span>· {t.mobile.backedUp(relativeTime(r.backedUpAt))}</span>}
+                            </div>
+
+                            {r.state === 'starting' && mobile.phases?.[r.id] && (
+                              <small role="status" className="faint">{t.mobile.startPhase[mobile.phases[r.id]]}</small>
+                            )}
+                            {r.error && <small className="danger">{r.error}</small>}
+                          </div>
+
+                          <div className="mumu-card-actions">
                             {running && (
                               <>
+                                <button className="iconbtn sm" disabled={working} onClick={() => run(r.id, () => Api.ShowMobileDevice(r.id))} aria-label={t.mobile.show} title={t.mobile.show}>
+                                  <Icon name="monitor" />
+                                </button>
                                 <button className="iconbtn sm" disabled={working} onClick={() => installAurora(r.id)} aria-label={t.mobile.installAurora} title={t.mobile.installAurora}>
                                   <Icon name="cart" />
                                 </button>
@@ -444,32 +516,47 @@ export function MobilePage({ mobile, onOpenPro, onOpenSettings }: Props) {
                                 </button>
                               </>
                             )}
-                            <button className={`iconbtn sm${running ? '' : ' slot'}`} disabled={!running}
-                              onClick={() => run(r.id, () => Api.ShowMobileDevice(r.id))} aria-label={t.mobile.show} title={running ? t.mobile.show : undefined}
-                              aria-hidden={!running || undefined} tabIndex={running ? undefined : -1}><Icon name="monitor" /></button>
+                            {running || r.state === 'stopping' ? (
+                              <button
+                                className={`mumu-power-btn is-stop${working ? ' busy' : ''}`}
+                                aria-label={t.mobile.close}
+                                title={t.mobile.close}
+                                aria-busy={working}
+                                disabled={working}
+                                onClick={() => run(r.id, () => Api.StopMobileDevice(r.id))}
+                              >
+                                <Icon name={working ? 'refresh' : 'stop'} className="icon sm" />
+                              </button>
+                            ) : (
+                              <button
+                                className={`mumu-power-btn is-play${working ? ' busy' : ''}`}
+                                aria-label={t.mobile.open}
+                                title={t.mobile.open}
+                                aria-busy={working}
+                                disabled={working || !canUse}
+                                onClick={() => open(r)}
+                              >
+                                <Icon name={working ? 'refresh' : 'play'} className="icon sm" />
+                              </button>
+                            )}
                             <MobileRowMenu row={r} running={running} busy={working} recording={recording.has(r.id)}
                               onAurora={() => installAurora(r.id)}
+                              onPushMedia={() => pushMedia(r.id)}
+                              onSharedFolder={() => openShared(r.id)}
+                              onGps={() => setGpsRow(r)}
+                              onAudio={() => toggleAudio(r.id)}
                               onView={() => setViewing(r)}
                               onScreenshot={() => screenshot(r.id)} onRecord={() => toggleRecording(r.id)}
                               onTop={() => toggleTop(r.id)} onEdit={() => setActiveId(r.id)}
                               onBackup={() => run(r.id, () => Api.BackupMobileDevice(r.id), t.mobile.backupDone)}
                               onRestore={async () => { if (await confirm({ ...t.confirm.restoreMobile(relativeTime(r.backedUpAt)), danger: true })) run(r.id, () => Api.RestoreMobileBackup(r.id), t.mobile.restoreDone) }}
                               onTrash={() => trash(r)} />
-                            {running || r.state === 'stopping' ? (
-                              <button className={`btn sm stop actbtn${working ? ' busy' : ''}`} aria-busy={working} disabled={working} onClick={() => run(r.id, () => Api.StopMobileDevice(r.id))}>
-                                <Icon name={working ? 'refresh' : 'stop'} className="icon sm" /><MobileActLabel shown={t.mobile.close} />
-                              </button>
-                            ) : (
-                              <button className={`btn sm open actbtn${working ? ' busy' : ''}`} aria-busy={working} disabled={working || !canUse} onClick={() => open(r)}>
-                                <Icon name={working ? 'refresh' : 'play'} className="icon sm" /><MobileActLabel shown={t.mobile.open} />
-                              </button>
-                            )}
-                          </span></td>
-                        </tr>
+                          </div>
+                        </div>
                       )
                     })}
-                  </tbody>
-                </table>
+                  </div>
+                </>
               )}
             </div>
           </section>
@@ -528,7 +615,13 @@ export function MobilePage({ mobile, onOpenPro, onOpenSettings }: Props) {
           </footer>
         )}
       </div>
-      {viewing && <MobileViewer row={viewing} onClose={() => setViewing(null)} />}
+      {viewing && <MobileViewer row={viewing} onClose={() => setViewing(null)} onOpenGps={() => setGpsRow(viewing)} />}
+      {gpsRow && <MobileGpsDialog row={gpsRow} onClose={() => setGpsRow(null)} onToast={(m) => toast.success(m)} />}
+      {syncOpen && (
+        <MobileSyncDialog running={runningRows} onClose={() => setSyncOpen(false)}
+          onChanged={(m) => { toast.success(m); Api.MobileSyncStatus().then((st) => setSyncActive(st.active)).catch(() => {}) }} />
+      )}
+      {macroOpen && <MobileMacroPanel running={runningRows} onClose={() => setMacroOpen(false)} onToast={(m) => toast.success(m)} />}
       {editing === 'new' && (
         <MobileDialog row={null} onClose={() => setEditing(null)}
           onSaved={(name) => { setEditing(null); reload(); toast.success(t.mobile.created(name)) }} />
@@ -539,9 +632,9 @@ export function MobilePage({ mobile, onOpenPro, onOpenSettings }: Props) {
 
 
 /** The row's controls stay one action + one overflow menu, like the profile table. */
-function MobileRowMenu({ row, running, busy, recording, onAurora, onView, onScreenshot, onRecord, onTop, onEdit, onBackup, onRestore, onTrash }: {
+function MobileRowMenu({ row, running, busy, recording, onAurora, onPushMedia, onSharedFolder, onGps, onAudio, onView, onScreenshot, onRecord, onTop, onEdit, onBackup, onRestore, onTrash }: {
   row: service.MobileRow; running: boolean; busy: boolean; recording: boolean
-  onAurora: () => void; onView: () => void; onScreenshot: () => void; onRecord: () => void; onTop: () => void
+  onAurora: () => void; onPushMedia: () => void; onSharedFolder: () => void; onGps: () => void; onAudio: () => void; onView: () => void; onScreenshot: () => void; onRecord: () => void; onTop: () => void
   onEdit: () => void; onBackup: () => void; onRestore: () => void; onTrash: () => void
 }) {
   const [open, setOpen] = useState(false)
@@ -560,6 +653,10 @@ function MobileRowMenu({ row, running, busy, recording, onAurora, onView, onScre
       {open && (
         <div role="menu" className="rowmenu">
           {running && <button role="menuitem" onClick={() => act(onAurora)}>{t.mobile.installAurora}</button>}
+          {running && <button role="menuitem" onClick={() => act(onPushMedia)}>{t.mobile.pushMedia}</button>}
+          <button role="menuitem" onClick={() => act(onSharedFolder)}>{t.mobile.sharedFolder}</button>
+          {running && <button role="menuitem" onClick={() => act(onGps)}>{t.mobile.gps}</button>}
+          {running && <button role="menuitem" onClick={() => act(onAudio)}>{t.mobile.toggleAudio}</button>}
           {running && <button role="menuitem" onClick={() => act(onView)}>{t.mobile.viewInApp}</button>}
           {running && <button role="menuitem" onClick={() => act(onScreenshot)}>{t.mobile.screenshot}</button>}
           {running && <button role="menuitem" onClick={() => act(onRecord)}>{recording ? t.mobile.stopRecording : t.mobile.recordScreen}</button>}
@@ -575,8 +672,35 @@ function MobileRowMenu({ row, running, busy, recording, onAurora, onView, onScre
   )
 }
 
-/** Fixed-width action label: Open and Close do not resize the row. */
-function MobileActLabel({ shown }: { shown: string }) {
-  const all = [...new Set([t.mobile.open, t.mobile.close, shown])]
-  return <span className="actlabel">{all.map((x) => <span key={x} aria-hidden={x === shown ? undefined : true} className={x === shown ? undefined : 'off'}>{x}</span>)}</span>
+const modelOf = (idJson?: string): string => {
+  if (!idJson) return ''
+  try {
+    const parsed = JSON.parse(idJson) as { model?: string; brand?: string }
+    return parsed.model || ''
+  } catch {
+    return ''
+  }
+}
+
+/** MuMu-style device thumbnail: dark stage with a portrait iPhone 19.5:9 screen
+ *  and a frosted bottom power/status bar. */
+function DeviceThumb({ row, phase }: { row: service.MobileRow; phase?: string }) {
+  const running = row.state === 'running'
+  const busy = busyStates.includes(row.state)
+  const label = row.state === 'starting' && phase
+    ? (t.mobile.startPhase[phase] ?? t.mobile.state[row.state])
+    : (t.mobile.state[row.state] ?? row.state)
+  return (
+    <div className={`mumu-thumb${running ? ' is-running' : busy ? ' is-busy' : ''}`} aria-hidden="true">
+      <div className="mumu-thumb-phone">
+        <span className="mumu-thumb-notch" />
+        <span className="mumu-thumb-glow" />
+        {row.withGms && <span className="mumu-thumb-app" title="Google Play" />}
+      </div>
+      <div className="mumu-thumb-bar">
+        <span className="mumu-thumb-dot" />
+        <span className="mumu-thumb-status">{label}</span>
+      </div>
+    </div>
+  )
 }

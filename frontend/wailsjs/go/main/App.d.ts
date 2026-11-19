@@ -5,7 +5,9 @@ import {store} from '../models';
 import {service} from '../models';
 import {site} from '../models';
 import {engine} from '../models';
+import {macro} from '../models';
 import {mobile} from '../models';
+import {sync} from '../models';
 import {fury} from '../models';
 import {pro} from '../models';
 
@@ -19,11 +21,19 @@ export function AddTagMany(arg1:Array<string>,arg2:string):Promise<void>;
 
 export function AgentProfiles():Promise<Array<string>>;
 
+export function ArrangeMobileWindows(arg1:string):Promise<number>;
+
 export function ArrangeWindows():Promise<number>;
 
 export function AssignProxiesMany(arg1:Array<string>,arg2:string):Promise<Record<string, string>>;
 
 export function BackupMobileDevice(arg1:string):Promise<void>;
+
+export function BulkInstallMobileApps(arg1:Array<string>):Promise<service.BulkMobileResult>;
+
+export function BulkStartMobileDevices(arg1:Array<string>):Promise<service.BulkMobileResult>;
+
+export function BulkStopMobileDevices(arg1:Array<string>):Promise<service.BulkMobileResult>;
 
 export function CheckAllProxies():Promise<number>;
 
@@ -66,6 +76,8 @@ export function DeleteAllSnapshots():Promise<void>;
 export function DeleteExtension(arg1:string):Promise<void>;
 
 export function DeleteFolder(arg1:string,arg2:string):Promise<void>;
+
+export function DeleteMobileMacro(arg1:string):Promise<void>;
 
 export function DeleteOrphans(arg1:Array<string>):Promise<void>;
 
@@ -127,6 +139,8 @@ export function ListFolders():Promise<main.FolderList>;
 
 export function ListMobileDevices(arg1:store.ProfileFilter):Promise<Array<service.MobileRow>>;
 
+export function ListMobileMacros():Promise<Array<macro.Script>>;
+
 export function ListProfiles(arg1:store.ProfileFilter):Promise<Array<service.ProfileRow>>;
 
 export function ListProfilesPage(arg1:store.ProfileFilter,arg2:number,arg3:number):Promise<service.ProfilePage>;
@@ -143,9 +157,15 @@ export function MobileAvailability():Promise<service.MobileAvailability>;
 
 export function MobileFastStart():Promise<boolean>;
 
+export function MobileMacroRecording():Promise<string>;
+
 export function MobileMetrics(arg1:string):Promise<mobile.Metrics>;
 
 export function MobilePreviewFrame(arg1:string):Promise<string>;
+
+export function MobileSyncStatus():Promise<sync.Status>;
+
+export function MobileWindowMuted(arg1:string):Promise<boolean>;
 
 export function MobileWindowOnTop(arg1:string):Promise<boolean>;
 
@@ -158,6 +178,8 @@ export function Onboarded():Promise<boolean>;
 export function OpenAgentFolder(arg1:string):Promise<void>;
 
 export function OpenMobileRuntimeSource():Promise<void>;
+
+export function OpenMobileSharedFolder(arg1:string):Promise<string>;
 
 export function Personas():Promise<Array<fury.Persona>>;
 
@@ -207,6 +229,8 @@ export function PurgeMobileDevice(arg1:string):Promise<void>;
 
 export function PurgeProfile(arg1:string):Promise<void>;
 
+export function PushMobileMedia(arg1:string):Promise<number>;
+
 export function QuickCreate(arg1:string):Promise<store.Profile>;
 
 export function RemoveEngineVersion(arg1:string,arg2:string):Promise<void>;
@@ -219,6 +243,8 @@ export function ResetFingerprint(arg1:string):Promise<void>;
 
 export function ResetMobileDevice(arg1:string,arg2:string):Promise<void>;
 
+export function ResetMobileLocationToProxy(arg1:string):Promise<string>;
+
 export function RestoreMobileBackup(arg1:string):Promise<void>;
 
 export function RestoreMobileDevice(arg1:string):Promise<void>;
@@ -226,6 +252,10 @@ export function RestoreMobileDevice(arg1:string):Promise<void>;
 export function RestoreProfile(arg1:string):Promise<void>;
 
 export function RestoreSnapshot(arg1:number):Promise<number>;
+
+export function RotateMobileDevice(arg1:string):Promise<void>;
+
+export function RunMobileMacro(arg1:string,arg2:Array<string>,arg3:macro.PlayOptions):Promise<void>;
 
 export function ScreenshotMobileDevice(arg1:string):Promise<string>;
 
@@ -248,6 +278,10 @@ export function SetLanguage(arg1:string):Promise<void>;
 export function SetMaxConcurrentLaunches(arg1:number):Promise<void>;
 
 export function SetMobileFastStart(arg1:boolean):Promise<void>;
+
+export function SetMobileLocation(arg1:string,arg2:number,arg3:number):Promise<void>;
+
+export function SetMobileWindowMuted(arg1:string,arg2:boolean):Promise<void>;
 
 export function SetMobileWindowOnTop(arg1:string,arg2:boolean):Promise<void>;
 
@@ -273,9 +307,13 @@ export function SnapshotSettings():Promise<service.SnapshotSettings>;
 
 export function Snapshots(arg1:string):Promise<Array<store.Snapshot>>;
 
+export function StartMacroRecord(arg1:string,arg2:string):Promise<void>;
+
 export function StartMobileDevice(arg1:string):Promise<service.MobileStart>;
 
 export function StartMobileRecording(arg1:string):Promise<void>;
+
+export function StartMobileSync(arg1:string,arg2:Array<string>,arg3:sync.Jitter):Promise<sync.Status>;
 
 export function StartProfile(arg1:string):Promise<void>;
 
@@ -283,15 +321,25 @@ export function StartProfiles(arg1:Array<string>):Promise<Record<string, string>
 
 export function StartupError():Promise<string>;
 
+export function StopMacroRecord():Promise<macro.Script>;
+
 export function StopMobileDevice(arg1:string):Promise<void>;
 
+export function StopMobileMacro():Promise<void>;
+
 export function StopMobileRecording(arg1:string):Promise<string>;
+
+export function StopMobileSync():Promise<sync.Status>;
 
 export function StopProfile(arg1:string):Promise<void>;
 
 export function StopProfiles(arg1:Array<string>):Promise<Record<string, string>>;
 
 export function Storage():Promise<service.StorageInfo>;
+
+export function SwipeMobileDevice(arg1:string,arg2:number,arg3:number,arg4:number,arg5:number,arg6:number):Promise<void>;
+
+export function SyncMobileSharedFolder(arg1:string,arg2:string):Promise<number>;
 
 export function TOTPCode(arg1:string,arg2:string):Promise<service.TOTPCode>;
 
