@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/D0bby999/anyprofile/internal/mobile"
+	"github.com/D0bby999/anyprofile/internal/mobile/macro"
+	mobilesync "github.com/D0bby999/anyprofile/internal/mobile/sync"
 	"github.com/D0bby999/anyprofile/internal/service"
 	"github.com/D0bby999/anyprofile/internal/store"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
@@ -184,6 +186,39 @@ func (a *App) SetMobileWindowOnTop(id string, on bool) error {
 	return a.must(func() error { return a.svc.SetMobileWindowOnTop(a.ctx, id, on) })
 }
 
+// MobileWindowMuted reports whether the device's scrcpy audio is muted.
+func (a *App) MobileWindowMuted(id string) (bool, error) {
+	if err := a.ready(); err != nil {
+		return false, err
+	}
+	return a.svc.MobileWindowMuted(id)
+}
+
+// SetMobileWindowMuted toggles scrcpy audio and reopens an open window.
+func (a *App) SetMobileWindowMuted(id string, muted bool) error {
+	return a.must(func() error { return a.svc.SetMobileWindowMuted(a.ctx, id, muted) })
+}
+
+var mediaDialogTitle = map[string]string{"en": "Push photos or videos to Gallery", "vi": "Đẩy ảnh/video vào Thư viện máy"}
+
+// PushMobileMedia lets the user pick photos/videos and pushes them to the device Gallery.
+func (a *App) PushMobileMedia(id string) (int, error) {
+	if err := a.ready(); err != nil {
+		return 0, err
+	}
+	files, err := runtime.OpenMultipleFilesDialog(a.ctx, runtime.OpenDialogOptions{
+		Title: mediaDialogTitle[a.svc.Language()],
+		Filters: []runtime.FileFilter{{
+			DisplayName: "Photos & Videos (*.mp4, *.mov, *.jpg, *.png, *.webp)",
+			Pattern:     "*.mp4;*.mov;*.mkv;*.webm;*.jpg;*.jpeg;*.png;*.webp;*.heic",
+		}},
+	})
+	if err != nil || len(files) == 0 {
+		return 0, err
+	}
+	return a.svc.PushMobileMedia(a.ctx, id, files)
+}
+
 // StartMobileRecording records the Android screen (max 3 minutes).
 func (a *App) StartMobileRecording(id string) error {
 	return a.must(func() error { return a.svc.StartMobileRecording(a.ctx, id) })
@@ -203,4 +238,137 @@ func (a *App) BackupMobileDevice(id string) error {
 
 func (a *App) RestoreMobileBackup(id string) error {
 	return a.must(func() error { return a.svc.RestoreMobileBackup(a.ctx, id) })
+}
+
+// SwipeMobileDevice performs a touch swipe in screen coordinates.
+func (a *App) SwipeMobileDevice(id string, x1, y1, x2, y2, ms int) error {
+	return a.must(func() error { return a.svc.SwipeMobileDevice(a.ctx, id, x1, y1, x2, y2, ms) })
+}
+
+// RotateMobileDevice toggles portrait / landscape orientation.
+func (a *App) RotateMobileDevice(id string) error {
+	return a.must(func() error { return a.svc.RotateMobileDevice(a.ctx, id) })
+}
+
+// ArrangeMobileWindows tiles open phone windows ("row", "grid2x2", "grid3x2", "cascade").
+func (a *App) ArrangeMobileWindows(layout string) (int, error) {
+	if err := a.ready(); err != nil {
+		return 0, err
+	}
+	return a.svc.ArrangeMobileWindows(a.ctx, layout)
+}
+
+// BulkStartMobileDevices starts selected devices (max 2 concurrently).
+func (a *App) BulkStartMobileDevices(ids []string) (service.BulkMobileResult, error) {
+	if err := a.ready(); err != nil {
+		return service.BulkMobileResult{}, err
+	}
+	return a.svc.BulkStartMobileDevices(a.ctx, ids), nil
+}
+
+// BulkStopMobileDevices stops selected devices concurrently.
+func (a *App) BulkStopMobileDevices(ids []string) (service.BulkMobileResult, error) {
+	if err := a.ready(); err != nil {
+		return service.BulkMobileResult{}, err
+	}
+	return a.svc.BulkStopMobileDevices(a.ctx, ids), nil
+}
+
+// BulkInstallMobileApps picks APK/bundle files once and installs them onto all selected running devices.
+func (a *App) BulkInstallMobileApps(ids []string) (service.BulkMobileResult, error) {
+	if err := a.ready(); err != nil {
+		return service.BulkMobileResult{}, err
+	}
+	files, err := runtime.OpenMultipleFilesDialog(a.ctx, runtime.OpenDialogOptions{
+		Title:   apkDialogTitle[a.svc.Language()],
+		Filters: []runtime.FileFilter{{DisplayName: "Android apps (*.apk, *.apks, *.xapk, *.apkm)", Pattern: "*.apk;*.apks;*.xapk;*.apkm"}},
+	})
+	if err != nil || len(files) == 0 {
+		return service.BulkMobileResult{}, err
+	}
+	return a.svc.BulkInstallMobileApps(a.ctx, ids, files)
+}
+
+// StartMobileSync starts multi-instance synchronization from masterID to followerIDs.
+func (a *App) StartMobileSync(masterID string, followerIDs []string, jitter mobilesync.Jitter) (mobilesync.Status, error) {
+	if err := a.ready(); err != nil {
+		return mobilesync.Status{}, err
+	}
+	return a.svc.StartMobileSync(masterID, followerIDs, jitter)
+}
+
+func (a *App) StopMobileSync() (mobilesync.Status, error) {
+	if err := a.ready(); err != nil {
+		return mobilesync.Status{}, err
+	}
+	return a.svc.StopMobileSync(), nil
+}
+
+func (a *App) MobileSyncStatus() (mobilesync.Status, error) {
+	if err := a.ready(); err != nil {
+		return mobilesync.Status{}, err
+	}
+	return a.svc.MobileSyncStatus(), nil
+}
+
+func (a *App) StartMacroRecord(deviceID, name string) error {
+	return a.must(func() error { return a.svc.StartMacroRecord(deviceID, name) })
+}
+
+func (a *App) StopMacroRecord() (macro.Script, error) {
+	if err := a.ready(); err != nil {
+		return macro.Script{}, err
+	}
+	return a.svc.StopMacroRecord()
+}
+
+func (a *App) MobileMacroRecording() (string, error) {
+	if err := a.ready(); err != nil {
+		return "", err
+	}
+	return a.svc.MobileMacroRecording(), nil
+}
+
+func (a *App) ListMobileMacros() ([]macro.Script, error) {
+	if err := a.ready(); err != nil {
+		return nil, err
+	}
+	return a.svc.ListMobileMacros()
+}
+
+func (a *App) RunMobileMacro(macroID string, deviceIDs []string, opts macro.PlayOptions) error {
+	return a.must(func() error { return a.svc.RunMobileMacro(a.ctx, macroID, deviceIDs, opts) })
+}
+
+func (a *App) StopMobileMacro() error {
+	return a.must(func() error { a.svc.StopMobileMacro(); return nil })
+}
+
+func (a *App) DeleteMobileMacro(macroID string) error {
+	return a.must(func() error { return a.svc.DeleteMobileMacro(macroID) })
+}
+
+func (a *App) SetMobileLocation(id string, lat, lon float64) error {
+	return a.must(func() error { return a.svc.SetMobileLocation(a.ctx, id, lat, lon) })
+}
+
+func (a *App) ResetMobileLocationToProxy(id string) (string, error) {
+	if err := a.ready(); err != nil {
+		return "", err
+	}
+	return a.svc.ResetMobileLocationToProxy(a.ctx, id)
+}
+
+func (a *App) OpenMobileSharedFolder(id string) (string, error) {
+	if err := a.ready(); err != nil {
+		return "", err
+	}
+	return a.svc.OpenMobileSharedFolder(id)
+}
+
+func (a *App) SyncMobileSharedFolder(id, direction string) (int, error) {
+	if err := a.ready(); err != nil {
+		return 0, err
+	}
+	return a.svc.SyncMobileSharedFolder(a.ctx, id, direction)
 }

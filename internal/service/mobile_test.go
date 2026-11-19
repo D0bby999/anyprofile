@@ -470,9 +470,9 @@ func TestMobilePresets(t *testing.T) {
 		preset              string
 		ram, cpus, w, h, dp int
 	}{
-		{"automation", 2048, 2, 540, 960, 240},
-		{"balanced", 3072, 4, 720, 1600, 280},
-		{"interactive", 4096, 4, 720, 1600, 280},
+		{"automation", 2048, 2, 540, 1170, 220},
+		{"balanced", 4096, 4, 780, 1688, 320},
+		{"interactive", 4096, 6, 780, 1688, 320},
 	} {
 		in := MobileInput{Name: "phone", Preset: tc.preset}
 		if err := checkMobileInput(&in); err != nil {
@@ -503,7 +503,7 @@ func TestMobileHeadlessStart(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if d.RAMMB != 2048 || d.CPUs != 2 || d.ScreenW != 540 || d.ScreenH != 960 {
+	if d.RAMMB != 2048 || d.CPUs != 2 || d.ScreenW != 540 || d.ScreenH != 1170 || d.WithGMS {
 		t.Fatalf("created %+v", d)
 	}
 	if _, err := s.StartMobileDeviceHeadless(ctx, d.ID); err != nil {
@@ -520,5 +520,24 @@ func TestMobileHeadlessStart(t *testing.T) {
 	}
 	if f.opts.Headless {
 		t.Fatal("the UI start opened headless")
+	}
+}
+
+func TestMobileGMSAndIdentityDefaults(t *testing.T) {
+	ctx := context.Background()
+	s, _ := newMobileService(t, "active")
+	d, err := s.CreateMobileDevice(ctx, MobileInput{
+		Name: "iPhone Frame", Preset: "interactive",
+		ScreenW: 1170, ScreenH: 2532, Density: 460,
+		IdentityTemplate: "pixel8",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !d.WithGMS || d.ScreenW != 1170 || d.ScreenH != 2532 {
+		t.Fatalf("created %+v", d)
+	}
+	if !strings.Contains(d.IdentityJSON, "Pixel 8") || !strings.Contains(d.IdentityJSON, "0x411fd410") {
+		t.Fatalf("identity = %q", d.IdentityJSON)
 	}
 }

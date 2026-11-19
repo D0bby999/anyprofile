@@ -42,15 +42,17 @@ type Info struct {
 
 // Device is what a driver needs to know about a device: no secrets, no database.
 type Device struct {
-	ID      string
-	Name    string
-	Ref     string // the driver's own handle, from Create
-	RAMMB   int
-	CPUs    int
-	Preset  string // automation, balanced or interactive
-	ScreenW int
-	ScreenH int
-	Density int
+	ID           string
+	Name         string
+	Ref          string // the driver's own handle, from Create
+	RAMMB        int
+	CPUs         int
+	Preset       string // automation, balanced or interactive
+	ScreenW      int
+	ScreenH      int
+	Density      int
+	WithGMS      bool   // include MindTheGapps (Google Play Services + YouTube)
+	IdentityJSON string // JSON-encoded hardware identity profile for anti-detect
 }
 
 // StartOptions is the network a device gets for one run.
@@ -59,6 +61,9 @@ type StartOptions struct {
 	Upstream *netproxy.Upstream
 	Timezone string // IANA, like "Asia/Tokyo"
 	Locale   string // BCP 47, like "ja-JP"
+	Country  string // ISO 3166-1 alpha-2, like "VN" or "US", for carrier spoofing
+	Lat      *float64
+	Lon      *float64
 	// Headless starts QEMU without scrcpy. Agents and scripts do not need a
 	// window; the user's Open button still asks for one.
 	Headless bool

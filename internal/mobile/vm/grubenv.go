@@ -36,6 +36,9 @@ const (
 // under HVF (no Wi-Fi HAL, no BTI).
 var grubDefaults = map[string]string{
 	"android_insecure_adb": "1",
+	"android_nobootanim":   "1",
+	"android_zram":         "1",
+	"mitigations":          "off",
 	"grub_timeout":         "0",
 	"grub_android_default": "android",
 	"android_wifi_impl":    "none arm64.nobti",

@@ -20,6 +20,8 @@ import (
 	"github.com/D0bby999/anyprofile/internal/launcher"
 	"github.com/D0bby999/anyprofile/internal/mobile"
 	"github.com/D0bby999/anyprofile/internal/mobile/control"
+	"github.com/D0bby999/anyprofile/internal/mobile/macro"
+	mobilesync "github.com/D0bby999/anyprofile/internal/mobile/sync"
 	"github.com/D0bby999/anyprofile/internal/netproxy"
 	"github.com/D0bby999/anyprofile/internal/paths"
 	"github.com/D0bby999/anyprofile/internal/pro"
@@ -79,6 +81,11 @@ type Service struct {
 
 	recMu      sync.Mutex
 	recordings map[string]*mobileRecording
+
+	mobileSync  *mobilesync.Hub
+	mobileRec   macro.Recorder
+	macroMu     sync.Mutex
+	macroCancel context.CancelFunc
 }
 
 func (s *Service) notify(kind string) {

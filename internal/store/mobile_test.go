@@ -45,7 +45,7 @@ func TestMobileDevices(t *testing.T) {
 	}
 	got, err := s.GetMobileDevice("a")
 	if err != nil || got.DriverRef != "dir-a" || got.ImageVersion != "img-1" || got.ProxyID != "px" || got.Tags[0] != "vn" ||
-		got.Preset != "balanced" || got.ScreenW != 720 || got.ScreenH != 1600 || got.Density != 280 {
+		got.Preset != "balanced" || got.ScreenW != 780 || got.ScreenH != 1688 || got.Density != 320 {
 		t.Fatalf("get = %+v, %v", got, err)
 	}
 	got.Name, got.Pinned, got.ProxyID = "Renamed", true, ""

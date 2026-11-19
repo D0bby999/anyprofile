@@ -660,7 +660,8 @@ func TestHTTPSProxyMigrationPreservesRefs(t *testing.T) {
 		if err := o.CreateProfile(p); err != nil {
 			t.Fatal(err)
 		}
-		if err := o.CreateMobileDevice(&MobileDevice{ID: "m1", Name: "Droid", Driver: "vm", Platform: "macos", ProxyID: "px1", RAMMB: 2048, CPUs: 2}); err != nil {
+		if _, err := o.db.Exec(`INSERT INTO mobile_devices (id, name, driver, platform, driver_ref, proxy_id, ram_mb, cpus, serial, created_at, updated_at)
+			VALUES ('m1', 'Droid', 'vm', 'macos', '', 'px1', 2048, 2, 1, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z')`); err != nil {
 			t.Fatal(err)
 		}
 	})

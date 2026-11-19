@@ -18,6 +18,7 @@ import (
 	"github.com/D0bby999/anyprofile/internal/engine"
 	"github.com/D0bby999/anyprofile/internal/mobile"
 	"github.com/D0bby999/anyprofile/internal/mobile/control"
+	"github.com/D0bby999/anyprofile/internal/mobile/vm"
 	"github.com/D0bby999/anyprofile/internal/store"
 )
 
@@ -26,15 +27,15 @@ import (
 // a lapsed subscription never holds a device's data hostage.
 
 const (
-	defaultMobileRAMMB = 3072
+	defaultMobileRAMMB = 4096
 	defaultMobileCPUs  = 4
 	minMobileRAMMB     = 2048
-	maxMobileRAMMB     = 6144
+	maxMobileRAMMB     = 8192
 	maxMobileCPUs      = 8
 	minScreenW         = 360
-	maxScreenW         = 1080
+	maxScreenW         = 1300
 	minScreenH         = 640
-	maxScreenH         = 2400
+	maxScreenH         = 2800
 	minDensity         = 160
 	maxDensity         = 480
 	// mobileDiskNeed is the room a new device needs: about 1.5 GB after its
@@ -64,17 +65,19 @@ type MobileRow struct {
 
 // MobileInput is what the user sets on a device.
 type MobileInput struct {
-	Name    string   `json:"name"`
-	ProxyID string   `json:"proxyId"` // AutoProxy picks the oldest free sticky proxy
-	RAMMB   int      `json:"ramMb"`   // 0: the preset's default
-	CPUs    int      `json:"cpus"`    // 0: the preset's default
-	Preset  string   `json:"preset"`  // automation, balanced or interactive
-	ScreenW int      `json:"screenW"` // 0: the preset's default
-	ScreenH int      `json:"screenH"`
-	Density int      `json:"density"`
-	Notes   string   `json:"notes"`
-	Tags    []string `json:"tags"`
-	Pinned  bool     `json:"pinned"`
+	Name             string   `json:"name"`
+	ProxyID          string   `json:"proxyId"` // AutoProxy picks the oldest free sticky proxy
+	RAMMB            int      `json:"ramMb"`   // 0: the preset's default
+	CPUs             int      `json:"cpus"`    // 0: the preset's default
+	Preset           string   `json:"preset"`  // automation, balanced or interactive
+	ScreenW          int      `json:"screenW"` // 0: the preset's default
+	ScreenH          int      `json:"screenH"`
+	Density          int      `json:"density"`
+	WithGMS          *bool    `json:"withGms,omitempty"`          // nil: true for balanced/interactive, false for automation
+	IdentityTemplate string   `json:"identityTemplate,omitempty"` // "", "pixel8", "pixel9", "s24", "oneplus12"
+	Notes            string   `json:"notes"`
+	Tags             []string `json:"tags"`
+	Pinned           bool     `json:"pinned"`
 }
 
 // MobileStart is what opening a device found worth telling.
@@ -249,9 +252,9 @@ type mobilePreset struct {
 }
 
 var mobilePresets = map[string]mobilePreset{
-	"automation":  {2048, 2, 540, 960, 240},
-	"balanced":    {3072, 4, 720, 1600, 280},
-	"interactive": {4096, 4, 720, 1600, 280},
+	"automation":  {2048, 2, 540, 1170, 220},
+	"balanced":    {4096, 4, 780, 1688, 320},
+	"interactive": {4096, 6, 780, 1688, 320},
 }
 
 // checkMobileInput fills the defaults and refuses what a device cannot have.
@@ -299,7 +302,15 @@ func checkMobileInput(in *MobileInput) error {
 
 func mobileDevice(d store.MobileDevice) mobile.Device {
 	return mobile.Device{ID: d.ID, Name: d.Name, Ref: d.DriverRef, RAMMB: d.RAMMB, CPUs: d.CPUs,
-		Preset: d.Preset, ScreenW: d.ScreenW, ScreenH: d.ScreenH, Density: d.Density}
+		Preset: d.Preset, ScreenW: d.ScreenW, ScreenH: d.ScreenH, Density: d.Density,
+		WithGMS: d.WithGMS, IdentityJSON: d.IdentityJSON}
+}
+
+func resolveWithGMS(in MobileInput) bool {
+	if in.WithGMS != nil {
+		return *in.WithGMS
+	}
+	return in.Preset != "automation"
 }
 
 // CreateMobileDevice records the device, then has the driver make it; the
@@ -327,9 +338,16 @@ func (s *Service) CreateMobileDevice(ctx context.Context, in MobileInput) (store
 			return store.MobileDevice{}, err
 		}
 	}
-	d := store.MobileDevice{ID: randomHex(8), Name: in.Name, Driver: s.Mobile.Driver().Name(),
+	devID := randomHex(8)
+	withGMS := resolveWithGMS(in)
+	identityJSON := ""
+	if withGMS || in.IdentityTemplate != "" {
+		identityJSON = vm.MarshalIdentity(vm.IdentityFor(devID, in.IdentityTemplate))
+	}
+	d := store.MobileDevice{ID: devID, Name: in.Name, Driver: s.Mobile.Driver().Name(),
 		Platform: runtime.GOOS, ProxyID: in.ProxyID, RAMMB: in.RAMMB, CPUs: in.CPUs,
 		Preset: in.Preset, ScreenW: in.ScreenW, ScreenH: in.ScreenH, Density: in.Density,
+		WithGMS: withGMS, IdentityJSON: identityJSON,
 		Notes: in.Notes, Tags: in.Tags, Pinned: in.Pinned}
 	if err := s.Store.CreateMobileDevice(&d); err != nil {
 		return d, err
@@ -534,7 +552,7 @@ func (s *Service) startMobile(ctx context.Context, id string, headless bool) (Mo
 		return MobileStart{}, err
 	}
 	proxyMS := time.Since(proxyStarted).Milliseconds()
-	o := mobile.StartOptions{Timezone: net.Timezone, Locale: androidLocale(net), Headless: headless}
+	o := mobile.StartOptions{Timezone: net.Timezone, Locale: androidLocale(net), Country: net.Country, Lat: net.Lat, Lon: net.Lon, Headless: headless}
 	if d.ProxyID != "" {
 		up, err := s.proxyUpstream(d.ProxyID)
 		if err != nil {
@@ -711,22 +729,31 @@ func (s *Service) MobilePreviewFrame(ctx context.Context, id string) (string, er
 	return base64.StdEncoding.EncodeToString(img), nil
 }
 
-// TapMobileDevice taps a point in the device's 720x1600 screen space.
+// TapMobileDevice taps a point in the device's screen space, mirroring to
+// synchronized followers and recording into an active macro when enabled.
 func (s *Service) TapMobileDevice(ctx context.Context, id string, x, y int) error {
 	c, err := s.MobileControl(id)
 	if err != nil {
 		return err
 	}
-	return c.Tap(ctx, "", x, y)
+	if err := c.Tap(ctx, "", x, y); err != nil {
+		return err
+	}
+	s.mirrorTap(ctx, id, x, y)
+	return nil
 }
 
-// PressMobileKey presses home, back or recents from the in-app viewer.
+// PressMobileKey presses home, back, recents, volume_up or volume_down.
 func (s *Service) PressMobileKey(ctx context.Context, id, key string) error {
 	c, err := s.MobileControl(id)
 	if err != nil {
 		return err
 	}
-	return c.PressKey(ctx, key)
+	if err := c.PressKey(ctx, key); err != nil {
+		return err
+	}
+	s.mirrorKey(ctx, id, key)
+	return nil
 }
 
 // ScreenshotMobileDevice saves a JPEG of the Android screen under
@@ -789,6 +816,72 @@ func (s *Service) SetMobileWindowOnTop(ctx context.Context, id string, on bool) 
 		return errMobileUnsupported
 	}
 	return w.SetWindowOnTop(ctx, mobileDevice(d), on)
+}
+
+// MobileWindowMuted reports whether the device's scrcpy window audio is muted.
+func (s *Service) MobileWindowMuted(id string) (bool, error) {
+	d, err := s.liveMobile(id)
+	if err != nil {
+		return false, err
+	}
+	w, ok := s.Mobile.Driver().(interface {
+		WindowMuted(mobile.Device) bool
+	})
+	if !ok {
+		return false, nil
+	}
+	return w.WindowMuted(mobileDevice(d)), nil
+}
+
+// SetMobileWindowMuted stores the mute flag and reopens an open scrcpy window.
+func (s *Service) SetMobileWindowMuted(ctx context.Context, id string, muted bool) error {
+	d, err := s.liveMobile(id)
+	if err != nil {
+		return err
+	}
+	w, ok := s.Mobile.Driver().(interface {
+		SetWindowMuted(context.Context, mobile.Device, bool) error
+	})
+	if !ok {
+		return errMobileUnsupported
+	}
+	return w.SetWindowMuted(ctx, mobileDevice(d), muted)
+}
+
+var allowedMediaExts = map[string]bool{
+	".mp4": true, ".mov": true, ".mkv": true, ".webm": true,
+	".jpg": true, ".jpeg": true, ".png": true, ".webp": true, ".heic": true,
+}
+
+// PushMobileMedia pushes photos or videos into /sdcard/DCIM/Camera/ and triggers
+// Android's media scanner so TikTok, YouTube Shorts and Gallery see them immediately.
+func (s *Service) PushMobileMedia(ctx context.Context, id string, paths []string) (int, error) {
+	for _, p := range paths {
+		ext := strings.ToLower(filepath.Ext(p))
+		if !allowedMediaExts[ext] {
+			return 0, apperr.New("mobile_media_type", "only photo and video files (.mp4, .mov, .jpg, .png, .webp) are supported")
+		}
+	}
+	c, err := s.MobileControl(id)
+	if err != nil {
+		return 0, err
+	}
+	s.forgetMobilePause(id)
+	defer s.scheduleMobilePause(id)
+	if _, err := c.ADB.Shell(ctx, "mkdir -p /sdcard/DCIM/Camera"); err != nil {
+		return 0, err
+	}
+	pushed := 0
+	for _, p := range paths {
+		base := safeFileName(filepath.Base(p))
+		remote := "/sdcard/DCIM/Camera/" + base
+		if _, err := c.ADB.Run(ctx, "push", p, remote); err != nil {
+			return pushed, apperr.New("mobile_media_push", filepath.Base(p)+": "+err.Error())
+		}
+		_, _ = c.ADB.Shell(ctx, "am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE -d 'file://"+remote+"'")
+		pushed++
+	}
+	return pushed, nil
 }
 
 func safeFileName(s string) string {

@@ -25,15 +25,20 @@ const ServerPort = 5137
 
 // Client is adb for the device at 127.0.0.1:Port.
 type Client struct {
-	Bin  string
-	Port int
+	Bin        string
+	Port       int
+	VendorKeys string // optional path to AnyProfile's private ADB key for ro.secure=1 devices
 }
 
 func (a Client) Serial() string { return "127.0.0.1:" + strconv.Itoa(a.Port) }
 
 // Env is the environment adb and the tools that call it (scrcpy) run with.
 func (a Client) Env() []string {
-	return append(os.Environ(), "ANDROID_ADB_SERVER_PORT="+strconv.Itoa(ServerPort))
+	env := append(os.Environ(), "ANDROID_ADB_SERVER_PORT="+strconv.Itoa(ServerPort))
+	if a.VendorKeys != "" {
+		env = append(env, "ADB_VENDOR_KEYS="+a.VendorKeys)
+	}
+	return env
 }
 
 func (a Client) command(ctx context.Context, args ...string) *exec.Cmd {
@@ -116,6 +121,31 @@ func (a Client) WaitBoot(ctx context.Context, exited <-chan struct{}) error {
 		out, err := a.Shell(c, "getprop sys.boot_completed")
 		cancel()
 		if err == nil && out == "1" {
+			return nil
+		}
+		select {
+		case <-ctx.Done():
+		case <-exited:
+		case <-time.After(2 * time.Second):
+		}
+	}
+}
+
+// WaitSideload waits until LineageOS Recovery enters ADB sideload state.
+func (a Client) WaitSideload(ctx context.Context, exited <-chan struct{}) error {
+	for {
+		select {
+		case <-ctx.Done():
+			return errors.New("recovery did not enter sideload mode in time")
+		case <-exited:
+			return errors.New("the device stopped while entering recovery sideload")
+		default:
+		}
+		a.Connect(ctx)
+		c, cancel := context.WithTimeout(ctx, 5*time.Second)
+		out, err := a.Run(c, "get-state")
+		cancel()
+		if err == nil && strings.TrimSpace(out) == "sideload" {
 			return nil
 		}
 		select {

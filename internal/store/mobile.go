@@ -26,6 +26,8 @@ type MobileDevice struct {
 	ScreenW      int      `json:"screenW"`
 	ScreenH      int      `json:"screenH"`
 	Density      int      `json:"density"`
+	WithGMS      bool     `json:"withGms"`
+	IdentityJSON string   `json:"identityJson,omitempty"`
 	ImageVersion string   `json:"imageVersion"`
 	Notes        string   `json:"notes"`
 	Tags         []string `json:"tags"`
@@ -49,14 +51,14 @@ type MobileLaunch struct {
 }
 
 const mobileCols = `id, name, driver, platform, driver_ref, COALESCE(proxy_id, ''), ram_mb, cpus,
-	preset, screen_w, screen_h, density, image_version, notes, tags, pinned, serial, created_at, updated_at,
+	preset, screen_w, screen_h, density, with_gms, identity_json, image_version, notes, tags, pinned, serial, created_at, updated_at,
 	COALESCE(last_open_at, ''), COALESCE(backed_up_at, ''), COALESCE(deleted_at, '')`
 
 func scanMobile(row interface{ Scan(...any) error }) (MobileDevice, error) {
 	var d MobileDevice
 	var tags string
 	err := row.Scan(&d.ID, &d.Name, &d.Driver, &d.Platform, &d.DriverRef, &d.ProxyID, &d.RAMMB, &d.CPUs,
-		&d.Preset, &d.ScreenW, &d.ScreenH, &d.Density, &d.ImageVersion, &d.Notes, &tags, &d.Pinned, &d.Serial,
+		&d.Preset, &d.ScreenW, &d.ScreenH, &d.Density, &d.WithGMS, &d.IdentityJSON, &d.ImageVersion, &d.Notes, &tags, &d.Pinned, &d.Serial,
 		&d.CreatedAt, &d.UpdatedAt, &d.LastOpenAt, &d.BackedUpAt, &d.DeletedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return d, ErrNotFound
@@ -78,20 +80,20 @@ func (s *Store) CreateMobileDevice(d *MobileDevice) error {
 		d.Preset = "balanced"
 	}
 	if d.ScreenW == 0 {
-		d.ScreenW = 720
+		d.ScreenW = 780
 	}
 	if d.ScreenH == 0 {
-		d.ScreenH = 1600
+		d.ScreenH = 1688
 	}
 	if d.Density == 0 {
-		d.Density = 280
+		d.Density = 320
 	}
 	d.CreatedAt, d.UpdatedAt = now(), now()
 	_, err := s.db.Exec(`INSERT INTO mobile_devices (id, name, driver, platform, driver_ref, proxy_id, ram_mb,
-		cpus, preset, screen_w, screen_h, density, image_version, notes, tags, pinned, created_at, updated_at, serial)
-		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,(SELECT COALESCE(MAX(serial), 0) + 1 FROM mobile_devices))`,
+		cpus, preset, screen_w, screen_h, density, with_gms, identity_json, image_version, notes, tags, pinned, created_at, updated_at, serial)
+		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,(SELECT COALESCE(MAX(serial), 0) + 1 FROM mobile_devices))`,
 		d.ID, d.Name, d.Driver, d.Platform, d.DriverRef, nullStr(d.ProxyID), d.RAMMB, d.CPUs, d.Preset,
-		d.ScreenW, d.ScreenH, d.Density, d.ImageVersion, d.Notes, tagsJSON(d.Tags), d.Pinned, d.CreatedAt, d.UpdatedAt)
+		d.ScreenW, d.ScreenH, d.Density, d.WithGMS, d.IdentityJSON, d.ImageVersion, d.Notes, tagsJSON(d.Tags), d.Pinned, d.CreatedAt, d.UpdatedAt)
 	if err != nil {
 		return err
 	}
@@ -105,9 +107,9 @@ func (s *Store) GetMobileDevice(id string) (MobileDevice, error) {
 // UpdateMobileDevice saves the editable fields; driver and platform never change.
 func (s *Store) UpdateMobileDevice(d MobileDevice) error {
 	res, err := s.db.Exec(`UPDATE mobile_devices SET name=?, proxy_id=?, ram_mb=?, cpus=?, preset=?,
-		screen_w=?, screen_h=?, density=?, notes=?, tags=?, pinned=?, updated_at=? WHERE id=?`,
+		screen_w=?, screen_h=?, density=?, with_gms=?, identity_json=?, notes=?, tags=?, pinned=?, updated_at=? WHERE id=?`,
 		d.Name, nullStr(d.ProxyID), d.RAMMB, d.CPUs, d.Preset, d.ScreenW, d.ScreenH, d.Density,
-		d.Notes, tagsJSON(d.Tags), d.Pinned, now(), d.ID)
+		d.WithGMS, d.IdentityJSON, d.Notes, tagsJSON(d.Tags), d.Pinned, now(), d.ID)
 	return affected(res, err)
 }
 

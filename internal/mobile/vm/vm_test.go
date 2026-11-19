@@ -104,29 +104,36 @@ func TestQemuArgs(t *testing.T) {
 	args := qemuArgs(rt, mobile.Device{ID: "abc", RAMMB: 3072, CPUs: 4}, "52:54:00:01:02:03", "/t/abc.net", "/t/abc.qmp")
 	line := strings.Join(args, " ")
 	for _, want := range []string{"-accel hvf", "-m 3072", "-smp 4", "file=/rt/code,,1.fd",
-		"addr.path=/t/abc.net,reconnect-ms=1000", "mac=52:54:00:01:02:03", "xres=720,yres=1600",
+		"addr.path=/t/abc.net,reconnect-ms=1000", "mac=52:54:00:01:02:03", "xres=780,yres=1688",
 		"unix:/t/abc.qmp,server=on,wait=off", "-display none"} {
 		if !strings.Contains(line, want) {
 			t.Errorf("missing %q in %s", want, line)
 		}
 	}
 	if slices.Contains(args, "-cpu") && strings.Contains(line, "midr") {
-		t.Error("the CPU is disguised; the plan keeps the VM an honest VM")
+		t.Error("device without IdentityJSON should keep plain -cpu host")
+	}
+	idArgs := qemuArgs(rt, mobile.Device{
+		ID: "abc", RAMMB: 4096, CPUs: 4,
+		IdentityJSON: MarshalIdentity(IdentityFor("abc", "pixel8")),
+	}, "52:54:00:01:02:03", "/t/abc.net", "/t/abc.qmp")
+	if !strings.Contains(strings.Join(idArgs, " "), "-cpu host,midr=0x411fd410") {
+		t.Errorf("device with IdentityJSON did not mask CPU MIDR: %v", idArgs)
 	}
 }
 
 func TestQemuArgsKeepsBootDisplay(t *testing.T) {
 	rt := Runtime{Firmware: "/rt/code,1.fd"}
 	// A lighter Android display is applied with wm size after boot; QEMU must
-	// still start at 720x1600 because Android 16 does not always boot below it.
-	args := qemuArgs(rt, mobile.Device{ID: "abc", RAMMB: 2048, CPUs: 2, ScreenW: 540, ScreenH: 960}, "m", "/t/n", "/t/q")
+	// still start at 780x1688 because Android 16 does not always boot below it.
+	args := qemuArgs(rt, mobile.Device{ID: "abc", RAMMB: 2048, CPUs: 2, ScreenW: 540, ScreenH: 1170}, "m", "/t/n", "/t/q")
 	line := strings.Join(args, " ")
-	if !strings.Contains(line, "xres=720,yres=1600") || !strings.Contains(line, "-m 2048") || !strings.Contains(line, "-smp 2") {
+	if !strings.Contains(line, "xres=780,yres=1688") || !strings.Contains(line, "-m 2048") || !strings.Contains(line, "-smp 2") {
 		t.Fatalf("args = %s", line)
 	}
-	args = qemuArgs(rt, mobile.Device{ID: "abc", RAMMB: 4096, CPUs: 4, ScreenW: 1080, ScreenH: 2400}, "m", "/t/n", "/t/q")
-	if !strings.Contains(strings.Join(args, " "), "xres=1080,yres=2400") {
-		t.Fatal("a larger display was not passed to QEMU")
+	args = qemuArgs(rt, mobile.Device{ID: "abc", RAMMB: 4096, CPUs: 4, ScreenW: 1170, ScreenH: 2532}, "m", "/t/n", "/t/q")
+	if !strings.Contains(strings.Join(args, " "), "xres=1170,yres=2532") {
+		t.Fatal("a larger Retina iPhone display was not passed to QEMU")
 	}
 }
 
