@@ -17,6 +17,18 @@ export type View = 'all' | 'running' | 'attention' | `site:${string}` | `tag:${s
 const SITES_SHOWN = 8
 const TAGS_SHOWN = 12
 
+function useSidebarSection(section: 'sites' | 'tags') {
+  const key = `anyprofile.sidebar.${section}`
+  const [open, setOpen] = useState(() => {
+    try { return localStorage.getItem(key) !== 'closed' } catch { return true }
+  })
+  const toggle = () => {
+    setOpen(!open)
+    try { localStorage.setItem(key, open ? 'closed' : 'open') } catch { /* keep the in-memory choice */ }
+  }
+  return [open, toggle] as const
+}
+
 type Props = {
   page: Page
   view: View
@@ -36,9 +48,9 @@ type Props = {
 }
 
 export function Sidebar({ page, view, counts, tags, sites, siteCounts, proxyCount, mobileCount, engineLabel, engineReady, pro, onNavigate, onNewProfile, onOpenTools }: Props) {
-  const [sitesOpen, setSitesOpen] = useState(true)
+  const [sitesOpen, toggleSites] = useSidebarSection('sites')
   const [allSites, setAllSites] = useState(false)
-  const [tagsOpen, setTagsOpen] = useState(true)
+  const [tagsOpen, toggleTags] = useSidebarSection('tags')
   const [allTags, setAllTags] = useState(false)
   const item = (label: string, icon: IconName, active: boolean, onClick: () => void, count?: number, tone: '' | 'live' | 'warn' = '') => (
     <button className="navitem nodrag" aria-current={active ? 'page' : undefined} onClick={onClick}>
@@ -92,7 +104,7 @@ export function Sidebar({ page, view, counts, tags, sites, siteCounts, proxyCoun
           <div className="navscroll">
             {usedSites.length > 0 && (
               <>
-                <button type="button" className="navsection navtoggle nodrag" aria-expanded={sitesOpen} onClick={() => setSitesOpen(!sitesOpen)}>
+                <button type="button" className="navsection navtoggle nodrag" aria-expanded={sitesOpen} onClick={toggleSites}>
                   <Icon name="chevron" className="icon xs" />{t.nav.sites}
                 </button>
                 {sitesOpen && shownSites.map((s) => (
@@ -113,7 +125,7 @@ export function Sidebar({ page, view, counts, tags, sites, siteCounts, proxyCoun
 
             {tags.length > 0 && (
               <>
-                <button type="button" className="navsection navtoggle nodrag" aria-expanded={tagsOpen} onClick={() => setTagsOpen(!tagsOpen)}>
+                <button type="button" className="navsection navtoggle nodrag" aria-expanded={tagsOpen} onClick={toggleTags}>
                   <Icon name="chevron" className="icon xs" />{t.nav.tags}
                 </button>
                 {tagsOpen && shownTags.map(([tag, n]) => (

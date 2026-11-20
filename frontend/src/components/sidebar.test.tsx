@@ -7,7 +7,7 @@ import { countProfiles } from '../lib/health'
 import { tagCounts } from '../lib/tags'
 import { Sidebar } from './sidebar'
 
-afterEach(cleanup)
+afterEach(() => { cleanup(); localStorage.clear() })
 
 const base = { state: 'stopped', fpVerdict: 'match', fpDiff: [] as string[], proxyExpiry: '', lastOpenAt: '2026-10-13T10:00:00Z', cdpPort: 0 }
 const rows = [
@@ -86,6 +86,27 @@ describe('Sidebar', () => {
     expect(screen.getByRole('button', { name: /Platform 09/ })).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: t.nav.sites }))
     expect(screen.queryByRole('button', { name: /Platform 00/ })).toBeNull()
+  })
+
+  it('restores the open or collapsed state of each section independently', () => {
+    const sites = [{ id: 'site-1', name: 'Example', domains: [], startUrl: '', color: '#000', group: 'other' as const, icon: '', custom: false }]
+    const mount = () => render(<Sidebar page="profiles" view="all" counts={countProfiles(rows)}
+      tags={tagCounts(rows)} sites={sites} siteCounts={new Map([['site-1', 1]])} proxyCount={0} mobileCount={0}
+      engineLabel="" engineReady onNavigate={vi.fn()} onNewProfile={vi.fn()} onOpenTools={vi.fn()} />)
+    const section = (name: string) => screen.getByRole('button', { name })
+
+    mount()
+    fireEvent.click(section(t.nav.sites))
+    fireEvent.click(section(t.nav.tags))
+    cleanup()
+    mount()
+    expect(section(t.nav.sites).getAttribute('aria-expanded')).toBe('false')
+    expect(section(t.nav.tags).getAttribute('aria-expanded')).toBe('false')
+    fireEvent.click(section(t.nav.sites))
+    cleanup()
+    mount()
+    expect(section(t.nav.sites).getAttribute('aria-expanded')).toBe('true')
+    expect(section(t.nav.tags).getAttribute('aria-expanded')).toBe('false')
   })
 
   it('shows the Pro mark next to AnyProfile only when Pro is active', () => {
