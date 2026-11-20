@@ -607,7 +607,7 @@ export function MobilePage({ mobile, onOpenPro, onOpenSettings }: Props) {
               </div>
             )}
             <section className="mobile-help" aria-label={t.mobile.apkHelp}>
-              <strong>{t.mobile.apkHelp}:</strong> {t.mobile.apkHint} {avail?.driver === 'vm' && t.mobile.apkWhere}{' · '}
+              <strong>{t.mobile.apkHelp}:</strong> {t.mobile.apkHint} {(avail?.driver === 'vm' || avail?.driver === 'avo') && t.mobile.apkWhere}{' · '}
               <a href="https://f-droid.org/packages/com.aurora.store/" onClick={(e) => { e.preventDefault(); openExternal('https://f-droid.org/packages/com.aurora.store/') }}>Aurora Store</a>{' · '}
               <a href="https://f-droid.org/F-Droid.apk" onClick={(e) => { e.preventDefault(); openExternal('https://f-droid.org/F-Droid.apk') }}>F-Droid</a>{' · '}
               <a href={MOBILE_APPS_GUIDE} onClick={(e) => { e.preventDefault(); openExternal(MOBILE_APPS_GUIDE) }}>{t.mobile.apkGuide}</a>

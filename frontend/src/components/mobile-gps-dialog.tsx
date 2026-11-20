@@ -61,7 +61,7 @@ export function MobileGpsDialog({ row, onClose, onToast }: Props) {
 
   return (
     <Dialog
-      title={`${t.mobile.gps} — ${row.name}`}
+      title={`${t.mobile.gps}: ${row.name}`}
       icon="mobile"
       onClose={onClose}
       footer={

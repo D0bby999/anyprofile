@@ -141,7 +141,7 @@ export function MobileDrawer({
         </div>
 
         <div className="drawer-sub">
-          <span>{row.driver === 'vm' ? 'Anymobile VM' : 'LDPlayer'} · {presetLabel(row.preset)} · {row.ramMb / 1024} GB RAM · {row.cpus} CPU</span>
+          <span>{row.driver === 'avo' ? 'Anymobile Metal (Avo)' : row.driver === 'vm' ? 'Anymobile VM' : 'LDPlayer'} · {presetLabel(row.preset)} · {row.ramMb / 1024} GB RAM · {row.cpus} CPU</span>
         </div>
 
         <div className="drawer-actions">
@@ -299,7 +299,7 @@ export function MobileDrawer({
                 <dt>{t.mobile.screen(row.screenW, row.screenH, row.density).split(',')[0]}</dt>
                 <dd>{row.screenW} × {row.screenH} px ({row.density} DPI)</dd>
                 <dt>{t.mobile.driver}</dt>
-                <dd>{row.driver === 'vm' ? 'Anymobile VM (QEMU)' : 'LDPlayer 9'}</dd>
+                <dd>{row.driver === 'avo' ? 'Anymobile Metal (Avo)' : row.driver === 'vm' ? 'Anymobile VM (QEMU)' : 'LDPlayer 9'}</dd>
                 <dt>{t.mobile.imageVersion}</dt>
                 <dd>{row.imageVersion || 'LineageOS Android 16'}</dd>
               </dl>
