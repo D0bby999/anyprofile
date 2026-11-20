@@ -5,17 +5,24 @@
 package avo
 
 import (
+	"archive/zip"
 	"bufio"
+	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"net"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/D0bby999/anyprofile/internal/engine"
 	"github.com/D0bby999/anyprofile/internal/mobile"
 	"github.com/D0bby999/anyprofile/internal/mobile/vm"
 )
@@ -202,5 +209,102 @@ func TestBuildLaunchSpecAndClusters(t *testing.T) {
 	// 4 vCPUs fitted across 2+1 clusters grows the slowest cluster to 3 cores + 1 prime core.
 	if spec.CPUClusters != "3x410fd800@300000-2265600,1x410fd820@576000-3302400" {
 		t.Fatalf("CPUClusters = %q", spec.CPUClusters)
+	}
+}
+
+func makeZipBytes(t *testing.T, files map[string]string) ([]byte, string, map[string]string) {
+	t.Helper()
+	var buf bytes.Buffer
+	zw := zip.NewWriter(&buf)
+	hashes := make(map[string]string, len(files))
+	for name, content := range files {
+		w, err := zw.Create(name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := io.WriteString(w, content); err != nil {
+			t.Fatal(err)
+		}
+		sum := sha256.Sum256([]byte(content))
+		hashes[name] = hex.EncodeToString(sum[:])
+	}
+	if err := zw.Close(); err != nil {
+		t.Fatal(err)
+	}
+	raw := buf.Bytes()
+	sum := sha256.Sum256(raw)
+	return raw, hex.EncodeToString(sum[:]), hashes
+}
+
+func TestInstallAvoRuntimeAndCuttlefish(t *testing.T) {
+	rtZip, rtSHA, rtFiles := makeZipBytes(t, map[string]string{
+		"bin/anyprofile-vmm":  "vmm-bin",
+		"bin/anyprofile-view": "view-bin",
+		"bin/adb":             "adb-bin",
+		"gfxstream/lib64/libgfxstream_backend.dylib": "gfx-lib",
+	})
+	imgZip, imgSHA, _ := makeZipBytes(t, map[string]string{
+		"boot.img":        "boot",
+		"vendor_boot.img": "vboot",
+		"super.img":       "super",
+		"userdata.img":    "user",
+	})
+
+	var srv *httptest.Server
+	srv = httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.URL.Path == "/anymobile-avo-1.0.0.zip":
+			_, _ = w.Write(rtZip)
+		case strings.HasSuffix(r.URL.Path, "/url"):
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = fmt.Fprintf(w, `{"signedUrl":"%s/cuttlefish.zip"}`, srv.URL)
+		case r.URL.Path == "/cuttlefish.zip":
+			_, _ = w.Write(imgZip)
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+	oldClient := http.DefaultClient
+	http.DefaultClient = srv.Client()
+	defer func() { http.DefaultClient = oldClient }()
+
+	prevAPI, prevSHA := cuttlefishAPIBase, cuttlefishSHA256
+	cuttlefishAPIBase, cuttlefishSHA256 = srv.URL, imgSHA
+	defer func() { cuttlefishAPIBase, cuttlefishSHA256 = prevAPI, prevSHA }()
+
+	avoRoot := t.TempDir()
+	t.Setenv("ANYPROFILE_AVO_DIR", avoRoot)
+	drv := New(filepath.Join(t.TempDir(), "runtime"), t.TempDir(), nil)
+
+	if err := drv.OfferRuntime([]engine.Release{{
+		Engine:    RuntimeEngine,
+		Version:   "1.0.0",
+		Chromium:  "16.0",
+		Platform:  engine.HostPlatform(),
+		URL:       srv.URL + "/anymobile-avo-1.0.0.zip",
+		SHA256:    rtSHA,
+		Files:     rtFiles,
+		Bin:       "bin/anyprofile-vmm",
+		Catalogue: RuntimeEngine,
+	}}); err != nil {
+		t.Fatalf("OfferRuntime: %v", err)
+	}
+	if !drv.HasOffer() {
+		t.Fatal("expected HasOffer == true")
+	}
+	st0 := drv.InstallStatus()
+	if st0.Runtime.Installed != "" || st0.Runtime.Latest != "1.0.0" {
+		t.Fatalf("initial InstallStatus = %+v", st0)
+	}
+	if err := drv.Install(context.Background(), nil); err != nil {
+		t.Fatalf("Install: %v", err)
+	}
+	if err := drv.Available(); err != nil {
+		t.Fatalf("Available after Install: %v", err)
+	}
+	st1 := drv.InstallStatus()
+	if st1.Runtime.Installed != "1.0.0" || st1.Image.Installed != CuttlefishBuild {
+		t.Fatalf("post-install InstallStatus = %+v", st1)
 	}
 }

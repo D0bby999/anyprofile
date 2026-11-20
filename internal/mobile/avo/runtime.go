@@ -50,16 +50,21 @@ func Staged(avoRoot string) bool {
 }
 
 // Locate checks that every required binary, gfxstream library, and Cuttlefish
-// image file exists under avoRoot.
+// image file exists under avoRoot. Binaries live under avoRoot/engine when
+// installed by AnyProfile's updater, or directly under avoRoot in dev staging.
 func Locate(avoRoot string) (Runtime, error) {
+	engRoot := avoRoot
+	if exists(filepath.Join(avoRoot, "engine", "bin", "anyprofile-vmm")) {
+		engRoot = filepath.Join(avoRoot, "engine")
+	}
 	r := Runtime{
 		Root:         avoRoot,
-		VMM:          filepath.Join(avoRoot, "bin", "anyprofile-vmm"),
-		View:         filepath.Join(avoRoot, "bin", "anyprofile-view"),
-		ADB:          filepath.Join(avoRoot, "bin", "adb"),
-		GfxstreamDir: filepath.Join(avoRoot, "gfxstream"),
-		ProfilesDir:  filepath.Join(avoRoot, "profiles"),
-		LayersDir:    filepath.Join(avoRoot, "layers"),
+		VMM:          filepath.Join(engRoot, "bin", "anyprofile-vmm"),
+		View:         filepath.Join(engRoot, "bin", "anyprofile-view"),
+		ADB:          filepath.Join(engRoot, "bin", "adb"),
+		GfxstreamDir: filepath.Join(engRoot, "gfxstream"),
+		ProfilesDir:  filepath.Join(engRoot, "profiles"),
+		LayersDir:    filepath.Join(engRoot, "layers"),
 	}
 	for _, p := range []string{
 		r.VMM,

@@ -201,16 +201,16 @@ func (r *Router) SetWindowMuted(ctx context.Context, dev mobile.Device, muted bo
 }
 
 func (r *Router) InstallStatus() mobile.InstallStatus {
-	if rt, err := Locate(r.avo.avoRoot); err == nil {
-		return mobile.InstallStatus{
-			Runtime: mobile.Component{Engine: "avo", Installed: "metal", Latest: "metal"},
-			Image:   mobile.Component{Engine: "cuttlefish", Installed: rt.ImageVersion, Latest: rt.ImageVersion},
-		}
+	if r.primaryAvo() || r.avo.HasOffer() {
+		return r.avo.InstallStatus()
 	}
 	return r.vm.InstallStatus()
 }
 
 func (r *Router) Install(ctx context.Context, progress func(engine string, done, total int64)) error {
+	if r.avo.HasOffer() {
+		return r.avo.Install(ctx, progress)
+	}
 	if r.primaryAvo() {
 		return nil
 	}
@@ -218,7 +218,12 @@ func (r *Router) Install(ctx context.Context, progress func(engine string, done,
 }
 
 func (r *Router) OfferRuntime(rs []engine.Release) error {
-	return r.vm.OfferRuntime(rs)
+	errAvo := r.avo.OfferRuntime(rs)
+	errVM := r.vm.OfferRuntime(rs)
+	if errAvo != nil {
+		return errAvo
+	}
+	return errVM
 }
 
 var (

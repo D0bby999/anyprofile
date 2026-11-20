@@ -21,6 +21,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/D0bby999/anyprofile/internal/engine"
 	"github.com/D0bby999/anyprofile/internal/launcher"
 	"github.com/D0bby999/anyprofile/internal/mobile"
 	"github.com/D0bby999/anyprofile/internal/mobile/adb"
@@ -54,7 +55,8 @@ type Driver struct {
 	devices     string
 	log         *slog.Logger
 
-	gmsMu sync.Mutex
+	gmsMu   sync.Mutex
+	offered engine.Catalog
 
 	mu      sync.Mutex
 	procs   map[string]*proc

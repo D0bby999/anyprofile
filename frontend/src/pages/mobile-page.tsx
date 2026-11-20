@@ -26,7 +26,7 @@ type Props = { mobile: ReturnType<typeof useMobile>; onOpenPro: () => void; onOp
 
 const busyStates = ['provisioning', 'starting', 'stopping', 'working']
 const installReasons = ['anymobile_runtime_missing', 'anymobile_image_missing']
-const installEngines = ['anymobile', 'anymobile-image']
+const installEngines = ['anymobile', 'anymobile-image', 'anymobile-avo', 'anymobile-avo-image']
 const CONTROLS = 'input, button, a, select, textarea, label, [role="menu"], [role="menuitem"]'
 const MOBILE_ORDER_KEY = 'anyprofile.mobileOrder'
 
@@ -187,6 +187,11 @@ export function MobilePage({ mobile, onOpenPro, onOpenSettings }: Props) {
   const canUse = !!avail?.pro && !!avail?.ready
   // Nothing installed and nothing in the signed list: the runtime is not out yet.
   const unpublished = !!avail?.install && !avail.install.runtime.installed && !avail.install.runtime.latest
+  const rtSt = avail?.install?.runtime
+  const needsEngineUpdate = !!avail?.pro && avail.ready && !!rtSt?.latest && (
+    (rtSt.engine === 'anymobile-avo' && !rtSt.installed) ||
+    (!!rtSt.installed && rtSt.installed !== 'dev' && rtSt.installed !== rtSt.latest)
+  )
   const proxyLabel = (r: service.MobileRow) => {
     if (!r.proxyId) return <span className="proxy-pill"><Icon name="direct" className="icon xs" /><span className="faint">{t.common.direct}</span></span>
     const p = proxies.find((x) => x.id === r.proxyId)
@@ -358,6 +363,19 @@ export function MobilePage({ mobile, onOpenPro, onOpenSettings }: Props) {
             <Icon name="alert" />
             <span className="grow">{t.mobile.notReady} {t.errors[avail.reason] ?? avail.message}</span>
             {avail.supported && <button className="btn sm" onClick={onOpenSettings}>{t.mobile.fix}</button>}
+          </div>
+        )}
+        {needsEngineUpdate && rtSt?.latest && (
+          <div className="banner info" role="status">
+            <Icon name="spark" />
+            <div className="grow">
+              {installing ? <InstallProgress progress={installing} /> : t.mobile.engineUpdateText(rtSt.latest)}
+            </div>
+            {!installing && (
+              <button type="button" className="btn sm primary" onClick={install}>
+                <Icon name="download" />{t.mobile.engineUpdateBtn}
+              </button>
+            )}
           </div>
         )}
         {error && <div className="banner danger" role="alert"><Icon name="alert" /><span className="grow">{errorText(error)}</span>
