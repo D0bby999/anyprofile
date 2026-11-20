@@ -40,7 +40,7 @@ vi.mock('../api', async (orig) => ({
 }))
 const { MobilePage } = await import('./mobile-page')
 
-afterEach(() => { cleanup(); vi.clearAllMocks() })
+afterEach(() => { cleanup(); vi.clearAllMocks(); localStorage.clear() })
 
 const device = (extra = {}) => ({
   id: 'd1', name: 'Phone 1', driver: 'vm', platform: 'darwin', driverRef: 'd1', proxyId: 'px', ramMb: 3072, cpus: 4,
@@ -266,11 +266,53 @@ describe('MobilePage', () => {
 
     expect(screen.getByRole('list')).toBeTruthy()
     expect(screen.getAllByRole('listitem').length).toBe(2)
-    expect(screen.getAllByText('4 Cores').length).toBe(2)
+    expect(screen.getAllByText(t.mobile.deviceSpecs(4, 3)).length).toBe(2)
     const grips = screen.getAllByLabelText(/Move Phone/)
     expect(grips.length).toBe(2)
     expect(screen.getByText('1')).toBeTruthy()
     expect(screen.getByText('2')).toBeTruthy()
+  })
+
+  it('switches between cards and the Web-style table without losing order or selection', () => {
+    const rows = [device(), device({ id: 'd2', name: 'Phone 2', serial: 2 })]
+    page(rows, avail())
+    const cards = screen.getByRole('list')
+    fireEvent.keyDown(within(cards).getByRole('button', { name: t.profiles.dragRow('Phone 1') }), { key: 'ArrowRight' })
+    expect(within(cards).getAllByRole('listitem')[0].textContent).toContain('Phone 2')
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Phone 1' }))
+    fireEvent.click(screen.getByRole('button', { name: t.mobile.views.list }))
+    const table = screen.getByRole('table', { name: t.mobile.title })
+    expect(screen.queryByRole('list')).toBeNull()
+    expect(within(table).getByRole('columnheader', { name: t.mobile.colState })).toBeTruthy()
+    expect(within(table).getAllByRole('row')[1].textContent).toContain('Phone 2')
+    expect((within(table).getByRole('checkbox', { name: 'Phone 1' }) as HTMLInputElement).checked).toBe(true)
+    cleanup()
+    page(rows, avail())
+    expect(screen.getByRole('button', { name: t.mobile.views.list }).getAttribute('aria-pressed')).toBe('true')
+    expect(screen.getByRole('table')).toBeTruthy()
+  })
+
+  it('drags cards into a shared order without moving them across the pinned group', () => {
+    page([device({ pinned: true }), device({ id: 'd2', name: 'Phone 2', serial: 2 }), device({ id: 'd3', name: 'Phone 3', serial: 3 })], avail())
+    const cards = screen.getAllByRole('listitem')
+    const dataTransfer = { setData: vi.fn(), effectAllowed: '', dropEffect: '' }
+    fireEvent.dragStart(within(cards[1]).getByRole('button', { name: t.profiles.dragRow('Phone 2') }), { dataTransfer })
+    fireEvent.drop(cards[0], { dataTransfer })
+    expect(cards[0].textContent).toContain('Phone 1')
+    fireEvent.dragOver(cards[2], { dataTransfer })
+    fireEvent.drop(cards[2], { dataTransfer })
+    expect(screen.getAllByRole('listitem').map((item) => item.getAttribute('data-id'))).toEqual(['d1', 'd3', 'd2'])
+  })
+
+  it('keeps search and the running-device actions available in list mode', async () => {
+    page([device({ state: 'running' }), device({ id: 'd2', name: 'Phone 2', serial: 2 })], avail())
+    fireEvent.change(screen.getByLabelText(t.mobile.search), { target: { value: '#1' } })
+    fireEvent.click(screen.getByRole('button', { name: t.mobile.views.list }))
+    const table = screen.getByRole('table')
+    expect(within(table).getAllByRole('row')).toHaveLength(2)
+    await openRowMenu()
+    fireEvent.click(screen.getByRole('menuitem', { name: t.mobile.installApps }))
+    await waitFor(() => expect(api.InstallMobileApps).toHaveBeenCalledWith('d1'))
   })
 
   it('supports selecting individual rows and bulk deletion', async () => {

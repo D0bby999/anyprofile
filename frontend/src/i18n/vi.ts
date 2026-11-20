@@ -397,6 +397,8 @@ export const vi: Messages = {
     ldplayerDownload: 'Mở trang tải LDPlayer', ldplayerCheck: 'Kiểm tra lại',
     emptyTitle: 'Chưa có máy mobile nào.', emptyText: 'Tạo một máy, chọn proxy cho nó, rồi mở ra dùng như điện thoại. Máy có sẵn kho ứng dụng Aurora Store để bạn tải app từ Google Play.',
     colName: 'Tên', colProxy: 'Proxy', colState: 'Trạng thái', colLastOpen: 'Mở lần cuối',
+    viewMode: 'Kiểu hiển thị máy', views: { cards: 'Thẻ', list: 'Danh sách' },
+    deviceSpecs: (cpus: number, ram: number) => `${cpus} lõi · ${ram} GB`,
     state: { stopped: 'Đã đóng', provisioning: 'Đang thiết lập', starting: 'Đang mở', running: 'Đang chạy', stopping: 'Đang đóng', working: 'Đang xử lý' } as Record<string, string>,
     startPhase: { restore: 'Đang thử khôi phục nhanh', boot: 'Đang khởi động Android', setup: 'Đang chuẩn bị máy' } as Record<string, string>,
     open: 'Mở', close: 'Đóng', show: 'Hiện cửa sổ', edit: 'Sửa', backup: 'Sao lưu', restoreBackup: 'Khôi phục bản sao lưu', trash: 'Bỏ vào thùng rác',

@@ -396,6 +396,8 @@ export const en = {
     ldplayerDownload: 'Open LDPlayer downloads', ldplayerCheck: 'Check again',
     emptyTitle: 'No mobile devices yet.', emptyText: 'Create one, pick its proxy, and open it like a phone. Includes Aurora Store to download apps from Google Play.',
     colName: 'Name', colProxy: 'Proxy', colState: 'Status', colLastOpen: 'Last opened',
+    viewMode: 'Device layout', views: { cards: 'Cards', list: 'List' },
+    deviceSpecs: (cpus: number, ram: number) => `${cpus} ${cpus === 1 ? 'core' : 'cores'} · ${ram} GB`,
     state: { stopped: 'Closed', provisioning: 'Setting up', starting: 'Opening', running: 'Running', stopping: 'Closing', working: 'Working' } as Record<string, string>,
     startPhase: { restore: 'Trying fast start', boot: 'Starting Android', setup: 'Preparing device' } as Record<string, string>,
     open: 'Open', close: 'Close', show: 'Show window', edit: 'Edit', backup: 'Back up', restoreBackup: 'Restore backup', trash: 'Move to trash',
