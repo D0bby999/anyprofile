@@ -44,6 +44,7 @@ type Info struct {
 type Device struct {
 	ID           string
 	Name         string
+	Driver       string // "avo", "vm", or "ldplayer"
 	Ref          string // the driver's own handle, from Create
 	RAMMB        int
 	CPUs         int

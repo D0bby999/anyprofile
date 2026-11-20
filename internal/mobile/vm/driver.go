@@ -209,10 +209,6 @@ func qemuArgs(rt Runtime, d mobile.Device, mac, netSock, qmpSock string) []strin
 	if id, ok := ParseIdentity(d.IdentityJSON); ok && validPropValue(id.MIDR) {
 		cpu = "host,midr=" + id.MIDR
 	}
-	gpuDev := fmt.Sprintf("virtio-gpu-pci,xres=%d,yres=%d", w, h)
-	if rt.HasGPU {
-		gpuDev = fmt.Sprintf("virtio-gpu-gl-pci,xres=%d,yres=%d,blob=true", w, h)
-	}
 	return []string{
 		"-name", "anyprofile-" + d.ID,
 		"-machine", "virt", "-accel", "hvf", "-cpu", cpu,
@@ -226,7 +222,7 @@ func qemuArgs(rt Runtime, d mobile.Device, mac, netSock, qmpSock string) []strin
 		"-device", "virtio-blk-pci,drive=vd1,bootindex=1",
 		"-netdev", "stream,id=net0,server=off,addr.type=unix,addr.path=" + optEscape(netSock) + ",reconnect-ms=1000",
 		"-device", "virtio-net-pci,netdev=net0,mac=" + mac + ",romfile=",
-		"-device", gpuDev,
+		"-device", fmt.Sprintf("virtio-gpu-pci,xres=%d,yres=%d", w, h),
 		"-device", "virtio-balloon-pci,free-page-reporting=on",
 		"-device", "virtio-rng-pci",
 		"-device", "qemu-xhci", "-device", "usb-tablet", "-device", "usb-kbd",

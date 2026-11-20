@@ -170,17 +170,14 @@ func (v *Driver) PrepareGMSBase(ctx context.Context, rt Runtime) (string, error)
 		return "", fmt.Errorf("flash userdebug recovery: %w", err)
 	}
 
-	// Sideload MindTheGapps, then Magisk, each in a clean offline recovery boot.
-	for _, step := range []struct {
-		name string
-		zip  string
-	}{
-		{"MindTheGapps", gappsPath},
-		{"Magisk", magiskPath},
-	} {
-		if err := v.sideloadInRecovery(ctx, rt, workDir, dsk, step.name, step.zip); err != nil {
-			return "", fmt.Errorf("sideload %s: %w", step.name, err)
-		}
+	// Sideload MindTheGapps (required for Play Store / YouTube), then Magisk
+	// (best-effort for runtime identity spoofing; some GRUB-booted images report
+	// "Unable to patch ramdisk" so a Magisk failure warns rather than aborting).
+	if err := v.sideloadInRecovery(ctx, rt, workDir, dsk, "MindTheGapps", gappsPath); err != nil {
+		return "", fmt.Errorf("sideload MindTheGapps: %w", err)
+	}
+	if err := v.sideloadInRecovery(ctx, rt, workDir, dsk, "Magisk", magiskPath); err != nil {
+		v.log.Warn("Magisk sideload skipped (ramdisk not patchable on this boot layout); continuing with GMS", "err", err)
 	}
 
 	// Clear BCB so devices cloned from vda-gms.qcow2 boot normally into Android.
@@ -231,9 +228,29 @@ func (v *Driver) sideloadInRecovery(ctx context.Context, rt Runtime, workDir str
 		return err
 	}
 
+	serialPath := filepath.Join(workDir, "serial.log")
+	var startOffset int64
+	if st, statErr := os.Stat(serialPath); statErr == nil {
+		startOffset = st.Size()
+	}
+
+	// LineageOS userdebug recovery prompts "Signature verification failed /
+	// Install anyway? [No] / Yes" for third-party zips, which stalls adb
+	// sideload until confirmed via keyboard input.
+	watchCtx, watchCancel := context.WithCancel(ctx)
+	defer watchCancel()
+	go confirmRecoveryPrompt(watchCtx, serialPath, startOffset, qmpSock)
+
 	sctx, scancel := context.WithTimeout(ctx, 8*time.Minute)
 	out, err := p.adb.Run(sctx, "sideload", zipPath)
 	scancel()
+	watchCancel()
+
+	if tail, readErr := readFileFrom(serialPath, startOffset); readErr == nil {
+		if strings.Contains(tail, "Error in /sideload/package.zip") || strings.Contains(tail, "Installation aborted") {
+			return fmt.Errorf("%s failed in recovery (see serial.log)", label)
+		}
+	}
 	// adb sideload returns exit 0 (or "Total xfer: 1.00x" / "Total xfer: 2.00x") on success.
 	if err != nil && !strings.Contains(out, "Total xfer:") {
 		return fmt.Errorf("%w (%s)", err, out)
@@ -241,4 +258,41 @@ func (v *Driver) sideloadInRecovery(ctx context.Context, rt Runtime, workDir str
 	// Give recovery a brief moment to flush ext4/super writes before shutting down.
 	time.Sleep(3 * time.Second)
 	return nil
+}
+
+func confirmRecoveryPrompt(ctx context.Context, serialPath string, offset int64, qmpSock string) {
+	t := time.NewTicker(250 * time.Millisecond)
+	defer t.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-t.C:
+			chunk, err := readFileFrom(serialPath, offset)
+			if err != nil || !strings.Contains(chunk, "Signature verification failed") {
+				continue
+			}
+			// Give the recovery UI a moment to draw the "No / Yes" prompt.
+			time.Sleep(500 * time.Millisecond)
+			_, _ = qmpCall(ctx, qmpSock, "send-key", map[string]any{
+				"keys": []map[string]string{{"type": "qcode", "data": "down"}},
+			})
+			time.Sleep(200 * time.Millisecond)
+			_, _ = qmpCall(ctx, qmpSock, "send-key", map[string]any{
+				"keys": []map[string]string{{"type": "qcode", "data": "ret"}},
+			})
+			return
+		}
+	}
+}
+
+func readFileFrom(path string, offset int64) (string, error) {
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return "", err
+	}
+	if offset > 0 && int64(len(b)) > offset {
+		b = b[offset:]
+	}
+	return string(b), nil
 }

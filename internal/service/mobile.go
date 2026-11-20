@@ -301,9 +301,19 @@ func checkMobileInput(in *MobileInput) error {
 }
 
 func mobileDevice(d store.MobileDevice) mobile.Device {
-	return mobile.Device{ID: d.ID, Name: d.Name, Ref: d.DriverRef, RAMMB: d.RAMMB, CPUs: d.CPUs,
+	return mobile.Device{ID: d.ID, Name: d.Name, Driver: d.Driver, Ref: d.DriverRef, RAMMB: d.RAMMB, CPUs: d.CPUs,
 		Preset: d.Preset, ScreenW: d.ScreenW, ScreenH: d.ScreenH, Density: d.Density,
 		WithGMS: d.WithGMS, IdentityJSON: d.IdentityJSON}
+}
+
+func (s *Service) supportsMobileDriver(name string) bool {
+	if s.Mobile == nil {
+		return false
+	}
+	if m, ok := s.Mobile.Driver().(interface{ SupportsDriver(string) bool }); ok {
+		return m.SupportsDriver(name)
+	}
+	return name == s.Mobile.Driver().Name()
 }
 
 func resolveWithGMS(in MobileInput) bool {
@@ -518,7 +528,7 @@ func (s *Service) liveMobile(id string) (store.MobileDevice, error) {
 	if d.DeletedAt != "" {
 		return d, apperr.New("mobile_trashed", "restore the device from the trash first")
 	}
-	if d.Platform != runtime.GOOS || s.Mobile == nil || d.Driver != s.Mobile.Driver().Name() {
+	if d.Platform != runtime.GOOS || s.Mobile == nil || !s.supportsMobileDriver(d.Driver) {
 		return d, apperr.New("mobile_other_os", "this device was made on another operating system")
 	}
 	return d, nil
@@ -1037,7 +1047,7 @@ func (s *Service) TrashMobileDevice(ctx context.Context, id string) error {
 		return err
 	}
 	// A saved RAM state is ~2.5 GB; the disks stay, so a restored device just cold-boots.
-	if d, err := s.Store.GetMobileDevice(id); err == nil && s.Mobile != nil && d.Platform == runtime.GOOS && d.Driver == s.Mobile.Driver().Name() {
+	if d, err := s.Store.GetMobileDevice(id); err == nil && s.Mobile != nil && d.Platform == runtime.GOOS && s.supportsMobileDriver(d.Driver) {
 		if r, ok := s.Mobile.Driver().(interface{ DropRAM(mobile.Device) }); ok {
 			r.DropRAM(mobileDevice(d))
 		}
@@ -1065,7 +1075,7 @@ func (s *Service) PurgeMobileDevice(ctx context.Context, id string) error {
 	if d.DeletedAt == "" {
 		return apperr.New("mobile_not_trashed", "move the device to the trash first")
 	}
-	if s.Mobile != nil && d.Platform == runtime.GOOS && d.Driver == s.Mobile.Driver().Name() {
+	if s.Mobile != nil && d.Platform == runtime.GOOS && s.supportsMobileDriver(d.Driver) {
 		if err := s.Mobile.Stop(ctx, mobileDevice(d)); err != nil {
 			return err
 		}
@@ -1165,7 +1175,7 @@ func (s *Service) AdoptMobileDevices(ctx context.Context) {
 	}
 	devs := map[string]mobile.AdoptDevice{}
 	for _, d := range ds {
-		if d.Platform != runtime.GOOS || d.Driver != s.Mobile.Driver().Name() {
+		if d.Platform != runtime.GOOS || !s.supportsMobileDriver(d.Driver) {
 			continue
 		}
 		a := mobile.AdoptDevice{Device: mobileDevice(d)}

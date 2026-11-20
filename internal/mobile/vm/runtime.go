@@ -27,7 +27,6 @@ type Runtime struct {
 	FirmwareVars              string
 	ADB, Scrcpy, ScrcpyServer string
 	ImageVersion, ImageDir    string
-	HasGPU                    bool // true when ANGLE Metal libs + virtio-gpu-gl are bundled
 }
 
 var (
@@ -63,7 +62,6 @@ func Locate(root string) (Runtime, error) {
 			return r, errImageMissing
 		}
 	}
-	r.HasGPU = exists(filepath.Join(q, "lib", "libEGL.dylib")) && exists(filepath.Join(q, "lib", "libGLESv2.dylib"))
 	return r, nil
 }
 
