@@ -142,6 +142,13 @@ func (a *App) init() error {
 			loc, err := a.fury.LocaleFor(ctx, cc)
 			return loc.UILocale, loc.Languages, err
 		}}
+	mobileUpdate := make(chan struct{}, 1)
+	wakeMobileUpdate := func() {
+		select {
+		case mobileUpdate <- struct{}{}:
+		default:
+		}
+	}
 	if drv := mobileDriver(dirs, log, cat); drv != nil {
 		a.svc.Mobile = mobile.NewManager(drv, st, log,
 			func(in mobile.Info) {
@@ -149,6 +156,9 @@ func (a *App) init() error {
 					runtime.EventsEmit(a.ctx, "mobile:changed", in)
 				}
 				a.updateTray()
+				if in.State == mobile.Stopped && a.svc.Mobile.Running() == 0 {
+					wakeMobileUpdate()
+				}
 			})
 		a.svc.OfferMobileRuntime()
 	}
@@ -169,21 +179,50 @@ func (a *App) init() error {
 	a.setMenuLanguage(a.svc.Language())
 	initTray(a, a.currentTrayState())
 	go a.svc.WatchMobileProxies(a.ctx)
+	if a.svc.Mobile != nil {
+		go func() {
+			for {
+				select {
+				case <-a.ctx.Done():
+					return
+				case <-mobileUpdate:
+					ctx, cancel := context.WithTimeout(a.ctx, 45*time.Minute)
+					err := a.svc.AutoUpdateMobile(ctx)
+					cancel()
+					if err != nil && !errors.Is(err, mobile.ErrBusy) {
+						log.Warn("auto-update Mobile", "err", err)
+					}
+				}
+			}
+		}()
+	}
 	go func() {
 		// Looked at every few hours, so an app left open for days still
 		// learns of a release; CheckUpdate asks the server once a day at
 		// most, and only when automatic checks are on. A release found is
 		// downloaded and verified, so updating is only a restart. The Pro
 		// pack is checked the same way, and only when a key is entered.
+		tick := time.NewTicker(6 * time.Hour)
+		defer tick.Stop()
 		for {
 			a.checkPro()
-			if st, _ := a.svc.CheckUpdate(context.Background(), false); st.Available {
+			wakeMobileUpdate()
+			if st, _ := a.svc.CheckUpdate(a.ctx, false); st.Available {
 				if st.Auto && !st.Ready {
 					a.prefetchUpdate()
 				}
 				runtime.EventsEmit(a.ctx, "data:changed", "update")
 			}
-			time.Sleep(6 * time.Hour)
+			ctx, cancel := context.WithTimeout(a.ctx, 30*time.Minute)
+			if err := a.svc.AutoUpdateAnyBrowser(ctx); err != nil {
+				log.Warn("auto-update AnyBrowser", "err", err)
+			}
+			cancel()
+			select {
+			case <-a.ctx.Done():
+				return
+			case <-tick.C:
+			}
 		}
 	}()
 	return nil

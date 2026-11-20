@@ -203,6 +203,15 @@ func (s *Service) InstallMobileRuntime(ctx context.Context, progress func(engine
 			return err
 		}
 	}
+	return s.Mobile.InstallWhenIdle(func() error {
+		return s.installMobile(ctx, in, progress)
+	})
+}
+
+func (s *Service) installMobile(ctx context.Context, in mobile.Installer, progress func(string, int64, int64)) error {
+	if err := s.mobileAllowed(); err != nil {
+		return err
+	}
 	if st := in.InstallStatus(); st.Image.Installed == "" {
 		if err := os.MkdirAll(s.Dirs.MobileRuntime(), 0o700); err != nil {
 			return err

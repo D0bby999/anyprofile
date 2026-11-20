@@ -114,11 +114,9 @@ func (v *Driver) Install(ctx context.Context, progress func(engine string, done,
 		}
 		r := rs[0]
 		dir := filepath.Join(v.runtime, "qemu")
-		err := engine.InstallRelease(ctx, r, dir, func(done, total int64) { progress(RuntimeEngine, done, total) }, nil)
-		if err != nil {
-			return err
-		}
-		if err := os.WriteFile(filepath.Join(dir, "VERSION"), []byte(r.Version+"\n"), 0o600); err != nil {
+		if err := engine.InstallRelease(ctx, r, dir, func(done, total int64) { progress(RuntimeEngine, done, total) }, func(tree string) error {
+			return os.WriteFile(filepath.Join(tree, "VERSION"), []byte(r.Version+"\n"), 0o600)
+		}); err != nil {
 			return err
 		}
 		st = v.InstallStatus()

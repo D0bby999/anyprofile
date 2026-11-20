@@ -58,9 +58,33 @@ func (a *AnyBrowser) Install(ctx context.Context, version string, progress engin
 	if err != nil {
 		return err
 	}
+	a.installMu.Lock()
+	defer a.installMu.Unlock()
 	a.mu.Lock()
 	defer a.mu.Unlock()
-	return engine.InstallRelease(ctx, r, a.dir(version), progress, func(tree string) error {
+	return a.install(ctx, r, progress)
+}
+
+// InstallIfMissing installs a new version without blocking status or launches
+// on older versions. Existing versions, even damaged ones, are not replaced here.
+func (a *AnyBrowser) InstallIfMissing(ctx context.Context, version string) (bool, error) {
+	r, err := a.release(version)
+	if err != nil {
+		return false, err
+	}
+	a.installMu.Lock()
+	defer a.installMu.Unlock()
+	if _, err := os.Lstat(a.dir(version)); !os.IsNotExist(err) {
+		return false, err
+	}
+	if err := a.install(ctx, r, nil); err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+func (a *AnyBrowser) install(ctx context.Context, r engine.Release, progress engine.Progress) error {
+	return engine.InstallRelease(ctx, r, a.dir(r.Version), progress, func(tree string) error {
 		app := filepath.Join(tree, r.App)
 		if r.TeamID != "" {
 			if err := engine.VerifyCodesign(app, r.TeamID); err != nil {
@@ -77,6 +101,8 @@ func (a *AnyBrowser) Remove(version string) error {
 	if _, err := a.release(version); err != nil {
 		return err
 	}
+	a.installMu.Lock()
+	defer a.installMu.Unlock()
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	return os.RemoveAll(a.dir(version))
@@ -84,7 +110,7 @@ func (a *AnyBrowser) Remove(version string) error {
 
 // CleanStale removes what an interrupted Install left behind.
 func (a *AnyBrowser) CleanStale() error {
-	a.mu.Lock() // never while Install runs
-	defer a.mu.Unlock()
+	a.installMu.Lock()
+	defer a.installMu.Unlock()
 	return engine.CleanStaging(filepath.Dir(a.dir(a.pinned.Version)))
 }

@@ -13,8 +13,18 @@ available" dẫn tới Settings. Bấm "Update and restart":
 4. macOS: kiểm chữ ký code của app mới, đặt nó vào chỗ app cũ, thoát, rồi mở bản mới. Windows: thoát, chạy
    bộ cài im lặng vào đúng thư mục cũ, rồi mở bản mới.
 
-Profile, cơ sở dữ liệu, mật khẩu và engine không bị đụng. Lần kiểm tra chỉ tải `latest.json`, không gửi gì
-về người dùng.
+Cài bản cập nhật ứng dụng không thay đổi profile, cơ sở dữ liệu, mật khẩu hay engine. Lần kiểm tra bản
+ứng dụng chỉ tải `latest.json`, không gửi gì về người dùng.
+
+Công tắc tự kiểm tra cũng bật/tắt tự cập nhật engine đã cài:
+
+- **AnyBrowser:** tải bản mới tương thích vào thư mục riêng. Profile đang mở không bị đóng; lần mở
+  tiếp theo mới dùng bản mới. Bản cũ vẫn được giữ nếu còn profile dùng nó.
+- **AnyMobile (macOS, Pro):** khi tất cả máy ảo đã dừng, tự cài runtime mới mà Pro cung cấp. Nếu đang
+  dùng QEMU, Metal được cài song song (kèm Android image nếu chưa có). Máy QEMU đã tạo vẫn giữ
+  QEMU và dữ liệu; chỉ máy mới ưu tiên Metal. Windows dùng LDPlayer và không theo cơ chế này.
+
+Cài engine lần đầu vẫn phải bấm tải, và có thể cập nhật thủ công nếu đã tắt tự kiểm tra.
 
 Trên macOS, app chạy từ một bản sao chỉ đọc (macOS "App Translocation", khi mở thẳng từ thư mục Downloads)
 không tự cập nhật được: app báo người dùng chuyển `AnyProfile.app` vào Applications.

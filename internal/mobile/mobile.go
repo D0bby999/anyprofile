@@ -185,10 +185,11 @@ type Launches interface {
 }
 
 var (
-	ErrBusy       = apperr.New("mobile_busy", "the device is starting, stopping or being created; wait for it")
-	ErrNotRunning = apperr.New("mobile_not_running", "open the device first")
-	ErrNoClean    = apperr.New("mobile_no_clean_state", "this device has no clean state to restore; back it up or create it again")
-	ErrBadReset   = apperr.New("mobile_bad_reset", "reset mode is soft or hard")
+	ErrBusy              = apperr.New("mobile_busy", "the device is starting, stopping or being created; wait for it")
+	ErrNotRunning        = apperr.New("mobile_not_running", "open the device first")
+	ErrNoClean           = apperr.New("mobile_no_clean_state", "this device has no clean state to restore; back it up or create it again")
+	ErrBadReset          = apperr.New("mobile_bad_reset", "reset mode is soft or hard")
+	ErrRuntimeInstalling = apperr.New("mobile_runtime_installing", "the Mobile engine is updating; try again when it finishes")
 )
 
 type Manager struct {
@@ -197,8 +198,9 @@ type Manager struct {
 	log      *slog.Logger
 	onChange func(Info)
 
-	mu   sync.Mutex
-	devs map[string]*entry
+	mu         sync.Mutex
+	devs       map[string]*entry
+	installing bool
 }
 
 type entry struct {
@@ -265,15 +267,47 @@ func (m *Manager) set(id string, st State, errText string, done <-chan struct{})
 	}
 }
 
-// claim moves a stopped device to st, or reports it busy.
-func (m *Manager) claim(id string, st State) error {
+// InstallWhenIdle prevents new device operations while the shared runtime is replaced.
+func (m *Manager) InstallWhenIdle(fn func() error) error {
 	m.mu.Lock()
-	if e, ok := m.devs[id]; ok && e.info.State != Stopped {
+	for _, e := range m.devs {
+		if e.info.State != Stopped {
+			m.mu.Unlock()
+			return ErrBusy
+		}
+	}
+	if m.installing {
 		m.mu.Unlock()
 		return ErrBusy
 	}
+	m.installing = true
 	m.mu.Unlock()
-	m.set(id, st, "", nil)
+	defer func() {
+		m.mu.Lock()
+		m.installing = false
+		m.mu.Unlock()
+	}()
+	return fn()
+}
+
+// claim moves a stopped device to st, or reports it busy.
+func (m *Manager) claim(id string, st State) error {
+	m.mu.Lock()
+	e := m.devs[id]
+	if m.installing {
+		m.mu.Unlock()
+		return ErrRuntimeInstalling
+	}
+	if e != nil && e.info.State != Stopped {
+		m.mu.Unlock()
+		return ErrBusy
+	}
+	info := Info{DeviceID: id, State: st}
+	m.devs[id] = &entry{info: info}
+	m.mu.Unlock()
+	if m.onChange != nil {
+		m.onChange(info)
+	}
 	return nil
 }
 

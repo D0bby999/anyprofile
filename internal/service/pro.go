@@ -480,12 +480,9 @@ func (s *Service) proCheckError(err error) (ProStatus, error) {
 func (s *Service) applyPro(ctx context.Context, ans pro.Answer) error {
 	p := s.proSaved()
 	p.State, p.PaidThrough, p.CheckedAt, p.Error = ans.State, ans.PaidThrough, s.now().UTC().Format(time.RFC3339), ""
-	// An active lifetime licence may have passed its updates window, so the
-	// server stops offering new runtimes. Keep the runtime already installed
-	// instead of clearing it and making existing Mobile devices unopenable.
-	if ans.State != "active" || len(ans.Runtimes) > 0 {
-		p.Runtimes = ans.Runtimes
-	}
+	// Use only current offers; their links expire and the server can stop
+	// offering updates without invalidating any installed runtime.
+	p.Runtimes = ans.Runtimes
 	defer s.notify("pro")
 	defer s.OfferMobileRuntime()
 	if ans.Release == nil {

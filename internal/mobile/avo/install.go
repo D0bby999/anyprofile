@@ -105,10 +105,9 @@ func (d *Driver) Install(ctx context.Context, progress func(engine string, done,
 		}
 		r := rs[0]
 		dir := filepath.Join(d.avoRoot, "engine")
-		if err := engine.InstallRelease(ctx, r, dir, func(done, total int64) { report(RuntimeEngine, done, total) }, nil); err != nil {
-			return err
-		}
-		if err := os.WriteFile(filepath.Join(dir, "VERSION"), []byte(r.Version+"\n"), 0o600); err != nil {
+		if err := engine.InstallRelease(ctx, r, dir, func(done, total int64) { report(RuntimeEngine, done, total) }, func(tree string) error {
+			return os.WriteFile(filepath.Join(tree, "VERSION"), []byte(r.Version+"\n"), 0o600)
+		}); err != nil {
 			return err
 		}
 		st = d.InstallStatus()

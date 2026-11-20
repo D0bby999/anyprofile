@@ -608,7 +608,7 @@ export const en = {
     confirm: (v: string) => ({ title: `Update to ${v}?`, body: 'AnyProfile downloads the new version, checks its signature, then closes and opens again. Profiles, logins and passwords stay as they are.', confirm: 'Update and restart' }),
     ready: (v: string) => `Version ${v} is ready: restart to update`, restart: 'Restart to update',
     autoLabel: 'Check automatically', autoOff: 'Check by hand', autoOn: 'Check once a day',
-    hint: 'A check only asks for the newest version number and sends nothing about you or your profiles. A new version is downloaded in the background and checked, so updating is only a restart. Updates are signed; one that is not is refused.',
+    hint: 'A check only asks for the newest version number and sends nothing about you or your profiles. App updates are downloaded and verified in the background, then applied when you choose to restart. This setting also updates installed AnyBrowser and AnyMobile engines automatically.',
     whatsNew: (v: string) => `What\u2019s new in AnyProfile ${v}`, gotIt: 'Got it',
   },
   pro: {
@@ -753,6 +753,7 @@ export const en = {
     pro_required: 'Mobile devices need an active AnyProfile Pro.',
     mobile_unsupported: 'Mobile devices are not available on this computer yet.',
     mobile_busy: 'The device is opening, closing or being set up. Wait for it.',
+    mobile_runtime_installing: 'The Mobile engine is updating. Try again when it finishes.',
     mobile_running: 'Close the device first.',
     mobile_trashed: 'Move the device out of the trash first.',
     mobile_not_trashed: 'Move the device to the trash first.',

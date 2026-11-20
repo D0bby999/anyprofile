@@ -158,6 +158,24 @@ func TestInstallReleaseAndCheck(t *testing.T) {
 	if st := CheckInstalled(r, dir, nil); !st.Installed || st.Version.Version != "1.0.0" {
 		t.Fatalf("status = %+v", st)
 	}
+	marker := filepath.Join(dir, "VERSION")
+	if err := os.WriteFile(marker, []byte("old"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := InstallRelease(ctx, r, dir, nil, func(string) error { return os.ErrPermission }); err == nil {
+		t.Fatal("a failed update installed")
+	}
+	if got, err := os.ReadFile(marker); err != nil || string(got) != "old" {
+		t.Fatalf("failed update replaced the install: %q, %v", got, err)
+	}
+	if err := InstallRelease(ctx, r, dir, nil, func(tree string) error {
+		return os.WriteFile(filepath.Join(tree, "VERSION"), []byte("new"), 0o600)
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if got, err := os.ReadFile(marker); err != nil || string(got) != "new" {
+		t.Fatalf("updated install: %q, %v", got, err)
+	}
 	if left, _ := filepath.Glob(filepath.Join(filepath.Dir(dir), ".staging-*")); len(left) != 0 {
 		t.Fatalf("staging left: %v", left)
 	}

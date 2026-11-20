@@ -23,6 +23,7 @@ import (
 type AnyBrowser struct {
 	dirs       paths.Dirs
 	mu         sync.Mutex
+	installMu  sync.Mutex
 	pinned     engine.Release
 	persona    string
 	legacyKeys bool

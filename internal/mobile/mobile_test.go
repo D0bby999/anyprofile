@@ -63,6 +63,36 @@ func TestStartStop(t *testing.T) {
 	}
 }
 
+func TestInstallWhenIdle(t *testing.T) {
+	m, _, _ := newManager(t)
+	ctx := context.Background()
+	d := Device{ID: "d1"}
+	if err := m.Start(ctx, d, StartOptions{}); err != nil {
+		t.Fatal(err)
+	}
+	if err := m.InstallWhenIdle(func() error { t.Fatal("installed while running"); return nil }); !errors.Is(err, ErrBusy) {
+		t.Fatalf("install while running: %v", err)
+	}
+	if err := m.Stop(ctx, d); err != nil {
+		t.Fatal(err)
+	}
+	failed := errors.New("download failed")
+	if err := m.InstallWhenIdle(func() error {
+		if err := m.Start(ctx, d, StartOptions{}); !errors.Is(err, ErrRuntimeInstalling) {
+			t.Fatalf("start during install: %v", err)
+		}
+		return failed
+	}); !errors.Is(err, failed) {
+		t.Fatalf("install error: %v", err)
+	}
+	if err := m.Start(ctx, d, StartOptions{}); err != nil {
+		t.Fatalf("start after a failed install: %v", err)
+	}
+	if err := m.Stop(ctx, d); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestStartProgress(t *testing.T) {
 	f := newFake()
 	f.progress = true

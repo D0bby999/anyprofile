@@ -609,7 +609,7 @@ export const vi: Messages = {
     confirm: (v: string) => ({ title: `Cập nhật lên ${v}?`, body: 'AnyProfile tải phiên bản mới, kiểm chữ ký, rồi tự đóng và mở lại. Profile, đăng nhập và mật khẩu giữ nguyên.', confirm: 'Cập nhật và khởi động lại' }),
     ready: (v: string) => `Phiên bản ${v} đã tải xong: khởi động lại để cập nhật`, restart: 'Khởi động lại để cập nhật',
     autoLabel: 'Tự kiểm tra', autoOff: 'Kiểm tra bằng tay', autoOn: 'Kiểm tra mỗi ngày một lần',
-    hint: 'Lần kiểm tra chỉ hỏi số phiên bản mới nhất, không gửi gì về bạn hay các profile. Phiên bản mới được tải ngầm và kiểm tra trước, nên cập nhật chỉ là khởi động lại. Bản cập nhật có chữ ký; bản không có chữ ký đúng sẽ bị từ chối.',
+    hint: 'Lần kiểm tra chỉ hỏi số phiên bản mới nhất, không gửi gì về bạn hay các profile. Bản cập nhật ứng dụng được tải và xác minh ngầm, rồi cài khi bạn chọn khởi động lại. Bật tùy chọn này cũng tự cập nhật AnyBrowser và AnyMobile đã cài.',
     whatsNew: (v: string) => `Có gì mới trong AnyProfile ${v}`, gotIt: 'Đã hiểu',
   },
   pro: {
@@ -754,6 +754,7 @@ export const vi: Messages = {
     pro_required: 'Máy mobile cần AnyProfile Pro còn hạn.',
     mobile_unsupported: 'Máy mobile chưa có trên máy tính này.',
     mobile_busy: 'Máy đang mở, đang đóng hoặc đang thiết lập. Hãy chờ.',
+    mobile_runtime_installing: 'Engine Mobile đang cập nhật. Hãy thử lại sau khi hoàn tất.',
     mobile_running: 'Hãy đóng máy trước.',
     mobile_trashed: 'Hãy lấy máy ra khỏi thùng rác trước.',
     mobile_not_trashed: 'Hãy bỏ máy vào thùng rác trước.',

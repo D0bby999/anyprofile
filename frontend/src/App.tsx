@@ -76,6 +76,7 @@ export default function App() {
   }
   useEffect(refreshSettings, [])
   useEffect(() => onDataChanged(['settings'], refreshSettings), [])
+  useEffect(() => onDataChanged(['engines'], refreshEngines), [])
   const refreshProxies = () => { Api.ListProxies().then((p) => setProxyCount((p ?? []).length)).catch(() => {}) }
   useEffect(refreshProxies, [])
   useEffect(() => onDataChanged(['proxies'], refreshProxies), [])

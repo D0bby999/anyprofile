@@ -314,22 +314,22 @@ func InstallRelease(ctx context.Context, r Release, dir string, progress Progres
 			return err
 		}
 	}
-	if err := os.RemoveAll(dir); err != nil {
-		return err
-	}
-	if err := os.Rename(tree, dir); err != nil {
-		return err
-	}
-	// Every file was hashed in the tree already: stamp them as they are now.
+	// Every file was hashed in the tree already: stamp it before publishing.
 	stamps := map[string]stamp{}
 	for rel, sum := range r.Files {
-		fi, err := os.Stat(filepath.Join(dir, filepath.FromSlash(rel)))
+		fi, err := os.Stat(filepath.Join(tree, filepath.FromSlash(rel)))
 		if err != nil {
 			return err
 		}
 		stamps[rel] = stamp{Size: fi.Size(), ModNano: fi.ModTime().UnixNano(), SHA256: sum}
 	}
-	return writeStamps(dir, stamps)
+	if err := writeStamps(tree, stamps); err != nil {
+		return err
+	}
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	return publishTree(tree, dir)
 }
 
 // CleanStaging removes what an interrupted install left in an engine's

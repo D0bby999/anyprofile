@@ -207,6 +207,18 @@ func (r *Router) InstallStatus() mobile.InstallStatus {
 	return r.vm.InstallStatus()
 }
 
+// UpdateInstallers upgrades existing runtimes and adds Metal alongside existing QEMU.
+// Devices keep their assigned driver and disk format.
+func (r *Router) UpdateInstallers() []mobile.Installer {
+	if r.vm.InstallStatus().Runtime.Installed != "" {
+		return []mobile.Installer{r.vm, r.avo}
+	}
+	if r.avo.InstallStatus().Runtime.Installed != "" {
+		return []mobile.Installer{r.avo}
+	}
+	return nil
+}
+
 func (r *Router) Install(ctx context.Context, progress func(engine string, done, total int64)) error {
 	if r.avo.HasOffer() {
 		return r.avo.Install(ctx, progress)

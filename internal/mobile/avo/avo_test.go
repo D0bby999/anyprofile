@@ -63,6 +63,33 @@ func TestLocateRuntime(t *testing.T) {
 	}
 }
 
+func TestRouterUpdatesExistingQEMUAndAddsMetal(t *testing.T) {
+	root := t.TempDir()
+	t.Setenv("ANYPROFILE_AVO_DIR", filepath.Join(root, "avo"))
+	qemu, devices := filepath.Join(root, "runtime"), filepath.Join(root, "devices")
+	legacy := vm.New(qemu, devices, nil)
+	metal := New(qemu, devices, nil)
+	r := NewRouter(metal, legacy)
+	if got := r.UpdateInstallers(); len(got) != 0 {
+		t.Fatalf("fresh install scheduled: %v", got)
+	}
+	for _, rel := range []string{"bin/qemu-system-aarch64", "bin/qemu-img", "bin/adb", "bin/scrcpy", "share/edk2-aarch64-code.fd", "share/edk2-arm-vars.fd", "share/scrcpy-server", "VERSION"} {
+		p := filepath.Join(qemu, "qemu", rel)
+		if err := os.MkdirAll(filepath.Dir(p), 0o700); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(p, []byte("1.0.1"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if got := r.UpdateInstallers(); len(got) != 2 || got[0] != legacy || got[1] != metal {
+		t.Fatalf("QEMU and Metal should update separately: %v", got)
+	}
+	if got := r.forDevice(mobile.Device{Driver: "vm"}); got != legacy {
+		t.Fatal("legacy device lost its driver")
+	}
+}
+
 func TestADBBridgeAndControl(t *testing.T) {
 	dir := t.TempDir()
 	vsock := filepath.Join(dir, "v.sock")
