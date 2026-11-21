@@ -2,14 +2,15 @@
 import { useEffect, useRef, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { Icon, type IconName } from './icons'
-import { t } from '../i18n'
+import { catalogs, t, type Language } from '../i18n'
 
-type Props = { title: string; icon: IconName; onClose: () => void; footer: ReactNode; children: ReactNode; onSubmit?: () => void; className?: string }
+type Props = { title: string; icon: IconName; onClose: () => void; footer: ReactNode; children: ReactNode; onSubmit?: () => void; className?: string; lang?: Language }
 
 /** A centered dialog. Escape and the backdrop close it; Enter submits its form.
  *  It renders into <body>, so a dialog can open another without nesting forms;
  *  with dialogs stacked, only the top one answers Escape. */
-export function Dialog({ title, icon, onClose, footer, children, onSubmit, className }: Props) {
+export function Dialog({ title, icon, onClose, footer, children, onSubmit, className, lang }: Props) {
+  const closeLabel = (lang ? catalogs[lang] : t).common.close
   const ref = useRef<HTMLDivElement>(null)
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -23,13 +24,13 @@ export function Dialog({ title, icon, onClose, footer, children, onSubmit, class
 
   return createPortal(
     <div className="backdrop" ref={ref} onMouseDown={(e) => { if (e.target === e.currentTarget) onClose() }}>
-      <form className={className ? `dialog ${className}` : 'dialog'} role="dialog" aria-modal="true" aria-label={title}
+      <form className={className ? `dialog ${className}` : 'dialog'} role="dialog" lang={lang} aria-modal="true" aria-label={title}
         onSubmit={(e) => { e.preventDefault(); e.stopPropagation(); onSubmit?.() }}>
         <div className="dialog-head">
           <Icon name={icon} />
           <h2>{title}</h2>
           <span className="spacer" />
-          <button type="button" className="iconbtn sm" onClick={onClose} aria-label={t.common.close} title={t.common.close}>
+          <button type="button" className="iconbtn sm" onClick={onClose} aria-label={closeLabel} title={closeLabel}>
             <Icon name="x" />
           </button>
         </div>

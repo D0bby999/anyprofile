@@ -54,7 +54,7 @@ export function MobileEngineSettings({ mobile: { avail, reload, rows } }: { mobi
     <div className="engines">
       {engines.map(({ runtime, image, canUpdate }) => <div key={runtime.engine} className="engine">
         <div className="engine-head">
-          <b>{runtime.engine === 'anymobile-avo' ? 'AnyMobile Metal' : 'AnyMobile (QEMU)'}</b>
+          <b>AnyMobile Metal</b>
           {avail.pro && canUpdate && <span className="chip accent">{copy.available}</span>}
         </div>
         <div className="engine-facts">
@@ -73,7 +73,7 @@ export function MobileEngineSettings({ mobile: { avail, reload, rows } }: { mobi
         </button>}
       </div>
     </>}
-    {busy === 'install' && <InstallProgress progress={progress ?? { engine: 'anymobile', done: 0, total: 0 }} />}
+    {busy === 'install' && <InstallProgress progress={progress ?? { engine: 'anymobile-avo', done: 0, total: 0 }} />}
     {message && <p className="hint" role="status">{message}</p>}
     {error && <div className="banner danger" role="alert">{error}</div>}
   </>

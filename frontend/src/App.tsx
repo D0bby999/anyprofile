@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Api, main, onDataChanged, onMenu, onProEvent, service } from './api'
-import { language, setLanguage, t, type Language } from './i18n'
+import { catalogs, language, setLanguage, t, type Language } from './i18n'
 import { applyTheme, readTheme, type ThemeChoice } from './lib/theme'
 import { useProfiles } from './hooks/use-profiles'
 import { useMobile } from './hooks/use-mobile'
@@ -220,8 +220,8 @@ export default function App() {
       {toolsOpen && <ToolsDialog onClose={() => setToolsOpen(false)}
         onOpenPro={pro && !pro.active ? () => { setToolsOpen(false); openSettings('settings-pro') } : undefined} />}
       {whatsNew && (
-        <Dialog title={t.update.whatsNew(whatsNew.version)} icon="spark" onClose={() => setWhatsNew(null)}
-          footer={<button type="button" className="btn primary" autoFocus onClick={() => setWhatsNew(null)}>{t.update.gotIt}</button>}>
+        <Dialog lang="en" title={catalogs.en.update.whatsNew(whatsNew.version)} icon="spark" onClose={() => setWhatsNew(null)}
+          footer={<button type="button" className="btn primary" autoFocus onClick={() => setWhatsNew(null)}>{catalogs.en.update.gotIt}</button>}>
           <p className="updnotes selectable">{whatsNew.notes}</p>
         </Dialog>
       )}

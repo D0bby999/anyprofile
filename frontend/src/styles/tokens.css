@@ -116,59 +116,59 @@
 /* Windows draws its own title bar above the page. */
 html.win { --titlebar-h: 12px; }
 
-/* Dark is composed, not inverted: neutral charcoal, elevation by lighter
-   surfaces instead of shadows, and a lifted accent for text. */
+/* Dark is composed, not inverted: deep slate-obsidian ground with crisp 1px
+   hairlines and lifted surfaces instead of heavy shadows. */
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --bg: #0a0a0e;
-  --surface: #1a1a21;
-  --surface-sunken: #15151a;
-  --surface-hover: #282833;
-  --surface-active: #34343f;
-  --ink: #f1f1f4;
-  --ink-soft: #c9c9d2;
-  --muted: #90909d;
-  --faint: #787884;
-  --line: #2e2e38;
-  --line-soft: #26262e;
-  --line-strong: #41414e;
+  --bg: #0c0f14;
+  --surface: #131820;
+  --surface-sunken: #0f131a;
+  --surface-hover: #1a212c;
+  --surface-active: #222b38;
+  --ink: #eef2f6;
+  --ink-soft: #c5cdd8;
+  --muted: #8b95a5;
+  --faint: #6c7687;
+  --line: #232b36;
+  --line-soft: #1c232d;
+  --line-strong: #323d4d;
   --accent: #5e88f0;
   --accent-hover: #7a9df4;
   --accent-fill-hover: #4573e9;
   --accent-fill-press: #2a58cf;
-  --accent-soft: #1b2947;
-  --accent-soft-hover: #22345c;
-  --accent-line: #2f4778;
-  --accent-selection: #2d4a86;
+  --accent-soft: #162238;
+  --accent-soft-hover: #1d2d4a;
+  --accent-line: #2d4675;
+  --accent-selection: #263f70;
   --accent-ink: #b3c6f8;
-  --glow: 0 4px 16px rgba(94, 136, 240, .30);
-  --glow-strong: 0 6px 20px rgba(94, 136, 240, .42);
-  --success: #35c97d;
-  --success-soft: #12261a;
-  --success-line: #24523a;
-  --success-ink: #6fe0a4;
-  --running-row: #16261d;
-  --running-row-hover: #1b3024;
-  --agent-row: #241b3b;
-  --agent-row-hover: #2c2148;
-  --agent-row-pulse: #302354;
+  --glow: 0 4px 14px rgba(94, 136, 240, .24);
+  --glow-strong: 0 6px 18px rgba(94, 136, 240, .34);
+  --success: #2dd48f;
+  --success-soft: #10241c;
+  --success-line: #1f4d3b;
+  --success-ink: #6ee7b7;
+  --running-row: #11221b;
+  --running-row-hover: #162c23;
+  --agent-row: #1e1933;
+  --agent-row-hover: #272042;
+  --agent-row-pulse: #2d254d;
   --danger: #f0584d;
-  --danger-soft: #2a1615;
-  --danger-line: #542825;
+  --danger-soft: #281517;
+  --danger-line: #54282b;
   --danger-ink: #ff9a92;
   --warn: #e59a3d;
-  --warn-soft: #2a1f10;
-  --warn-line: #543d1c;
+  --warn-soft: #271e12;
+  --warn-line: #523b1e;
   --warn-ink: #f3c07a;
-  --ctl: linear-gradient(180deg, #2a2a32, #232329);
-  --ctl-hover: linear-gradient(180deg, #31313b, #2a2a32);
-  --ctl-border: #32323c;
-  --raised: #2f2f39;
+  --ctl: linear-gradient(180deg, #1b222d, #161c26);
+  --ctl-hover: linear-gradient(180deg, #232c3a, #1c2430);
+  --ctl-border: #283240;
+  --raised: #1e2530;
   --shadow-rgb: 0, 0, 0;
-  --sh-card: 0 1px 2px rgba(0, 0, 0, .22);
-  --sh-field: inset 0 1px 2px rgba(0, 0, 0, .25);
-  --backdrop: rgba(6, 6, 8, .66);
-  --scroll-thumb: #3a3a44;
+  --sh-card: 0 1px 2px rgba(0, 0, 0, .18);
+  --sh-field: inset 0 1px 2px rgba(0, 0, 0, .22);
+  --backdrop: rgba(6, 8, 12, .68);
+  --scroll-thumb: #2e3745;
   --ring: 0 0 0 3px rgba(94, 136, 240, .50);
   --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2390909d' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
 

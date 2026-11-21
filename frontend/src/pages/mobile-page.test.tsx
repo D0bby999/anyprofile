@@ -43,12 +43,12 @@ const { MobilePage } = await import('./mobile-page')
 afterEach(() => { cleanup(); vi.clearAllMocks(); localStorage.clear() })
 
 const device = (extra = {}) => ({
-  id: 'd1', name: 'Phone 1', driver: 'vm', platform: 'darwin', driverRef: 'd1', proxyId: 'px', ramMb: 3072, cpus: 4,
-  imageVersion: '', notes: '', tags: ['jp'], pinned: false, serial: 1, createdAt: '', updatedAt: '', lastOpenAt: '',
+  id: 'd1', name: 'Phone 1', driver: 'avo', platform: 'darwin', driverRef: 'd1', proxyId: 'px', ramMb: 4096, cpus: 3,
+  imageVersion: '16968706', notes: '', tags: ['jp'], pinned: false, serial: 1, createdAt: '', updatedAt: '', lastOpenAt: '',
   backedUpAt: '', deletedAt: '', state: 'stopped', error: '', ...extra,
 })
 const openRowMenu = async (index = 0) => fireEvent.click(screen.getAllByRole('button', { name: t.menu.more })[index])
-const avail = (extra = {}) => ({ supported: true, driver: 'vm', pro: true, ready: true, reason: '', message: '', ...extra })
+const avail = (extra = {}) => ({ supported: true, driver: 'avo', pro: true, ready: true, reason: '', message: '', ...extra })
 
 function page(rows: object[], a: object, onOpenPro = vi.fn()) {
   const mobile = { rows, avail: a, error: '', setError: vi.fn(), reload: vi.fn() } as never
@@ -75,14 +75,6 @@ describe('MobilePage', () => {
     await waitFor(() => expect(api.BackupMobileDevice).toHaveBeenCalledWith('d1'))
   })
 
-  it('toggles fast start and saves the setting', async () => {
-    page([device()], avail())
-    const box = screen.getByRole('checkbox', { name: t.mobile.fastStart }) as HTMLInputElement
-    expect(box.checked).toBe(true)
-    fireEvent.click(box)
-    await waitFor(() => expect(api.SetMobileFastStart).toHaveBeenCalledWith(false))
-  })
-
   it('opens the in-app viewer', async () => {
     page([device({ state: 'running' })], avail())
     await openRowMenu()
@@ -102,6 +94,11 @@ describe('MobilePage', () => {
     page([], avail({ ready: false, reason: 'anymobile_runtime_missing', message: '' }))
     fireEvent.click(screen.getByRole('button', { name: t.mobile.install }))
     await waitFor(() => expect(api.InstallMobileRuntime).toHaveBeenCalled())
+  })
+
+  it('does not open legacy QEMU devices once Metal is the only driver', () => {
+    page([device({ driver: 'vm' })], avail({ driver: 'avo', ready: true }))
+    expect((screen.getByRole('button', { name: t.mobile.open }) as HTMLButtonElement).disabled).toBe(true)
   })
 
   it('offers the official LDPlayer download and checks again when missing', () => {
@@ -143,7 +140,7 @@ describe('MobilePage', () => {
 
   it('says Beta, and Coming soon instead of a Download that can only fail while the runtime is not out', () => {
     const missing = { ready: false, reason: 'anymobile_runtime_missing' }
-    const comp = (latest: string) => ({ runtime: { engine: 'anymobile', installed: '', latest }, image: { engine: 'anymobile-image', installed: '', latest: '' } })
+    const comp = (latest: string) => ({ runtime: { engine: 'anymobile-avo', installed: '', latest }, image: { engine: 'anymobile-avo-image', installed: '', latest: '' } })
     page([], avail({ ...missing, install: comp('') }))
     expect(screen.getByText(t.mobile.beta)).toBeTruthy()
     expect(screen.getByText(t.mobile.comingSoon)).toBeTruthy()
@@ -155,7 +152,7 @@ describe('MobilePage', () => {
   })
 
   it('does not publish the runtime source link', () => {
-    const comp = { runtime: { engine: 'anymobile', installed: '1.0.0', latest: '1.0.0' }, image: { engine: 'anymobile-image', installed: '23.2', latest: '' } }
+    const comp = { runtime: { engine: 'anymobile-avo', installed: '1.0.0', latest: '1.0.0' }, image: { engine: 'anymobile-avo-image', installed: '16968706', latest: '' } }
     page([device()], avail({ install: comp }))
     expect(screen.queryByRole('link', { name: t.mobile.runtimeSource })).toBeNull()
   })
@@ -201,11 +198,25 @@ describe('MobilePage', () => {
     page([], avail())
     fireEvent.click(screen.getAllByRole('button', { name: t.mobile.newDevice })[0])
     fireEvent.change(screen.getByPlaceholderText(t.mobile.namePlaceholder), { target: { value: 'Phone 2' } })
-    await screen.findByRole('option', { name: /gw.example:1/ })
-    fireEvent.click(screen.getByRole('button', { name: t.mobile.create }))
-    await waitFor(() => expect(api.CreateMobileDevice).toHaveBeenCalled())
+    const create = screen.getByRole('button', { name: t.mobile.create }) as HTMLButtonElement
+    await waitFor(() => expect(create.disabled).toBe(false))
+    fireEvent.click(create)
+    await waitFor(() => expect(api.StartMobileDevice).toHaveBeenCalledWith('n'))
+    expect(api.CreateMobileDevice).toHaveBeenCalledTimes(1)
     const input = (api.CreateMobileDevice.mock.calls[0] as unknown[])[0] as { name: string; ramMb: number; proxyId: string }
-    expect(input).toMatchObject({ name: 'Phone 2', ramMb: 4096, proxyId: 'auto', screenW: 780, screenH: 1688, withGms: true })
+    expect(input).toMatchObject({ name: 'Phone 2', cpus: 3, ramMb: 4096, proxyId: 'auto', screenW: 780, screenH: 1688, withGms: true })
+  })
+
+  it('keeps the new device when its first launch fails', async () => {
+    api.StartMobileDevice.mockRejectedValueOnce(new Error('launch failed'))
+    page([], avail())
+    fireEvent.click(screen.getAllByRole('button', { name: t.mobile.newDevice })[0])
+    const create = screen.getByRole('button', { name: t.mobile.create }) as HTMLButtonElement
+    await waitFor(() => expect(create.disabled).toBe(false))
+    fireEvent.click(create)
+    expect(await screen.findByText(t.mobile.createdButStopped('launch failed'))).toBeTruthy()
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(api.CreateMobileDevice).toHaveBeenCalledTimes(1)
   })
 
   it('opens the rightbar drawer when clicking a row or selecting Edit in row menu', async () => {
@@ -266,7 +277,7 @@ describe('MobilePage', () => {
 
     expect(screen.getByRole('list')).toBeTruthy()
     expect(screen.getAllByRole('listitem').length).toBe(2)
-    expect(screen.getAllByText(t.mobile.deviceSpecs(4, 3)).length).toBe(2)
+    expect(screen.getAllByText(t.mobile.deviceSpecs(3, 4)).length).toBe(2)
     const grips = screen.getAllByLabelText(/Move Phone/)
     expect(grips.length).toBe(2)
     expect(screen.getByText('1')).toBeTruthy()

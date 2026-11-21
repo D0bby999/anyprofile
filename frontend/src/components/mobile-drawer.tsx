@@ -12,17 +12,11 @@ import { TagsGroup } from './drawer/tags-group'
 import { ProxySelect, RealIpWarning } from './proxy-select'
 import { MOBILE_APPS_GUIDE } from './api-settings'
 
+import { CPU_CHOICES, PRESETS, RAM_CHOICES, type Preset } from '../lib/mobile-presets'
+
 type Tab = 'overview' | 'hardware' | 'activity'
 const TABS: Tab[] = ['overview', 'hardware', 'activity']
 
-const RAM_CHOICES = [2048, 3072, 4096, 6144, 8192]
-const CPU_CHOICES = [2, 4, 6, 8]
-const PRESETS = {
-  automation: { ram: 2048, cpus: 2, screenW: 540, screenH: 1170, density: 220 },
-  balanced: { ram: 4096, cpus: 4, screenW: 780, screenH: 1688, density: 320 },
-  interactive: { ram: 4096, cpus: 6, screenW: 780, screenH: 1688, density: 320 },
-} as const
-type Preset = keyof typeof PRESETS
 
 const busyStates = ['provisioning', 'starting', 'stopping', 'working']
 
@@ -268,7 +262,7 @@ export function MobileDrawer({
               <label className="field">
                 <select className="select" value={row.preset || 'balanced'} disabled={row.state !== 'stopped' || isBusy} onChange={(e) => choosePreset(e.target.value as Preset)}>
                   <option value="automation">{t.mobile.presetAutomation} (2 CPU · 2 GB)</option>
-                  <option value="balanced">{t.mobile.presetBalanced} (4 CPU · 3 GB)</option>
+                  <option value="balanced">{t.mobile.presetBalanced} ({PRESETS.balanced.cpus} CPU · {PRESETS.balanced.ram / 1024} GB)</option>
                   <option value="interactive">{t.mobile.presetInteractive} (4 CPU · 4 GB)</option>
                 </select>
                 <span className="hint">{t.mobile.presetHint}</span>

@@ -12,14 +12,13 @@ afterEach(() => { cleanup(); vi.resetAllMocks() })
 
 function mobile(state = 'stopped') {
   const metal = { runtime: { engine: 'anymobile-avo', installed: 'dev', latest: '1.0.0' }, image: { installed: '16968706' }, canUpdate: true }
-  const qemu = { runtime: { engine: 'anymobile', installed: '1.0.2', latest: '1.0.2' }, image: { installed: '23.2' }, canUpdate: false }
-  return { avail: { supported: true, pro: true, install: metal, engines: [qemu, metal] }, rows: [{ state }], reload: vi.fn() } as unknown as ReturnType<typeof useMobile>
+  return { avail: { supported: true, pro: true, install: metal, engines: [metal] }, rows: [{ state }], reload: vi.fn() } as unknown as ReturnType<typeof useMobile>
 }
 
-it('shows both runtimes and lets Pro users check and manually update', async () => {
+it('shows Metal runtime and lets Pro users check and manually update', async () => {
   const data = mobile()
   render(<MobileEngineSettings mobile={data} />)
-  expect(screen.getByText('AnyMobile (QEMU)')).toBeTruthy()
+  expect(screen.getByText('AnyMobile Metal')).toBeTruthy()
   expect(screen.getByText(t.mobile.engineSettings.installed(t.mobile.engineSettings.development))).toBeTruthy()
   fireEvent.click(screen.getByRole('button', { name: t.update.check }))
   expect(await screen.findByText(t.mobile.engineSettings.checked)).toBeTruthy()

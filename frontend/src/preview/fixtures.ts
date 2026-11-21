@@ -78,25 +78,25 @@ export const defaults = {
 } as never
 
 export const mobileAvailability = {
-  supported: true, driver: 'vm', pro: true, ready: true, reason: '', message: '',
+  supported: true, driver: 'avo', pro: true, ready: true, reason: '', message: '',
   install: {
-    runtime: { engine: 'anymobile', installed: '1.3.0', latest: '1.3.0' },
-    image: { engine: 'anymobile-image', installed: '23.2.20261019', latest: '23.2.20261019' },
+    runtime: { engine: 'anymobile-avo', installed: '1.0.0', latest: '1.0.0' },
+    image: { engine: 'anymobile-avo-image', installed: '16968706', latest: '16968706' },
   },
 } as never
 
 export const mobileDevices = [
   {
-    id: 'm1', name: 'TikTok — NL', driver: 'vm', platform: 'darwin', driverRef: 'm1', proxyId: 'px1',
+    id: 'm1', name: 'TikTok — NL', driver: 'avo', platform: 'darwin', driverRef: 'm1', proxyId: 'px1',
     ramMb: 4096, cpus: 6, preset: 'interactive', screenW: 780, screenH: 1688, density: 320, withGms: true,
-    identityJson: '{"model":"Pixel 8"}', imageVersion: '23.2.20261019', notes: '', tags: ['ads', 'tiktok'],
+    identityJson: '{"model":"Pixel 8"}', imageVersion: '16968706', notes: '', tags: ['ads', 'tiktok'],
     pinned: false, serial: 1, createdAt: ago(2400), updatedAt: ago(15), lastOpenAt: ago(5),
     backedUpAt: ago(720), deletedAt: '', state: 'running', error: '',
   },
   {
-    id: 'm2', name: 'YouTube — US', driver: 'vm', platform: 'darwin', driverRef: 'm2', proxyId: 'px2',
-    ramMb: 4096, cpus: 4, preset: 'balanced', screenW: 780, screenH: 1688, density: 320, withGms: true,
-    identityJson: '{"model":"SM-S928B"}', imageVersion: '23.2.20261019', notes: '', tags: ['client-a'],
+    id: 'm2', name: 'YouTube — US', driver: 'avo', platform: 'darwin', driverRef: 'm2', proxyId: 'px2',
+    ramMb: 4096, cpus: 3, preset: 'balanced', screenW: 780, screenH: 1688, density: 320, withGms: true,
+    identityJson: '{"model":"SM-S928B"}', imageVersion: '16968706', notes: '', tags: ['client-a'],
     pinned: true, serial: 2, createdAt: ago(4800), updatedAt: ago(300), lastOpenAt: ago(300),
     backedUpAt: '', deletedAt: '', state: 'stopped', error: '',
   },

@@ -2,7 +2,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
-import { t } from './i18n'
+import { catalogs, setLanguage, t } from './i18n'
 
 const profile = {
   id: 'tw', name: 'Thử proxy TW', sites: ['other'], serial: 1, engine: 'fury', engineVersion: '0.3.5', personaId: 'macos-m1pro-1512x982',
@@ -38,6 +38,26 @@ const { default: App } = await import('./App')
 
 const listProfiles = api.ListProfiles
 afterEach(() => { cleanup(); flags.onboarded = true; flags.created = true; api.ListProfiles = listProfiles; delete api.FocusProfile; delete api.ProStatus })
+
+it('shows the post-update dialog in English while the app stays in Vietnamese', async () => {
+  setLanguage('vi')
+  api.Language = () => Promise.resolve('vi')
+  api.TakeWhatsNew = () => Promise.resolve({ version: '0.3.0', notes: 'Mobile engines can be updated from Settings.' })
+  try {
+    render(<App />)
+    const dialog = await screen.findByRole('dialog', { name: catalogs.en.update.whatsNew('0.3.0') })
+    expect(document.documentElement.lang).toBe('vi')
+    expect(dialog.getAttribute('lang')).toBe('en')
+    expect(within(dialog).getByText('Mobile engines can be updated from Settings.')).toBeTruthy()
+    expect(within(dialog).getByRole('button', { name: catalogs.en.common.close })).toBeTruthy()
+    fireEvent.click(within(dialog).getByRole('button', { name: catalogs.en.update.gotIt }))
+    expect(screen.queryByRole('dialog')).toBeNull()
+  } finally {
+    delete api.Language
+    delete api.TakeWhatsNew
+    setLanguage('en')
+  }
+})
 
 describe('App shortcuts', () => {
   it.each([true, false])('shows the Creator Tools Pro invitation only when active=%s is false', async (active) => {

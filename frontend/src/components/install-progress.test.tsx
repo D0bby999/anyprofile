@@ -9,9 +9,12 @@ afterEach(cleanup)
 
 describe('InstallProgress', () => {
   it('shows the download, then says it is unpacking once every byte is in', () => {
-    const { rerender } = render(<InstallProgress progress={{ engine: 'anymobile-image', done: 524288000, total: 1048576000 }} />)
+    const { rerender } = render(<InstallProgress progress={{ engine: 'anymobile-avo-image', done: 524288000, total: 1048576000 }} />)
     expect(screen.getByText(t.engines.installing(50, '500 MB / 1000 MB'))).toBeTruthy()
-    rerender(<InstallProgress progress={{ engine: 'anymobile-image', done: 1048576000, total: 1048576000 }} />)
+    rerender(<InstallProgress progress={{ engine: 'anymobile-avo-image', done: 1048576000, total: 1048576000 }} />)
     expect(screen.getByText(t.engines.unpacking)).toBeTruthy()
+    rerender(<InstallProgress progress={{ engine: 'anymobile-avo-google-play', done: 0, total: 0 }} />)
+    expect(screen.getByRole('status').textContent).toBe(t.mobile.preparingGooglePlay)
+    expect(screen.queryByRole('progressbar')).toBeNull()
   })
 })

@@ -8,6 +8,7 @@ const mb = (n: number) => `${Math.round(n / 1048576)} MB`
  *  every byte is in, the install is checking the signature and unpacking,
  *  which takes a while for big archives: it says so instead of a still 100%. */
 export function InstallProgress({ progress }: { progress: EngineProgress }) {
+  if (progress.engine === 'anymobile-avo-google-play') return <span className="hint" role="status">{t.mobile.preparingGooglePlay}</span>
   const pct = progress.total > 0 ? Math.round((progress.done / progress.total) * 100) : 0
   const unpacking = progress.total > 0 && progress.done >= progress.total
   return (

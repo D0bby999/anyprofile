@@ -28,32 +28,25 @@ afterEach(() => {
 })
 
 describe('MobileDialog', () => {
-  it('shows progress loading indicator with steps when creating device', async () => {
+  it('creates with a unique name and defaults without opening Advanced', async () => {
     const onSaved = vi.fn()
-    render(<MobileDialog row={null} onClose={vi.fn()} onSaved={onSaved} />)
+    const onClose = vi.fn()
+    render(<MobileDialog existingNames={[t.mobile.defaultName(1)]} onClose={onClose} onSaved={onSaved} />)
 
-    const nameInput = screen.getByPlaceholderText(t.mobile.namePlaceholder)
-    fireEvent.change(nameInput, { target: { value: 'Pixel Test' } })
+    const nameInput = screen.getByRole('textbox', { name: t.mobile.name }) as HTMLInputElement
+    expect(nameInput.value).toBe(t.mobile.defaultName(2))
+    expect(screen.getByText(t.mobile.deviceSpecs(3, 4))).toBeTruthy()
+    expect(screen.getByText(t.drawer.advanced).parentElement?.hasAttribute('open')).toBe(false)
+    const create = screen.getByRole('button', { name: t.mobile.create }) as HTMLButtonElement
+    await waitFor(() => expect(create.disabled).toBe(false))
+    fireEvent.click(create)
 
-    const submitBtn = screen.getByRole('button', { name: t.mobile.create })
-    fireEvent.click(submitBtn)
-
-    // Should now be busy
-    await waitFor(() => {
-      expect(screen.getByText(t.mobile.creatingTitle)).toBeTruthy()
-    })
-
-    // Inputs should be disabled during creation
-    expect(nameInput.hasAttribute('disabled')).toBe(true)
-
-    // Step indicators should be present
-    expect(screen.getByText(t.mobile.creatingStep1)).toBeTruthy()
-    expect(screen.getByText(t.mobile.creatingStep2)).toBeTruthy()
-    expect(screen.getByText(t.mobile.creatingStep3)).toBeTruthy()
-    expect(screen.getByText(t.mobile.creatingStep4)).toBeTruthy()
-
-    // Resolve creation
-    createDeferred.resolve({ id: 'dev1' })
-    await waitFor(() => expect(onSaved).toHaveBeenCalledWith('Pixel Test'))
+    expect(createMobileDevice).toHaveBeenCalledWith(expect.objectContaining({ name: t.mobile.defaultName(2), cpus: 3, ramMb: 4096, proxyId: 'auto' }))
+    expect(screen.getByRole('progressbar', { name: t.mobile.creatingTitle })).toBeTruthy()
+    expect(nameInput.disabled).toBe(true)
+    fireEvent.keyDown(window, { key: 'Escape' })
+    expect(onClose).not.toHaveBeenCalled()
+    createDeferred.resolve({ id: 'new-device' })
+    await waitFor(() => expect(onSaved).toHaveBeenCalledWith('new-device'))
   })
 })
