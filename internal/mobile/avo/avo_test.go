@@ -85,6 +85,9 @@ func TestDriverAutoMigratesFromLegacyQEMU(t *testing.T) {
 	if metal.Name() != "avo" || metal.Available() == nil || metal.InstallStatus().Runtime.Engine != RuntimeEngine {
 		t.Fatal("Metal driver should be primary when missing")
 	}
+	if !metal.SupportsDriver("avo") || !metal.SupportsDriver("vm") || metal.SupportsDriver("ldplayer") {
+		t.Fatal("Metal driver should accept both avo and legacy macOS vm devices")
+	}
 	if err := metal.Install(context.Background(), nil); err != errNoRelease {
 		t.Fatalf("expected errNoRelease without Metal offer, got: %v", err)
 	}

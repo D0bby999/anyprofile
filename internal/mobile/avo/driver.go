@@ -80,6 +80,12 @@ func New(qemuRuntime, devicesDir string, log *slog.Logger) *Driver {
 
 func (d *Driver) Name() string { return "avo" }
 
+// SupportsDriver accepts legacy macOS "vm" (QEMU) device rows and upgrades
+// their instance disks to Cuttlefish on first open.
+func (d *Driver) SupportsDriver(name string) bool {
+	return name == "avo" || name == "vm"
+}
+
 func (d *Driver) Available() error {
 	_, err := Locate(d.avoRoot)
 	return err
@@ -128,16 +134,27 @@ func (d *Driver) ensureDisks(ctx context.Context, rt Runtime, dev mobile.Device,
 	if exists(filepath.Join(inst, "super.img")) {
 		return nil
 	}
+	var err error
 	if dev.WithGMS {
-		if _, err := d.PrepareGMSBase(ctx, rt); err != nil {
+		if _, err = d.PrepareGMSBase(ctx, rt); err != nil {
 			return err
 		}
-		return cloneGMSDisks(rt, inst)
+		err = cloneGMSDisks(rt, inst)
+	} else {
+		if _, err = d.PrepareCleanBase(ctx, rt); err != nil {
+			return err
+		}
+		err = cloneCleanDisks(rt, inst)
 	}
-	if _, err := d.PrepareCleanBase(ctx, rt); err != nil {
+	if err != nil {
 		return err
 	}
-	return cloneCleanDisks(rt, inst)
+	// Clean up legacy QEMU disks if this device was migrated from driver "vm".
+	devDir := d.dir(dev)
+	for _, old := range []string{"vda.qcow2", "vdb.qcow2", "ram.state", "ram.json", "efi_vars.fd", "qemu.log", "serial.log", "clean"} {
+		_ = os.RemoveAll(filepath.Join(devDir, old))
+	}
+	return nil
 }
 
 // Create provisions a new Cuttlefish device directory by cloning the pre-warmed

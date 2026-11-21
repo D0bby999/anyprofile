@@ -204,8 +204,19 @@ func (d *Driver) SetWindowMuted(ctx context.Context, dev mobile.Device, muted bo
 			vol = "0"
 		}
 		_, _ = p.adb.Shell(c, "cmd media_session volume --stream 3 --set "+vol)
+		if p.view != nil {
+			d.closeWindow(p)
+			d.showOn(ctx, dev, p)
+		}
 	}
 	return nil
+}
+
+// SetLocation updates the guest hardware GNSS simulator via control.sock.
+func (d *Driver) SetLocation(ctx context.Context, id string, lat, lon float64) {
+	if p := d.proc(id); p != nil {
+		_, _ = sendControl(ctx, p.ctrlSock, "location "+strconv.FormatFloat(lat, 'f', 6, 64)+" "+strconv.FormatFloat(lon, 'f', 6, 64))
+	}
 }
 
 // WindowMuted reports the stored mute preference.

@@ -250,6 +250,7 @@ func (s *Service) ListMobileDevices(f store.ProfileFilter) ([]MobileRow, error) 
 	}
 	out := make([]MobileRow, 0, len(ds))
 	for _, d := range ds {
+		s.upgradeMobileDriver(&d)
 		row := MobileRow{MobileDevice: d, State: mobile.Stopped}
 		if s.Mobile != nil {
 			in := s.Mobile.Info(d.ID)
@@ -327,6 +328,18 @@ func (s *Service) supportsMobileDriver(name string) bool {
 		return m.SupportsDriver(name)
 	}
 	return name == s.Mobile.Driver().Name()
+}
+
+func (s *Service) upgradeMobileDriver(d *store.MobileDevice) {
+	if s.Mobile == nil || d.Platform != runtime.GOOS {
+		return
+	}
+	cur := s.Mobile.Driver().Name()
+	if d.Driver != cur && s.supportsMobileDriver(d.Driver) {
+		if err := s.Store.SetMobileDriver(d.ID, cur); err == nil {
+			d.Driver = cur
+		}
+	}
 }
 
 func resolveWithGMS(in MobileInput) bool {
@@ -544,6 +557,7 @@ func (s *Service) liveMobile(id string) (store.MobileDevice, error) {
 	if d.Platform != runtime.GOOS || s.Mobile == nil || !s.supportsMobileDriver(d.Driver) {
 		return d, apperr.New("mobile_other_os", "this device was made on another operating system")
 	}
+	s.upgradeMobileDriver(&d)
 	return d, nil
 }
 
@@ -1201,6 +1215,7 @@ func (s *Service) AdoptMobileDevices(ctx context.Context) {
 		if d.Platform != runtime.GOOS || !s.supportsMobileDriver(d.Driver) {
 			continue
 		}
+		s.upgradeMobileDriver(&d)
 		a := mobile.AdoptDevice{Device: mobileDevice(d)}
 		if d.ProxyID != "" {
 			up, err := s.proxyUpstream(d.ProxyID)

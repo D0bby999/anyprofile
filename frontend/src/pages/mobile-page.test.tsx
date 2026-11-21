@@ -96,9 +96,9 @@ describe('MobilePage', () => {
     await waitFor(() => expect(api.InstallMobileRuntime).toHaveBeenCalled())
   })
 
-  it('does not open legacy QEMU devices once Metal is the only driver', () => {
+  it('allows opening migrated legacy QEMU devices on Metal', () => {
     page([device({ driver: 'vm' })], avail({ driver: 'avo', ready: true }))
-    expect((screen.getByRole('button', { name: t.mobile.open }) as HTMLButtonElement).disabled).toBe(true)
+    expect((screen.getByRole('button', { name: t.mobile.open }) as HTMLButtonElement).disabled).toBe(false)
   })
 
   it('offers the official LDPlayer download and checks again when missing', () => {

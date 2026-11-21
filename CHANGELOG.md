@@ -3,6 +3,15 @@
 The notes of each release tag are shown in the app's update prompt; this file
 keeps them together.
 
+## 0.2.11 (2026-11-21)
+
+- Fixed an issue on macOS where existing mobile devices created before the Metal engine switch reported that they were made on another operating system, and relaxed the SQLite mobile driver constraint for Metal (`avo`) and MuMuPlayer 12 (`mumu12`).
+- Reduced background GPU and viewer frame rate for inactive mobile device windows, and updated the hardware GNSS simulator live when changing Virtual GPS coordinates.
+
+## 0.2.10 (2026-11-21)
+
+- Switched AnyMobile on macOS to the Metal-accelerated Hypervisor.framework engine (`avo-vmm`), pre-installed Aurora Store in the base image, and redesigned the Mobile device deck.
+
 ## 0.2.9 (2026-11-21)
 
 - Mobile offers a card grid and a Web-style list, and remembers the selected view.

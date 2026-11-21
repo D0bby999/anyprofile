@@ -120,6 +120,14 @@ func (s *Store) SetMobileDriverState(id, ref, imageVersion string) error {
 	return affected(res, err)
 }
 
+// SetMobileDriver updates a device's driver name when a platform migrates to a
+// new engine (such as macOS "vm" -> "avo").
+func (s *Store) SetMobileDriver(id, driver string) error {
+	res, err := s.db.Exec(`UPDATE mobile_devices SET driver=?, updated_at=? WHERE id=?`,
+		driver, now(), id)
+	return affected(res, err)
+}
+
 // ListMobileDevices lists live devices, or the trash, filtered like ListProfiles.
 func (s *Store) ListMobileDevices(f ProfileFilter) ([]MobileDevice, error) {
 	where := []string{"deleted_at IS NULL"}

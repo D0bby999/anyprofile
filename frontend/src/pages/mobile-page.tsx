@@ -202,7 +202,7 @@ export function MobilePage({ mobile, onOpenPro, onOpenSettings }: Props) {
   useEffect(() => { Api.ListProxies().then((p) => setProxies(p ?? [])).catch(() => {}) }, [rows])
 
   const canUse = !!avail?.pro && !!avail?.ready
-  const canOpen = (r: service.MobileRow) => canUse && r.driver !== 'vm'
+  const canOpen = (_r: service.MobileRow) => canUse
   // Nothing installed and nothing in the signed list: the runtime is not out yet.
   const unpublished = !!avail?.install && !avail.install.runtime.installed && !avail.install.runtime.latest
   const update = avail?.engines?.find((st) => st.canUpdate) ?? (avail?.install?.canUpdate ? avail.install : undefined)

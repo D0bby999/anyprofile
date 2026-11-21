@@ -363,6 +363,11 @@ func (s *Service) SetMobileLocation(ctx context.Context, id string, lat, lon flo
 	if err != nil {
 		return err
 	}
+	if s.Mobile != nil {
+		if loc, ok := s.Mobile.Driver().(interface{ SetLocation(context.Context, string, float64, float64) }); ok {
+			loc.SetLocation(ctx, id, lat, lon)
+		}
+	}
 	return vm.ApplyLocation(ctx, c.ADB, lat, lon)
 }
 

@@ -99,3 +99,28 @@ func TestMobileDevices(t *testing.T) {
 		t.Fatalf("mark a missing device: %v", err)
 	}
 }
+
+func TestMobileDriverMigrationFrom30(t *testing.T) {
+	s, _ := upgradeFrom(t, 30, func(o *Store) {
+		for _, d := range []MobileDevice{
+			{ID: "mac", Name: "Mac Phone", Driver: "vm", Platform: "darwin", RAMMB: 4096, CPUs: 3},
+			{ID: "win", Name: "Win Phone", Driver: "ldplayer", Platform: "windows", RAMMB: 4096, CPUs: 3},
+		} {
+			if err := o.CreateMobileDevice(&d); err != nil {
+				t.Fatal(err)
+			}
+		}
+	})
+	mac, err := s.GetMobileDevice("mac")
+	if err != nil || mac.Driver != "avo" {
+		t.Fatalf("migrated mac device = %+v, %v", mac, err)
+	}
+	win, err := s.GetMobileDevice("win")
+	if err != nil || win.Driver != "ldplayer" {
+		t.Fatalf("migrated win device = %+v, %v", win, err)
+	}
+	mumu := MobileDevice{ID: "m2", Name: "MuMu", Driver: "mumu12", Platform: "windows", RAMMB: 4096, CPUs: 4}
+	if err := s.CreateMobileDevice(&mumu); err != nil {
+		t.Fatalf("create mumu12 device: %v", err)
+	}
+}
