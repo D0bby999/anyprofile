@@ -159,10 +159,19 @@ type Component struct {
 	Latest    string `json:"latest"`
 }
 
+// NeedsRuntime reports whether an offered release can replace the current runtime.
+func (c Component) NeedsRuntime(replaceDev bool) bool {
+	if c.Installed == "dev" {
+		return replaceDev && c.Latest != ""
+	}
+	return c.Latest != "" && (c.Installed == "" || engine.NewerVersion(c.Latest, c.Installed))
+}
+
 // InstallStatus is a driver's downloads.
 type InstallStatus struct {
-	Runtime Component `json:"runtime"`
-	Image   Component `json:"image"`
+	Runtime   Component `json:"runtime"`
+	Image     Component `json:"image"`
+	CanUpdate bool      `json:"canUpdate"`
 }
 
 // Installer is a Driver that downloads what it runs on (the macOS VM).

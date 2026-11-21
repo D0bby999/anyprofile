@@ -213,7 +213,7 @@ export default function App() {
         {page === 'proxies' && <ProxiesPage onChanged={() => { refreshProxies(); profiles.reload(); mobile.reload() }} />}
         {page === 'trash' && <TrashPage onChanged={() => { profiles.reload(); mobile.reload() }} />}
         {page === 'settings' && (
-          <SettingsPage engines={engines ?? []} engineCounts={engineCounts} defaults={defaults} onEnginesChanged={refreshEngines} theme={theme} onTheme={setTheme} fileVaultOn={fileVaultOn}
+          <SettingsPage mobile={mobile} engines={engines ?? []} engineCounts={engineCounts} defaults={defaults} onEnginesChanged={refreshEngines} theme={theme} onTheme={setTheme} fileVaultOn={fileVaultOn}
             lang={lang} onLanguage={changeLanguage} openProfiles={profiles.rows.filter((r) => r.state === 'running').length} checkUpdate={checkUpdate} />
         )}
       </main>

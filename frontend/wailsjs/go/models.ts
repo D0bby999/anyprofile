@@ -252,6 +252,7 @@ export namespace mobile {
 	export class InstallStatus {
 	    runtime: Component;
 	    image: Component;
+	    canUpdate: boolean;
 	
 	    static createFrom(source: any = {}) {
 	        return new InstallStatus(source);
@@ -261,6 +262,7 @@ export namespace mobile {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.runtime = this.convertValues(source["runtime"], Component);
 	        this.image = this.convertValues(source["image"], Component);
+	        this.canUpdate = source["canUpdate"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -776,6 +778,7 @@ export namespace service {
 	}
 	export class MobileAvailability {
 	    install?: mobile.InstallStatus;
+	    engines: mobile.InstallStatus[];
 	    supported: boolean;
 	    driver: string;
 	    pro: boolean;
@@ -790,6 +793,7 @@ export namespace service {
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.install = this.convertValues(source["install"], mobile.InstallStatus);
+	        this.engines = this.convertValues(source["engines"], mobile.InstallStatus);
 	        this.supported = source["supported"];
 	        this.driver = source["driver"];
 	        this.pro = source["pro"];

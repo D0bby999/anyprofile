@@ -206,11 +206,8 @@ export function MobilePage({ mobile, onOpenPro, onOpenSettings }: Props) {
   const canUse = !!avail?.pro && !!avail?.ready
   // Nothing installed and nothing in the signed list: the runtime is not out yet.
   const unpublished = !!avail?.install && !avail.install.runtime.installed && !avail.install.runtime.latest
-  const rtSt = avail?.install?.runtime
-  const needsEngineUpdate = !!avail?.pro && avail.ready && !!rtSt?.latest && (
-    (rtSt.engine === 'anymobile-avo' && !rtSt.installed) ||
-    (!!rtSt.installed && rtSt.installed !== 'dev' && rtSt.installed !== rtSt.latest)
-  )
+  const update = avail?.engines?.find((st) => st.canUpdate) ?? (avail?.install?.canUpdate ? avail.install : undefined)
+  const needsEngineUpdate = !!avail?.pro && avail.ready && !!update
   const proxyLabel = (r: service.MobileRow) => {
     if (!r.proxyId) return <span className="proxy-pill"><Icon name="direct" className="icon xs" /><span className="faint">{t.common.direct}</span></span>
     const p = proxies.find((x) => x.id === r.proxyId)
@@ -502,11 +499,11 @@ export function MobilePage({ mobile, onOpenPro, onOpenSettings }: Props) {
             {avail.supported && <button className="btn sm" onClick={onOpenSettings}>{t.mobile.fix}</button>}
           </div>
         )}
-        {needsEngineUpdate && rtSt?.latest && (
+        {needsEngineUpdate && update && (
           <div className="banner info" role="status">
             <Icon name="spark" />
             <div className="grow">
-              {installing ? <InstallProgress progress={installing} /> : t.mobile.engineUpdateText(rtSt.latest)}
+              {installing ? <InstallProgress progress={installing} /> : t.mobile.engineUpdateText(update.runtime.latest)}
             </div>
             {!installing && (
               <button type="button" className="btn sm primary" onClick={install}>

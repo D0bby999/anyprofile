@@ -54,17 +54,8 @@ func (s *Service) AutoUpdateMobile(ctx context.Context) error {
 	if s.Mobile == nil || !s.UpdateStatus().Auto || s.mobileAllowed() != nil || s.Mobile.Running() != 0 {
 		return nil
 	}
-	drv, ok := s.Mobile.Driver().(interface{ UpdateInstallers() []mobile.Installer })
-	if !ok {
-		return nil
-	}
-	pending := func(st mobile.InstallStatus) bool {
-		r := st.Runtime
-		return r.Latest != "" && r.Installed != "dev" &&
-			(r.Installed == "" || engine.NewerVersion(r.Latest, r.Installed) || st.Image.Installed == "")
-	}
-	for _, in := range drv.UpdateInstallers() {
-		if !pending(in.InstallStatus()) {
+	for _, in := range mobileUpdateInstallers(s.Mobile.Driver(), nil) {
+		if !in.InstallStatus().CanUpdate {
 			continue
 		}
 		// Pro download links are short-lived. Refresh only when there's work.
@@ -75,17 +66,38 @@ func (s *Service) AutoUpdateMobile(ctx context.Context) error {
 			if !s.UpdateStatus().Auto || s.mobileAllowed() != nil {
 				return nil
 			}
-			var installErr error
-			for _, in := range drv.UpdateInstallers() {
-				st := in.InstallStatus()
-				if pending(st) {
-					if err := s.installMobile(ctx, in, func(string, int64, int64) {}); err != nil {
-						installErr = errors.Join(installErr, fmt.Errorf("install %s %s: %w", st.Runtime.Engine, st.Runtime.Latest, err))
-					}
-				}
-			}
-			return installErr
+			return s.updateMobileEngines(ctx, nil, func(string, int64, int64) {})
 		})
 	}
 	return nil
+}
+
+func mobileUpdateInstallers(drv mobile.Driver, fallback mobile.Installer) []mobile.Installer {
+	if multiple, ok := drv.(interface{ UpdateInstallers() []mobile.Installer }); ok {
+		if installers := multiple.UpdateInstallers(); len(installers) > 0 {
+			return installers
+		}
+	}
+	if fallback != nil {
+		return []mobile.Installer{fallback}
+	}
+	return nil
+}
+
+func (s *Service) updateMobileEngines(ctx context.Context, fallback mobile.Installer, progress func(string, int64, int64)) error {
+	var installErr error
+	attempted := false
+	for _, in := range mobileUpdateInstallers(s.Mobile.Driver(), fallback) {
+		st := in.InstallStatus()
+		if st.CanUpdate {
+			attempted = true
+			if err := s.installMobile(ctx, in, progress); err != nil {
+				installErr = errors.Join(installErr, fmt.Errorf("install %s %s: %w", st.Runtime.Engine, st.Runtime.Latest, err))
+			}
+		}
+	}
+	if fallback != nil && !attempted {
+		return s.installMobile(ctx, fallback, progress)
+	}
+	return installErr
 }

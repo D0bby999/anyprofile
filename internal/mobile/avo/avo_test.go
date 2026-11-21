@@ -331,7 +331,30 @@ func TestInstallAvoRuntimeAndCuttlefish(t *testing.T) {
 		t.Fatalf("Available after Install: %v", err)
 	}
 	st1 := drv.InstallStatus()
-	if st1.Runtime.Installed != "1.0.0" || st1.Image.Installed != CuttlefishBuild {
+	if st1.Runtime.Installed != "1.0.0" || st1.Image.Installed != CuttlefishBuild || st1.CanUpdate {
 		t.Fatalf("post-install InstallStatus = %+v", st1)
+	}
+
+	// Reproduce a dev layout with an existing image, like the one on older installs.
+	for _, dir := range []string{"bin", "gfxstream"} {
+		if err := os.Rename(filepath.Join(avoRoot, "engine", dir), filepath.Join(avoRoot, dir)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := os.RemoveAll(filepath.Join(avoRoot, "engine")); err != nil {
+		t.Fatal(err)
+	}
+	if st := drv.InstallStatus(); st.Runtime.Installed != "dev" || !st.CanUpdate {
+		t.Fatalf("dev layout should offer the signed release: %+v", st)
+	}
+	if err := drv.Install(context.Background(), func(component string, _, _ int64) {
+		if component == ImageEngine {
+			t.Fatal("redownloaded existing Android image")
+		}
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if st := drv.InstallStatus(); st.CanUpdate || st.Runtime.Installed != "1.0.0" || !exists(filepath.Join(avoRoot, "bin", "anyprofile-vmm")) {
+		t.Fatalf("official runtime should take priority without deleting dev files: %+v", st)
 	}
 }

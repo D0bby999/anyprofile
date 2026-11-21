@@ -503,8 +503,16 @@ export const vi: Messages = {
     installTitle: 'Tải Android cho các máy của bạn',
     installText: 'Khoảng 1,1 GB: bộ chạy AnyMobile Metal và ảnh Android 16. Cần 4 GB ổ đĩa trống trong lúc giải nén.',
     install: 'Tải về', installed: 'Android đã sẵn sàng. Hãy tạo máy đầu tiên.',
-    engineUpdateText: (v: string) => `Đã có AnyMobile Metal engine (${v}) — 60–120 FPS, OpenGL ES 3.2, hiển thị Metal siêu mượt.`,
+    engineUpdateText: (v: string) => `Đã có bản cập nhật engine Mobile (${v}).`,
     engineUpdateBtn: 'Cập nhật Engine',
+    engineSettings: {
+      loading: 'Đang kiểm tra engine Mobile…', unsupported: 'Máy này không hỗ trợ engine Mobile.',
+      external: 'Trên Windows, LDPlayer tự quản lý bản cập nhật. Hãy cập nhật trong LDPlayer hoặc tải bản mới nhất.',
+      proRequired: 'Cần giấy phép Pro để tải hoặc cập nhật engine Mobile.',
+      development: 'Bản phát triển', notInstalled: 'Chưa cài', notOffered: 'Chưa có', available: 'Có bản để tải',
+      installed: (v: string) => `Đã cài: ${v}`, latest: (v: string) => `Bản có sẵn: ${v}`, android: (v: string) => `Ảnh Android: ${v}`,
+      closeFirst: 'Hãy đóng mọi máy Mobile trước khi cập nhật.', checked: 'Đã kiểm tra bản cập nhật.', updated: 'Đã cập nhật engine Mobile.',
+    },
     search: 'Tìm máy, serial, proxy hoặc tag…',
     drawerLabel: (name: string) => `Chi tiết của ${name}`,
     hardware: 'Phần cứng',
@@ -527,7 +535,7 @@ export const vi: Messages = {
     languageTitle: 'Ngôn ngữ', languageEn: 'English', languageVi: 'Tiếng Việt',
     securityTitle: 'Bảo mật',
     sections: 'Các mục',
-    groups: { general: 'Chung', pro: 'AnyProfile Pro', profiles: 'Profile', automation: 'Tự động hoá', data: 'Dữ liệu và sao lưu', engines: 'Engine trình duyệt', about: 'Thông tin và trợ giúp' },
+    groups: { general: 'Chung', pro: 'AnyProfile Pro', profiles: 'Profile', automation: 'Tự động hoá', data: 'Dữ liệu và sao lưu', engines: 'Engine trình duyệt', mobileEngines: 'Engine Mobile', about: 'Thông tin và trợ giúp' },
     fileVaultOn: `${disk} đang bật. Dữ liệu profile trên ổ đĩa được mã hoá.`,
     fileVaultOff: `${disk} đang tắt. Lịch sử và dữ liệu trang của các profile nằm trên ổ đĩa không mã hoá. ` + (isWindows
       ? 'Nên bật Device encryption hoặc BitLocker trong Windows Settings, mục Privacy & security.'

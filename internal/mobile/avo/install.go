@@ -84,6 +84,7 @@ func (d *Driver) InstallStatus() mobile.InstallStatus {
 	if rs := d.offered.For(RuntimeEngine); len(rs) > 0 {
 		st.Runtime.Latest = rs[0].Version
 	}
+	st.CanUpdate = st.Runtime.NeedsRuntime(true) || (st.Runtime.Latest != "" && st.Image.Installed == "")
 	return st
 }
 
@@ -96,9 +97,8 @@ func (d *Driver) Install(ctx context.Context, progress func(engine string, done,
 		}
 	}
 	st := d.InstallStatus()
-	needsRuntime := st.Runtime.Installed == "" ||
-		(st.Runtime.Latest != "" && st.Runtime.Installed != "dev" && engine.NewerVersion(st.Runtime.Latest, st.Runtime.Installed))
-	if needsRuntime {
+	// Official releases live in engine/, so replacing a dev runtime leaves its files untouched.
+	if st.Runtime.Installed == "" || st.Runtime.NeedsRuntime(true) {
 		rs := d.offered.For(RuntimeEngine)
 		if len(rs) == 0 {
 			return errNoRelease

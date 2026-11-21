@@ -46,13 +46,14 @@ const (
 // MobileAvailability tells the UI what stands between the user and a device.
 type MobileAvailability struct {
 	// Install is set when the driver downloads what it runs on (macOS).
-	Install   *mobile.InstallStatus `json:"install"`
-	Supported bool                  `json:"supported"` // this OS has a driver
-	Driver    string                `json:"driver"`    // "vm" or "ldplayer"
-	Pro       bool                  `json:"pro"`       // a paid-up AnyProfile Pro key
-	Ready     bool                  `json:"ready"`     // the driver can create and open devices
-	Reason    string                `json:"reason"`    // apperr code when not ready, like "ldplayer_missing"
-	Message   string                `json:"message"`
+	Install   *mobile.InstallStatus  `json:"install"`
+	Engines   []mobile.InstallStatus `json:"engines"`
+	Supported bool                   `json:"supported"` // this OS has a driver
+	Driver    string                 `json:"driver"`    // "vm" or "ldplayer"
+	Pro       bool                   `json:"pro"`       // a paid-up AnyProfile Pro key
+	Ready     bool                   `json:"ready"`     // the driver can create and open devices
+	Reason    string                 `json:"reason"`    // apperr code when not ready, like "ldplayer_missing"
+	Message   string                 `json:"message"`
 }
 
 // MobileRow is a device with its live state.
@@ -119,6 +120,9 @@ func (s *Service) MobileAvailability() MobileAvailability {
 	if in, ok := s.Mobile.Driver().(mobile.Installer); ok {
 		st := in.InstallStatus()
 		a.Install = &st
+		for _, candidate := range mobileUpdateInstallers(s.Mobile.Driver(), in) {
+			a.Engines = append(a.Engines, candidate.InstallStatus())
+		}
 	}
 	if err := s.Mobile.Driver().Available(); err != nil {
 		a.Reason, a.Message = codeOf(err), err.Error()
@@ -204,7 +208,7 @@ func (s *Service) InstallMobileRuntime(ctx context.Context, progress func(engine
 		}
 	}
 	return s.Mobile.InstallWhenIdle(func() error {
-		return s.installMobile(ctx, in, progress)
+		return s.updateMobileEngines(ctx, in, progress)
 	})
 }
 

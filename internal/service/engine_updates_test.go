@@ -72,7 +72,8 @@ func (m *mobileUpdateShelf) OfferRuntime(rs []engine.Release) error {
 }
 
 func (m *mobileUpdateShelf) InstallStatus() mobile.InstallStatus {
-	return mobile.InstallStatus{Runtime: mobile.Component{Engine: "anymobile", Installed: m.installed, Latest: m.latest}, Image: mobile.Component{Installed: "old-image"}}
+	r := mobile.Component{Engine: "anymobile-avo", Installed: m.installed, Latest: m.latest}
+	return mobile.InstallStatus{Runtime: r, Image: mobile.Component{Installed: "old-image"}, CanUpdate: r.NeedsRuntime(true)}
 }
 
 func (m *mobileUpdateShelf) Install(ctx context.Context, progress func(string, int64, int64)) error {
@@ -98,7 +99,7 @@ func TestAutoUpdateMobile(t *testing.T) {
 	if err := s.AutoUpdateMobile(ctx); err != nil || drv.installs != 0 || f.asks != asks {
 		t.Fatalf("first install: %v, installs %d, asks %d", err, drv.installs, f.asks-asks)
 	}
-	drv.installed = "1.0.1"
+	drv.installed = "dev"
 	if err := s.Mobile.Busy("device", mobile.Provisioning, func() error { return s.AutoUpdateMobile(ctx) }); err != nil || drv.installs != 0 || f.asks != asks {
 		t.Fatalf("busy: %v, installs %d, asks %d", err, drv.installs, f.asks-asks)
 	}
@@ -110,12 +111,29 @@ func TestAutoUpdateMobile(t *testing.T) {
 	if drv.installed != "1.0.2" || drv.installs != 1 || f.asks != asks+1 {
 		t.Fatalf("auto update: version %s, installs %d, asks %d", drv.installed, drv.installs, f.asks-asks)
 	}
+	// Manual updates still work with automatic checks turned off.
+	if err := s.SetUpdateAuto(false); err != nil {
+		t.Fatal(err)
+	}
+	drv.installed = "dev"
+	if st := s.MobileAvailability(); len(st.Engines) != 1 || !st.Engines[0].CanUpdate {
+		t.Fatalf("missing upgrade in Settings: %+v", st)
+	}
+	if err := s.AutoUpdateMobile(ctx); err != nil || drv.installs != 1 {
+		t.Fatalf("auto-update disabled: %v (installs %d)", err, drv.installs)
+	}
+	if err := s.InstallMobileRuntime(ctx, func(string, int64, int64) {}); err != nil || drv.installed != "1.0.2" || drv.installs != 2 {
+		t.Fatalf("manual update: %v, version %s, installs %d", err, drv.installed, drv.installs)
+	}
+	if err := s.SetUpdateAuto(true); err != nil {
+		t.Fatal(err)
+	}
 	// A fresh server answer without an offer must not reuse the earlier link.
 	drv.installed = "1.0.1"
 	f.mu.Lock()
 	f.runtimes = nil
 	f.mu.Unlock()
-	if err := s.AutoUpdateMobile(ctx); err != nil || drv.installs != 1 || drv.latest != "" {
+	if err := s.AutoUpdateMobile(ctx); err != nil || drv.installs != 2 || drv.latest != "" {
 		t.Fatalf("withdrawn offer: %v, installs %d, latest %q", err, drv.installs, drv.latest)
 	}
 }

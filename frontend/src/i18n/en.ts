@@ -502,8 +502,16 @@ export const en = {
     installTitle: 'Download Android for your devices',
     installText: 'About 1.1 GB: AnyMobile Metal engine and Android 16 image. Needs 4 GB of free disk space while unpacking.',
     install: 'Download', installed: 'Android is ready. Create your first device.',
-    engineUpdateText: (v: string) => `AnyMobile Metal engine (${v}) is available — 60–120 FPS, OpenGL ES 3.2, zero-copy Metal viewport.`,
-    engineUpdateBtn: 'Update Engine',
+    engineUpdateText: (v: string) => `A Mobile engine update is available (${v}).`,
+    engineUpdateBtn: 'Update engine',
+    engineSettings: {
+      loading: 'Checking Mobile engines…', unsupported: 'Mobile engines are not supported on this computer.',
+      external: 'LDPlayer manages its own updates on Windows. Update from LDPlayer or download the latest version.',
+      proRequired: 'A Pro license is required to download or update Mobile engines.',
+      development: 'Development build', notInstalled: 'Not installed', notOffered: 'Not offered', available: 'Download available',
+      installed: (v: string) => `Installed: ${v}`, latest: (v: string) => `Available: ${v}`, android: (v: string) => `Android image: ${v}`,
+      closeFirst: 'Close all Mobile devices before updating.', checked: 'Update check complete.', updated: 'Mobile engine update complete.',
+    },
     search: 'Search devices, serial, proxy or tags…',
     drawerLabel: (name: string) => `Details for ${name}`,
     hardware: 'Hardware',
@@ -526,7 +534,7 @@ export const en = {
     languageTitle: 'Language', languageEn: 'English', languageVi: 'Tiếng Việt',
     securityTitle: 'Security',
     sections: 'Sections',
-    groups: { general: 'General', pro: 'AnyProfile Pro', profiles: 'Profiles', automation: 'Automation', data: 'Data and backup', engines: 'Browser engines', about: 'About and help' },
+    groups: { general: 'General', pro: 'AnyProfile Pro', profiles: 'Profiles', automation: 'Automation', data: 'Data and backup', engines: 'Browser engines', mobileEngines: 'Mobile engines', about: 'About and help' },
     fileVaultOn: `${disk} is on. Profile data on disk is encrypted.`,
     fileVaultOff: `${disk} is off. Profiles\u2019 history and site data sit unencrypted on disk. ` + (isWindows
       ? 'Turn on Device encryption or BitLocker in Windows Settings, under Privacy & security.'

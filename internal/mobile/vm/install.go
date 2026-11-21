@@ -95,6 +95,7 @@ func (v *Driver) InstallStatus() mobile.InstallStatus {
 			st.Image.Latest = rs[0].Version
 		}
 	}
+	st.CanUpdate = st.Runtime.NeedsRuntime(false) || (st.Runtime.Latest != "" && st.Image.Installed == "")
 	return st
 }
 
@@ -107,7 +108,7 @@ func (v *Driver) Install(ctx context.Context, progress func(engine string, done,
 		return errNoRelease
 	}
 	st := v.InstallStatus()
-	if st.Runtime.Installed == "" || (st.Runtime.Latest != "" && st.Runtime.Installed != "dev" && engine.NewerVersion(st.Runtime.Latest, st.Runtime.Installed)) {
+	if st.Runtime.Installed == "" || st.Runtime.NeedsRuntime(false) {
 		rs := v.offered.For(RuntimeEngine)
 		if len(rs) == 0 {
 			return errNoRelease

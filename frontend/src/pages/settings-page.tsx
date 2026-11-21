@@ -18,20 +18,23 @@ import { APISettings } from '../components/api-settings'
 import { ExtensionSettings } from '../components/extension-settings'
 import { PageHead } from '../components/page-head'
 import { EngineSettings } from '../components/engine-settings'
+import { MobileEngineSettings } from '../components/mobile-engine-settings'
+import type { useMobile } from '../hooks/use-mobile'
 import { scrollSettingsTo } from '../lib/scroll'
 
 /** Settings come in groups, most used first; the technical ones sit near the end. */
-const groupKeys = ['general', 'pro', 'profiles', 'automation', 'data', 'engines', 'about'] as const
+const groupKeys = ['general', 'pro', 'profiles', 'automation', 'data', 'engines', 'mobileEngines', 'about'] as const
 type GroupKey = typeof groupKeys[number]
 
 /** One icon per settings group, so the side list scans evenly. */
 const groupIcons: Record<GroupKey, IconName> = {
   general: 'settings', pro: 'spark', profiles: 'profiles', automation: 'play',
-  data: 'download', engines: 'engine', about: 'info',
+  data: 'download', engines: 'engine', mobileEngines: 'mobile', about: 'info',
 }
 
 
 type Props = {
+  mobile: ReturnType<typeof useMobile>
   engines: main.EngineInfo[]
   engineCounts: Record<string, number>
   /** Browsers open now; an update waits until they are closed. */
@@ -47,7 +50,7 @@ type Props = {
   checkUpdate?: number
 }
 
-export function SettingsPage({ engines, engineCounts, defaults, onEnginesChanged, theme, onTheme, fileVaultOn, lang, onLanguage, openProfiles, checkUpdate }: Props) {
+export function SettingsPage({ mobile, engines, engineCounts, defaults, onEnginesChanged, theme, onTheme, fileVaultOn, lang, onLanguage, openProfiles, checkUpdate }: Props) {
   const { sites, reload: reloadSites } = useSites()
   const themes: [ThemeChoice, string, IconName][] = [['system', t.settings.themeSystem, 'monitor'], ['light', t.settings.themeLight, 'sun'], ['dark', t.settings.themeDark, 'moon']]
 
@@ -168,6 +171,12 @@ export function SettingsPage({ engines, engineCounts, defaults, onEnginesChanged
               <section className="card pad">
                 <h3 className="sr-only">{t.engines.title}</h3>
                 <EngineSettings engines={engines} counts={engineCounts} defaults={defaults} onChanged={onEnginesChanged} />
+              </section>
+            ))}
+
+            {group('mobileEngines', (
+              <section className="card pad">
+                <MobileEngineSettings mobile={mobile} />
               </section>
             ))}
 
