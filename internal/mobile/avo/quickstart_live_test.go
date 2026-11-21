@@ -73,6 +73,7 @@ func TestQuickstartInteractive(t *testing.T) {
 			t.Fatal("AVO_BENCH_INSTANCES must be 2–4")
 		}
 	}
+	var pids []int
 	for i := 0; i < count; i++ {
 		dev := dev
 		if multi != "" {
@@ -89,6 +90,7 @@ func TestQuickstartInteractive(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+			pids = append(pids, run.Launch.PID)
 			stopDevice := func() {
 				stop, c := context.WithTimeout(context.Background(), 30*time.Second)
 				defer c()
@@ -124,15 +126,34 @@ func TestQuickstartInteractive(t *testing.T) {
 			}
 			t.Logf("cycle=%d interactive_ms=%d", i+1, time.Since(start).Milliseconds())
 			if multi != "" {
-				rss, err := exec.Command("ps", "-o", "rss=", "-p", strconv.Itoa(run.Launch.PID)).Output()
-				if err != nil {
-					t.Fatal(err)
+				var allRSS []string
+				for idx, pid := range pids {
+					out, err := exec.Command("ps", "-o", "rss=", "-p", strconv.Itoa(pid)).Output()
+					if err == nil {
+						allRSS = append(allRSS, strconv.Itoa(idx+1)+":"+strings.TrimSpace(string(out)))
+					}
 				}
 				out, err := a.Shell(ctx, settingsScroll)
 				if err != nil {
 					t.Fatal(err)
 				}
-				t.Logf("instances=%d last_vmm_rss_kib=%s settings_scroll=%s", i+1, strings.TrimSpace(string(rss)), out)
+				t.Logf("instances=%d all_vmm_rss_kib=%s settings_scroll=%s", i+1, strings.Join(allRSS, ","), out)
+				if i+1 == count && os.Getenv("AVO_BENCH_APPS") == "1" {
+					swStart := time.Now()
+					_, _ = a.Shell(ctx, "dumpsys gfxinfo com.android.settings reset >/dev/null 2>&1 || true")
+					for _, intent := range []string{
+						"am start -W -a android.settings.SETTINGS",
+						"am start -W -a android.intent.action.VIEW -d https://example.com",
+						"am start -W -a android.intent.action.MAIN -c android.intent.category.APP_CONTACTS",
+						"am start -W -a android.settings.SETTINGS",
+						"input keyevent KEYCODE_HOME",
+					} {
+						_, _ = a.Shell(ctx, intent)
+					}
+					swMS := time.Since(swStart).Milliseconds()
+					gfx, _ := a.Shell(ctx, "dumpsys gfxinfo com.android.settings | grep -E 'Total frames rendered:|Janky frames:|95th percentile:'")
+					t.Logf("app_switch_ms=%d settings_after_switch=%s", swMS, strings.TrimSpace(gfx))
+				}
 				if i+1 == count && os.Getenv("MOBILE_BENCH_SUSTAINED") == "1" {
 					frames, err := a.Shell(ctx, "set -- 20\n"+settingsScroll)
 					if err != nil {

@@ -1020,6 +1020,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     func windowDidMove(_ notification: Notification) { saveBounds() }
     func windowDidEndLiveResize(_ notification: Notification) { saveBounds() }
+    func windowDidBecomeKey(_ notification: Notification) { client.send("fps 0") }
+    func windowDidResignKey(_ notification: Notification) { client.send("fps 15") }
+    func windowDidMiniaturize(_ notification: Notification) { client.send("fps 5") }
+    func windowDidDeminiaturize(_ notification: Notification) { client.send("fps 0") }
 
     private func applyGuestAspect(w: Int, h: Int) {
         guard w > 0, h > 0 else { return }
@@ -1060,6 +1064,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     func windowWillClose(_ notification: Notification) {
+        client.send("fps 0")
         saveBounds()
         NSApp.terminate(nil)
     }
