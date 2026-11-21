@@ -3,6 +3,13 @@
 The notes of each release tag are shown in the app's update prompt; this file
 keeps them together.
 
+## 0.2.9 (2026-11-21)
+
+- Mobile offers a card grid and a Web-style list, and remembers the selected view.
+- Settings → Mobile engines shows installed and available versions and lets Pro users check for and install updates manually.
+- Official AnyMobile Metal can replace a development runtime without downloading an existing Android image again.
+- The sidebar remembers whether Platforms and Tags are collapsed.
+
 ## 0.2.8 (2026-11-20)
 
 - AnyBrowser automatically downloads compatible updates; profiles use the new engine the next time they open.
