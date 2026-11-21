@@ -21,8 +21,9 @@ Công tắc tự kiểm tra cũng bật/tắt tự cập nhật engine đã cài
 - **AnyBrowser:** tải bản mới tương thích vào thư mục riêng. Profile đang mở không bị đóng; lần mở
   tiếp theo mới dùng bản mới. Bản cũ vẫn được giữ nếu còn profile dùng nó.
 - **AnyMobile (macOS, Pro):** khi tất cả máy ảo đã dừng, tự cài runtime mới mà Pro cung cấp. Nếu đang
-  dùng QEMU, Metal được cài song song (kèm Android image nếu chưa có). Máy QEMU đã tạo vẫn giữ
-  QEMU và dữ liệu; chỉ máy mới ưu tiên Metal. Windows dùng LDPlayer và không theo cơ chế này.
+  dùng QEMU, Metal được cài song song (kèm Android image nếu chưa có). Tạo máy mới trên macOS luôn
+  cần Metal. App không còn tải hoặc cập nhật QEMU; bản đã cài chỉ dùng để mở máy QEMU cũ mà không
+  đổi dữ liệu. Windows dùng LDPlayer và không theo cơ chế này.
 
 Cài engine lần đầu vẫn phải bấm tải, và có thể cập nhật thủ công nếu đã tắt tự kiểm tra.
 
@@ -45,12 +46,12 @@ không tự cập nhật được: app báo người dùng chuyển `AnyProfile.
 
 1. Đổi `productVersion` trong `wails.json` và `Current` trong `internal/update/update.go` (test
    `TestCurrentMatchesWailsJSON` bắt khi hai số lệch nhau). Commit.
-2. Tạo tag có ghi chú ngắn dành cho người dùng; ghi chú này hiện cả trên GitHub Release và trong app.
+2. Tạo tag có ghi chú ngắn **bằng tiếng Anh** dành cho người dùng. Nội dung hiện nguyên văn trên GitHub Release và trong hộp thoại “What’s new” của app, kể cả khi giao diện dùng tiếng Việt.
    Chỉ nêu thay đổi quan trọng, vài dòng là đủ; không chép toàn bộ changelog hay lịch sử kỹ thuật.
    Nếu không có gì cần báo, ghi tên phiên bản là đủ. Giữ chi tiết trong `CHANGELOG.md`:
 
    ```
-   git tag -a v0.2.0 -m "Mở profile nhanh hơn. Sửa lỗi proxy SOCKS5."
+   git tag -a v0.2.0 -m "Profiles open faster. Fixed a SOCKS5 proxy issue."
    git push origin v0.2.0
    ```
 

@@ -142,9 +142,11 @@ Kết quả đổi thì sửa luôn bảng "App phổ biến" trong `docs/mobile
 
 | Preset | RAM | CPU | Màn hình | Density |
 |---|---:|---:|---|---:|
-| automation | 2048 | 2 | 540×960 | 240 |
-| balanced | 3072 | 4 | 720×1600 | 280 |
-| interactive | 4096 | 4 | 720×1600 | 280 |
+| automation | 2048 | 2 | 540×1170 | 220 |
+| balanced (mặc định) | 4096 | 3 | 780×1688 | 320 |
+| interactive | 4096 | 6 | 780×1688 | 320 |
+
+Máy mới trên macOS dùng Metal. Các ghi chú QEMU và scrcpy bên dưới dành cho máy cũ.
 
 - QEMU luôn boot ở 720×1600; `wm size` đổi màn hình sau khi Android lên. Boot ở 540×960 làm Android 16 có lúc không lên.
 - Sau khi tạo máy, `mobile/devices/<id>/clean/` giữ bản sạch để `device_reset mode=hard`; đây là APFS clone, gần như không tốn chỗ.
@@ -158,7 +160,7 @@ Kết quả đổi thì sửa luôn bảng "App phổ biến" trong `docs/mobile
 | Thông số | Giá trị | Ở đâu | Lý do |
 |---|---|---|---|
 | Màn hình máy ảo | 720×1600, density 280 | `internal/mobile/vm/driver.go:47` | Không có GPU. Đo trên M2 khi cuộn: 1080×2400 giật 42% khung hình, CPU 322%; 720×1600 giật 16%, CPU 161% |
-| RAM mặc định | 3 GB (2–6 GB) | `internal/service/mobile.go:25` | Chạy được 4 máy trên Mac 32 GB. Chưa đo app nặng như TikTok khi dùng lâu |
+| RAM mặc định hiện tại | 4 GB | `internal/service/mobile.go` | Đừng suy ra số máy chạy mượt từ dung lượng RAM chia cho 4; cần đo tải đồng thời |
 | Chỗ trống để tải image | 4 GB | `internal/service/mobile.go:117` | Zip 1,1 GB cộng bản giải nén 2,3 GB |
 | Cổng server adb riêng | 5137 | `internal/mobile/adb/adb.go:24` | Không đụng adb của người dùng (5037) |
 | Thử proxy của máy đang chạy | 2 phút, 2 lần lỗi liền mới báo | `internal/service/mobile_watch.go:14` | Mỗi lần chỉ mở một kết nối TCP tới `1.1.1.1:443` qua proxy, không tốn dung lượng đáng kể; một lần chậm không báo nhầm |
@@ -169,7 +171,26 @@ Kết quả đổi thì sửa luôn bảng "App phổ biến" trong `docs/mobile
 | Vị trí cửa sổ | `window.json` mỗi máy | `internal/mobile/vm/window_darwin.go` | CGWindowList đọc bounds không cần quyền; chỉ lưu/dùng X,Y vì bounds gồm thanh tiêu đề, dùng cả H sẽ làm cửa sổ cao dần |
 | Ghi màn hình | 3 phút, 8 Mbps | `internal/service/mobile_record.go` | `screenrecord` của Android; kéo về `~/Movies/AnyProfile`, xoá bản trên máy |
 
-## Đo hiệu năng
+## Đo Metal và MuMuPlayer trên cùng Mac
+
+Kết quả của bản engine thử nghiệm mới, các thay đổi I/O và giới hạn so sánh: [Mobile Metal performance](mobile-metal-performance.md). Các số Metal 1.0.0 bên dưới là mốc trước khi sửa engine.
+
+Chạy lần lượt, không cùng lúc. Test Metal dùng đĩa tạm; script MuMu yêu cầu `adb` trên PATH, ghi nhận đường dẫn bundle mới, đóng và xóa riêng bundle đó khi xong.
+
+```bash
+go test -tags avointegration ./internal/mobile/avo -run '^TestQuickstartInteractive$' -count=1 -v
+ANDROID_ADB_SERVER_PORT=5141 python3 scripts/mumu-interactive-bench.py
+```
+
+- `AVO_BENCH_COLD=1`: clone bộ cài bằng APFS, bỏ bản nền Google Play **trong bản sao**, đo thời gian chuẩn bị lại. Không đo mạng từ lúc tải bộ cài trên máy trắng. Dùng `-timeout 18m`.
+- `AVO_BENCH_INSTANCES=2` / `MUMU_BENCH_INSTANCES=2`: giữ máy trước mở khi tạo máy sau; cuộn Cài đặt năm lần và lấy `gfxinfo`. Chỉ dùng `4` trên máy đủ RAM/dung lượng. RSS báo cáo cho tiến trình VMM, không phải tổng áp lực bộ nhớ hệ thống.
+- Điểm kết thúc: mở được Android Settings rồi gửi Home và xác nhận launcher đã nhận focus. Không lấy thời điểm cửa sổ xuất hiện. Test Metal đo driver, không gồm phân giải proxy, lưu DB, tương tác giao diện hay tải runtime.
+- M2 16 GB, 3 CPU/4 GB, một cặp chạy: Metal 1.0.0 tạo + mở **14,13 s**, mở lại **13,07 s**; MuMuPlayer Pro 1.10.3 **25,91 s** và **17,49 s**. Đây không phải median hoặc cam kết hiệu năng. Ở lượt Metal khác, máy thứ hai mất **28,94 s**, `gfxinfo` báo **23/85 khung hình giật** khi cuộn so với **11/152** khi chỉ mở một máy. Trong cùng kịch bản MuMu báo 0/170 và 0/168; tạo máy thứ hai mất 12,77 s. Đây là workload nhỏ, chưa chuẩn hóa DPI và thời điểm tác vụ nền giữa hai engine. Không đánh đồng khung hình ứng dụng Settings với FPS toàn bộ engine.
+- Bản clone sạch cache Google Play của Metal: chuẩn bị nền **54,23 s** (bộ cài Android và zip Google Play đã có trên máy); sau đó tạo + mở **15,07 s**, mở lại **12,00 s**.
+
+Trước khi tuyên bố ngang MuMu: đo từ nút bấm trên bản đóng gói, cùng độ phân giải và workload, ít nhất 5 lượt/máy; ghi median, lượt chậm nhất, áp lực bộ nhớ, crash/treo, cả trường hợp 2–4 máy trên phần cứng phù hợp. Kiểm riêng Windows/LDPlayer.
+
+## Đo QEMU cũ
 
 ```bash
 make mobile-bench            # 3 lần, ghi build/mobile-bench/bench.csv
