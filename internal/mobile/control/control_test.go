@@ -205,3 +205,16 @@ func TestKeyboardBound(t *testing.T) {
 		}
 	}
 }
+
+func TestEnsureAuroraSkipsWhenInstalled(t *testing.T) {
+	dir := t.TempDir()
+	bin := filepath.Join(dir, "adb")
+	// Fake adb that reports Aurora Store is already installed on pm path.
+	if err := os.WriteFile(bin, []byte("#!/bin/sh\necho 'package:/data/app/com.aurora.store/base.apk'\n"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	d := &Device{ADB: adb.Client{Bin: bin, Port: 5555}, Runtime: dir}
+	if err := d.EnsureAurora(context.Background()); err != nil {
+		t.Fatalf("EnsureAurora should skip download/install when already present: %v", err)
+	}
+}

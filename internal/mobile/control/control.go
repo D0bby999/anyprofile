@@ -501,20 +501,44 @@ func (d *Device) syncAppLocales(ctx context.Context) {
 	}
 }
 
-// InstallAurora downloads Aurora Store from F-Droid (cached in Runtime and
-// checked by SHA-256) and installs and opens it on the device.
-func (d *Device) InstallAurora(ctx context.Context) error {
-	apk, err := adb.FetchAPK(ctx, d.Runtime, auroraFile, auroraURL, auroraSHA256)
+// FetchAurora downloads Aurora Store from F-Droid into cacheDir and verifies its SHA-256.
+func FetchAurora(ctx context.Context, cacheDir string) (string, error) {
+	return adb.FetchAPK(ctx, cacheDir, auroraFile, auroraURL, auroraSHA256)
+}
+
+// AuroraGrantScript grants the appops/runtime permissions Aurora Store needs to install APKs cleanly.
+const AuroraGrantScript = "appops set " + auroraPkg + " REQUEST_INSTALL_PACKAGES allow; " +
+	"appops set " + auroraPkg + " MANAGE_EXTERNAL_STORAGE allow; " +
+	"appops set " + auroraPkg + " SYSTEM_ALERT_WINDOW allow; " +
+	"pm grant " + auroraPkg + " android.permission.POST_NOTIFICATIONS"
+
+// EnsureAurora installs Aurora Store silently with permissions if it is not already present.
+func (d *Device) EnsureAurora(ctx context.Context) error {
+	if out, err := d.shell(ctx, "pm path "+auroraPkg); err == nil && strings.Contains(out, "package:") {
+		return nil
+	}
+	apk, err := FetchAurora(ctx, d.Runtime)
 	if err != nil {
 		return err
 	}
 	if err := d.Install(ctx, apk); err != nil {
 		return err
 	}
-	_, _ = d.shell(ctx, "appops set "+auroraPkg+" REQUEST_INSTALL_PACKAGES allow")
-	_, _ = d.shell(ctx, "appops set "+auroraPkg+" MANAGE_EXTERNAL_STORAGE allow")
-	_, _ = d.shell(ctx, "appops set "+auroraPkg+" SYSTEM_ALERT_WINDOW allow")
-	_, _ = d.shell(ctx, "pm grant "+auroraPkg+" android.permission.POST_NOTIFICATIONS")
+	_, _ = d.shell(ctx, AuroraGrantScript)
+	return nil
+}
+
+// InstallAurora downloads Aurora Store from F-Droid (cached in Runtime and
+// checked by SHA-256) and installs and opens it on the device.
+func (d *Device) InstallAurora(ctx context.Context) error {
+	apk, err := FetchAurora(ctx, d.Runtime)
+	if err != nil {
+		return err
+	}
+	if err := d.Install(ctx, apk); err != nil {
+		return err
+	}
+	_, _ = d.shell(ctx, AuroraGrantScript)
 	_ = d.Launch(ctx, auroraPkg)
 	return nil
 }

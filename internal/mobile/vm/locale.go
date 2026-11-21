@@ -73,13 +73,21 @@ func setClock(ctx context.Context, a adb.Client, now time.Time) error {
 }
 
 func applyLocale(ctx context.Context, a adb.Client, tz, locale string) error {
+	if tz == "" && locale == "" {
+		return nil
+	}
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
-	pkgs, err := thirdPartyPackages(ctx, a)
-	if err != nil {
-		return err
+	var pkgs []string
+	if locale != "" {
+		var err error
+		pkgs, err = thirdPartyPackages(ctx, a)
+		if err != nil {
+			return err
+		}
+		pkgs = append(pkgs, browserPkg)
 	}
-	line, err := localeScript(tz, locale, append(pkgs, browserPkg))
+	line, err := localeScript(tz, locale, pkgs)
 	if err != nil || line == "" {
 		return err
 	}

@@ -28,7 +28,7 @@ import (
 
 const (
 	defaultMobileRAMMB = 4096
-	defaultMobileCPUs  = 4
+	defaultMobileCPUs  = 3
 	minMobileRAMMB     = 2048
 	maxMobileRAMMB     = 8192
 	maxMobileCPUs      = 8
@@ -46,14 +46,14 @@ const (
 // MobileAvailability tells the UI what stands between the user and a device.
 type MobileAvailability struct {
 	// Install is set when the driver downloads what it runs on (macOS).
-	Install   *mobile.InstallStatus  `json:"install"`
-	Engines   []mobile.InstallStatus `json:"engines"`
+	Install     *mobile.InstallStatus  `json:"install"`
+	Engines     []mobile.InstallStatus `json:"engines"`
 	Supported bool                   `json:"supported"` // this OS has a driver
-	Driver    string                 `json:"driver"`    // "vm" or "ldplayer"
+	Driver    string                 `json:"driver"`    // "avo" or "ldplayer"
 	Pro       bool                   `json:"pro"`       // a paid-up AnyProfile Pro key
 	Ready     bool                   `json:"ready"`     // the driver can create and open devices
-	Reason    string                 `json:"reason"`    // apperr code when not ready, like "ldplayer_missing"
-	Message   string                 `json:"message"`
+	Reason      string                 `json:"reason"`      // apperr code when not ready, like "ldplayer_missing"
+	Message     string                 `json:"message"`
 }
 
 // MobileRow is a device with its live state.
@@ -266,7 +266,7 @@ type mobilePreset struct {
 
 var mobilePresets = map[string]mobilePreset{
 	"automation":  {2048, 2, 540, 1170, 220},
-	"balanced":    {4096, 4, 780, 1688, 320},
+	"balanced":    {defaultMobileRAMMB, defaultMobileCPUs, 780, 1688, 320},
 	"interactive": {4096, 6, 780, 1688, 320},
 }
 
@@ -562,10 +562,22 @@ func (s *Service) StartMobileDeviceHeadless(ctx context.Context, id string) (Mob
 func (s *Service) startMobile(ctx context.Context, id string, headless bool) (MobileStart, error) {
 	started := time.Now()
 	s.applyMobileFastStart()
-	if err := s.mobileReady(); err != nil {
+	if err := s.mobileAllowed(); err != nil {
 		return MobileStart{}, err
 	}
+	if s.Mobile == nil {
+		return MobileStart{}, errMobileUnsupported
+	}
 	d, err := s.liveMobile(id)
+	if err != nil {
+		return MobileStart{}, err
+	}
+	drv := s.Mobile.Driver()
+	if routed, ok := drv.(interface{ AvailableForDevice(mobile.Device) error }); ok {
+		err = routed.AvailableForDevice(mobileDevice(d))
+	} else {
+		err = drv.Available()
+	}
 	if err != nil {
 		return MobileStart{}, err
 	}
@@ -590,7 +602,6 @@ func (s *Service) startMobile(ctx context.Context, id string, headless bool) (Mo
 	if err := s.Mobile.Start(ctx, mobileDevice(d), o); err != nil {
 		return res, err
 	}
-	firstOpen := d.LastOpenAt == ""
 	s.ctlMu.Lock()
 	if s.mobileLocale == nil {
 		s.mobileLocale = map[string]string{}
@@ -601,18 +612,17 @@ func (s *Service) startMobile(ctx context.Context, id string, headless bool) (Mo
 	if err := s.Store.MarkMobileOpened(id); err != nil {
 		s.Log.Warn("mark mobile device opened", "device", id, "err", err)
 	}
-	if firstOpen {
-		go func() {
-			time.Sleep(5 * time.Second)
-			actx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
-			defer cancel()
-			if err := s.InstallMobileAurora(actx, id); err != nil {
-				s.Log.Warn("auto-install aurora store on first open", "device", id, "err", err)
-			} else {
-				s.Log.Info("auto-installed aurora store on first open", "device", id)
-			}
-		}()
-	}
+	go func() {
+		actx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+		defer cancel()
+		c, err := s.MobileControl(id)
+		if err != nil {
+			return
+		}
+		if err := c.EnsureAurora(actx); err != nil {
+			s.Log.Warn("ensure aurora store", "device", id, "err", err)
+		}
+	}()
 	s.scheduleMobilePause(id)
 	s.notify("mobile")
 	return res, nil

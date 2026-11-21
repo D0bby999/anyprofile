@@ -218,18 +218,28 @@ func (d *Driver) Start(ctx context.Context, dev mobile.Device, o mobile.StartOpt
 }
 
 func (d *Driver) applyPostBoot(ctx context.Context, dev mobile.Device, o mobile.StartOptions, p *proc, instDir string) {
-	ensureGPULayers(ctx, p.rt, p.adb, instDir, d.log)
-	if err := vm.SetClock(ctx, p.adb, time.Now()); err != nil {
-		d.log.Warn("avo clock", "device", dev.ID, "err", err)
-	}
-	if err := vm.ApplyAutomationSettings(ctx, p.adb, dev.Preset, o.Headless); err != nil {
-		d.log.Warn("avo settings", "device", dev.ID, "err", err)
+	// Only push GPU layers if the host marker is missing; otherwise activate props in the single batch below.
+	layersReady := p.rt.LayersDir != "" && instDir != "" && exists(filepath.Join(instDir, ".gpu_layers_ready"))
+	if !layersReady {
+		ensureGPULayers(ctx, p.rt, p.adb, instDir, d.log)
 	}
 	if err := vm.ApplyLocale(ctx, p.adb, o.Timezone, o.Locale); err != nil {
 		d.log.Warn("avo locale", "device", dev.ID, "err", err)
 	}
-	// Batch lockscreen disable, keyguard dismiss, battery/carrier spoof, mute state, and VirtWifi into one shell call.
+	// Batch clock, automation settings, GPU layer props, lockscreen, spoofing, mute, and initial Wi-Fi kick into one shell call.
+	timeout, stayon, anim := "2147483647", "true", "0.5"
+	if o.Headless {
+		timeout, stayon, anim = "15000", "false", "0"
+	} else if dev.Preset == "automation" {
+		anim = "0"
+	}
 	var batch strings.Builder
+	fmt.Fprintf(&batch, "settings put global auto_time 0; cmd alarm set-time %d\n", time.Now().UnixMilli())
+	fmt.Fprintf(&batch, "settings put global window_animation_scale %s\nsettings put global transition_animation_scale %s\nsettings put global animator_duration_scale %s\nsettings put system screen_off_timeout %s\nsvc power stayon %s\n", anim, anim, anim, timeout, stayon)
+	if layersReady {
+		batch.WriteString(gpuLayerPropsScript)
+		batch.WriteByte('\n')
+	}
 	batch.WriteString("locksettings set-disabled true >/dev/null 2>&1 || true\nwm dismiss-keyguard\n")
 	if dev.IdentityJSON != "" {
 		batch.WriteString(vm.BatteryShellScript(dev.ID))
@@ -243,7 +253,7 @@ func (d *Driver) applyPostBoot(ctx context.Context, dev mobile.Device, o mobile.
 		batch.WriteString("cmd media_session volume --stream 3 --set 0\n")
 	}
 	batch.WriteString(virtWifiScript)
-	c, cancel := context.WithTimeout(ctx, 22*time.Second)
+	c, cancel := context.WithTimeout(ctx, 20*time.Second)
 	_, _ = p.adb.Shell(c, batch.String())
 	cancel()
 
@@ -296,18 +306,20 @@ chcon u:object_r:apk_data_file:s0 /data/local/debug /data/local/debug/vulkan /da
 	}
 }
 
-func activateGPULayerProps(ctx context.Context, a adb.Client) {
-	_, _ = a.Shell(ctx, `setprop debug.vulkan.layer.9 VK_LAYER_AVO_gfxstream_sync
+const gpuLayerPropsScript = `setprop debug.vulkan.layer.9 VK_LAYER_AVO_gfxstream_sync
 [ -n "$(getprop debug.avo.gl.renderer)" ] && setprop debug.gles.layers libGLES_avo_profile.so
-if [ -n "$(getprop debug.avo.vk.name)" ] || [ -n "$(getprop debug.avo.gl.renderer)" ]; then setprop debug.vulkan.layers VK_LAYER_AVO_profile; fi`)
+if [ -n "$(getprop debug.avo.vk.name)" ] || [ -n "$(getprop debug.avo.gl.renderer)" ]; then setprop debug.vulkan.layers VK_LAYER_AVO_profile; fi`
+
+func activateGPULayerProps(ctx context.Context, a adb.Client) {
+	_, _ = a.Shell(ctx, gpuLayerPropsScript)
 }
 
 const virtWifiScript = `settings put global captive_portal_mode 0
 cmd wifi set-wifi-enabled enabled
-for i in 1 2 3 4 5 6 7 8 9 10 11 12; do
+for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16; do
   cmd wifi status 2>/dev/null | grep -q "Wifi is connected" && break
-  [ $((i % 3)) -eq 1 ] && cmd wifi connect-network VirtWifi open >/dev/null 2>&1 || true
-  sleep 0.6
+  [ $((i % 4)) -eq 1 ] && cmd wifi connect-network VirtWifi open >/dev/null 2>&1 || true
+  sleep 0.25
 done`
 
 func (d *Driver) launchVMM(ctx context.Context, rt Runtime, dev mobile.Device, instDir string, dial vnet.Dialer, timeout time.Duration, onControlReady func(*proc)) (*proc, error) {
@@ -437,6 +449,7 @@ func (d *Driver) launchVMM(ctx context.Context, rt Runtime, dev mobile.Device, i
 }
 
 func waitBootClean(ctx context.Context, a adb.Client, exited <-chan struct{}) error {
+	connected := false
 	for {
 		select {
 		case <-ctx.Done():
@@ -446,14 +459,19 @@ func waitBootClean(ctx context.Context, a adb.Client, exited <-chan struct{}) er
 		default:
 		}
 		c, cancel := context.WithTimeout(ctx, 4*time.Second)
-		a.Connect(c)
+		if !connected {
+			a.Connect(c)
+		}
 		out, err := a.Shell(c, "getprop sys.boot_completed")
 		cancel()
 		if err == nil && strings.TrimSpace(out) == "1" {
 			return nil
 		}
-		// Clear any cached "offline" transport if adbd wasn't accepting vsock yet.
-		a.Disconnect()
+		// A successful shell with an unset property means Android is still booting, not offline.
+		connected = err == nil
+		if !connected {
+			a.Disconnect()
+		}
 		select {
 		case <-ctx.Done():
 		case <-exited:

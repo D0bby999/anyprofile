@@ -24,6 +24,7 @@ import (
 
 	"github.com/D0bby999/anyprofile/internal/engine"
 	"github.com/D0bby999/anyprofile/internal/mobile"
+	"github.com/D0bby999/anyprofile/internal/mobile/adb"
 	"github.com/D0bby999/anyprofile/internal/mobile/vm"
 )
 
@@ -63,30 +64,57 @@ func TestLocateRuntime(t *testing.T) {
 	}
 }
 
-func TestRouterUpdatesExistingQEMUAndAddsMetal(t *testing.T) {
+func TestDriverAutoMigratesFromLegacyQEMU(t *testing.T) {
 	root := t.TempDir()
 	t.Setenv("ANYPROFILE_AVO_DIR", filepath.Join(root, "avo"))
 	qemu, devices := filepath.Join(root, "runtime"), filepath.Join(root, "devices")
-	legacy := vm.New(qemu, devices, nil)
 	metal := New(qemu, devices, nil)
-	r := NewRouter(metal, legacy)
-	if got := r.UpdateInstallers(); len(got) != 0 {
+	if got := metal.UpdateInstallers(); len(got) != 0 {
 		t.Fatalf("fresh install scheduled: %v", got)
 	}
-	for _, rel := range []string{"bin/qemu-system-aarch64", "bin/qemu-img", "bin/adb", "bin/scrcpy", "share/edk2-aarch64-code.fd", "share/edk2-arm-vars.fd", "share/scrcpy-server", "VERSION"} {
-		p := filepath.Join(qemu, "qemu", rel)
-		if err := os.MkdirAll(filepath.Dir(p), 0o700); err != nil {
-			t.Fatal(err)
-		}
-		if err := os.WriteFile(p, []byte("1.0.1"), 0o600); err != nil {
-			t.Fatal(err)
-		}
+	p := filepath.Join(qemu, "qemu", "VERSION")
+	if err := os.MkdirAll(filepath.Dir(p), 0o700); err != nil {
+		t.Fatal(err)
 	}
-	if got := r.UpdateInstallers(); len(got) != 2 || got[0] != legacy || got[1] != metal {
-		t.Fatalf("QEMU and Metal should update separately: %v", got)
+	if err := os.WriteFile(p, []byte("1.0.2"), 0o600); err != nil {
+		t.Fatal(err)
 	}
-	if got := r.forDevice(mobile.Device{Driver: "vm"}); got != legacy {
-		t.Fatal("legacy device lost its driver")
+	if got := metal.UpdateInstallers(); len(got) != 1 || got[0] != metal {
+		t.Fatalf("legacy QEMU install should auto-migrate to Metal: %v", got)
+	}
+	if metal.Name() != "avo" || metal.Available() == nil || metal.InstallStatus().Runtime.Engine != RuntimeEngine {
+		t.Fatal("Metal driver should be primary when missing")
+	}
+	if err := metal.Install(context.Background(), nil); err != errNoRelease {
+		t.Fatalf("expected errNoRelease without Metal offer, got: %v", err)
+	}
+}
+
+func TestBootKeepsHealthyADBTransport(t *testing.T) {
+	dir := t.TempDir()
+	bin := filepath.Join(dir, "adb")
+	if err := os.WriteFile(bin, []byte(`#!/bin/sh
+cd "${0%/*}" || exit 1
+echo "$1" >> calls
+case "$1" in
+  -s) if [ ! -f offline ]; then touch offline; exit 1; fi
+      if [ ! -f booting ]; then touch booting; exit 0; fi
+      echo 1 ;;
+esac
+`), 0700); err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
+	defer cancel()
+	if err := waitBootClean(ctx, adb.Client{Bin: bin, Port: 1234}, nil); err != nil {
+		t.Fatal(err)
+	}
+	calls, err := os.ReadFile(filepath.Join(dir, "calls"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(calls) != "connect\n-s\ndisconnect\nconnect\n-s\n-s\n" {
+		t.Fatalf("unexpected ADB calls: %s", calls)
 	}
 }
 
@@ -270,12 +298,17 @@ func TestInstallAvoRuntimeAndCuttlefish(t *testing.T) {
 		"bin/adb":             "adb-bin",
 		"gfxstream/lib64/libgfxstream_backend.dylib": "gfx-lib",
 	})
-	imgZip, imgSHA, _ := makeZipBytes(t, map[string]string{
+	imageFiles := map[string]string{
 		"boot.img":        "boot",
 		"vendor_boot.img": "vboot",
 		"super.img":       "super",
 		"userdata.img":    "user",
-	})
+		"gms/READY":       gappsReadyStamp,
+	}
+	for _, disk := range instanceDisks {
+		imageFiles["gms/"+disk] = "disk"
+	}
+	imgZip, imgSHA, _ := makeZipBytes(t, imageFiles)
 
 	var srv *httptest.Server
 	srv = httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -356,5 +389,22 @@ func TestInstallAvoRuntimeAndCuttlefish(t *testing.T) {
 	}
 	if st := drv.InstallStatus(); st.CanUpdate || st.Runtime.Installed != "1.0.0" || !exists(filepath.Join(avoRoot, "bin", "anyprofile-vmm")) {
 		t.Fatalf("official runtime should take priority without deleting dev files: %+v", st)
+	}
+	// A cancelled first preparation must not mark the Google Play base ready.
+	rt, err := Locate(avoRoot)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Remove(filepath.Join(gmsBaseDir(rt), "READY")); err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	var stage string
+	if err := drv.Install(ctx, func(component string, _, _ int64) { stage = component }); err == nil || stage != "anymobile-avo-google-play" {
+		t.Fatalf("cancelled preparation: err=%v, stage=%q", err, stage)
+	}
+	if _, ready := gmsBaseReady(rt); ready {
+		t.Fatal("cancelled base marked ready")
 	}
 }

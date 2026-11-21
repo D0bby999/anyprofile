@@ -88,6 +88,20 @@ func (d *Driver) InstallStatus() mobile.InstallStatus {
 	return st
 }
 
+// hasLegacyQEMU reports whether an older QEMU runtime or image still sits on disk.
+func (d *Driver) hasLegacyQEMU() bool {
+	return exists(filepath.Join(d.qemuRuntime, "qemu")) || exists(filepath.Join(d.qemuRuntime, "image"))
+}
+
+// UpdateInstallers opts existing Metal and legacy QEMU installations into
+// automatic background updates while leaving fresh installs manual.
+func (d *Driver) UpdateInstallers() []mobile.Installer {
+	if d.InstallStatus().Runtime.Installed != "" || d.hasLegacyQEMU() {
+		return []mobile.Installer{d}
+	}
+	return nil
+}
+
 // Install downloads and verifies the Metal runtime (from Pro) and Cuttlefish AOSP image
 // (directly from Google Android Build API v4) if missing or outdated.
 func (d *Driver) Install(ctx context.Context, progress func(engine string, done, total int64)) error {
@@ -118,6 +132,19 @@ func (d *Driver) Install(ctx context.Context, progress func(engine string, done,
 			return err
 		}
 	}
+	rt, err := Locate(d.avoRoot)
+	if err != nil {
+		return err
+	}
+	if _, ready := gmsBaseReady(rt); !ready {
+		report("anymobile-avo-google-play", 0, 0)
+		if _, err = d.PrepareGMSBase(ctx, rt); err != nil {
+			return err
+		}
+	}
+	// Reclaim legacy QEMU runtime/image files once Metal is ready.
+	_ = os.RemoveAll(filepath.Join(d.qemuRuntime, "qemu"))
+	_ = os.RemoveAll(filepath.Join(d.qemuRuntime, "image"))
 	return nil
 }
 

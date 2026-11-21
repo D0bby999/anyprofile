@@ -471,7 +471,7 @@ func TestMobilePresets(t *testing.T) {
 		ram, cpus, w, h, dp int
 	}{
 		{"automation", 2048, 2, 540, 1170, 220},
-		{"balanced", 4096, 4, 780, 1688, 320},
+		{"balanced", 4096, 3, 780, 1688, 320},
 		{"interactive", 4096, 6, 780, 1688, 320},
 	} {
 		in := MobileInput{Name: "phone", Preset: tc.preset}

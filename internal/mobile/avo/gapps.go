@@ -18,12 +18,13 @@ import (
 
 	"github.com/D0bby999/anyprofile/internal/mobile"
 	"github.com/D0bby999/anyprofile/internal/mobile/adb"
+	"github.com/D0bby999/anyprofile/internal/mobile/control"
 	"github.com/D0bby999/anyprofile/internal/mobile/vm"
 )
 
 const (
-	gappsReadyStamp = "cuttlefish-mtg-16.0-v2\n"
-	cleanReadyStamp = "cuttlefish-clean-16.0-v1\n"
+	gappsReadyStamp = "cuttlefish-mtg-16.0-v3\n"
+	cleanReadyStamp = "cuttlefish-clean-16.0-v2\n"
 )
 
 // instanceDisks are the per-instance mutable Cuttlefish disk files backed up,
@@ -55,6 +56,23 @@ func baseReady(dir, stamp string) (string, bool) {
 
 func gmsBaseReady(rt Runtime) (string, bool)   { return baseReady(gmsBaseDir(rt), gappsReadyStamp) }
 func cleanBaseReady(rt Runtime) (string, bool) { return baseReady(cleanBaseDir(rt), cleanReadyStamp) }
+
+// bakeAurora pre-installs Aurora Store into the shared base disk so every new
+// device can install apps immediately without signing in to Google Play.
+func bakeAurora(ctx context.Context, log *slog.Logger, a adb.Client, cacheDir string) {
+	c, cancel := context.WithTimeout(ctx, 2*time.Minute)
+	defer cancel()
+	apk, err := control.FetchAurora(c, cacheDir)
+	if err != nil {
+		log.Warn("avo base: fetch aurora store", "err", err)
+		return
+	}
+	if _, err := a.Run(c, "install", "-r", "-g", apk); err != nil {
+		log.Warn("avo base: install aurora store", "err", err)
+		return
+	}
+	_, _ = a.Shell(c, control.AuroraGrantScript)
+}
 
 func cloneBaseDisks(srcDir, dstDir string) error {
 	if err := os.MkdirAll(dstDir, 0o700); err != nil {
@@ -142,6 +160,7 @@ func (d *Driver) PrepareCleanBase(ctx context.Context, rt Runtime) (string, erro
 	}()
 
 	ensureGPULayers(ctx, rt, p.adb, outDir, d.log)
+	bakeAurora(ctx, d.log, p.adb, d.qemuRuntime)
 	_, _ = p.adb.Shell(ctx, "locksettings set-disabled true >/dev/null 2>&1 || true; settings put global captive_portal_mode 0; cmd wifi set-wifi-enabled enabled; sync")
 	stopBuild()
 
@@ -235,7 +254,8 @@ func (d *Driver) PrepareGMSBase(ctx context.Context, rt Runtime) (string, error)
 		return "", err
 	}
 	ensureGPULayers(ctx, rt, p.adb, outDir, d.log)
-	_, _ = p.adb.Shell(ctx, "locksettings set-disabled true >/dev/null 2>&1 || true; settings put global captive_portal_mode 0; cmd wifi set-wifi-enabled enabled")
+	bakeAurora(ctx, d.log, p.adb, d.qemuRuntime)
+	_, _ = p.adb.Shell(ctx, "locksettings set-disabled true >/dev/null 2>&1 || true; settings put global captive_portal_mode 0; cmd wifi set-wifi-enabled enabled; sync")
 	// Cleanly power off before copying overlay disks.
 	stopBuild()
 
