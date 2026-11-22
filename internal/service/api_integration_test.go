@@ -45,6 +45,9 @@ func (b testBackend) Profiles() ([]api.Profile, error) {
 func (b testBackend) Start(ctx context.Context, id string, devtools bool) error {
 	return b.s.StartProfile(ctx, id, devtools)
 }
+func (b testBackend) StartHeadless(ctx context.Context, id string, devtools bool) error {
+	return b.s.StartProfileHeadless(ctx, id, devtools)
+}
 func (b testBackend) Stop(id string) error { return b.s.Launcher.Stop(id) }
 func (b testBackend) Pipe(id string) (agent.Conn, bool) {
 	c, ok := b.s.Launcher.Conn(id)

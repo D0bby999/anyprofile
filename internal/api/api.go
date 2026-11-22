@@ -46,6 +46,7 @@ type Profile struct {
 type Backend interface {
 	Profiles() ([]Profile, error)
 	Start(ctx context.Context, id string, devtools bool) error
+	StartHeadless(ctx context.Context, id string, devtools bool) error
 	Stop(id string) error
 	// Pipe is the DevTools pipe of a running profile; a browser adopted after
 	// a crash has none.
@@ -196,6 +197,7 @@ func (s *Server) get(w http.ResponseWriter, r *http.Request) {
 func (s *Server) start(w http.ResponseWriter, r *http.Request) {
 	var in struct {
 		DevTools bool `json:"devtools"`
+		Headless bool `json:"headless"`
 	}
 	body, err := io.ReadAll(io.LimitReader(r.Body, 4096))
 	if err == nil && len(strings.TrimSpace(string(body))) > 0 {
@@ -210,7 +212,11 @@ func (s *Server) start(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, statusOf(err), err)
 		return
 	}
-	if err := s.backend.Start(r.Context(), id, in.DevTools); err != nil {
+	start := s.backend.Start
+	if in.Headless {
+		start = s.backend.StartHeadless
+	}
+	if err := start(r.Context(), id, in.DevTools); err != nil {
 		writeErr(w, statusOf(err), err)
 		return
 	}

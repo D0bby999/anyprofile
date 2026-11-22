@@ -472,3 +472,25 @@ func TestMCPRecipes(t *testing.T) {
 		t.Fatalf("prompts after removal = %+v", ps.Prompts)
 	}
 }
+
+func TestMCPOpenProfileHeadlessOption(t *testing.T) {
+	f, _, srv := mcpSetup(t)
+	cs, err := connect(t, srv, rewrite{token: token})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer cs.Close()
+
+	if _, isErr := call(t, cs, "open_profile", map[string]any{"profile": "p1"}); isErr {
+		t.Fatal("default open_profile failed")
+	}
+	if f.headless {
+		t.Fatal("default open_profile must not run headless")
+	}
+	if _, isErr := call(t, cs, "open_profile", map[string]any{"profile": "p2", "headless": true}); isErr {
+		t.Fatal("headless open_profile failed")
+	}
+	if !f.headless {
+		t.Fatal("open_profile with headless=true must call StartHeadless")
+	}
+}

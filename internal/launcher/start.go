@@ -88,8 +88,9 @@ func (l *Launcher) start(ctx context.Context, p *proc) error {
 			rt.Extensions = append(rt.Extensions, dir)
 		}
 	}
+	isHeadless := p.headless || slices.ContainsFunc(l.TestArgs, func(a string) bool { return strings.HasPrefix(a, "--headless") })
 	if urls := prof.StartURLs(); len(urls) > 0 && (rt.FreshStart || !hadSession) {
-		if slices.ContainsFunc(l.TestArgs, func(a string) bool { return strings.HasPrefix(a, "--headless") }) {
+		if isHeadless {
 			urls = urls[:1] // Chromium headless refuses more than one target URL in argv
 		}
 		rt.StartURLs = urls
@@ -105,6 +106,9 @@ func (l *Launcher) start(ctx context.Context, p *proc) error {
 		l.log.Warn("profile identity clamped for this machine", "profile", prof.ID, "detail", spec.Warning)
 	}
 	spec.Args = append(spec.Args, l.TestArgs...)
+	if p.headless && !slices.ContainsFunc(spec.Args, func(a string) bool { return strings.HasPrefix(a, "--headless") }) {
+		spec.Args = append(spec.Args, "--headless=new")
+	}
 	// The first window a profile ever shows is the one nobody sized yet.
 	// Chromium restores the bounds of every later one, so the user's own size
 	// and position are never overridden.
@@ -138,9 +142,9 @@ func (l *Launcher) start(ctx context.Context, p *proc) error {
 			_ = l.st.EndSession(p.sessionID)
 		}
 	}()
-	if p.behind {
+	if p.behind && !isHeadless {
 		epoch := l.focusEpoch.Load()
-		go l.keepBehind(pid, front, 6*time.Second, epoch)
+		go l.keepBehind(pid, front, 12*time.Second, epoch, p.done)
 	}
 	p.cdp = conn
 	if err := l.waitReady(ctx, udd, pid, wait); err != nil {
@@ -312,12 +316,17 @@ func (l *Launcher) bringFront(pid int) {
 // asked for when this browser started: once a later action asks for another
 // window (tiling what was just opened, say), fighting for the old one would
 // undo it, so the loop stops.
-func (l *Launcher) keepBehind(pid, front int, d time.Duration, epoch int64) {
+func (l *Launcher) keepBehind(pid, front int, d time.Duration, epoch int64, done <-chan struct{}) {
 	if front == 0 || front == pid {
 		return
 	}
 	end := time.Now().Add(d)
-	for range 5 { // a browser that keeps the focus is not fought forever
+	for range 8 { // a browser that keeps the focus is not fought forever
+		select {
+		case <-done:
+			return
+		default:
+		}
 		if l.focusEpoch.Load() != epoch {
 			return // the user has asked for another window since
 		}
@@ -331,14 +340,21 @@ func (l *Launcher) keepBehind(pid, front int, d time.Duration, epoch int64) {
 // Behind is agent.Hub.Behind: when the browser comes in front of the app the
 // user is in during the call it wraps, that app is put back in front.
 func (l *Launcher) Behind(profileID string) func() {
-	in, ok := l.Info(profileID)
+	l.mu.Lock()
+	p, ok := l.procs[profileID]
+	var pid int
+	var headless bool
+	if ok {
+		pid, headless = p.info.PID, p.headless
+	}
+	l.mu.Unlock()
 	front := frontPID()
-	if !ok || in.PID == 0 || front == 0 || front == in.PID {
-		return func() {} // the user is looking at this browser, or we cannot tell
+	if !ok || headless || pid == 0 || front == 0 || front == pid {
+		return func() {} // headless, user is looking at this browser, or we cannot tell
 	}
 	return func() {
-		if waitFront(in.PID, true, 400*time.Millisecond) {
-			l.log.Info("browser took the focus", "pid", in.PID, "back", stepBack(in.PID, front))
+		if waitFront(pid, true, 400*time.Millisecond) {
+			l.log.Info("browser took the focus", "pid", pid, "back", stepBack(pid, front))
 		}
 	}
 }
@@ -357,6 +373,9 @@ func stepBack(pid, front int) bool {
 	}
 	setHidden(pid, true)
 	ok := waitFront(pid, false, 500*time.Millisecond)
+	if ok && front != 0 && frontPID() != front {
+		activate(front)
+	}
 	setHidden(pid, false)
 	return ok && waitFront(pid, false, 150*time.Millisecond)
 }

@@ -60,6 +60,11 @@ func (b apiBackend) Start(ctx context.Context, id string, devtools bool) error {
 	return b.svc.StartProfile(ctx, id, devtools)
 }
 
+func (b apiBackend) StartHeadless(ctx context.Context, id string, devtools bool) error {
+	b.svc.Log.Info("api asked to start", "profile", id, "devtools", devtools, "headless", true)
+	return b.svc.StartProfileHeadless(ctx, id, devtools)
+}
+
 func (b apiBackend) Pipe(id string) (agent.Conn, bool) {
 	c, ok := b.svc.Launcher.Conn(id)
 	if !ok {

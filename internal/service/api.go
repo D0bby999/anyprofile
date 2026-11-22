@@ -103,6 +103,16 @@ func (s *Service) NewAPIToken() (string, error) {
 // a loopback DevTools port; a profile already running without one is refused
 // rather than restarted behind the user's back.
 func (s *Service) StartProfile(ctx context.Context, id string, devtools bool) error {
+	return s.startProfile(ctx, id, devtools, false)
+}
+
+// StartProfileHeadless opens a profile without a window for an MCP agent or
+// script. An already running profile is left as it is (unless it lacks DevTools).
+func (s *Service) StartProfileHeadless(ctx context.Context, id string, devtools bool) error {
+	return s.startProfile(ctx, id, devtools, true)
+}
+
+func (s *Service) startProfile(ctx context.Context, id string, devtools, headless bool) error {
 	p, err := s.Store.GetProfile(id)
 	if err != nil {
 		return err
@@ -124,6 +134,9 @@ func (s *Service) StartProfile(ctx context.Context, id string, devtools bool) er
 	}
 	if s.Launcher.BeforeStart == nil {
 		s.RefreshLaunchIdentity(ctx, id)
+	}
+	if headless {
+		return s.Launcher.StartHeadless(ctx, id)
 	}
 	return s.Launcher.StartBehind(ctx, id)
 }

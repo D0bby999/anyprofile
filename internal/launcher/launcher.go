@@ -51,6 +51,8 @@ type proc struct {
 	started time.Time
 	// behind: started for a script or an agent, so it must not take the focus.
 	behind bool
+	// headless: started without a window (MCP opt-in); never steals focus.
+	headless bool
 	// gated includes adopted browsers; every counted browser releases once.
 	gated bool
 	// cancel aborts admission/startup, but never kills an already running browser.
@@ -167,20 +169,26 @@ func (l *Launcher) set(p *proc, s State, errMsg string) {
 // Start opens the profile's browser. A profile that is already open is only
 // brought to the front: there is never a second browser on one profile.
 func (l *Launcher) Start(ctx context.Context, profileID string) error {
-	return l.open(ctx, profileID, false)
+	return l.open(ctx, profileID, false, false)
 }
 
 // StartBehind opens the profile's browser for a script or an agent: the app
 // the user is in stays in front. An open profile is left where it is.
 func (l *Launcher) StartBehind(ctx context.Context, profileID string) error {
-	return l.open(ctx, profileID, true)
+	return l.open(ctx, profileID, true, false)
+}
+
+// StartHeadless opens the profile's browser without a window for an MCP agent.
+// An open profile is left as it is.
+func (l *Launcher) StartHeadless(ctx context.Context, profileID string) error {
+	return l.open(ctx, profileID, true, true)
 }
 
 // claimFront records that the user has asked for a window now, so a browser
 // still being kept behind from an earlier launch stops fighting for it.
 func (l *Launcher) claimFront() { l.focusEpoch.Add(1) }
 
-func (l *Launcher) open(ctx context.Context, profileID string, behind bool) error {
+func (l *Launcher) open(ctx context.Context, profileID string, behind, headless bool) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}
@@ -203,7 +211,7 @@ func (l *Launcher) open(ctx context.Context, profileID string, behind bool) erro
 	}
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	p := &proc{info: Info{ProfileID: profileID, State: Queued}, done: make(chan struct{}), behind: behind, cancel: cancel}
+	p := &proc{info: Info{ProfileID: profileID, State: Queued}, done: make(chan struct{}), behind: behind, headless: headless, cancel: cancel}
 	// Reserve the profile before waiting so duplicate requests cannot queue a
 	// second launch, and Stop/Trash can find and cancel the pending request.
 	l.procs[profileID] = p

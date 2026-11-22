@@ -20,6 +20,7 @@ type fake struct {
 	profiles []Profile
 	started  []string
 	devtools bool
+	headless bool
 	stopped  []string
 	startErr error
 	pipe     agent.Conn
@@ -28,10 +29,16 @@ type fake struct {
 
 func (f *fake) Profiles() ([]Profile, error) { return f.profiles, nil }
 func (f *fake) Start(_ context.Context, id string, devtools bool) error {
+	return f.start(id, devtools, false)
+}
+func (f *fake) StartHeadless(_ context.Context, id string, devtools bool) error {
+	return f.start(id, devtools, true)
+}
+func (f *fake) start(id string, devtools, headless bool) error {
 	if f.startErr != nil {
 		return f.startErr
 	}
-	f.started, f.devtools = append(f.started, id), devtools
+	f.started, f.devtools, f.headless = append(f.started, id), devtools, headless
 	for i := range f.profiles {
 		if f.profiles[i].ID == id {
 			f.profiles[i].State = "running"

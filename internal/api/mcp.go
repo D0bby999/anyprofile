@@ -40,6 +40,13 @@ type profileArg struct {
 
 func (p profileArg) who() string { return p.Profile }
 
+type openProfileIn struct {
+	Profile  string `json:"profile" jsonschema:"the profile: its id, its exact name, or #serial (see list_profiles)"`
+	Headless bool   `json:"headless,omitempty" jsonschema:"run without a browser window (zero focus stealing); default false so logins and captchas stay visible behind the user's app"`
+}
+
+func (p openProfileIn) who() string { return p.Profile }
+
 type tabArg struct {
 	Profile string `json:"profile" jsonschema:"the profile: its id, its exact name, or #serial (see list_profiles)"`
 	Tab     string `json:"tab,omitempty" jsonschema:"tab id from list_tabs; default: the tab used last, else the one on screen"`
@@ -442,8 +449,8 @@ func (s *Server) mcpHandler() http.Handler {
 			return text(sb.String()), nil
 		})
 
-	add(s, srv, "open_profile", "Open a profile's browser (with its proxy and accounts) and wait until it is ready. An open profile is used as it is.", false,
-		func(ctx context.Context, in profileArg) (*mcp.CallToolResult, error) {
+	add(s, srv, "open_profile", "Open a profile's browser behind the user's app (with its proxy and accounts) and wait until it is ready. Pass headless: true to run without a window when no manual login or captcha is needed. An open profile is used as it is.", false,
+		func(ctx context.Context, in openProfileIn) (*mcp.CallToolResult, error) {
 			p, err := s.profile(in.Profile)
 			if err != nil {
 				return nil, err
@@ -454,7 +461,11 @@ func (s *Server) mcpHandler() http.Handler {
 				}
 			}
 			if p.State != "running" {
-				if err := s.backend.Start(ctx, p.ID, false); err != nil {
+				start := s.backend.Start
+				if in.Headless {
+					start = s.backend.StartHeadless
+				}
+				if err := start(ctx, p.ID, false); err != nil {
 					return nil, err
 				}
 			}

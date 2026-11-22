@@ -154,3 +154,46 @@ func TestLeaveBrowserWhenHidden(t *testing.T) {
 		t.Fatal("leaveBrowser must return true when AnyProfile is not visible")
 	}
 }
+
+type captureEngine struct {
+	stubEngine
+	gotRT engine.Runtime
+}
+
+func (e *captureEngine) BuildLaunch(_ context.Context, _ store.Profile, rt engine.Runtime) (engine.LaunchSpec, error) {
+	e.gotRT = rt
+	return engine.LaunchSpec{}, errors.New("stop here")
+}
+
+func TestStartHeadlessClampsStartURLsAndSkipsBehind(t *testing.T) {
+	dirs := paths.Dirs{Root: t.TempDir()}
+	if err := dirs.Ensure(); err != nil {
+		t.Fatal(err)
+	}
+	st, err := store.Open(dirs.DB(), dirs.Backups())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer st.Close()
+	p := &store.Profile{ID: "p1", Name: "P", Engine: "stub", EngineVersion: "1", PersonaID: "x",
+		SeedHex: "00112233aabbccdd", Platform: "macos", Timezone: "UTC", Languages: "en-US", UILocale: "en-US",
+		StartURL: "https://a.example\nhttps://b.example"}
+	if err := st.CreateProfile(p); err != nil {
+		t.Fatal(err)
+	}
+	eng := &captureEngine{}
+	l := New(st, secrets.NewMemory(), dirs, []engine.Engine{eng}, nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	if err := l.StartHeadless(context.Background(), "p1"); err == nil || err.Error() != "stop here" {
+		t.Fatalf("StartHeadless err = %v", err)
+	}
+	if len(eng.gotRT.StartURLs) != 1 || eng.gotRT.StartURLs[0] != "https://a.example" {
+		t.Fatalf("headless StartURLs = %v, want single URL", eng.gotRT.StartURLs)
+	}
+	// Normal Start keeps every start URL.
+	if err := l.Start(context.Background(), "p1"); err == nil || err.Error() != "stop here" {
+		t.Fatalf("Start err = %v", err)
+	}
+	if len(eng.gotRT.StartURLs) != 2 {
+		t.Fatalf("normal StartURLs = %v, want 2 URLs", eng.gotRT.StartURLs)
+	}
+}
