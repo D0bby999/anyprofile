@@ -75,6 +75,25 @@ func TestOutlineLockScreenAndErrors(t *testing.T) {
 	}
 }
 
+func TestFormatADBInstallError(t *testing.T) {
+	spaceErr := formatADBInstallError("NewPipe.apk", "adb install -r NewPipe.apk: exit status 1: java.io.IOException: Requested internal only, but not enough space at android.util.ExceptionUtils.wrap(ExceptionUtils.java:34)")
+	if code(spaceErr) != "mobile_install_space" {
+		t.Fatalf("expected mobile_install_space, got %q (%v)", code(spaceErr), spaceErr)
+	}
+	abiErr := formatADBInstallError("legacy.apk", "Failure [INSTALL_FAILED_NO_MATCHING_ABIS: Failed to extract native libraries]")
+	if code(abiErr) != "mobile_apk_abi" {
+		t.Fatalf("expected mobile_apk_abi, got %q (%v)", code(abiErr), abiErr)
+	}
+	downgradeErr := formatADBInstallError("app.apk", "Failure [INSTALL_FAILED_VERSION_DOWNGRADE]")
+	if code(downgradeErr) != "mobile_install" {
+		t.Fatalf("expected mobile_install, got %q (%v)", code(downgradeErr), downgradeErr)
+	}
+	rawErr := formatADBInstallError("app.apk", "adb: failed to install: INSTALL_FAILED_INVALID_APK\n\tat com.android.server.pm.Install.run(Install.java:10)")
+	if strings.Contains(rawErr.Error(), "com.android.server.pm") {
+		t.Fatalf("expected stacktrace to be stripped, got %q", rawErr.Error())
+	}
+}
+
 func TestPointIn(t *testing.T) {
 	r := Rect{100, 200, 300, 260}
 	for i := 0; i < 200; i++ {
@@ -222,5 +241,56 @@ func TestEnsureAuroraSkipsWhenInstalled(t *testing.T) {
 	d := &Device{ADB: adb.Client{Bin: bin, Port: 5555}, Runtime: dir}
 	if err := d.EnsureAurora(context.Background()); err != nil {
 		t.Fatalf("EnsureAurora should skip download/install when already present: %v", err)
+	}
+}
+
+func TestCheckAPKABI(t *testing.T) {
+	dir := t.TempDir()
+	makeAPK := func(name string, entries ...string) string {
+		p := filepath.Join(dir, name)
+		f, err := os.Create(p)
+		if err != nil {
+			t.Fatal(err)
+		}
+		zw := zip.NewWriter(f)
+		for _, e := range entries {
+			w, err := zw.Create(e)
+			if err != nil {
+				t.Fatal(err)
+			}
+			_, _ = w.Write([]byte("elf"))
+		}
+		if err := zw.Close(); err != nil {
+			t.Fatal(err)
+		}
+		_ = f.Close()
+		return p
+	}
+
+	universal := makeAPK("universal.apk", "AndroidManifest.xml", "classes.dex")
+	arm64 := makeAPK("arm64.apk", "AndroidManifest.xml", "lib/arm64-v8a/libapp.so")
+	arm32 := makeAPK("arm32.apk", "AndroidManifest.xml", "lib/armeabi-v7a/libapp.so")
+	x86Only := makeAPK("x86.apk", "AndroidManifest.xml", "lib/x86_64/libapp.so")
+
+	if got := apkNativeABIs([]string{universal}); len(got) != 0 {
+		t.Fatalf("universal ABIs = %v, want empty", got)
+	}
+	if err := checkAPKABI("universal.apk", apkNativeABIs([]string{universal}), []string{"arm64-v8a"}); err != nil {
+		t.Fatalf("universal should pass: %v", err)
+	}
+	if err := checkAPKABI("arm64.apk", apkNativeABIs([]string{arm64}), []string{"arm64-v8a"}); err != nil {
+		t.Fatalf("arm64 should pass on arm64 device: %v", err)
+	}
+	if err := checkAPKABI("split.xapk", apkNativeABIs([]string{universal, arm64}), []string{"arm64-v8a"}); err != nil {
+		t.Fatalf("split bundle with arm64 split should pass: %v", err)
+	}
+	if err := checkAPKABI("arm32.apk", apkNativeABIs([]string{arm32}), []string{"arm64-v8a"}); code(err) != "mobile_apk_abi" {
+		t.Fatalf("arm32-only on arm64-only device: got %v, want mobile_apk_abi", err)
+	}
+	if err := checkAPKABI("x86.apk", apkNativeABIs([]string{x86Only}), []string{"arm64-v8a"}); code(err) != "mobile_apk_abi" {
+		t.Fatalf("x86_64-only on arm64 device: got %v, want mobile_apk_abi", err)
+	}
+	if err := checkAPKABI("x86.apk", apkNativeABIs([]string{x86Only}), []string{"x86_64", "arm64-v8a"}); err != nil {
+		t.Fatalf("x86_64 APK on x86_64 emulator should pass: %v", err)
 	}
 }

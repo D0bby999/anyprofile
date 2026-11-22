@@ -23,6 +23,8 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"slices"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -459,6 +461,7 @@ func (d *Device) Install(ctx context.Context, pkgPath string) error {
 	ictx, cancel := context.WithTimeout(ctx, 5*time.Minute)
 	defer cancel()
 	args := []string{"install", "-r", pkgPath}
+	checkPaths := []string{pkgPath}
 	if !strings.EqualFold(filepath.Ext(pkgPath), ".apk") {
 		tmp, err := os.MkdirTemp("", "anyprofile-apks-*")
 		if err != nil {
@@ -470,16 +473,107 @@ func (d *Device) Install(ctx context.Context, pkgPath string) error {
 			return err
 		}
 		args = append([]string{"install-multiple", "-r"}, splits...)
+		checkPaths = splits
+	}
+	if abis := apkNativeABIs(checkPaths); len(abis) > 0 {
+		if devABIs := d.deviceABIs(ictx); len(devABIs) > 0 {
+			if err := checkAPKABI(filepath.Base(pkgPath), abis, devABIs); err != nil {
+				return err
+			}
+		}
 	}
 	out, err := d.ADB.Run(ictx, args...)
 	if err != nil {
-		return err
+		return formatADBInstallError(filepath.Base(pkgPath), err.Error())
 	}
 	if !strings.Contains(out, "Success") {
-		return errors.New(out)
+		return formatADBInstallError(filepath.Base(pkgPath), out)
 	}
 	d.syncAppLocales(ctx)
 	return nil
+}
+
+// formatADBInstallError turns verbose adb/PackageManager Java stacktraces into
+// concise, actionable user-facing errors.
+func formatADBInstallError(pkgName, raw string) error {
+	switch {
+	case strings.Contains(raw, "not enough space") || strings.Contains(raw, "INSTALL_FAILED_INSUFFICIENT_STORAGE"):
+		return apperr.New("mobile_install_space", fmt.Sprintf("%s: not enough free storage on Android device", pkgName))
+	case strings.Contains(raw, "INSTALL_FAILED_NO_MATCHING_ABIS"):
+		return apperr.New("mobile_apk_abi", fmt.Sprintf("%s has no compatible CPU ABI for this Android device", pkgName))
+	case strings.Contains(raw, "INSTALL_FAILED_VERSION_DOWNGRADE"):
+		return apperr.New("mobile_install", fmt.Sprintf("%s: a newer version is already installed", pkgName))
+	}
+	msg := strings.TrimSpace(raw)
+	if idx := strings.Index(msg, "\tat "); idx > 0 {
+		msg = strings.TrimSpace(msg[:idx])
+	} else if idx := strings.Index(msg, " at android."); idx > 0 {
+		msg = strings.TrimSpace(msg[:idx])
+	}
+	if len(msg) > 220 {
+		msg = strings.TrimSpace(msg[:220]) + "…"
+	}
+	if msg == "" {
+		return apperr.New("mobile_install", fmt.Sprintf("%s: installation failed", pkgName))
+	}
+	return errors.New(msg)
+}
+
+// apkNativeABIs scans ZIP Central Directories for lib/<abi>/*.so without reading
+// file payloads, returning sorted unique ABIs (empty for universal/Java-only APKs).
+func apkNativeABIs(apkPaths []string) []string {
+	seen := map[string]struct{}{}
+	for _, p := range apkPaths {
+		zr, err := zip.OpenReader(p)
+		if err != nil {
+			continue
+		}
+		for _, f := range zr.File {
+			parts := strings.Split(f.Name, "/")
+			if len(parts) >= 3 && parts[0] == "lib" && parts[1] != "" && strings.HasSuffix(strings.ToLower(f.Name), ".so") {
+				seen[parts[1]] = struct{}{}
+			}
+		}
+		_ = zr.Close()
+	}
+	if len(seen) == 0 {
+		return nil
+	}
+	out := make([]string, 0, len(seen))
+	for a := range seen {
+		out = append(out, a)
+	}
+	sort.Strings(out)
+	return out
+}
+
+func checkAPKABI(pkgName string, apkABIs, deviceABIs []string) error {
+	if len(apkABIs) == 0 || len(deviceABIs) == 0 {
+		return nil
+	}
+	for _, a := range apkABIs {
+		if slices.Contains(deviceABIs, a) {
+			return nil
+		}
+	}
+	return apperr.New("mobile_apk_abi", fmt.Sprintf("%s only includes %s (this device supports %s)",
+		pkgName, strings.Join(apkABIs, ", "), strings.Join(deviceABIs, ", ")))
+}
+
+func (d *Device) deviceABIs(ctx context.Context) []string {
+	c, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	out, err := d.shell(c, "getprop ro.product.cpu.abilist")
+	if err != nil {
+		return nil
+	}
+	var abis []string
+	for _, s := range strings.Split(strings.TrimSpace(out), ",") {
+		if s = strings.TrimSpace(s); s != "" {
+			abis = append(abis, s)
+		}
+	}
+	return abis
 }
 
 func (d *Device) syncAppLocales(ctx context.Context) {

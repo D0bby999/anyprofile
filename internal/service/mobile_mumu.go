@@ -167,7 +167,7 @@ func (s *Service) BulkStartMobileDevices(ctx context.Context, ids []string) Bulk
 			defer wg.Done()
 			sem <- struct{}{}
 			defer func() { <-sem }()
-			if _, err := s.StartMobileDevice(ctx, devID); err != nil {
+			if _, err := s.startMobileBehind(ctx, devID); err != nil {
 				mu.Lock()
 				res.Failed++
 				res.Errors = append(res.Errors, devID+": "+err.Error())

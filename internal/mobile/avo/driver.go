@@ -41,9 +41,11 @@ type proc struct {
 	rt       Runtime
 	rtDir    string
 	ctrlSock string
-	view     *exec.Cmd
-	viewDone chan struct{}
-	paused   bool
+	view        *exec.Cmd
+	viewDone    chan struct{}
+	viewTitle   string
+	viewAppMode bool
+	paused      bool
 	exited   chan struct{}
 }
 
@@ -196,6 +198,7 @@ func (d *Driver) Start(ctx context.Context, dev mobile.Device, o mobile.StartOpt
 		}
 	}
 	phase("boot")
+	dev.NoFocus = o.NoFocus
 	var onReady func(*proc)
 	if !o.Headless {
 		// Open the Metal viewport immediately (~1s) so users see Android booting live like MuMu.
@@ -239,6 +242,9 @@ func (d *Driver) applyPostBoot(ctx context.Context, dev mobile.Device, o mobile.
 	layersReady := p.rt.LayersDir != "" && instDir != "" && exists(filepath.Join(instDir, ".gpu_layers_ready"))
 	if !layersReady {
 		ensureGPULayers(ctx, p.rt, p.adb, instDir, d.log)
+	}
+	if !homeLayoutReady(instDir) {
+		configureLauncherHome(ctx, p.adb, instDir, d.log)
 	}
 	if err := vm.ApplyLocale(ctx, p.adb, o.Timezone, o.Locale); err != nil {
 		d.log.Warn("avo locale", "device", dev.ID, "err", err)
@@ -533,9 +539,8 @@ func (d *Driver) Stop(ctx context.Context, dev mobile.Device) error {
 		return nil
 	}
 	d.closeWindow(p)
-	if p.paused {
-		_, _ = sendControl(ctx, p.ctrlSock, "resume")
-	}
+	// resume is idempotent; always thaw before shutdown in case the viewer paused it.
+	_, _ = sendControl(ctx, p.ctrlSock, "resume")
 	return d.shutdownProc(ctx, p)
 }
 
@@ -751,6 +756,17 @@ func (d *Driver) Adopt(ctx context.Context, dev mobile.Device, l mobile.Launch, 
 		Launch: mobile.Launch{PID: l.PID, PIDStartTime: l.PIDStartTime, ADBPort: bridge.Port},
 		Done:   exited,
 	}, nil
+}
+
+// SetUpstream hot-swaps the userspace vnet proxy dialer for a running device
+// without restarting the VM (used by standalone APKs switching between proxies).
+func (d *Driver) SetUpstream(id string, up *netproxy.Upstream) error {
+	p := d.proc(id)
+	if p == nil || p.net == nil {
+		return errors.New("the device is not running")
+	}
+	p.net.SetDial(vm.DialerFor(up))
+	return nil
 }
 
 func logTail(path string) string {

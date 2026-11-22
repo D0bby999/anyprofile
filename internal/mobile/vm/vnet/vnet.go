@@ -17,6 +17,7 @@ import (
 	"os"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/containers/gvisor-tap-vsock/pkg/services/dhcp"
@@ -62,17 +63,32 @@ type Config struct {
 
 // Network is a running VM network. Close ends it.
 type Network struct {
-	cfg   Config
-	stack *stack.Stack
-	sw    *tap.Switch
-	ln    net.Listener
-	ctx   context.Context
-	stop  context.CancelFunc
-	dns   *resolver
+	cfg    Config
+	dialFn atomic.Pointer[Dialer]
+	stack  *stack.Stack
+	sw     *tap.Switch
+	ln     net.Listener
+	ctx    context.Context
+	stop   context.CancelFunc
+	dns    *resolver
 
 	mu      sync.Mutex
 	closers []io.Closer
 	wg      sync.WaitGroup
+}
+
+// SetDial hot-swaps the upstream dialer for all new TCP connections and DNS lookups.
+func (n *Network) SetDial(d Dialer) {
+	if d != nil {
+		n.dialFn.Store(&d)
+	}
+}
+
+func (n *Network) dial(ctx context.Context, addr string) (net.Conn, error) {
+	if fn := n.dialFn.Load(); fn != nil && *fn != nil {
+		return (*fn)(ctx, addr)
+	}
+	return n.cfg.Dial(ctx, addr)
 }
 
 func init() {
@@ -117,6 +133,7 @@ func Start(cfg Config) (*Network, error) {
 	}
 	ctx, stop := context.WithCancel(context.Background())
 	n := &Network{cfg: cfg, stack: s, sw: sw, ctx: ctx, stop: stop}
+	n.SetDial(cfg.Dial)
 
 	s.SetTransportProtocolHandler(tcp.ProtocolNumber, n.tcpForwarder().HandlePacket)
 	// Bound endpoints (DHCP on 67, DNS on 53 of the gateway) take precedence
@@ -228,7 +245,7 @@ func (n *Network) tcpForwarder() *tcp.Forwarder {
 		}
 		target := net.JoinHostPort(id.LocalAddress.String(), strconv.Itoa(int(id.LocalPort)))
 		ctx, cancel := context.WithTimeout(n.ctx, dialTimeout)
-		out, err := n.cfg.Dial(ctx, target)
+		out, err := n.dial(ctx, target)
 		cancel()
 		if err != nil {
 			r.Complete(true)

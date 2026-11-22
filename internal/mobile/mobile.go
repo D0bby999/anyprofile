@@ -54,6 +54,8 @@ type Device struct {
 	Density      int
 	WithGMS      bool   // include MindTheGapps (Google Play Services + YouTube)
 	IdentityJSON string // JSON-encoded hardware identity profile for anti-detect
+	AppMode      bool   // standalone APK window mode: hides phone control rail
+	NoFocus      bool   // open viewport without stealing focus from the user's current app
 }
 
 // StartOptions is the network a device gets for one run.
@@ -68,6 +70,8 @@ type StartOptions struct {
 	// Headless starts QEMU without scrcpy. Agents and scripts do not need a
 	// window; the user's Open button still asks for one.
 	Headless bool
+	// NoFocus opens the window behind/quietly without stealing focus (used by bulk start).
+	NoFocus  bool
 	Progress func(string)
 }
 

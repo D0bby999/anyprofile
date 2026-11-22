@@ -66,6 +66,12 @@ final class ControlClient {
         }
     }
 
+    func sendSyncNow(_ cmd: String) {
+        queue.sync { [self] in
+            self.sendSync(cmd)
+        }
+    }
+
     private func sendSync(_ cmd: String) {
         if self.fd < 0 { self.fd = connectUnix(self.path) }
         guard self.fd >= 0 else { return }
@@ -306,13 +312,13 @@ final class ShmSurface {
         return true
     }
 
-    func renderLatestMetal(renderer: MetalRenderer, layer: CAMetalLayer) -> Bool {
+    func renderLatestMetal(renderer: MetalRenderer, layer: CAMetalLayer, force: Bool = false) -> Bool {
         lock.lock()
         defer { lock.unlock() }
         guard let base = ptr, width > 0, height > 0, bufSize > 0 else { return false }
         OSMemoryBarrier()
         let seq1 = base.loadUnaligned(fromByteOffset: 48, as: UInt64.self)
-        guard seq1 > 0, seq1 != lastSeq else { return false }
+        guard seq1 > 0, (force || seq1 != lastSeq) else { return false }
         let idx = Int(base.loadUnaligned(fromByteOffset: 40, as: UInt32.self))
         guard idx >= 0 && idx < 3 else { return false }
         let off = bufOffset + idx * bufSize
@@ -608,14 +614,23 @@ final class ViewportView: NSView {
               !urls.isEmpty else { return false }
 
         let mediaExts: Set<String> = ["jpg", "jpeg", "png", "webp", "gif", "mp4", "mov", "mkv", "webm"]
+        let bundleExts: Set<String> = ["apks", "xapk", "apkm"]
         for url in urls {
             let ext = url.pathExtension.lowercased()
             let name = url.lastPathComponent
             if ext == "apk" {
                 onToast("Installing \(name)...")
                 adb.run(["install", "-r", url.path]) { [onToast] ok, out in
-                    onToast(ok ? "Installed \(name)" : "Install failed: \(out.prefix(60))")
+                    if ok {
+                        onToast("Installed \(name)")
+                    } else if out.contains("NO_MATCHING_ABIS") {
+                        onToast("\(name) is not made for ARM phones")
+                    } else {
+                        onToast("Install failed: \(out.prefix(60))")
+                    }
                 }
+            } else if bundleExts.contains(ext) {
+                installSplitBundle(url: url, name: name)
             } else if mediaExts.contains(ext) {
                 let remote = "/sdcard/DCIM/Camera/\(name)"
                 onToast("Sending \(name)...")
@@ -637,6 +652,72 @@ final class ViewportView: NSView {
             }
         }
         return true
+    }
+
+    private func installSplitBundle(url: URL, name: String) {
+        onToast("Extracting \(name)...")
+        DispatchQueue.global(qos: .userInitiated).async { [adb, onToast] in
+            let fm = FileManager.default
+            let tmp = fm.temporaryDirectory.appendingPathComponent("anyprofile-apks-\(UUID().uuidString)")
+            do {
+                try fm.createDirectory(at: tmp, withIntermediateDirectories: true)
+            } catch {
+                DispatchQueue.main.async { onToast("Extract failed: \(name)") }
+                return
+            }
+            let unzip = Process()
+            unzip.executableURL = URL(fileURLWithPath: "/usr/bin/unzip")
+            unzip.arguments = ["-q", "-o", url.path, "-d", tmp.path]
+            unzip.standardOutput = Pipe()
+            unzip.standardError = Pipe()
+            do {
+                try unzip.run()
+                unzip.waitUntilExit()
+            } catch {
+                try? fm.removeItem(at: tmp)
+                DispatchQueue.main.async { onToast("Extract failed: \(name)") }
+                return
+            }
+            guard unzip.terminationStatus == 0 else {
+                try? fm.removeItem(at: tmp)
+                DispatchQueue.main.async { onToast("Corrupted or encrypted bundle: \(name)") }
+                return
+            }
+
+            var apks: [String] = []
+            var hasOBB = false
+            if let en = fm.enumerator(at: tmp, includingPropertiesForKeys: [.isRegularFileKey]) {
+                for case let f as URL in en {
+                    let rel = f.path.replacingOccurrences(of: tmp.path + "/", with: "")
+                    if rel.hasPrefix("__MACOSX/") || f.lastPathComponent.hasPrefix(".") { continue }
+                    let fext = f.pathExtension.lowercased()
+                    if fext == "obb" { hasOBB = true; break }
+                    if fext == "apk" { apks.append(f.path) }
+                }
+            }
+            if hasOBB {
+                try? fm.removeItem(at: tmp)
+                DispatchQueue.main.async { onToast("Bundles with .obb are not supported") }
+                return
+            }
+            apks.sort()
+            if apks.isEmpty || apks.count > 64 {
+                try? fm.removeItem(at: tmp)
+                DispatchQueue.main.async { onToast(apks.isEmpty ? "No .apk files in \(name)" : "Too many split APKs in \(name)") }
+                return
+            }
+            DispatchQueue.main.async { onToast("Installing \(name) (\(apks.count) splits)...") }
+            adb.run(["install-multiple", "-r"] + apks) { ok, out in
+                try? fm.removeItem(at: tmp)
+                if ok {
+                    onToast("Installed \(name)")
+                } else if out.contains("NO_MATCHING_ABIS") {
+                    onToast("\(name) is not made for ARM phones")
+                } else {
+                    onToast("Install failed: \(out.prefix(60))")
+                }
+            }
+        }
     }
 }
 
@@ -740,10 +821,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private let initialRect: NSRect
     private var onTop: Bool
     private var muted: Bool
+    private let appMode: Bool
+    private let ownerPID: pid_t
+    private let noFocus: Bool
+    private var minimized: Bool = false
+    private var closingFromSignal: Bool = false
+    private var termSource: DispatchSourceSignal?
     private let boundsFile: String
     private let adb: ADBHelper
     private let client: ControlClient
     private let metalRenderer = MetalRenderer()
+
+    private var toolbarWidth: CGFloat { appMode ? 0 : kToolbarWidth }
 
     private var window: NSWindow!
     private var viewport: ViewportView!
@@ -762,12 +851,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var guestH: Int = 0
     private var landscape = false
 
-    init(controlPath: String, title: String, rect: NSRect, onTop: Bool, muted: Bool, boundsFile: String, adbBin: String, adbSerial: String) {
+    init(controlPath: String, title: String, rect: NSRect, onTop: Bool, muted: Bool, appMode: Bool, ownerPID: pid_t, noFocus: Bool, boundsFile: String, adbBin: String, adbSerial: String) {
         self.controlPath = controlPath
         self.titleText = title
         self.initialRect = rect
         self.onTop = onTop
         self.muted = muted
+        self.appMode = appMode
+        self.ownerPID = ownerPID
+        self.noFocus = noFocus
         self.boundsFile = boundsFile
         self.adb = ADBHelper(bin: adbBin, serial: adbSerial)
         self.client = ControlClient(path: controlPath)
@@ -777,7 +869,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         let style: NSWindow.StyleMask = [.titled, .closable, .miniaturizable, .resizable]
         let screenH = NSScreen.main?.frame.height ?? 900
-        let totalW = initialRect.width + kToolbarWidth
+        let totalW = initialRect.width + toolbarWidth
         let cocoaRect = NSRect(x: initialRect.origin.x,
                                y: max(0, screenH - initialRect.origin.y - initialRect.height),
                                width: totalW,
@@ -787,7 +879,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         window.delegate = self
         window.backgroundColor = NSColor(red: 0.06, green: 0.07, blue: 0.09, alpha: 1.0)
         window.appearance = NSAppearance(named: .darkAqua)
-        window.minSize = NSSize(width: 240 + kToolbarWidth, height: 320)
+        window.minSize = NSSize(width: 240 + toolbarWidth, height: 320)
+        // Stay on the current desktop; never trigger a macOS Space switch on show.
+        window.collectionBehavior = [.moveToActiveSpace]
         if onTop { window.level = .floating }
 
         let root = NSView(frame: window.contentLayoutRect)
@@ -804,6 +898,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         root.addSubview(viewport)
 
         rail = buildRail()
+        rail.isHidden = appMode
         root.addSubview(rail)
 
         toastLabel = NSTextField(labelWithString: "")
@@ -819,10 +914,61 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         root.addSubview(toastLabel)
 
         layoutSubviews()
-        window.makeKeyAndOrderFront(nil)
-        window.makeFirstResponder(viewport)
-        NSApp.activate(ignoringOtherApps: true)
+        // Mirror Web's focus discipline: raise in front only if the user is still in
+        // AnyProfile (or launched directly) and --no-focus was not set. If the user
+        // already switched to another app while booting, show quietly without stealing focus.
+        let frontPID = NSWorkspace.shared.frontmostApplication?.processIdentifier ?? 0
+        let selfPID = ProcessInfo.processInfo.processIdentifier
+        let shouldFocus = !noFocus && (ownerPID <= 0 || frontPID == ownerPID || frontPID == selfPID)
+        if shouldFocus {
+            window.makeKeyAndOrderFront(nil)
+            window.makeFirstResponder(viewport)
+            if #available(macOS 14.0, *) {
+                NSApp.activate()
+            } else {
+                NSApp.activate(ignoringOtherApps: true)
+            }
+        } else {
+            window.orderFront(nil)
+        }
+        installSignalHandler()
+        client.sendBatch(["resume", "fps 0"])
         startFrameReader()
+    }
+
+    private func installSignalHandler() {
+        signal(SIGTERM, SIG_IGN)
+        let src = DispatchSource.makeSignalSource(signal: SIGTERM, queue: .main)
+        src.setEventHandler { [weak self] in
+            guard let self else { NSApp.terminate(nil); return }
+            self.closingFromSignal = true
+            self.passFocusToCurrentDesktop()
+            self.saveBounds()
+            self.window?.orderOut(nil)
+            NSApp.terminate(nil)
+        }
+        src.resume()
+        termSource = src
+    }
+
+    // Mirrors internal/launcher/focus_darwin.go passFocus(): when an accessory window
+    // closes while focused, activate the topmost visible regular app on the SAME desktop
+    // so macOS never jumps to another Space or random background app.
+    private func passFocusToCurrentDesktop() {
+        let selfPID = ProcessInfo.processInfo.processIdentifier
+        let frontPID = NSWorkspace.shared.frontmostApplication?.processIdentifier ?? 0
+        guard frontPID == selfPID || window?.isKeyWindow == true else { return }
+        guard let list = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID) as? [[String: Any]] else {
+            return
+        }
+        for w in list {
+            guard let layer = w[kCGWindowLayer as String] as? Int, layer == 0 else { continue }
+            if let alpha = w[kCGWindowAlpha as String] as? Double, alpha <= 0 { continue }
+            guard let pid = w[kCGWindowOwnerPID as String] as? pid_t, pid != selfPID else { continue }
+            guard let app = NSRunningApplication(processIdentifier: pid), app.activationPolicy == .regular else { continue }
+            app.activate(options: [])
+            return
+        }
     }
 
     private func buildRail() -> NSView {
@@ -901,9 +1047,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private func layoutSubviews() {
         guard let root = window?.contentView else { return }
         let b = root.bounds
-        let vw = max(1, b.width - kToolbarWidth)
+        let vw = max(1, b.width - toolbarWidth)
         viewport.frame = NSRect(x: 0, y: 0, width: vw, height: b.height)
-        rail.frame = NSRect(x: vw, y: 0, width: kToolbarWidth, height: b.height)
+        rail.frame = NSRect(x: vw, y: 0, width: toolbarWidth, height: b.height)
         positionToast()
     }
 
@@ -1011,19 +1157,34 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         let chrome = sender.frameRect(forContentRect: .zero)
         let contentH = max(320, frameSize.height - chrome.height)
         let viewW = max(200, (contentH * aspectRatio).rounded())
-        return NSSize(width: viewW + kToolbarWidth + chrome.width, height: contentH + chrome.height)
+        return NSSize(width: viewW + toolbarWidth + chrome.width, height: contentH + chrome.height)
     }
 
     func windowDidResize(_ notification: Notification) {
         layoutSubviews()
+        scheduleRender(force: true)
     }
 
     func windowDidMove(_ notification: Notification) { saveBounds() }
     func windowDidEndLiveResize(_ notification: Notification) { saveBounds() }
-    func windowDidBecomeKey(_ notification: Notification) { client.send("fps 0") }
+    func windowDidBecomeKey(_ notification: Notification) {
+        if minimized {
+            minimized = false
+            saveBounds()
+        }
+        client.sendBatch(["resume", "fps 0"])
+    }
     func windowDidResignKey(_ notification: Notification) { client.send("fps 15") }
-    func windowDidMiniaturize(_ notification: Notification) { client.send("fps 5") }
-    func windowDidDeminiaturize(_ notification: Notification) { client.send("fps 0") }
+    func windowDidMiniaturize(_ notification: Notification) {
+        minimized = true
+        saveBounds()
+        client.send("fps 1")
+    }
+    func windowDidDeminiaturize(_ notification: Notification) {
+        minimized = false
+        saveBounds()
+        client.sendBatch(["resume", "fps 0"])
+    }
 
     private func applyGuestAspect(w: Int, h: Int) {
         guard w > 0, h > 0 else { return }
@@ -1032,13 +1193,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         guestH = h
         aspectRatio = CGFloat(w) / CGFloat(h)
         let curContent = window.contentRect(forFrameRect: window.frame)
-        let curViewW = max(200, curContent.width - kToolbarWidth)
+        let curViewW = max(200, curContent.width - toolbarWidth)
         let curViewH = max(200, curContent.height)
         let targetH: CGFloat = changedOrientation ? curViewW : curViewH
         let targetW: CGFloat = (targetH * aspectRatio).rounded()
         let vis = window.screen?.visibleFrame ?? NSScreen.main?.visibleFrame ?? NSRect(x: 0, y: 0, width: 1440, height: 900)
-        let scale = min(1.0, min((vis.width - 40 - kToolbarWidth) / max(targetW, 1), (vis.height - 60) / max(targetH, 1)))
-        let finalContentW = (targetW * scale).rounded() + kToolbarWidth
+        let scale = min(1.0, min((vis.width - 40 - toolbarWidth) / max(targetW, 1), (vis.height - 60) / max(targetH, 1)))
+        let finalContentW = (targetW * scale).rounded() + toolbarWidth
         let finalContentH = (targetH * scale).rounded()
         let center = NSPoint(x: window.frame.midX, y: window.frame.midY)
         var newFrame = window.frameRect(forContentRect: NSRect(x: 0, y: 0, width: finalContentW, height: finalContentH))
@@ -1046,6 +1207,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         newFrame.origin.y = max(vis.minY, min(vis.maxY - newFrame.height, center.y - newFrame.height / 2))
         window.setFrame(newFrame, display: true, animate: changedOrientation)
         layoutSubviews()
+        scheduleRender(force: true)
     }
 
     private func saveBounds() {
@@ -1054,18 +1216,29 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         let screenH = win.screen?.frame.height ?? NSScreen.main?.frame.height ?? 900
         let x = Int(content.origin.x.rounded())
         let y = Int(max(0, screenH - content.origin.y - content.height).rounded())
-        let w = Int(max(200, content.width - kToolbarWidth).rounded())
+        let w = Int(max(200, content.width - toolbarWidth).rounded())
         let h = Int(content.height.rounded())
         guard w >= 200, h >= 200 else { return }
-        let obj: [String: Any] = ["x": x, "y": y, "w": w, "h": h, "onTop": onTop, "muted": muted]
+        let obj: [String: Any] = ["x": x, "y": y, "w": w, "h": h, "onTop": onTop, "muted": muted, "minimized": minimized]
         if let out = try? JSONSerialization.data(withJSONObject: obj) {
             try? out.write(to: URL(fileURLWithPath: boundsFile), options: .atomic)
         }
     }
 
     func windowWillClose(_ notification: Notification) {
-        client.send("fps 0")
+        minimized = false
+        if !closingFromSignal {
+            if appMode {
+                // Standalone APK mode: freeze vCPUs immediately for ~0% idle CPU.
+                client.sendSyncNow("pause")
+            } else {
+                client.sendSyncNow("resume")
+                client.sendSyncNow("fps 0")
+            }
+        }
+        passFocusToCurrentDesktop()
         saveBounds()
+        window?.orderOut(nil)
         NSApp.terminate(nil)
     }
 
@@ -1073,8 +1246,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     // MARK: - Coalesced Zero-Copy Frame Reader
 
-    private func scheduleRender() {
+    private var forceNextFrame = false
+
+    private func scheduleRender(force: Bool = false) {
         pendingLock.lock()
+        if force { forceNextFrame = true }
         if framePending {
             pendingLock.unlock()
             return
@@ -1086,11 +1262,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             guard let self else { return }
             self.pendingLock.lock()
             self.framePending = false
+            let forceNow = self.forceNextFrame
+            self.forceNextFrame = false
             self.pendingLock.unlock()
 
             if let renderer = self.metalRenderer, let ml = self.viewport.metalLayer {
-                _ = self.surface.renderLatestMetal(renderer: renderer, layer: ml)
-            } else if let img = self.surface.latestCGImage() {
+                _ = self.surface.renderLatestMetal(renderer: renderer, layer: ml, force: forceNow)
+            } else if let img = self.surface.latestCGImage(ignoreSeq: forceNow) {
                 DispatchQueue.main.async {
                     CATransaction.begin()
                     CATransaction.setDisableActions(true)
@@ -1162,6 +1340,9 @@ var winW: Double = 332
 var winH: Double = 720
 var onTop = false
 var muted = false
+var appMode = false
+var ownerPID: pid_t = 0
+var noFocus = false
 var boundsFile = ""
 var adbBin = ""
 var adbSerial = ""
@@ -1179,15 +1360,18 @@ while i < args.count {
     case "--bounds-file": if i + 1 < args.count { boundsFile = args[i + 1]; i += 1 }
     case "--adb-bin":     if i + 1 < args.count { adbBin = args[i + 1]; i += 1 }
     case "--adb-serial":  if i + 1 < args.count { adbSerial = args[i + 1]; i += 1 }
+    case "--owner-pid":   if i + 1 < args.count { ownerPID = pid_t(Int32(args[i + 1]) ?? 0); i += 1 }
     case "--on-top":      onTop = true
     case "--muted":       muted = true
+    case "--app-mode":    appMode = true
+    case "--no-focus":    noFocus = true
     default: break
     }
     i += 1
 }
 
 guard !controlPath.isEmpty else {
-    fputs("usage: anyprofile-view --control <control.sock> [--title TITLE] [--x X --y Y --w W --h H] [--bounds-file PATH] [--adb-bin PATH --adb-serial SERIAL] [--on-top] [--muted]\n", stderr)
+    fputs("usage: anyprofile-view --control <control.sock> [--title TITLE] [--x X --y Y --w W --h H] [--bounds-file PATH] [--adb-bin PATH --adb-serial SERIAL] [--owner-pid PID] [--on-top] [--muted] [--app-mode] [--no-focus]\n", stderr)
     exit(2)
 }
 
@@ -1195,7 +1379,8 @@ let app = NSApplication.shared
 app.setActivationPolicy(.accessory)
 let delegate = AppDelegate(controlPath: controlPath, title: title,
                            rect: NSRect(x: winX, y: winY, width: winW, height: winH),
-                           onTop: onTop, muted: muted, boundsFile: boundsFile,
+                           onTop: onTop, muted: muted, appMode: appMode, ownerPID: ownerPID,
+                           noFocus: noFocus, boundsFile: boundsFile,
                            adbBin: adbBin, adbSerial: adbSerial)
 app.delegate = delegate
 app.run()

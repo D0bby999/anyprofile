@@ -33,9 +33,9 @@ const (
 	maxMobileRAMMB     = 8192
 	maxMobileCPUs      = 8
 	minScreenW         = 360
-	maxScreenW         = 1300
+	maxScreenW         = 1600
 	minScreenH         = 640
-	maxScreenH         = 2800
+	maxScreenH         = 3200
 	minDensity         = 160
 	maxDensity         = 480
 	// mobileDiskNeed is the room a new device needs: about 1.5 GB after its
@@ -250,6 +250,9 @@ func (s *Service) ListMobileDevices(f store.ProfileFilter) ([]MobileRow, error) 
 	}
 	out := make([]MobileRow, 0, len(ds))
 	for _, d := range ds {
+		if d.Notes == apkHostNotes {
+			continue
+		}
 		s.upgradeMobileDriver(&d)
 		row := MobileRow{MobileDevice: d, State: mobile.Stopped}
 		if s.Mobile != nil {
@@ -340,6 +343,10 @@ func (s *Service) upgradeMobileDriver(d *store.MobileDevice) {
 			d.Driver = cur
 		}
 	}
+	if d.Driver == "avo" && strings.HasPrefix(d.ImageVersion, "23.") {
+		d.ImageVersion = "cuttlefish-16"
+		_ = s.Store.SetMobileDriverState(d.ID, d.DriverRef, d.ImageVersion)
+	}
 }
 
 func resolveWithGMS(in MobileInput) bool {
@@ -406,8 +413,8 @@ func (s *Service) CreateMobileDevice(ctx context.Context, in MobileInput) (store
 	return d, nil
 }
 
-// UpdateMobileDevice saves the editable fields. The proxy, memory and cores
-// change only while the device is stopped.
+// UpdateMobileDevice saves the editable fields. Hardware, screen, identity and
+// proxy change only while the device is stopped.
 func (s *Service) UpdateMobileDevice(ctx context.Context, id string, in MobileInput) error {
 	if err := checkMobileInput(&in); err != nil {
 		return err
@@ -416,7 +423,10 @@ func (s *Service) UpdateMobileDevice(ctx context.Context, id string, in MobileIn
 	if err != nil {
 		return err
 	}
-	if in.ProxyID != d.ProxyID || in.RAMMB != d.RAMMB || in.CPUs != d.CPUs {
+	hwChanged := in.ProxyID != d.ProxyID || in.RAMMB != d.RAMMB || in.CPUs != d.CPUs ||
+		in.ScreenW != d.ScreenW || in.ScreenH != d.ScreenH || in.Density != d.Density ||
+		in.IdentityTemplate != "" || (in.WithGMS != nil && *in.WithGMS != d.WithGMS)
+	if hwChanged {
 		if s.mobileRunning(id) {
 			return apperr.New("mobile_running", "close the device first")
 		}
@@ -425,6 +435,29 @@ func (s *Service) UpdateMobileDevice(ctx context.Context, id string, in MobileIn
 				return err
 			}
 		}
+	}
+	if in.WithGMS != nil {
+		d.WithGMS = *in.WithGMS
+	}
+	if in.IdentityTemplate != "" {
+		seed := d.ID
+		tpl := in.IdentityTemplate
+		if tpl == "regen" || strings.HasPrefix(tpl, "regen:") {
+			seed = d.ID + ":" + randomHex(4)
+			tpl = strings.TrimPrefix(tpl, "regen:")
+			if tpl == "regen" {
+				if cur, ok := vm.ParseIdentity(d.IdentityJSON); ok {
+					tpl = cur.Template
+				} else {
+					tpl = ""
+				}
+			}
+		} else if tpl == "auto" {
+			tpl = ""
+		}
+		d.IdentityJSON = vm.MarshalIdentity(vm.IdentityFor(seed, tpl))
+	} else if d.WithGMS && d.IdentityJSON == "" {
+		d.IdentityJSON = vm.MarshalIdentity(vm.IdentityFor(d.ID, ""))
 	}
 	d.Name, d.ProxyID, d.RAMMB, d.CPUs, d.Preset, d.ScreenW, d.ScreenH, d.Density, d.Notes, d.Tags, d.Pinned =
 		in.Name, in.ProxyID, in.RAMMB, in.CPUs, in.Preset, in.ScreenW, in.ScreenH, in.Density,
@@ -564,16 +597,20 @@ func (s *Service) liveMobile(id string) (store.MobileDevice, error) {
 // StartMobileDevice opens a device with its proxy, timezone and language,
 // measured again on every open so a changed exit is followed.
 func (s *Service) StartMobileDevice(ctx context.Context, id string) (MobileStart, error) {
-	return s.startMobile(ctx, id, false)
+	return s.startMobile(ctx, id, false, false)
 }
 
 // StartMobileDeviceHeadless opens a device for an agent or script: no scrcpy
 // window, everything else is the same as the user's Open button.
 func (s *Service) StartMobileDeviceHeadless(ctx context.Context, id string) (MobileStart, error) {
-	return s.startMobile(ctx, id, true)
+	return s.startMobile(ctx, id, true, false)
 }
 
-func (s *Service) startMobile(ctx context.Context, id string, headless bool) (MobileStart, error) {
+func (s *Service) startMobileBehind(ctx context.Context, id string) (MobileStart, error) {
+	return s.startMobile(ctx, id, false, true)
+}
+
+func (s *Service) startMobile(ctx context.Context, id string, headless, noFocus bool) (MobileStart, error) {
 	started := time.Now()
 	s.applyMobileFastStart()
 	if err := s.mobileAllowed(); err != nil {
@@ -601,7 +638,7 @@ func (s *Service) startMobile(ctx context.Context, id string, headless bool) (Mo
 		return MobileStart{}, err
 	}
 	proxyMS := time.Since(proxyStarted).Milliseconds()
-	o := mobile.StartOptions{Timezone: net.Timezone, Locale: androidLocale(net), Country: net.Country, Lat: net.Lat, Lon: net.Lon, Headless: headless}
+	o := mobile.StartOptions{Timezone: net.Timezone, Locale: androidLocale(net), Country: net.Country, Lat: net.Lat, Lon: net.Lon, Headless: headless, NoFocus: noFocus}
 	if d.ProxyID != "" {
 		up, err := s.proxyUpstream(d.ProxyID)
 		if err != nil {
@@ -626,17 +663,19 @@ func (s *Service) startMobile(ctx context.Context, id string, headless bool) (Mo
 	if err := s.Store.MarkMobileOpened(id); err != nil {
 		s.Log.Warn("mark mobile device opened", "device", id, "err", err)
 	}
-	go func() {
-		actx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
-		defer cancel()
-		c, err := s.MobileControl(id)
-		if err != nil {
-			return
-		}
-		if err := c.EnsureAurora(actx); err != nil {
-			s.Log.Warn("ensure aurora store", "device", id, "err", err)
-		}
-	}()
+	if d.Notes != apkHostNotes {
+		go func() {
+			actx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+			defer cancel()
+			c, err := s.MobileControl(id)
+			if err != nil {
+				return
+			}
+			if err := c.EnsureAurora(actx); err != nil {
+				s.Log.Warn("ensure aurora store", "device", id, "err", err)
+			}
+		}()
+	}
 	s.scheduleMobilePause(id)
 	s.notify("mobile")
 	return res, nil
@@ -952,6 +991,10 @@ func openPath(path string) {
 
 // ShowMobileDevice opens a running device's window again.
 func (s *Service) ShowMobileDevice(ctx context.Context, id string) error {
+	return s.showMobileDeviceWithTitle(ctx, id, "", false)
+}
+
+func (s *Service) showMobileDeviceWithTitle(ctx context.Context, id, title string, appMode bool) error {
 	if s.Mobile == nil {
 		return errMobileUnsupported
 	}
@@ -966,7 +1009,12 @@ func (s *Service) ShowMobileDevice(ctx context.Context, id string) error {
 	if err := s.resumeMobile(id); err != nil {
 		return err
 	}
-	if err := sh.Show(ctx, mobileDevice(d)); err != nil {
+	dev := mobileDevice(d)
+	if title != "" {
+		dev.Name = title
+	}
+	dev.AppMode = appMode
+	if err := sh.Show(ctx, dev); err != nil {
 		return err
 	}
 	s.scheduleMobilePause(id)
@@ -991,6 +1039,10 @@ func (s *Service) InstallMobileApps(ctx context.Context, id string, apks []strin
 	defer s.scheduleMobilePause(id)
 	for i, f := range apks {
 		if err := c.Install(ctx, f); err != nil {
+			var ae *apperr.Error
+			if errors.As(err, &ae) {
+				return i, err
+			}
 			if strings.Contains(err.Error(), "NO_MATCHING_ABIS") {
 				return i, apperr.New("mobile_apk_abi", filepath.Base(f)+" is not made for ARM phones")
 			}

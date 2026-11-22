@@ -7,12 +7,13 @@ package vm
 // windowState is where a device window was last seen, in screen points from
 // the top left, plus its always-on-top and audio mute flags.
 type windowState struct {
-	X     int  `json:"x"`
-	Y     int  `json:"y"`
-	W     int  `json:"w"`
-	H     int  `json:"h"`
-	OnTop bool `json:"onTop"`
-	Muted bool `json:"muted,omitempty"`
+	X         int  `json:"x"`
+	Y         int  `json:"y"`
+	W         int  `json:"w"`
+	H         int  `json:"h"`
+	OnTop     bool `json:"onTop"`
+	Muted     bool `json:"muted,omitempty"`
+	Minimized bool `json:"minimized,omitempty"`
 }
 
 const (

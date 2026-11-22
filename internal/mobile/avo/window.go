@@ -12,6 +12,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strconv"
+	"syscall"
 	"time"
 
 	"github.com/D0bby999/anyprofile/internal/mobile"
@@ -62,10 +63,19 @@ func (d *Driver) openWindowsLocked() int {
 }
 
 func (d *Driver) showOn(ctx context.Context, dev mobile.Device, p *proc) {
+	title := dev.Name
+	if title == "" {
+		title = "AnyProfile Mobile"
+	}
 	d.mu.Lock()
 	if p.view != nil {
+		if p.viewTitle == title && p.viewAppMode == dev.AppMode {
+			d.mu.Unlock()
+			return
+		}
 		d.mu.Unlock()
-		return
+		d.closeWindow(p)
+		d.mu.Lock()
 	}
 	n := d.openWindowsLocked()
 	d.mu.Unlock()
@@ -76,9 +86,9 @@ func (d *Driver) showOn(ctx context.Context, dev mobile.Device, p *proc) {
 		pos = vm.DefaultWindow(n, dev.ScreenW, dev.ScreenH)
 		pos.OnTop, pos.Muted = saved.OnTop, saved.Muted
 	}
-	title := dev.Name
-	if title == "" {
-		title = "AnyProfile Mobile"
+	if saved.Minimized {
+		saved.Minimized = false
+		_ = d.saveWindow(dev, saved)
 	}
 	args := []string{
 		"--control", p.ctrlSock,
@@ -90,12 +100,19 @@ func (d *Driver) showOn(ctx context.Context, dev mobile.Device, p *proc) {
 		"--bounds-file", d.windowFile(dev),
 		"--adb-bin", p.adb.Bin,
 		"--adb-serial", p.adb.Serial(),
+		"--owner-pid", strconv.Itoa(os.Getpid()),
 	}
 	if pos.OnTop {
 		args = append(args, "--on-top")
 	}
 	if pos.Muted {
 		args = append(args, "--muted")
+	}
+	if dev.AppMode {
+		args = append(args, "--app-mode")
+	}
+	if dev.NoFocus {
+		args = append(args, "--no-focus")
 	}
 
 	cmd := exec.Command(p.rt.View, args...)
@@ -110,6 +127,8 @@ func (d *Driver) showOn(ctx context.Context, dev mobile.Device, p *proc) {
 	d.mu.Lock()
 	p.view = cmd
 	p.viewDone = done
+	p.viewTitle = title
+	p.viewAppMode = dev.AppMode
 	d.mu.Unlock()
 	go func() {
 		_ = cmd.Wait()
@@ -118,6 +137,8 @@ func (d *Driver) showOn(ctx context.Context, dev mobile.Device, p *proc) {
 		if p.view == cmd {
 			p.view = nil
 			p.viewDone = nil
+			p.viewTitle = ""
+			p.viewAppMode = false
 		}
 		d.mu.Unlock()
 	}()
@@ -133,10 +154,26 @@ func (d *Driver) closeWindow(p *proc) {
 		return
 	}
 	if cmd.Process != nil {
+		// Ask cleanly first so anyprofile-view can hand focus back on the same desktop.
+		_ = cmd.Process.Signal(syscall.SIGTERM)
+		if done != nil {
+			select {
+			case <-done:
+				return
+			case <-time.After(400 * time.Millisecond):
+			}
+		}
 		_ = cmd.Process.Kill()
 	}
 	if done != nil {
 		<-done
+	}
+}
+
+// Hide closes the device's viewport window without stopping the VM.
+func (d *Driver) Hide(id string) {
+	if p := d.proc(id); p != nil {
+		d.closeWindow(p)
 	}
 }
 
@@ -146,21 +183,29 @@ func (d *Driver) Show(ctx context.Context, dev mobile.Device) error {
 	if p == nil {
 		return errors.New("the device is not running")
 	}
-	if p.paused {
-		if err := d.Resume(dev.ID); err != nil {
-			return err
-		}
+	// resume is idempotent; always thaw in case anyprofile-view paused the VMM on close.
+	if err := d.Resume(dev.ID); err != nil {
+		return err
 	}
+	// Headless-booted or Doze-idled Android sleeps the display (mWakefulness=Asleep → black frames).
+	c, cancel := context.WithTimeout(ctx, 5*time.Second)
+	_, _ = p.adb.Shell(c, "dumpsys deviceidle unforce >/dev/null 2>&1 || true; settings put system screen_off_timeout 2147483647; svc power stayon true; input keyevent 224; wm dismiss-keyguard")
+	cancel()
 	d.showOn(ctx, dev, p)
 	return nil
 }
 
-// Windowed reports whether the device currently has an open viewport window.
+// Windowed reports whether the device currently has a visible (non-minimized) viewport window.
 func (d *Driver) Windowed(id string) bool {
 	d.mu.Lock()
-	defer d.mu.Unlock()
 	p := d.procs[id]
-	return p != nil && p.view != nil
+	hasView := p != nil && p.view != nil
+	d.mu.Unlock()
+	if !hasView {
+		return false
+	}
+	s, ok := d.loadWindow(mobile.Device{ID: id})
+	return !ok || !s.Minimized
 }
 
 // SetWindowOnTop stores the always-on-top flag and reopens an open viewport.
@@ -174,6 +219,7 @@ func (d *Driver) SetWindowOnTop(ctx context.Context, dev mobile.Device, on bool)
 		return err
 	}
 	if p := d.proc(dev.ID); p != nil && p.view != nil {
+		dev.NoFocus = true
 		d.closeWindow(p)
 		d.showOn(ctx, dev, p)
 	}
@@ -205,6 +251,7 @@ func (d *Driver) SetWindowMuted(ctx context.Context, dev mobile.Device, muted bo
 		}
 		_, _ = p.adb.Shell(c, "cmd media_session volume --stream 3 --set "+vol)
 		if p.view != nil {
+			dev.NoFocus = true
 			d.closeWindow(p)
 			d.showOn(ctx, dev, p)
 		}
@@ -247,6 +294,7 @@ func (d *Driver) ArrangeWindows(ctx context.Context, layout string, devs []mobil
 		s.OnTop, s.Muted = prev.OnTop, prev.Muted
 		_ = d.saveWindow(dev, s)
 		if p := d.proc(dev.ID); p != nil {
+			dev.NoFocus = true
 			d.closeWindow(p)
 			d.showOn(ctx, dev, p)
 		}

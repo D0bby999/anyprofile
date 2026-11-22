@@ -121,7 +121,7 @@ func (n *Network) dnsTLS(c *tls.Config) {
 
 // serveDNS answers on the gateway's port 53, UDP and TCP.
 func (n *Network) serveDNS() error {
-	r := newResolver(n.cfg.Dial)
+	r := newResolver(n.dial)
 	n.dns = r
 	at := tcpip.FullAddress{NIC: 1, Addr: addr4(GatewayIP), Port: 53}
 	uc, err := gonet.DialUDP(n.stack, &at, nil, ipv4.ProtocolNumber)

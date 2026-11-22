@@ -17,6 +17,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -409,5 +410,30 @@ func TestInstallAvoRuntimeAndCuttlefish(t *testing.T) {
 	}
 	if _, ready := gmsBaseReady(rt); ready {
 		t.Fatal("cancelled base marked ready")
+	}
+}
+
+func TestWindowedMinimized(t *testing.T) {
+	drv := New(t.TempDir(), t.TempDir(), nil)
+	dev := mobile.Device{ID: "dev-min"}
+	if err := os.MkdirAll(drv.dir(dev), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	drv.procs[dev.ID] = &proc{view: exec.Command("true")}
+
+	if !drv.Windowed(dev.ID) {
+		t.Fatal("expected Windowed() == true before minimize")
+	}
+	if err := drv.saveWindow(dev, vm.WindowState{X: 100, Y: 100, W: 360, H: 720, Minimized: true}); err != nil {
+		t.Fatal(err)
+	}
+	if drv.Windowed(dev.ID) {
+		t.Fatal("expected Windowed() == false when minimized")
+	}
+	if err := drv.saveWindow(dev, vm.WindowState{X: 100, Y: 100, W: 360, H: 720, Minimized: false}); err != nil {
+		t.Fatal(err)
+	}
+	if !drv.Windowed(dev.ID) {
+		t.Fatal("expected Windowed() == true after restore")
 	}
 }

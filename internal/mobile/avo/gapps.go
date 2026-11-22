@@ -58,7 +58,8 @@ func gmsBaseReady(rt Runtime) (string, bool)   { return baseReady(gmsBaseDir(rt)
 func cleanBaseReady(rt Runtime) (string, bool) { return baseReady(cleanBaseDir(rt), cleanReadyStamp) }
 
 // bakeAurora pre-installs Aurora Store into the shared base disk so every new
-// device can install apps immediately without signing in to Google Play.
+// device can install apps immediately without signing in to Google Play, and
+// configures a clean Launcher3 home screen with Play Store & Aurora Store.
 func bakeAurora(ctx context.Context, log *slog.Logger, a adb.Client, cacheDir string) {
 	c, cancel := context.WithTimeout(ctx, 2*time.Minute)
 	defer cancel()
@@ -72,6 +73,67 @@ func bakeAurora(ctx context.Context, log *slog.Logger, a adb.Client, cacheDir st
 		return
 	}
 	_, _ = a.Shell(c, control.AuroraGrantScript)
+	configureLauncherHome(c, a, "", log)
+}
+
+const launcherHomeScript = `for pkg in \
+  com.android.threadnetwork.demoapp \
+  com.android.privatespace \
+  com.android.quicksearchbox \
+  com.android.dialer \
+  com.android.messaging \
+  com.android.contacts \
+  com.android.calendar \
+  com.android.deskclock; do
+  pm disable-user --user 0 "$pkg" >/dev/null 2>&1 || true
+done
+pm enable org.chromium.webview_shell >/dev/null 2>&1 || true
+BROWSER_PKG="org.chromium.webview_shell"
+BROWSER_ACT="org.chromium.webview_shell/.WebViewBrowserActivity"
+if pm path com.android.chrome >/dev/null 2>&1; then
+  BROWSER_PKG="com.android.chrome"
+  BROWSER_ACT="com.android.chrome/com.google.android.apps.chrome.Main"
+fi
+DB=/data/data/com.android.launcher3/databases/launcher.db
+if [ -f "$DB" ] && command -v sqlite3 >/dev/null 2>&1; then
+  sqlite3 "$DB" "
+    DELETE FROM favorites;
+    INSERT INTO favorites (_id, title, intent, container, screen, cellX, cellY, spanX, spanY, itemType, profileId, rank) VALUES
+      (1, \"Play Store\", \"#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;launchFlags=0x10200000;package=com.android.vending;component=com.android.vending/.AssetBrowserActivity;end\", -100, 0, 0, 0, 1, 1, 0, 0, 0),
+      (2, \"Aurora Store\", \"#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;launchFlags=0x10200000;package=com.aurora.store;component=com.aurora.store/.ComposeActivity;end\", -100, 0, 1, 0, 1, 1, 0, 0, 0),
+      (3, \"Chrome\", \"#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;launchFlags=0x10200000;package=${BROWSER_PKG};component=${BROWSER_ACT};end\", -101, 0, 0, 0, 1, 1, 0, 0, 0),
+      (4, \"Files\", \"#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;launchFlags=0x10200000;package=com.android.documentsui;component=com.android.documentsui/.LauncherActivity;end\", -101, 1, 1, 0, 1, 1, 0, 0, 0),
+      (5, \"Gallery\", \"#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;launchFlags=0x10200000;package=com.android.gallery3d;component=com.android.gallery3d/.app.GalleryActivity;end\", -101, 2, 2, 0, 1, 1, 0, 0, 0),
+      (6, \"Camera\", \"#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;launchFlags=0x10200000;package=com.android.camera2;component=com.android.camera2/com.android.camera.CameraLauncher;end\", -101, 3, 3, 0, 1, 1, 0, 0, 0),
+      (7, \"Settings\", \"#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;launchFlags=0x10200000;package=com.android.settings;component=com.android.settings/.Settings;end\", -101, 4, 4, 0, 1, 1, 0, 0, 0);
+  "
+  am force-stop com.android.launcher3 >/dev/null 2>&1 || true
+  input keyevent KEYCODE_HOME >/dev/null 2>&1 || true
+fi`
+
+const homeLayoutStamp = "v2\n"
+
+func configureLauncherHome(ctx context.Context, a adb.Client, instDir string, log *slog.Logger) {
+	c, cancel := context.WithTimeout(ctx, 15*time.Second)
+	defer cancel()
+	cmd := launcherHomeScript
+	if _, err := a.Shell(c, "su 0 sh -c '"+strings.ReplaceAll(cmd, "'", "'\\''")+"'"); err != nil {
+		if _, err2 := a.Shell(c, cmd); err2 != nil {
+			log.Warn("avo launcher home layout", "err", err)
+			return
+		}
+	}
+	if instDir != "" {
+		_ = os.WriteFile(filepath.Join(instDir, ".home_layout_ready"), []byte(homeLayoutStamp), 0o600)
+	}
+}
+
+func homeLayoutReady(instDir string) bool {
+	if instDir == "" {
+		return false
+	}
+	b, err := os.ReadFile(filepath.Join(instDir, ".home_layout_ready"))
+	return err == nil && string(b) == homeLayoutStamp
 }
 
 func cloneBaseDisks(srcDir, dstDir string) error {
