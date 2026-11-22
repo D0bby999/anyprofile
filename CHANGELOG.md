@@ -3,6 +3,13 @@
 The notes of each release tag are shown in the app's update prompt; this file
 keeps them together.
 
+## 0.2.12 (2026-11-22)
+
+- Added standalone APK runner with per-APK proxy, hardware fingerprint, and drawer UI, plus mobile and standalone APK MCP tools.
+- Added mobile viewer app-mode, display wake, live vnet proxy swap, and visible proxy display on Mobile cards.
+- Prevented MCP browser tabs and occluded Fury windows from stealing focus, and added opt-in headless profile launch.
+- Added pricing labels on Pro purchase buttons and direct Stripe Billing Portal access for Google-signed-in Pro accounts.
+
 ## 0.2.11 (2026-11-21)
 
 - Fixed an issue on macOS where existing mobile devices created before the Metal engine switch reported that they were made on another operating system, and relaxed the SQLite mobile driver constraint for Metal (`avo`) and MuMuPlayer 12 (`mumu12`).
