@@ -7,6 +7,20 @@ import { useConfirm } from './confirm'
 import { Icon } from './icons'
 import { useToast } from './toast'
 
+/** Render pack changelog notes as clean bullets and inline code spans. */
+function ProNotes({ notes }: { notes: string }) {
+  const inline = (text: string) => text.split(/(`[^`]+`)/g).map((part, i) =>
+    part.startsWith('`') && part.endsWith('`') && part.length > 2
+      ? <code key={i}>{part.slice(1, -1)}</code>
+      : part)
+  const lines = notes.split(/\r?\n/).map((l) => l.trim()).filter(Boolean)
+  const items = lines.every((l) => l.startsWith('- '))
+    ? lines.map((l) => l.slice(2).trim())
+    : null
+  if (items) return <ul className="pro-notes-list">{items.map((item, i) => <li key={i}>{inline(item)}</li>)}</ul>
+  return <p className="pro-note">{inline(notes)}</p>
+}
+
 /** Settings → Pro. Account is the primary path; buying and key recovery are
  *  separated so the common case never looks like a settings form. */
 export function ProSettings() {
@@ -174,11 +188,13 @@ export function ProSettings() {
           {st.kind && st.kind !== 'subscription' && <span className="chip">{st.kind === 'lifetime' ? t.pro.kindLifetime : st.kind === 'gift' ? t.pro.kindGift : t.pro.kindTest}</span>}
           {st.checkedAt && <span className="hint">{t.pro.checkedAt(formatDateTime(st.checkedAt))}</span>}
         </div>
-        {st.notes && <p className="pro-note">{st.notes}</p>}
+        {st.notes && <ProNotes notes={st.notes} />}
         <div className="pro-actions">
           <button type="button" className="btn sm" disabled={busy !== ''} onClick={check}>{busy === 'check' ? t.pro.checking : t.pro.check}</button>
           <button type="button" className="btn sm ghost" disabled={!st.version} onClick={() => run('scripts', () => Api.ProOpenScripts())}>{t.pro.openScripts}</button>
-          <button type="button" className="btn sm ghost" disabled={busy !== '' || (st.source !== '' && st.source !== 'stripe')} onClick={() => run('portal', () => Api.ProOpenPortal())}>{t.pro.manage}</button>
+          {(!st.source || st.source === 'stripe') && (
+            <button type="button" className="btn sm ghost" disabled={busy !== ''} onClick={() => run('portal', () => Api.ProOpenPortal())}>{t.pro.manage}</button>
+          )}
           <button type="button" className="btn sm ghost" disabled={busy !== ''} onClick={remove}>{t.pro.remove}</button>
         </div>
         <p className="pro-note">{st.state === 'expired' ? t.pro.expiredHint : t.pro.activeHint}</p>
@@ -191,7 +207,10 @@ export function ProSettings() {
         {devices.length === 0 ? <p className="pro-note">{t.pro.noDevices}</p> : (
           <div className="pro-devices">{devices.map((d) => (
             <div className="pro-device" key={d.install_id}>
-              <span>{d.name || d.install_id} <span className="muted">{d.current ? t.pro.currentDevice : d.platform}</span></span>
+              <span className="pro-device-main">
+                <span className={d.name ? '' : 'mono'}>{d.name || d.install_id}</span>
+                <span className="chip">{d.current ? t.pro.currentDevice : d.platform}</span>
+              </span>
               <button type="button" className="btn sm ghost" disabled={busy !== '' || d.current}
                 onClick={() => run('device', async () => { await Api.ProRemoveDevice(d.install_id); loadDevices() })}>{t.pro.removeDevice}</button>
             </div>

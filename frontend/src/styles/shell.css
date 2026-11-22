@@ -606,13 +606,17 @@ kbd { display: inline-flex; align-items: center; min-width: 22px; height: 20px; 
 /* Settings → Pro: account first, plan second, recovery behind a disclosure. */
 .pro-stack { display: flex; flex-direction: column; gap: 14px; }
 .pro-block { display: flex; flex-direction: column; gap: 12px; padding: 16px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface-sunken); }
-.pro-block-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.pro-block-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.pro-block-head > div:first-child { flex: 1 1 0; min-width: 0; }
+.pro-block-head > :last-child { flex-shrink: 0; }
 .pro-block-title { margin: 0; font-size: var(--t-md); font-weight: 650; letter-spacing: -.01em; }
 .pro-block-sub { margin: 4px 0 0; color: var(--muted); font-size: var(--t-sm); line-height: 1.5; }
 .pro-features { margin: 0; }
 .pro-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .pro-meta { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; color: var(--muted); }
 .pro-note { margin: 0; color: var(--muted); font-size: var(--t-sm); line-height: 1.55; }
+.pro-notes-list { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; color: var(--muted); font-size: var(--t-sm); line-height: 1.55; }
+.pro-notes-list code, .pro-note code { font-family: var(--mono); font-size: 12px; padding: 1px 5px; border-radius: 4px; background: var(--surface); border: 1px solid var(--line); color: var(--ink-soft); }
 .pro-account-line { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .pro-account-email { display: inline-flex; align-items: center; gap: 6px; color: var(--ink); font-weight: 600; }
 .pro-account-email .icon { color: var(--ok); }
@@ -622,6 +626,7 @@ kbd { display: inline-flex; align-items: center; min-width: 22px; height: 20px; 
 .pro-advanced-body { width: 100%; }
 .pro-devices { display: flex; flex-direction: column; }
 .pro-device { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 0; border-top: 1px solid var(--line); font-size: var(--t-sm); }
+.pro-device-main { display: inline-flex; align-items: center; gap: 8px; min-width: 0; flex-wrap: wrap; }
 .pro-device:first-child { border-top: 0; }
 
 /* Pro is a material, not a hue. The working accent stays blue for everyone, so
@@ -720,10 +725,10 @@ kbd { display: inline-flex; align-items: center; min-width: 22px; height: 20px; 
 .mobile-state-pill .mobile-device-status { font-size: inherit; color: inherit; }
 
 .mumu-listhead { padding: 8px 16px; border-bottom: 1px solid var(--line); font-size: var(--t-xs); }
-.mumu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 440px), 1fr)); padding: 14px; gap: 12px; }
+.mumu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 380px), 1fr)); padding: 12px; gap: 10px; }
 .mumu-card {
-  display: flex; flex-direction: row; align-items: center; gap: 16px;
-  min-width: 0; padding: 12px 16px;
+  display: flex; flex-direction: row; align-items: center; gap: 12px;
+  min-width: 0; padding: 10px 14px;
   border: 1px solid var(--line); border-radius: 12px;
   background: var(--surface); cursor: pointer;
   transition: border-color .14s var(--ease), background .14s var(--ease);
@@ -737,7 +742,7 @@ kbd { display: inline-flex; align-items: center; min-width: 22px; height: 20px; 
 /* MuMuPlayer Pro phone thumbnail stage on the left */
 .mumu-thumb {
   position: relative; flex: 0 0 auto;
-  width: 144px; height: 90px;
+  width: 120px; height: 82px;
   border-radius: 9px;
   background: #27292e;
   border: 1px solid rgba(255, 255, 255, 0.07);
@@ -841,7 +846,7 @@ kbd { display: inline-flex; align-items: center; min-width: 22px; height: 20px; 
 .mumu-thumb-dot.is-busy { background: #f59e0b; }
 .mumu-thumb-status { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-.mumu-card-info { display: flex; flex-direction: column; gap: 7px; min-width: 0; flex: 1 1 auto; }
+.mumu-card-info { display: flex; flex-direction: column; gap: 5px; min-width: 0; flex: 1 1 auto; }
 .mumu-card-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; min-width: 0; }
 .mumu-card-title-row { display: flex; align-items: center; gap: 7px; min-width: 0; flex-wrap: wrap; }
 .mumu-card-info .mobile-name { font-size: 16px; font-weight: 600; letter-spacing: -.01em; color: var(--ink); }
@@ -868,14 +873,14 @@ kbd { display: inline-flex; align-items: center; min-width: 22px; height: 20px; 
   font-size: var(--t-xs); color: var(--muted); font-variant-numeric: tabular-nums; }
 
 .mumu-card-actions {
-  display: flex; align-items: center; gap: 10px;
+  display: flex; align-items: center; gap: 8px;
   flex: 0 0 auto; margin-left: auto;
   border-top: none; padding-top: 0; margin-top: 0;
 }
 .mumu-card-actions > .rowmenu-wrap { order: 2; }
 .mumu-card-actions > .mumu-power-btn { order: 1; }
 .mumu-power-btn {
-  width: 38px; height: 38px; border-radius: 999px;
+  width: 34px; height: 34px; border-radius: 999px;
   display: inline-grid; place-items: center;
   border: none;
   cursor: pointer;

@@ -93,6 +93,14 @@ describe('ProSettings', () => {
     await waitFor(() => expect(api.ProCheck).toHaveBeenCalled())
   })
 
+  it('formats bulleted changelog notes and hides Manage subscription for non-Stripe keys', async () => {
+    status = { ...active, kind: 'lifetime', source: 'admin', notes: '- Mobile recipe `mobile-check-ip`\n- Web recipe `instagram-upload`' }
+    show()
+    const code = await screen.findByText('mobile-check-ip')
+    expect(code.tagName).toBe('CODE')
+    expect(screen.queryByRole('button', { name: t.pro.manage })).toBeNull()
+  })
+
   it('lists devices and frees another machine', async () => {
     status = active
     show()
