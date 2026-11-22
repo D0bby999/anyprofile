@@ -343,6 +343,19 @@ func (s *Server) mcpHandler() http.Handler {
 	ins := instructions
 	if s.Mobile != nil {
 		ins += mobileInstructions
+		if s.AgentManage {
+			if _, ok := s.Mobile.(MobileManageBackend); ok {
+				ins += mobileManageInstructions
+			}
+		}
+	}
+	if s.APK != nil {
+		ins += apkInstructions
+		if s.AgentManage {
+			if _, ok := s.APK.(APKManageBackend); ok {
+				ins += apkManageInstructions
+			}
+		}
 	}
 	if s.App != nil && s.AgentManage {
 		ins += appInstructions
@@ -351,6 +364,19 @@ func (s *Server) mcpHandler() http.Handler {
 		&mcp.ServerOptions{Instructions: ins})
 	if s.Mobile != nil {
 		s.addMobileTools(srv)
+		if s.AgentManage {
+			if mm, ok := s.Mobile.(MobileManageBackend); ok {
+				s.addMobileManageTools(srv, mm)
+			}
+		}
+	}
+	if s.APK != nil {
+		s.addAPKTools(srv)
+		if s.AgentManage {
+			if am, ok := s.APK.(APKManageBackend); ok {
+				s.addAPKManageTools(srv, am)
+			}
+		}
 	}
 	if s.App != nil && s.AgentManage {
 		s.addAppTools(srv)

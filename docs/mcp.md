@@ -370,6 +370,39 @@ Khi có máy mobile (AnyProfile Pro, `docs/mobile.md`), agent có thêm các too
 | `device_list_apps`, `device_launch_app`, `device_open_url` | các app đã cài; mở app theo tên gói; mở địa chỉ http(s) trong trình duyệt của máy |
 | `device_push_file` | chép một file từ thư mục uploads vào ảnh của máy (`DCIM/AnyProfile`), nơi thư viện và ô chọn file của app thấy nó đầu tiên |
 | `device_install_apk` | cài app từ file `.apk` hoặc gói `.apks`, `.xapk`, `.apkm` trong thư mục uploads |
+| `device_install_aurora` | cài và mở Aurora Store (client Google Play ẩn danh) trên máy |
+
+Khi bật **Cho agent tạo và sửa profile** (`agentManage`), máy mobile có thêm các tool quản lý tương tự Web:
+
+| Tool | Làm gì |
+|---|---|
+| `device_create` | tạo máy Android mới (`name`, `preset`, `proxy`, `identityTemplate`, `withGms`, `tags`, `notes`) |
+| `device_update` | sửa tên, `preset`, `proxyId`, `identityTemplate` (nhận `regen` / `regen:<model>`), `withGms`, `tags`, `notes` (đổi phần cứng/proxy cần đóng máy trước) |
+| `device_proxy_assign` | gán hoặc bỏ proxy cho máy đang dừng |
+| `device_trash` / `device_restore` | chuyển máy vào thùng rác (cần `confirm: true`) / khôi phục lại |
+| `device_purge` | xoá vĩnh viễn máy đã vào thùng rác kèm ổ đĩa (cần `confirm` đúng **tên máy**) |
+
+## Ứng dụng APK độc lập (tab APK)
+
+Các ứng dụng trong tab **APK** chạy trên host Android nhẹ riêng (`APK Runner`), mỗi app có proxy riêng (đổi nóng 0ms) và hardware fingerprint + `android_id` riêng. Mọi tool nhận `apk`: tên gói (`org.schabi.newpipe`) hoặc đúng tên hiển thị (`NewPipe`).
+
+| Tool | Làm gì |
+|---|---|
+| `list_apks` | liệt kê các APK đã cài: package, tên, trạng thái chạy, proxy, model thiết bị, `android_id` |
+| `open_apk` / `close_apk` | mở APK headless (hoặc `show: true` để mở cửa sổ); đóng app và pause host về ~0% CPU (`stopHost: true` để tắt hẳn) |
+| `apk_show` | mở cửa sổ độc lập (`--app-mode`) của APK đang chạy để người dùng xem |
+| `apk_snapshot`, `apk_find`, `apk_screenshot`, `apk_wait_for` | đọc cây UI (`[ref=mN]`), tìm phần tử theo `target`, chụp ảnh màn hình, đợi chữ |
+| `apk_tap`, `apk_tap_text`, `apk_long_press`, `apk_drag`, `apk_swipe`, `apk_type`, `apk_press_key` | thao tác cảm ứng và bàn phím trên màn hình APK |
+| `apk_open_url`, `apk_push_file`, `apk_pull_file`, `apk_clipboard_get`, `apk_clipboard_set`, `apk_notifications` | mở link/deep link, chép file từ `list_uploads` hoặc kéo file ra, clipboard, thông báo |
+| `apk_grant_permission` / `apk_revoke_permission` | cấp hoặc thu quyền (`camera`, `microphone`, `location`, `notifications`, `photos`) cho chính APK đó |
+
+Khi bật **Cho agent tạo và sửa profile** (`agentManage`), có thêm 3 tool quản lý APK:
+
+| Tool | Làm gì |
+|---|---|
+| `apk_add` | cài và thêm file `.apk`/`.apks`/`.xapk`/`.apkm` từ `list_uploads` kèm tên, proxy, hướng màn hình, `identityTemplate`, ghi chú |
+| `apk_update` | đổi tên, hướng màn hình, proxy (đổi nóng 0ms nếu đang chạy), ghi chú, hoặc `identityTemplate` (`regen` để xoay IMEI/Serial/`android_id`) |
+| `apk_delete` | xoá APK khỏi danh sách (tuỳ chọn `uninstall: true`), cần `confirm: true` |
 
 - Màn hình chuyển động liên tục (feed video) không đọc được thành dàn ý: agent dùng `device_screenshot` rồi chạm
   theo toạ độ.
@@ -388,8 +421,7 @@ Khi có máy mobile (AnyProfile Pro, `docs/mobile.md`), agent có thêm các too
 - Upload file nằm ngoài thư mục uploads.
 - Request trước lần đầu agent dùng tab: tải lại trang (`navigate` với `reload`) để thấy chúng.
 - Profile đã mở từ trước khi AnyProfile khởi động lại không điều khiển được (`agent_no_pipe`): đóng rồi mở lại.
-- Với máy mobile: chạy lệnh shell, đọc file trong máy, tạo hoặc xoá máy, đổi proxy, cài app từ file ngoài thư mục
-  uploads.
+- Với máy mobile và APK: chạy lệnh shell tuỳ ý, đọc file hệ thống trong máy, cài app từ file ngoài thư mục uploads. Tạo/sửa/xoá máy mobile, đổi proxy và thêm/sửa/xoá APK chỉ mở khi bạn bật "Cho agent tạo và sửa profile" (`agentManage`).
 
 ## An toàn
 

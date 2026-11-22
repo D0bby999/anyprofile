@@ -53,6 +53,7 @@ type AppStatus struct {
 	Profiles int    `json:"profiles"`
 	Trashed  int    `json:"trashed"`
 	Devices  int    `json:"devices"`
+	APKs     int    `json:"apks"`
 	// Open is how many profiles run right now.
 	Open          int            `json:"open"`
 	Engines       []AppEngine    `json:"engines"`
@@ -160,8 +161,8 @@ func proxyLine(p ProxyInfo) string {
 // statusText is app_status as lines: what an agent needs to decide next.
 func statusText(a AppStatus) string {
 	var sb strings.Builder
-	fmt.Fprintf(&sb, "version=%s profiles=%d trashed=%d devices=%d open=%d maxConcurrent=%d updateAuto=%t\n",
-		a.Version, a.Profiles, a.Trashed, a.Devices, a.Open, a.MaxConcurrent, a.UpdateAuto)
+	fmt.Fprintf(&sb, "version=%s profiles=%d trashed=%d devices=%d apks=%d open=%d maxConcurrent=%d updateAuto=%t\n",
+		a.Version, a.Profiles, a.Trashed, a.Devices, a.APKs, a.Open, a.MaxConcurrent, a.UpdateAuto)
 	sb.WriteString("engines:")
 	for _, e := range a.Engines {
 		fmt.Fprintf(&sb, " %s=%s installed=%t;", e.ID, e.Version, e.Installed)

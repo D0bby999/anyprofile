@@ -41,6 +41,9 @@ func (b apiBackend) Status(ctx context.Context) (api.AppStatus, error) {
 		if ds, err := b.svc.ListMobileDevices(store.ProfileFilter{}); err == nil {
 			st.Devices = len(ds)
 		}
+		if apks, err := b.svc.ListAPKs(); err == nil {
+			st.APKs = len(apks)
+		}
 	}
 	ids := make([]string, 0, len(b.svc.Engines))
 	for id := range b.svc.Engines {

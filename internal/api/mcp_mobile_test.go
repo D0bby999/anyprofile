@@ -4,13 +4,17 @@ package api
 
 import (
 	"context"
+	"log/slog"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"slices"
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
+	"github.com/D0bby999/anyprofile/internal/agent"
 	"github.com/D0bby999/anyprofile/internal/apperr"
 	"github.com/D0bby999/anyprofile/internal/automation"
 	"github.com/D0bby999/anyprofile/internal/mobile"
@@ -255,3 +259,115 @@ func TestMCPNoMobileTools(t *testing.T) {
 }
 
 func (c *fakeControl) OpenURL(context.Context, string) error { return nil }
+
+type fakeMobileManage struct {
+	*fakeMobile
+	created  []MobileCreate
+	updated  []string
+	assigned [][2]string
+	trashed  []string
+	restored []string
+	purged   []string
+}
+
+func (f *fakeMobileManage) CreateMobile(_ context.Context, in MobileCreate) (MobileDevice, error) {
+	f.created = append(f.created, in)
+	d := MobileDevice{ID: "d9", Serial: 9, Name: in.Name, State: "stopped", Preset: in.Preset, Tags: in.Tags}
+	f.devices = append(f.devices, d)
+	return d, nil
+}
+
+func (f *fakeMobileManage) UpdateMobile(_ context.Context, ref string, in MobilePatch) (MobileDevice, error) {
+	f.updated = append(f.updated, ref)
+	name := "Spare"
+	if in.Name != nil {
+		name = *in.Name
+	}
+	return MobileDevice{ID: "d2", Serial: 2, Name: name, State: "stopped"}, nil
+}
+
+func (f *fakeMobileManage) AssignMobileProxy(_ context.Context, ref, proxyID string) (MobileDevice, error) {
+	f.assigned = append(f.assigned, [2]string{ref, proxyID})
+	return MobileDevice{ID: "d2", Serial: 2, Name: "Spare", State: "stopped", Country: "US"}, nil
+}
+
+func (f *fakeMobileManage) TrashMobile(_ context.Context, ref string) error {
+	f.trashed = append(f.trashed, ref)
+	return nil
+}
+
+func (f *fakeMobileManage) RestoreMobile(_ context.Context, ref string) (MobileDevice, error) {
+	f.restored = append(f.restored, ref)
+	return MobileDevice{ID: "d2", Serial: 2, Name: "Spare", State: "stopped"}, nil
+}
+
+func (f *fakeMobileManage) PurgeMobile(_ context.Context, ref, confirm string) error {
+	if confirm != "Spare" {
+		return apperr.New("confirm_required", "confirm must be the device's exact name").Never()
+	}
+	f.purged = append(f.purged, ref)
+	return nil
+}
+
+func TestMCPMobileManageTools(t *testing.T) {
+	fm := &fakeMobileManage{fakeMobile: &fakeMobile{ctl: &fakeControl{}, devices: []MobileDevice{
+		{ID: "d2", Serial: 2, Name: "Spare", State: "stopped"},
+	}}}
+	// Gate off: management tools must not be registered.
+	_, sOff, srvOff := mcpSetupWith(t, fm)
+	sOff.AgentManage = false
+	csOff, err := connect(t, srvOff, rewrite{token: token})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer csOff.Close()
+	for _, forbidden := range []string{"device_create", "device_update", "device_proxy_assign", "device_trash", "device_restore", "device_purge"} {
+		if slices.Contains(toolNames(t, csOff), forbidden) {
+			t.Fatalf("%s exposed with AgentManage=false", forbidden)
+		}
+	}
+
+	// Gate on: create, update, proxy assign, trash/restore/purge with confirmations.
+	f := &fake{pipe: &pipe{done: make(chan struct{})}}
+	sOn := New(f, slog.New(slog.NewTextHandler(&logBuf, nil)), port, token)
+	sOn.Agent = agent.NewHub(time.Minute)
+	t.Cleanup(sOn.Agent.Close)
+	sOn.Uploads, sOn.Recipes = t.TempDir(), t.TempDir()
+	sOn.Mobile = fm
+	sOn.AgentManage = true
+	srvOn := httptest.NewServer(sOn.Handler())
+	t.Cleanup(srvOn.Close)
+	cs, err := connect(t, srvOn, rewrite{token: token})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer cs.Close()
+
+	if !strings.Contains(cs.InitializeResult().Instructions, "device_create") {
+		t.Fatal("instructions missing mobile manage guidance")
+	}
+	if out, isErr := call(t, cs, "device_create", map[string]any{"name": "TikTok US 01", "preset": "balanced", "proxy": "auto", "identityTemplate": "pixel9"}); isErr || !strings.Contains(out, "TikTok US 01") {
+		t.Fatalf("device_create = %q (err=%v)", out, isErr)
+	}
+	if out, isErr := call(t, cs, "device_update", map[string]any{"device": "Spare", "name": "Spare Renamed", "identityTemplate": "regen"}); isErr || !strings.Contains(out, "Spare Renamed") {
+		t.Fatalf("device_update = %q (err=%v)", out, isErr)
+	}
+	if out, isErr := call(t, cs, "device_proxy_assign", map[string]any{"device": "Spare", "proxyId": "px1"}); isErr || !strings.Contains(out, "proxy=US") {
+		t.Fatalf("device_proxy_assign = %q (err=%v)", out, isErr)
+	}
+	if out, isErr := call(t, cs, "device_trash", map[string]any{"device": "Spare", "confirm": false}); !isErr || !strings.Contains(out, "confirm_required") {
+		t.Fatalf("device_trash confirm=false = %q (err=%v)", out, isErr)
+	}
+	if out, isErr := call(t, cs, "device_trash", map[string]any{"device": "Spare", "confirm": true}); isErr || !slices.Equal(fm.trashed, []string{"Spare"}) {
+		t.Fatalf("device_trash = %q (err=%v)", out, isErr)
+	}
+	if out, isErr := call(t, cs, "device_restore", map[string]any{"device": "Spare"}); isErr || !slices.Equal(fm.restored, []string{"Spare"}) {
+		t.Fatalf("device_restore = %q (err=%v)", out, isErr)
+	}
+	if out, isErr := call(t, cs, "device_purge", map[string]any{"device": "Spare", "confirm": "wrong"}); !isErr || !strings.Contains(out, "confirm_required") {
+		t.Fatalf("device_purge wrong confirm = %q (err=%v)", out, isErr)
+	}
+	if out, isErr := call(t, cs, "device_purge", map[string]any{"device": "Spare", "confirm": "Spare"}); isErr || !slices.Equal(fm.purged, []string{"Spare"}) {
+		t.Fatalf("device_purge = %q (err=%v)", out, isErr)
+	}
+}

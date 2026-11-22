@@ -66,6 +66,8 @@ func (l *leaseStore) acquireFor(key, owner string, ttl time.Duration) (*lease, e
 		code := "profile_busy"
 		if len(key) > 7 && key[:7] == "device:" {
 			code = "device_busy"
+		} else if len(key) > 4 && key[:4] == "apk:" {
+			code = "apk_busy"
 		}
 		return nil, apperr.Newf(code, "held by %s for %s", x.id, x.expires.Sub(now).Round(time.Second))
 	}

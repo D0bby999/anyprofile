@@ -72,7 +72,9 @@ type Server struct {
 	// Pro recipe by copying it into Recipes.
 	ProRecipes string
 	// Mobile serves the device tools to agents; nil leaves them out.
-	Mobile  MobileBackend
+	Mobile MobileBackend
+	// APK serves standalone APK tools to agents; nil leaves them out.
+	APK     APKBackend
 	prompts promptSet
 	// App serves the profile-management tools, and only when AgentManage says
 	// the user let agents change profiles. Both nil/false leaves them out.

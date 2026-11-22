@@ -15,10 +15,14 @@ import (
 
 	"github.com/D0bby999/anyprofile/internal/agent"
 	"github.com/D0bby999/anyprofile/internal/api"
+	"github.com/D0bby999/anyprofile/internal/apperr"
 	"github.com/D0bby999/anyprofile/internal/mobile"
+	"github.com/D0bby999/anyprofile/internal/mobile/vm"
 	"github.com/D0bby999/anyprofile/internal/pro"
 	"github.com/D0bby999/anyprofile/internal/service"
 	"github.com/D0bby999/anyprofile/internal/store"
+	"strconv"
+	"strings"
 )
 
 // apiState holds the running local API server, if any.
@@ -121,6 +125,265 @@ func (m apiMobile) MobileControl(id string) (api.DeviceControl, error) {
 	return c, nil
 }
 
+func (m apiMobile) proxyCountry(proxyID string) string {
+	if proxyID == "" {
+		return ""
+	}
+	if pxs, err := m.svc.ListProxies(); err == nil {
+		for _, p := range pxs {
+			if p.ID == proxyID {
+				return p.Country
+			}
+		}
+	}
+	return ""
+}
+
+func (m apiMobile) toAPIDevice(d store.MobileDevice) api.MobileDevice {
+	state := string(mobile.Stopped)
+	adbPort := 0
+	if m.svc.Mobile != nil {
+		in := m.svc.Mobile.Info(d.ID)
+		state, adbPort = string(in.State), in.ADBPort
+	}
+	return api.MobileDevice{
+		ID: d.ID, Serial: d.Serial, Name: d.Name, State: state,
+		Platform: d.Platform, Tags: d.Tags, Country: m.proxyCountry(d.ProxyID),
+		Preset: d.Preset, ADBPort: adbPort,
+	}
+}
+
+func (m apiMobile) resolveDevice(ref string, trashed bool) (store.MobileDevice, error) {
+	rows, err := m.svc.ListMobileDevices(store.ProfileFilter{Trashed: trashed})
+	if err != nil {
+		return store.MobileDevice{}, err
+	}
+	ref = strings.TrimSpace(ref)
+	serial, serr := strconv.Atoi(strings.TrimPrefix(ref, "#"))
+	var hits []store.MobileDevice
+	for _, r := range rows {
+		if r.ID == ref || (serr == nil && r.Serial == serial) {
+			return r.MobileDevice, nil
+		}
+		if strings.EqualFold(r.Name, ref) {
+			hits = append(hits, r.MobileDevice)
+		}
+	}
+	switch len(hits) {
+	case 1:
+		return hits[0], nil
+	case 0:
+		where := "list_devices"
+		if trashed {
+			where = "the trash"
+		}
+		return store.MobileDevice{}, apperr.Newf("api_not_found", "no device %q in %s", ref, where)
+	default:
+		return store.MobileDevice{}, apperr.Newf("agent_ambiguous", "%d devices are named %q; use the id or #serial", len(hits), ref).Never()
+	}
+}
+
+func (m apiMobile) CreateMobile(ctx context.Context, in api.MobileCreate) (api.MobileDevice, error) {
+	proxyID := strings.TrimSpace(in.Proxy)
+	if strings.EqualFold(proxyID, "none") {
+		proxyID = ""
+	}
+	d, err := m.svc.CreateMobileDevice(ctx, service.MobileInput{
+		Name: in.Name, Preset: in.Preset, ProxyID: proxyID,
+		IdentityTemplate: in.IdentityTemplate, WithGMS: in.WithGMS,
+		Tags: in.Tags, Notes: in.Notes,
+	})
+	if err != nil {
+		return api.MobileDevice{}, err
+	}
+	return m.toAPIDevice(d), nil
+}
+
+func (m apiMobile) UpdateMobile(ctx context.Context, ref string, in api.MobilePatch) (api.MobileDevice, error) {
+	cur, err := m.resolveDevice(ref, false)
+	if err != nil {
+		return api.MobileDevice{}, err
+	}
+	upd := service.MobileInput{
+		Name: cur.Name, ProxyID: cur.ProxyID, Preset: cur.Preset,
+		RAMMB: cur.RAMMB, CPUs: cur.CPUs, ScreenW: cur.ScreenW, ScreenH: cur.ScreenH, Density: cur.Density,
+		Notes: cur.Notes, Tags: cur.Tags, Pinned: cur.Pinned,
+	}
+	if in.Name != nil {
+		upd.Name = *in.Name
+	}
+	if in.Preset != nil && *in.Preset != cur.Preset {
+		upd.Preset = *in.Preset
+		upd.RAMMB, upd.CPUs, upd.ScreenW, upd.ScreenH, upd.Density = 0, 0, 0, 0, 0
+	}
+	if in.ProxyID != nil {
+		upd.ProxyID = strings.TrimSpace(*in.ProxyID)
+	}
+	if in.IdentityTemplate != nil {
+		upd.IdentityTemplate = *in.IdentityTemplate
+	}
+	if in.WithGMS != nil {
+		upd.WithGMS = in.WithGMS
+	}
+	if in.Tags != nil {
+		upd.Tags = *in.Tags
+	}
+	if in.Notes != nil {
+		upd.Notes = *in.Notes
+	}
+	if err := m.svc.UpdateMobileDevice(ctx, cur.ID, upd); err != nil {
+		return api.MobileDevice{}, err
+	}
+	got, err := m.svc.Store.GetMobileDevice(cur.ID)
+	if err != nil {
+		return api.MobileDevice{}, err
+	}
+	return m.toAPIDevice(got), nil
+}
+
+func (m apiMobile) AssignMobileProxy(ctx context.Context, ref, proxyID string) (api.MobileDevice, error) {
+	return m.UpdateMobile(ctx, ref, api.MobilePatch{ProxyID: &proxyID})
+}
+
+func (m apiMobile) TrashMobile(ctx context.Context, ref string) error {
+	d, err := m.resolveDevice(ref, false)
+	if err != nil {
+		return err
+	}
+	return m.svc.TrashMobileDevice(ctx, d.ID)
+}
+
+func (m apiMobile) RestoreMobile(_ context.Context, ref string) (api.MobileDevice, error) {
+	d, err := m.resolveDevice(ref, true)
+	if err != nil {
+		return api.MobileDevice{}, err
+	}
+	if err := m.svc.RestoreMobileDevice(d.ID); err != nil {
+		return api.MobileDevice{}, err
+	}
+	got, err := m.svc.Store.GetMobileDevice(d.ID)
+	if err != nil {
+		return api.MobileDevice{}, err
+	}
+	return m.toAPIDevice(got), nil
+}
+
+func (m apiMobile) PurgeMobile(ctx context.Context, ref, confirm string) error {
+	d, err := m.resolveDevice(ref, true)
+	if err != nil {
+		return err
+	}
+	if strings.TrimSpace(confirm) != d.Name {
+		return apperr.Newf("confirm_required", "confirm must be the device's exact name, %q", d.Name).Never()
+	}
+	return m.svc.PurgeMobileDevice(ctx, d.ID)
+}
+
+// apiAPK lets AI agents drive and manage standalone APKs through the service.
+type apiAPK struct{ svc *service.Service }
+
+func (a apiAPK) toAPIAPK(rec store.MobileAPK, countries map[string]string, running bool) api.APKApp {
+	out := api.APKApp{
+		Package: rec.Package, Label: rec.Label, VersionName: rec.VersionName,
+		Orientation: rec.Orientation, ProxyID: rec.ProxyID, Country: countries[rec.ProxyID],
+		Notes: rec.Notes, AndroidID: rec.AndroidID, Running: running,
+	}
+	if idn, ok := vm.ParseIdentity(rec.IdentityJSON); ok {
+		out.Model, out.Template = idn.Model, idn.Template
+	}
+	return out
+}
+
+func (a apiAPK) proxyCountries() map[string]string {
+	countries := map[string]string{}
+	if pxs, err := a.svc.ListProxies(); err == nil {
+		for _, p := range pxs {
+			countries[p.ID] = p.Country
+		}
+	}
+	return countries
+}
+
+func (a apiAPK) APKs() ([]api.APKApp, error) {
+	list, err := a.svc.ListAPKs()
+	if err != nil {
+		return nil, err
+	}
+	countries := a.proxyCountries()
+	running := a.svc.APKHostRunning()
+	out := make([]api.APKApp, 0, len(list))
+	for _, rec := range list {
+		out = append(out, a.toAPIAPK(rec, countries, running))
+	}
+	return out, nil
+}
+
+func (a apiAPK) OpenAPK(ctx context.Context, pkg string, show bool) error {
+	a.svc.Log.Info("api asked to open apk", "apk", pkg, "show", show)
+	if show {
+		return a.svc.LaunchAPK(ctx, pkg, "")
+	}
+	return a.svc.LaunchAPKHeadless(ctx, pkg)
+}
+
+func (a apiAPK) CloseAPK(ctx context.Context, pkg string, stopHost bool) error {
+	return a.svc.CloseAPK(ctx, pkg, stopHost)
+}
+
+func (a apiAPK) ShowAPK(ctx context.Context, pkg string) error {
+	return a.svc.ShowAPK(ctx, pkg)
+}
+
+func (a apiAPK) APKControl(pkg string) (api.DeviceControl, error) {
+	return a.svc.APKControl(pkg)
+}
+
+func (a apiAPK) AddAPK(ctx context.Context, in api.APKCreate) (api.APKApp, error) {
+	rec, err := a.svc.AddAPK(ctx, service.APKInput{
+		FilePath: in.FilePath, Label: in.Label, ProxyID: in.ProxyID,
+		Orientation: in.Orientation, IdentityTemplate: in.IdentityTemplate, Notes: in.Notes,
+	})
+	if err != nil {
+		return api.APKApp{}, err
+	}
+	return a.toAPIAPK(rec, a.proxyCountries(), a.svc.APKHostRunning()), nil
+}
+
+func (a apiAPK) UpdateAPK(ctx context.Context, pkg string, in api.APKPatch) (api.APKApp, error) {
+	cur, err := a.svc.Store.GetMobileAPK(pkg)
+	if err != nil {
+		return api.APKApp{}, err
+	}
+	upd := service.APKUpdate{
+		Package: cur.Package, Label: cur.Label, Orientation: cur.Orientation,
+		ProxyID: cur.ProxyID, Notes: cur.Notes,
+	}
+	if in.Label != nil {
+		upd.Label = *in.Label
+	}
+	if in.Orientation != nil {
+		upd.Orientation = *in.Orientation
+	}
+	if in.ProxyID != nil {
+		upd.ProxyID = *in.ProxyID
+	}
+	if in.IdentityTemplate != nil {
+		upd.IdentityTemplate = *in.IdentityTemplate
+	}
+	if in.Notes != nil {
+		upd.Notes = *in.Notes
+	}
+	rec, err := a.svc.UpdateAPK(ctx, upd)
+	if err != nil {
+		return api.APKApp{}, err
+	}
+	return a.toAPIAPK(rec, a.proxyCountries(), a.svc.APKHostRunning()), nil
+}
+
+func (a apiAPK) DeleteAPK(ctx context.Context, pkg string, uninstall bool) error {
+	return a.svc.DeleteAPK(ctx, pkg, uninstall)
+}
+
 // restartAPI stops the server and starts it again when Settings has it on.
 func (a *App) restartAPI() {
 	defer a.updateTray()
@@ -149,6 +412,7 @@ func (a *App) restartAPI() {
 	srv.Traces = filepath.Join(a.svc.Dirs.Logs(), "traces")
 	if a.svc.Mobile != nil {
 		srv.Mobile = apiMobile{a.svc}
+		srv.APK = apiAPK{a.svc}
 	}
 	if err := srv.Start(); err != nil {
 		a.api.err = err.Error()
