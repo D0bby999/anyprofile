@@ -145,3 +145,14 @@ func (c Client) AccountRemoveDevice(ctx context.Context, access, installID strin
 	_, err := c.doAccount(ctx, http.MethodPost, "/v1/account/devices/remove", access, map[string]string{"install_id": installID}, nil)
 	return err
 }
+
+// AccountPortal returns the Stripe billing portal URL for the signed-in account.
+func (c Client) AccountPortal(ctx context.Context, access string) (string, error) {
+	var out struct {
+		URL string `json:"url"`
+	}
+	if _, err := c.doAccount(ctx, http.MethodPost, "/v1/account/portal", access, map[string]string{}, &out); err != nil {
+		return "", err
+	}
+	return out.URL, nil
+}

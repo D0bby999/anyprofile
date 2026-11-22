@@ -531,11 +531,10 @@ func (s *Service) ProDeactivate(ctx context.Context) error {
 
 // ProPortalURL is the Stripe page where the user manages the subscription.
 func (s *Service) ProPortalURL(ctx context.Context) (string, error) {
-	key := s.proKey()
-	if key == "" {
-		return "", apperr.New("pro_bad_key", "no key on this computer")
+	if key := s.proKey(); key != "" {
+		return s.proClient().Portal(ctx, key)
 	}
-	return s.proClient().Portal(ctx, key)
+	return s.proAccountPortal(ctx)
 }
 
 // ProBuyURL starts a purchase: the page to open, and the ref to claim its key with.
@@ -544,13 +543,13 @@ func (s *Service) ProBuyURL(plan string) (url, ref string, err error) {
 		return "", "", apperr.New("pro_bad_plan", "plan is month or year")
 	}
 	ref = pro.NewRef()
-	return s.proClient().BuyURL(plan, s.Language(), ref), ref, nil
+	return s.proClient().BuyURLWithEmail(plan, s.Language(), ref, s.accountEmail()), ref, nil
 }
 
 // ProBuyGiftURL is the page that sells a paid gift code. The code is emailed
 // after payment; it is not a subscription and does not activate this computer.
 func (s *Service) ProBuyGiftURL() string {
-	return s.proClient().BuyURL("gift", s.Language(), "")
+	return s.proClient().BuyURLWithEmail("gift", s.Language(), "", s.accountEmail())
 }
 
 // ProClaim takes the key of a paid purchase and activates it; false while

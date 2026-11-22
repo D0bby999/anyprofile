@@ -82,6 +82,33 @@ func (s *Service) saveAccountEmail(email string) {
 	_ = s.Secrets.Set(proVault, accountEmail, []byte(email))
 }
 
+func (s *Service) accountEmail() string {
+	b, err := s.Secrets.Get(proVault, accountEmail)
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(b))
+}
+
+func (s *Service) proAccountPortal(ctx context.Context) (string, error) {
+	t, ok := s.accountTokens()
+	if !ok {
+		return "", apperr.New("pro_bad_key", "no key on this computer")
+	}
+	u, err := s.proClient().AccountPortal(ctx, t.AccessToken)
+	if err == nil {
+		return u, nil
+	}
+	t2, _, rerr := s.proClient().RefreshAccount(ctx, t.RefreshToken, s.mustInstallID())
+	if rerr != nil {
+		return "", err
+	}
+	if serr := s.saveAccountTokens(t2); serr != nil {
+		return "", serr
+	}
+	return s.proClient().AccountPortal(ctx, t2.AccessToken)
+}
+
 // ProAccountStatus reads the account, refreshing once when the access token
 // has expired. Offline or signed-out returns SignedIn=false, not an error.
 func (s *Service) ProAccountStatus(ctx context.Context) (ProAccountStatus, error) {

@@ -147,7 +147,15 @@ func NewInstallID() string {
 
 // BuyURL is the page that starts a purchase whose key this app will claim with ref.
 func (c Client) BuyURL(plan, lang, ref string) string {
+	return c.BuyURLWithEmail(plan, lang, ref, "")
+}
+
+// BuyURLWithEmail starts a purchase and prefills customer_email when known.
+func (c Client) BuyURLWithEmail(plan, lang, ref, email string) string {
 	q := url.Values{"plan": {plan}, "lang": {lang}, "ref": {ref}}
+	if email != "" {
+		q.Set("email", email)
+	}
 	return c.Base + "/buy?" + q.Encode()
 }
 

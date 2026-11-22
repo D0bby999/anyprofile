@@ -210,3 +210,42 @@ func TestProWithoutKeyAsksNothing(t *testing.T) {
 		t.Fatal("the server was asked without a key")
 	}
 }
+
+func TestProAccountPortalAndEmailPrefill(t *testing.T) {
+	s, _ := newService(t)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/v1/account/portal", func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Authorization") != "Bearer acc_tok" {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"url":"https://billing.stripe.test/cus_acc"}`))
+	})
+	srv := httptest.NewServer(mux)
+	t.Cleanup(srv.Close)
+	s.Pro = pro.Client{Base: srv.URL, HTTP: srv.Client()}
+
+	// Signed-out buy URL has no email query param.
+	u0, _, err := s.ProBuyURL("year")
+	if err != nil || strings.Contains(u0, "email=") {
+		t.Fatalf("signed-out buy url = %q %v", u0, err)
+	}
+
+	// Signed-in account prefills email on BuyURL / BuyGiftURL and opens portal without a local key.
+	s.saveAccountEmail("buyer@example.com")
+	if err := s.saveAccountTokens(pro.AccountTokens{AccessToken: "acc_tok", RefreshToken: "ref_tok"}); err != nil {
+		t.Fatal(err)
+	}
+	u1, _, err := s.ProBuyURL("month")
+	if err != nil || !strings.Contains(u1, "email=buyer%40example.com") {
+		t.Fatalf("signed-in buy url = %q %v", u1, err)
+	}
+	if ug := s.ProBuyGiftURL(); !strings.Contains(ug, "email=buyer%40example.com") {
+		t.Fatalf("signed-in gift url = %q", ug)
+	}
+	portal, err := s.ProPortalURL(context.Background())
+	if err != nil || portal != "https://billing.stripe.test/cus_acc" {
+		t.Fatalf("account portal = %q %v", portal, err)
+	}
+}
