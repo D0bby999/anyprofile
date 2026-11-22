@@ -74,6 +74,7 @@ func (f *Fury) BuildLaunch(ctx context.Context, p store.Profile, rt engine.Runti
 	}
 	args = append(args,
 		"--disable-background-networking",
+		"--disable-backgrounding-occluded-windows",
 		"--disable-domain-reliability",
 		"--disable-breakpad",
 		"--safebrowsing-disable-auto-update",

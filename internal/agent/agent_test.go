@@ -356,3 +356,24 @@ func TestShrink(t *testing.T) {
 		t.Fatalf("shrunk to %dx%d", cfg.Width, cfg.Height)
 	}
 }
+
+func TestOpenTabCreatesBackgroundTarget(t *testing.T) {
+	f := newFake()
+	var got map[string]any
+	f.handlers["Target.createTarget"] = func(_ string, p map[string]any) (any, error) {
+		got = p
+		return map[string]any{"targetId": "T_NEW_123456"}, nil
+	}
+	f.handlers["Page.navigate"] = func(_ string, _ map[string]any) (any, error) {
+		return map[string]any{"frameId": "F"}, nil
+	}
+	h := NewHub(time.Minute)
+	defer h.Close()
+	b := h.For("p1", f)
+	if _, err := b.OpenTab(context.Background(), "https://example.com/"); err != nil {
+		t.Fatal(err)
+	}
+	if bg, _ := got["background"].(bool); !bg {
+		t.Fatalf("Target.createTarget params = %v, want background=true", got)
+	}
+}
