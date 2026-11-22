@@ -12,7 +12,7 @@ import { TagsGroup } from './drawer/tags-group'
 import { ProxySelect, RealIpWarning } from './proxy-select'
 import { MOBILE_APPS_GUIDE } from './api-settings'
 
-import { CPU_CHOICES, PRESETS, RAM_CHOICES, type Preset } from '../lib/mobile-presets'
+import { CPU_CHOICES, MODELS, parseIdentity, PRESETS, RAM_CHOICES, SCREEN_CHOICES, type Preset } from '../lib/mobile-presets'
 
 type Tab = 'overview' | 'hardware' | 'activity'
 const TABS: Tab[] = ['overview', 'hardware', 'activity']
@@ -261,9 +261,9 @@ export function MobileDrawer({
               <h3>{t.mobile.preset}</h3>
               <label className="field">
                 <select className="select" value={row.preset || 'balanced'} disabled={row.state !== 'stopped' || isBusy} onChange={(e) => choosePreset(e.target.value as Preset)}>
-                  <option value="automation">{t.mobile.presetAutomation} (2 CPU · 2 GB)</option>
-                  <option value="balanced">{t.mobile.presetBalanced} ({PRESETS.balanced.cpus} CPU · {PRESETS.balanced.ram / 1024} GB)</option>
-                  <option value="interactive">{t.mobile.presetInteractive} (4 CPU · 4 GB)</option>
+                  <option value="automation">{t.mobile.presetAutomation} ({PRESETS.automation.cpus} CPU · {PRESETS.automation.ram / 1024} GB · {t.mobile.fps60})</option>
+                  <option value="balanced">{t.mobile.presetBalanced} ({PRESETS.balanced.cpus} CPU · {PRESETS.balanced.ram / 1024} GB · {t.mobile.fps60})</option>
+                  <option value="interactive">{t.mobile.presetInteractive} ({PRESETS.interactive.cpus} CPU · {PRESETS.interactive.ram / 1024} GB · {t.mobile.fps120})</option>
                 </select>
                 <span className="hint">{t.mobile.presetHint}</span>
               </label>
@@ -285,17 +285,72 @@ export function MobileDrawer({
                   </select>
                 </label>
               </div>
+              <label className="field" style={{ marginTop: 8 }}>
+                <span className="label">{t.mobile.screenPreset}</span>
+                <select className="select"
+                  value={SCREEN_CHOICES.find((x) => x.w === row.screenW && x.h === row.screenH)?.key ?? 'iphone2x'}
+                  disabled={row.state !== 'stopped' || isBusy}
+                  onChange={(e) => {
+                    const screen = SCREEN_CHOICES.find((x) => x.key === e.target.value)
+                    if (screen) update({ screenW: screen.w, screenH: screen.h, density: screen.dpi })
+                  }}>
+                  <option value="iphone2x">{t.mobile.screenIphone2x}</option>
+                  <option value="fhd">{t.mobile.screenFhd}</option>
+                  <option value="iphone3x">{t.mobile.screenIphone3x}</option>
+                  <option value="qhd">{t.mobile.screenQhd}</option>
+                  <option value="light">{t.mobile.screenLight}</option>
+                </select>
+              </label>
+            </section>
+
+            <section className="dgroup" aria-label={t.mobile.deviceModel}>
+              <h3>{t.mobile.deviceModel}</h3>
+              {(() => {
+                const idn = parseIdentity(row.identityJson)
+                const curTpl = idn?.template ?? ''
+                return (
+                  <>
+                    <label className="field">
+                      <select className="select" value={curTpl} disabled={row.state !== 'stopped' || isBusy}
+                        onChange={(e) => update({ identityTemplate: e.target.value || 'auto' })}>
+                        <option value="">{t.mobile.modelAuto}</option>
+                        {MODELS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                      </select>
+                    </label>
+                    {idn && (
+                      <>
+                        <dl className="facts" style={{ marginTop: 8 }}>
+                          {idn.model && <><dt>Model</dt><dd>{idn.manufacturer || idn.brand} {idn.model}</dd></>}
+                          {idn.glRenderer && <><dt>{t.mobile.gpuLabel}</dt><dd>{idn.glVendor ? `${idn.glVendor} ` : ''}{idn.glRenderer}</dd></>}
+                          {idn.imei && <><dt>{t.mobile.imeiLabel}</dt><dd className="mono">{idn.imei}</dd></>}
+                          {idn.serial && <><dt>{t.mobile.serialNum}</dt><dd className="mono">{idn.serial}</dd></>}
+                        </dl>
+                        <div className="row" style={{ marginTop: 8 }}>
+                          <button type="button" className="btn sm" disabled={row.state !== 'stopped' || isBusy}
+                            onClick={async () => {
+                              if (await update({ identityTemplate: curTpl ? `regen:${curTpl}` : 'regen' })) {
+                                toast.success(t.mobile.identityRegenerated)
+                              }
+                            }}>
+                            <Icon name="refresh" className="icon sm" />{t.mobile.regenIdentity}
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </>
+                )
+              })()}
             </section>
 
             <section className="dgroup">
               <h3>{t.mobile.deviceInfo}</h3>
               <dl className="facts">
-                <dt>{t.mobile.screen(row.screenW, row.screenH, row.density).split(',')[0]}</dt>
+                <dt>{t.mobile.screenPreset}</dt>
                 <dd>{row.screenW} × {row.screenH} px ({row.density} DPI)</dd>
                 <dt>{t.mobile.driver}</dt>
                 <dd>{row.driver === 'avo' ? 'Anymobile Metal (Avo)' : row.driver === 'vm' ? 'Anymobile VM (QEMU)' : 'LDPlayer 9'}</dd>
                 <dt>{t.mobile.imageVersion}</dt>
-                <dd>{row.imageVersion || 'LineageOS Android 16'}</dd>
+                <dd>{row.driver === 'avo' && (!row.imageVersion || row.imageVersion.startsWith('23.')) ? 'Android 16 (Cuttlefish)' : (row.imageVersion || 'LineageOS Android 16')}</dd>
               </dl>
               {row.state !== 'stopped' && (
                 <div className="banner warn" style={{ marginTop: 12 }}>

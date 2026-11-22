@@ -3,23 +3,12 @@ import { useEffect, useState } from 'react'
 import { Api, service } from '../api'
 import { t } from '../i18n'
 import { errorText } from '../lib/format'
-import { CPU_CHOICES, PRESETS, RAM_CHOICES, type Preset } from '../lib/mobile-presets'
+import { CPU_CHOICES, MODELS, PRESETS, RAM_CHOICES, SCREEN_CHOICES, type Preset } from '../lib/mobile-presets'
 import { Dialog } from './dialog'
 import { Icon } from './icons'
 import { freeProxies, ProxySelect, RealIpWarning } from './proxy-select'
 
 type Props = { existingNames: string[]; onClose: () => void; onSaved: (id: string) => void }
-
-const SCREEN_CHOICES = [
-  { key: 'iphone2x', w: 780, h: 1688, dpi: 320 },
-  { key: 'iphone3x', w: 1170, h: 2532, dpi: 460 },
-  { key: 'light', w: 540, h: 1170, dpi: 220 },
-] as const
-const MODELS = [
-  ['pixel8', 'Google Pixel 8'], ['pixel9', 'Google Pixel 9'], ['s24ultra', 'Samsung Galaxy S24 Ultra'],
-  ['s24', 'Samsung Galaxy S24'], ['s23ultra', 'Samsung Galaxy S23 Ultra'], ['a54', 'Samsung Galaxy A54 5G'],
-  ['xiaomi14pro', 'Xiaomi 14 Pro'], ['xiaomi13ultra', 'Xiaomi 13 Ultra'], ['oneplus12', 'OnePlus 12'], ['oppofindx6pro', 'OPPO Find X6 Pro'],
-]
 
 function nextName(names: string[]) {
   const used = new Set(names.map((name) => name.trim().toLowerCase()))
@@ -135,7 +124,9 @@ export function MobileDialog({ existingNames, onClose, onSaved }: Props) {
                 if (screen) setHardware({ ...hardware, screenW: screen.w, screenH: screen.h, density: screen.dpi })
               }}>
               <option value="iphone2x">{t.mobile.screenIphone2x}</option>
+              <option value="fhd">{t.mobile.screenFhd}</option>
               <option value="iphone3x">{t.mobile.screenIphone3x}</option>
+              <option value="qhd">{t.mobile.screenQhd}</option>
               <option value="light">{t.mobile.screenLight}</option>
             </select>
           </label>

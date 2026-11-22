@@ -255,13 +255,16 @@ describe('MobilePage', () => {
   })
 
   it('switches tabs in the mobile rightbar drawer and updates device configuration', async () => {
-    page([device({ id: 'd1', name: 'Phone 1', ramMb: 3072, cpus: 4, preset: 'balanced' })], avail())
+    page([device({ id: 'd1', name: 'Phone 1', ramMb: 3072, cpus: 4, preset: 'balanced', identityJson: '{"template":"s24ultra","model":"SM-S928B","manufacturer":"samsung","imei":"350894121234568","serial":"A1B2C3D4E5F607","glVendor":"Qualcomm","glRenderer":"Adreno (TM) 750"}' })], avail())
     fireEvent.click(screen.getByText('Phone 1'))
     const drawer = await screen.findByRole('complementary')
 
     // Switch to Hardware tab
     fireEvent.click(screen.getByRole('tab', { name: t.mobile.hardware }))
-    expect(screen.getByText(t.mobile.presetAutomation + ' (2 CPU · 2 GB)')).toBeTruthy()
+    expect(within(drawer).getByText(`${t.mobile.presetAutomation} (2 CPU · 2 GB · ${t.mobile.fps60})`)).toBeTruthy()
+    expect(within(drawer).getByText(`${t.mobile.presetInteractive} (6 CPU · 4 GB · ${t.mobile.fps120})`)).toBeTruthy()
+    expect(within(drawer).getByText('350894121234568')).toBeTruthy()
+    expect(within(drawer).getByRole('button', { name: t.mobile.regenIdentity })).toBeTruthy()
 
     // Switch to Activity tab
     fireEvent.click(screen.getByRole('tab', { name: t.mobile.activity }))

@@ -720,11 +720,11 @@ kbd { display: inline-flex; align-items: center; min-width: 22px; height: 20px; 
 .mobile-state-pill .mobile-device-status { font-size: inherit; color: inherit; }
 
 .mumu-listhead { padding: 8px 16px; border-bottom: 1px solid var(--line); font-size: var(--t-xs); }
-.mumu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr)); padding: 14px; gap: 12px; }
+.mumu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 440px), 1fr)); padding: 14px; gap: 12px; }
 .mumu-card {
-  display: flex; flex-direction: column; gap: 10px;
-  min-width: 0; padding: 12px 14px;
-  border: 1px solid var(--line); border-radius: var(--r-lg);
+  display: flex; flex-direction: row; align-items: center; gap: 16px;
+  min-width: 0; padding: 12px 16px;
+  border: 1px solid var(--line); border-radius: 12px;
   background: var(--surface); cursor: pointer;
   transition: border-color .14s var(--ease), background .14s var(--ease);
 }
@@ -733,15 +733,118 @@ kbd { display: inline-flex; align-items: center; min-width: 22px; height: 20px; 
 .mumu-card.active, .mumu-card.selected { background: var(--accent-soft); border-color: var(--accent); }
 .mumu-card.drop-target { outline: 2px solid var(--accent); outline-offset: -2px; }
 .mumu-card.dragging { opacity: .55; }
-.mumu-card-lead { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.mumu-card-lead-left { display: flex; align-items: center; gap: 6px; min-width: 0; }
-.mumu-card-lead .grip { visibility: visible; }
-.mumu-card-idx { font-family: var(--mono); font-size: 11px; color: var(--faint); font-variant-numeric: tabular-nums; }
-.mumu-card .mobile-actions { margin-top: auto; padding-top: 10px; border-top: 1px solid var(--line-soft); }
 
-.mumu-card-info { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+/* MuMuPlayer Pro phone thumbnail stage on the left */
+.mumu-thumb {
+  position: relative; flex: 0 0 auto;
+  width: 144px; height: 90px;
+  border-radius: 9px;
+  background: #27292e;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+}
+.mumu-thumb-lead {
+  position: absolute; top: 6px; left: 6px; z-index: 3;
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 7px; border-radius: 6px;
+  background: rgba(18, 19, 23, 0.82);
+  color: #e5e7eb;
+}
+.mumu-thumb-lead input[type="checkbox"] {
+  width: 13px; height: 13px; margin: 0;
+  opacity: 0; width: 0; overflow: hidden;
+  transition: opacity .12s var(--ease), width .12s var(--ease);
+}
+.mumu-card:hover .mumu-thumb-lead input[type="checkbox"],
+.mumu-card.selected .mumu-thumb-lead input[type="checkbox"],
+.mumu-thumb-lead input[type="checkbox"]:focus-visible {
+  opacity: 1; width: 13px;
+}
+.mumu-thumb-lead .grip {
+  visibility: visible; color: #9ca3af;
+  width: 14px; height: 16px; padding: 0;
+}
+.mumu-card-idx {
+  font-family: var(--mono); font-size: 11px; font-weight: 600;
+  color: #e5e7eb; font-variant-numeric: tabular-nums;
+}
+.mumu-card-idx::before { content: '#'; }
+
+.mumu-thumb-phone {
+  position: relative;
+  width: 52px; height: 100%;
+  background:
+    radial-gradient(circle at 75% 22%, rgba(56, 189, 248, 0.22) 0%, transparent 48%),
+    linear-gradient(168deg, #061325 0%, #0c274b 52%, #133968 100%);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+.mumu-thumb.is-running .mumu-thumb-phone {
+  background:
+    radial-gradient(circle at 75% 22%, rgba(52, 211, 153, 0.28) 0%, transparent 50%),
+    linear-gradient(168deg, #071b30 0%, #0f365c 52%, #154c79 100%);
+}
+.mumu-thumb-statusbar {
+  position: absolute; top: 3px; left: 5px; right: 5px; height: 2px;
+  border-radius: 2px; background: rgba(255, 255, 255, 0.25);
+}
+.mumu-thumb-app {
+  position: absolute; top: 13px;
+  width: 9px; height: 9px; border-radius: 2.5px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+.mumu-thumb-app.play {
+  left: 6px;
+  background: #ffffff;
+  background-image: conic-gradient(from 45deg at 52% 50%, #34a853 0deg 90deg, #fbbc04 90deg 180deg, #ea4335 180deg 270deg, #4285f4 270deg 360deg);
+  border: 1.5px solid #ffffff;
+}
+.mumu-thumb-app.aurora {
+  left: 19px;
+  background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%);
+}
+.mumu-thumb-beams {
+  position: absolute; right: 5px; bottom: 26px;
+  display: flex; align-items: flex-end; gap: 2.5px;
+  transform: rotate(-28deg);
+}
+.mumu-thumb-beams > i {
+  display: block; width: 4.5px; border-radius: 99px;
+  background: linear-gradient(180deg, #fde047 0%, #f59e0b 100%);
+}
+.mumu-thumb-beams > i:nth-child(1) { height: 15px; }
+.mumu-thumb-beams > i:nth-child(2) { height: 19px; }
+.mumu-thumb-beams > i:nth-child(3) { height: 10px; }
+.mumu-thumb-dock {
+  position: absolute; left: 6px; right: 6px; bottom: 5px;
+  display: flex; justify-content: space-between;
+}
+.mumu-thumb-dock > i {
+  display: block; width: 6px; height: 6px; border-radius: 1.5px;
+  background: rgba(147, 197, 253, 0.55);
+}
+.mumu-thumb-bar {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 27px; z-index: 2;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 0 8px;
+  background: rgba(54, 56, 62, 0.84);
+  backdrop-filter: blur(8px);
+  color: #f3f4f6; font-size: 11.5px; font-weight: 500;
+}
+.mumu-power-glyph { width: 13px; height: 13px; stroke-width: 2; color: #e5e7eb; flex: 0 0 auto; }
+.mumu-thumb-dot {
+  width: 7px; height: 7px; border-radius: 99px;
+  background: #9ca3af; flex: 0 0 auto;
+}
+.mumu-thumb-dot.is-running { background: #22c55e; }
+.mumu-thumb-dot.is-busy { background: #f59e0b; }
+.mumu-thumb-status { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.mumu-card-info { display: flex; flex-direction: column; gap: 7px; min-width: 0; flex: 1 1 auto; }
 .mumu-card-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; min-width: 0; }
-.mumu-card-info .mobile-name { font-size: var(--t-md); font-weight: 600; letter-spacing: -.01em; }
+.mumu-card-title-row { display: flex; align-items: center; gap: 7px; min-width: 0; flex-wrap: wrap; }
+.mumu-card-info .mobile-name { font-size: 16px; font-weight: 600; letter-spacing: -.01em; color: var(--ink); }
 .mumu-card-model { font-size: 11.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mumu-card-info .proxy-pill { min-width: 0; }
 .mumu-card-info .proxy-pill > span { min-width: 0; }
@@ -749,18 +852,59 @@ kbd { display: inline-flex; align-items: center; min-width: 22px; height: 20px; 
 .mumu-tag { height: 20px; padding: 0 7px; font-size: 11px; }
 .mumu-card-pills { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .mumu-spec-pill {
-  display: inline-flex; align-items: center; height: 22px; padding: 0 8px;
-  border-radius: 6px;
+  display: inline-flex; align-items: center; height: 23px; padding: 0 9px;
+  border-radius: 5px;
   background: var(--surface-sunken);
   border: 1px solid var(--line);
   color: var(--ink-soft);
-  font-size: 11.5px; font-weight: 500; font-variant-numeric: tabular-nums; white-space: nowrap;
+  font-size: 12px; font-weight: 500; font-variant-numeric: tabular-nums; white-space: nowrap;
 }
 .mumu-spec-pill.gms { color: var(--accent-ink); border-color: var(--accent-line); background: var(--accent-soft); }
-.mumu-card-meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; }
+.mumu-card-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-width: 0; font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.mumu-res-line { color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .mumu-card-time { font-size: var(--t-xs); color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .mumu-card-sub { display: flex; gap: 4px 8px; flex-wrap: wrap; overflow-wrap: anywhere;
   font-size: var(--t-xs); color: var(--muted); font-variant-numeric: tabular-nums; }
+
+.mumu-card-actions {
+  display: flex; align-items: center; gap: 10px;
+  flex: 0 0 auto; margin-left: auto;
+  border-top: none; padding-top: 0; margin-top: 0;
+}
+.mumu-card-actions > .rowmenu-wrap { order: 2; }
+.mumu-card-actions > .mumu-power-btn { order: 1; }
+.mumu-power-btn {
+  width: 38px; height: 38px; border-radius: 999px;
+  display: inline-grid; place-items: center;
+  border: none;
+  cursor: pointer;
+  transition: transform .12s var(--ease), background .15s var(--ease), opacity .15s var(--ease);
+}
+.mumu-power-btn:disabled { opacity: .45; cursor: not-allowed; }
+.mumu-power-btn:not(:disabled):hover { transform: scale(1.04); }
+.mumu-power-btn.is-play {
+  background: #d4d6dc;
+  color: #18191c;
+}
+.mumu-power-btn.is-play .icon { transform: translateX(1px); }
+.mumu-power-btn.is-stop {
+  background: var(--danger, #dc2626);
+  color: #ffffff;
+}
+.mumu-card-actions .rowmenu-wrap > .iconbtn {
+  width: 34px; height: 34px; border-radius: 999px;
+  background: var(--surface-sunken);
+  border: 1px solid var(--line);
+  color: var(--ink-soft);
+}
+.mumu-card-actions .rowmenu-wrap > .iconbtn:hover {
+  background: var(--surface-hover);
+  color: var(--ink);
+}
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}
 
 /* App sources and installation guidance under the device table. */
 .mobile-foot { display: flex; flex-direction: column; gap: 4px; margin-top: -4px; }
@@ -842,3 +986,42 @@ kbd { display: inline-flex; align-items: center; min-width: 22px; height: 20px; 
     animation: none !important;
   }
 }
+
+/* Pro APK tab */
+.apk-table { table-layout: fixed; }
+.table.apk-table .col-no { display: table-cell; width: 48px; }
+.apk-table .apk-col-proxy { width: 17%; }
+.apk-table .apk-col-ori { width: 112px; }
+.apk-table .apk-col-abi { width: 14%; }
+.apk-table .apk-col-shortcut { width: 92px; }
+.apk-table .col-actions { width: 158px; position: sticky; right: 0; }
+.apk-table th.col-actions { z-index: 2; }
+:where(.table.apk-table tbody) td.col-actions { z-index: 1; background: var(--surface); }
+.table.apk-table tbody tr:hover td.col-actions { background: var(--surface-hover); }
+.apk-id { display: flex; align-items: center; gap: 11px; min-width: 0; }
+.apk-icon {
+  width: 36px; height: 36px; border-radius: 9px; flex: 0 0 auto;
+  background: var(--pill-bg, rgba(128, 128, 128, 0.14)); border: 1px solid var(--line, rgba(128, 128, 128, 0.22));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 600; color: var(--fg); overflow: hidden;
+}
+.apk-icon.sm { width: 28px; height: 28px; border-radius: 7px; font-size: 11px; }
+.apk-icon.lg { width: 48px; height: 48px; border-radius: 12px; font-size: 16px; }
+.apk-table tbody tr { cursor: pointer; }
+.apk-icon img { width: 100%; height: 100%; object-fit: cover; }
+.apk-name { font-weight: 500; color: var(--fg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.apk-meta { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.apk-select { height: 28px; padding: 0 24px 0 9px; font-size: 12px; width: 100%; max-width: 100%; }
+@container (max-width: 860px) {
+  .apk-table .apk-col-abi { display: none; }
+}
+@container (max-width: 700px) {
+  .apk-table .apk-col-shortcut { display: none; }
+}
+@container (max-width: 580px) {
+  .apk-table .apk-col-proxy,
+  .apk-table .apk-col-ori { display: none; }
+  .table.apk-table .col-no { width: 40px; }
+}
+.apk-inspect-head { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+.apk-inspect-fields { display: flex; flex-direction: column; gap: 12px; }

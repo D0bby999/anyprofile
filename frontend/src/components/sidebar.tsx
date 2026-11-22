@@ -9,7 +9,7 @@ import { SiteGlyph } from './site-glyph'
 import { Icon, LogoMark, type IconName } from './icons'
 import { BuyProxiesButton } from './partner-grid'
 
-export type Page = 'profiles' | 'mobile' | 'proxies' | 'trash' | 'settings'
+export type Page = 'profiles' | 'mobile' | 'apk' | 'proxies' | 'trash' | 'settings'
 /** What the profile table shows: everything, the running ones, the ones that
  *  need attention (both picked from the status bar), one platform, or one tag. */
 export type View = 'all' | 'running' | 'attention' | `site:${string}` | `tag:${string}`
@@ -39,15 +39,16 @@ type Props = {
   siteCounts: Map<string, number>
   proxyCount: number
   mobileCount: number
+  apkCount?: number
   engineLabel: string
   engineReady: boolean
   pro?: service.ProStatus | null
   onNavigate: (page: Page, view?: View) => void
   onNewProfile: () => void
-  onOpenTools: () => void
+  onOpenTools?: () => void
 }
 
-export function Sidebar({ page, view, counts, tags, sites, siteCounts, proxyCount, mobileCount, engineLabel, engineReady, pro, onNavigate, onNewProfile, onOpenTools }: Props) {
+export function Sidebar({ page, view, counts, tags, sites, siteCounts, proxyCount, mobileCount, apkCount, engineLabel, engineReady, pro, onNavigate, onNewProfile, onOpenTools }: Props) {
   const [sitesOpen, toggleSites] = useSidebarSection('sites')
   const [allSites, setAllSites] = useState(false)
   const [tagsOpen, toggleTags] = useSidebarSection('tags')
@@ -96,6 +97,7 @@ export function Sidebar({ page, view, counts, tags, sites, siteCounts, proxyCoun
         <div className="navprimary">
           {item(t.nav.all, 'profiles', onProfiles('all'), () => onNavigate('profiles', 'all'), counts.all)}
           {item(t.nav.mobile, 'mobile', page === 'mobile', () => onNavigate('mobile'), mobileCount)}
+          {item(t.nav.apk, 'apk', page === 'apk', () => onNavigate('apk'), apkCount)}
           {item(t.nav.proxies, 'proxy', page === 'proxies', () => onNavigate('proxies'), proxyCount)}
           {item(t.nav.trash, 'trash', page === 'trash', () => onNavigate('trash'))}
         </div>
@@ -148,7 +150,6 @@ export function Sidebar({ page, view, counts, tags, sites, siteCounts, proxyCoun
       </nav>
       <div className="sidefoot">
         <BuyProxiesButton className="navitem nodrag" />
-        {item(t.nav.tools, 'spark', false, onOpenTools)}
         {item(t.nav.settings, 'settings', page === 'settings', () => onNavigate('settings'))}
         {engineLabel && (engineReady ? (
           <div className="enginechip"><span className="state ok" />{engineLabel}</div>

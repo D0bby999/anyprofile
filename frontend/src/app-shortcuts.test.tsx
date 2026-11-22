@@ -64,7 +64,8 @@ describe('App shortcuts', () => {
     api.ProStatus = () => Promise.resolve({ active })
     render(<App />)
     await screen.findByText('Thử proxy TW')
-    fireEvent.click(screen.getByRole('button', { name: t.nav.tools }))
+    fireEvent.click(screen.getByRole('button', { name: t.nav.settings }))
+    fireEvent.click(await screen.findByRole('button', { name: t.nav.tools }))
     const dialog = await screen.findByRole('dialog', { name: t.tools.title })
     if (active) expect(within(dialog).queryByRole('button', { name: t.tools.proOpen })).toBeNull()
     else {
@@ -74,16 +75,14 @@ describe('App shortcuts', () => {
     }
   })
 
-  it('opens Creator Tools without leaving the current page and closes it', async () => {
+  it('opens Creator Tools from Settings and closes it', async () => {
     render(<App />)
     await screen.findByText('Thử proxy TW')
-    const web = screen.getByRole('button', { name: new RegExp(t.nav.all) })
-    fireEvent.click(screen.getByRole('button', { name: t.nav.tools }))
+    fireEvent.click(screen.getByRole('button', { name: t.nav.settings }))
+    fireEvent.click(await screen.findByRole('button', { name: t.nav.tools }))
     expect(screen.getByRole('dialog', { name: t.tools.title })).toBeTruthy()
-    expect(web.getAttribute('aria-current')).toBe('page')
     fireEvent.click(within(screen.getByRole('dialog', { name: t.tools.title })).getByText(t.common.close))
     expect(screen.queryByRole('dialog', { name: t.tools.title })).toBeNull()
-    expect(screen.getByText('Thử proxy TW')).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: t.nav.tools }))
     fireEvent.keyDown(window, { key: 'Escape' })
     expect(screen.queryByRole('dialog', { name: t.tools.title })).toBeNull()

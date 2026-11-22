@@ -40,6 +40,9 @@ describe('Sidebar', () => {
     expect(mobile.textContent).toContain('2')
     fireEvent.click(mobile)
     expect(onNavigate).toHaveBeenCalledWith('mobile')
+    const apk = screen.getByRole('button', { name: new RegExp(t.nav.apk) })
+    fireEvent.click(apk)
+    expect(onNavigate).toHaveBeenCalledWith('apk')
   })
 
   it('lists tags with counts and opens one', () => {
@@ -58,15 +61,13 @@ describe('Sidebar', () => {
     expect(screen.getByRole('button', { name: /tag-14/ })).toBeTruthy()
   })
 
-  it('opens Buy proxies and Creator tools from the footer', () => {
+  it('opens Buy proxies from the footer and keeps Creator tools out of the sidebar', () => {
     const onNavigate = vi.fn()
-    const onOpenTools = vi.fn()
-    sidebar(onNavigate, 0, onOpenTools)
+    sidebar(onNavigate)
     fireEvent.click(screen.getByRole('button', { name: t.proxies.buy }))
     expect(screen.getByRole('dialog', { name: t.proxies.buy })).toBeTruthy()
     fireEvent.keyDown(window, { key: 'Escape' })
-    fireEvent.click(screen.getByRole('button', { name: t.nav.tools }))
-    expect(onOpenTools).toHaveBeenCalledOnce()
+    expect(screen.queryByRole('button', { name: t.nav.tools })).toBeNull()
     expect(onNavigate).not.toHaveBeenCalled()
   })
 

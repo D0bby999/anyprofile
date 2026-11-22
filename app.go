@@ -60,6 +60,10 @@ func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
 	if err := a.init(); err != nil {
 		a.startErr = err
+		return
+	}
+	if pkg := launchAPKArg(os.Args); pkg != "" {
+		go func() { _ = a.LaunchAPK(pkg, "") }()
 	}
 }
 

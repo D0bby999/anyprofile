@@ -48,9 +48,10 @@ type Props = {
   onLanguage: (l: Language) => void
   /** Bumped by the menu bar's Check for Updates. */
   checkUpdate?: number
+  onOpenTools?: () => void
 }
 
-export function SettingsPage({ mobile, engines, engineCounts, defaults, onEnginesChanged, theme, onTheme, fileVaultOn, lang, onLanguage, openProfiles, checkUpdate }: Props) {
+export function SettingsPage({ mobile, engines, engineCounts, defaults, onEnginesChanged, theme, onTheme, fileVaultOn, lang, onLanguage, openProfiles, checkUpdate, onOpenTools }: Props) {
   const { sites, reload: reloadSites } = useSites()
   const themes: [ThemeChoice, string, IconName][] = [['system', t.settings.themeSystem, 'monitor'], ['light', t.settings.themeLight, 'sun'], ['dark', t.settings.themeDark, 'moon']]
 
@@ -196,6 +197,17 @@ export function SettingsPage({ mobile, engines, engineCounts, defaults, onEngine
                 <h3>{t.support.title}</h3>
                 <SupportSettings />
               </section>
+              {onOpenTools && (
+                <section className="card pad">
+                  <h3>{t.tools.title}</h3>
+                  <p className="desc">{t.tools.sub}</p>
+                  <div className="row">
+                    <button type="button" className="btn" onClick={onOpenTools}>
+                      <Icon name="spark" className="icon sm" />{t.nav.tools}
+                    </button>
+                  </div>
+                </section>
+              )}
             </>)}
           </div>
         </div>

@@ -452,6 +452,94 @@ export namespace service {
 	        this.agentManage = source["agentManage"];
 	    }
 	}
+	export class APKInput {
+	    filePath: string;
+	    label: string;
+	    deviceId: string;
+	    proxyId: string;
+	    notes: string;
+	    orientation: string;
+	    identityTemplate: string;
+	    createShortcut: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new APKInput(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.filePath = source["filePath"];
+	        this.label = source["label"];
+	        this.deviceId = source["deviceId"];
+	        this.proxyId = source["proxyId"];
+	        this.notes = source["notes"];
+	        this.orientation = source["orientation"];
+	        this.identityTemplate = source["identityTemplate"];
+	        this.createShortcut = source["createShortcut"];
+	    }
+	}
+	export class APKInspect {
+	    filePath: string;
+	    sizeBytes: number;
+	    package: string;
+	    label: string;
+	    versionName: string;
+	    versionCode: number;
+	    minSdk: number;
+	    targetSdk: number;
+	    launchActivity: string;
+	    orientation: string;
+	    abis: string[];
+	    isSplitBundle: boolean;
+	    iconData?: string;
+	    abiCompatible: boolean;
+	    abiWarning?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new APKInspect(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.filePath = source["filePath"];
+	        this.sizeBytes = source["sizeBytes"];
+	        this.package = source["package"];
+	        this.label = source["label"];
+	        this.versionName = source["versionName"];
+	        this.versionCode = source["versionCode"];
+	        this.minSdk = source["minSdk"];
+	        this.targetSdk = source["targetSdk"];
+	        this.launchActivity = source["launchActivity"];
+	        this.orientation = source["orientation"];
+	        this.abis = source["abis"];
+	        this.isSplitBundle = source["isSplitBundle"];
+	        this.iconData = source["iconData"];
+	        this.abiCompatible = source["abiCompatible"];
+	        this.abiWarning = source["abiWarning"];
+	    }
+	}
+	export class APKUpdate {
+	    package: string;
+	    label: string;
+	    orientation: string;
+	    proxyId: string;
+	    notes: string;
+	    identityTemplate: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new APKUpdate(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.package = source["package"];
+	        this.label = source["label"];
+	        this.orientation = source["orientation"];
+	        this.proxyId = source["proxyId"];
+	        this.notes = source["notes"];
+	        this.identityTemplate = source["identityTemplate"];
+	    }
+	}
 	export class ProxyRow {
 	    id: string;
 	    label: string;
@@ -1474,6 +1562,50 @@ export namespace store {
 	        this.color = source["color"];
 	        this.sortOrder = source["sortOrder"];
 	        this.createdAt = source["createdAt"];
+	    }
+	}
+	export class MobileAPK {
+	    package: string;
+	    label: string;
+	    versionName: string;
+	    versionCode: number;
+	    launchActivity: string;
+	    orientation: string;
+	    abis: string[];
+	    filePath: string;
+	    iconData: string;
+	    deviceId: string;
+	    proxyId: string;
+	    notes: string;
+	    identityJson: string;
+	    androidId: string;
+	    shortcutPath: string;
+	    installedAt: string;
+	    lastOpenAt: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new MobileAPK(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.package = source["package"];
+	        this.label = source["label"];
+	        this.versionName = source["versionName"];
+	        this.versionCode = source["versionCode"];
+	        this.launchActivity = source["launchActivity"];
+	        this.orientation = source["orientation"];
+	        this.abis = source["abis"];
+	        this.filePath = source["filePath"];
+	        this.iconData = source["iconData"];
+	        this.deviceId = source["deviceId"];
+	        this.proxyId = source["proxyId"];
+	        this.notes = source["notes"];
+	        this.identityJson = source["identityJson"];
+	        this.androidId = source["androidId"];
+	        this.shortcutPath = source["shortcutPath"];
+	        this.installedAt = source["installedAt"];
+	        this.lastOpenAt = source["lastOpenAt"];
 	    }
 	}
 	export class MobileDevice {

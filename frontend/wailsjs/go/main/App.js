@@ -6,6 +6,10 @@ export function APIStatus() {
   return window['go']['main']['App']['APIStatus']();
 }
 
+export function AddAPK(arg1) {
+  return window['go']['main']['App']['AddAPK'](arg1);
+}
+
 export function AddExtension(arg1) {
   return window['go']['main']['App']['AddExtension'](arg1);
 }
@@ -90,6 +94,10 @@ export function CopyMCPSetup(arg1) {
   return window['go']['main']['App']['CopyMCPSetup'](arg1);
 }
 
+export function CreateAPKShortcut(arg1) {
+  return window['go']['main']['App']['CreateAPKShortcut'](arg1);
+}
+
 export function CreateFolder(arg1, arg2) {
   return window['go']['main']['App']['CreateFolder'](arg1, arg2);
 }
@@ -120,6 +128,10 @@ export function CreateTemplate(arg1) {
 
 export function Defaults() {
   return window['go']['main']['App']['Defaults']();
+}
+
+export function DeleteAPK(arg1, arg2) {
+  return window['go']['main']['App']['DeleteAPK'](arg1, arg2);
 }
 
 export function DeleteAllSnapshots() {
@@ -218,6 +230,10 @@ export function ImportProxies(arg1, arg2) {
   return window['go']['main']['App']['ImportProxies'](arg1, arg2);
 }
 
+export function InspectAPK(arg1) {
+  return window['go']['main']['App']['InspectAPK'](arg1);
+}
+
 export function InstallEngine(arg1) {
   return window['go']['main']['App']['InstallEngine'](arg1);
 }
@@ -244,6 +260,14 @@ export function InstallUpdate() {
 
 export function Language() {
   return window['go']['main']['App']['Language']();
+}
+
+export function LaunchAPK(arg1, arg2) {
+  return window['go']['main']['App']['LaunchAPK'](arg1, arg2);
+}
+
+export function ListAPKs() {
+  return window['go']['main']['App']['ListAPKs']();
 }
 
 export function ListExtensions() {
@@ -344,6 +368,10 @@ export function OpenMobileSharedFolder(arg1) {
 
 export function Personas() {
   return window['go']['main']['App']['Personas']();
+}
+
+export function PickAPKFile() {
+  return window['go']['main']['App']['PickAPKFile']();
 }
 
 export function PickBackup() {
@@ -504,6 +532,14 @@ export function Sessions(arg1) {
 
 export function SetAPISettings(arg1) {
   return window['go']['main']['App']['SetAPISettings'](arg1);
+}
+
+export function SetAPKDevice(arg1, arg2) {
+  return window['go']['main']['App']['SetAPKDevice'](arg1, arg2);
+}
+
+export function SetAPKOrientation(arg1, arg2) {
+  return window['go']['main']['App']['SetAPKOrientation'](arg1, arg2);
 }
 
 export function SetAccountLogin(arg1, arg2, arg3) {
@@ -684,6 +720,10 @@ export function TrashMobileDevice(arg1) {
 
 export function TrashProfile(arg1) {
   return window['go']['main']['App']['TrashProfile'](arg1);
+}
+
+export function UpdateAPK(arg1) {
+  return window['go']['main']['App']['UpdateAPK'](arg1);
 }
 
 export function UpdateMobileDevice(arg1, arg2) {

@@ -15,6 +15,7 @@ import { Icon, LogoMark } from './components/icons'
 import { ProfilesPage } from './pages/profiles-page'
 import { ProxiesPage } from './pages/proxies-page'
 import { MobilePage } from './pages/mobile-page'
+import { ApkPage } from './pages/apk-page'
 import { TrashPage } from './pages/trash-page'
 import { ToolsDialog } from './components/tools-dialog'
 import { SettingsPage } from './pages/settings-page'
@@ -43,6 +44,7 @@ export default function App() {
   const [fileVaultOn, setFileVaultOn] = useState(true)
   const [engines, setEngines] = useState<main.EngineInfo[] | null>(null)
   const [proxyCount, setProxyCount] = useState(0)
+  const [apkCount, setApkCount] = useState(0)
   const [pro, setPro] = useState<service.ProStatus | null>(null)
   const [theme, setTheme] = useState<ThemeChoice>(readTheme())
   const [lang, setLang] = useState<Language>(language)
@@ -80,6 +82,9 @@ export default function App() {
   const refreshProxies = () => { Api.ListProxies().then((p) => setProxyCount((p ?? []).length)).catch(() => {}) }
   useEffect(refreshProxies, [])
   useEffect(() => onDataChanged(['proxies'], refreshProxies), [])
+  const refreshAPKs = () => { Api.ListAPKs().then((a) => setApkCount((a ?? []).length)).catch(() => {}) }
+  useEffect(refreshAPKs, [])
+  useEffect(() => onDataChanged(['apk'], refreshAPKs), [])
   useEffect(() => { Api.ProStatus().then(setPro).catch(() => {}) }, [])
   useEffect(() => onDataChanged(['pro'], () => { Api.ProStatus().then(setPro).catch(() => {}) }), [])
   useEffect(() => onProEvent(() => { Api.ProStatus().then(setPro).catch(() => {}) }), [])
@@ -181,6 +186,7 @@ export default function App() {
   const places: Command[] = [
     { id: 'all', label: t.nav.all, icon: 'profiles', run: () => navigate('profiles', 'all') },
     { id: 'mobile', label: t.nav.mobile, icon: 'mobile', run: () => setPage('mobile') },
+    { id: 'apk', label: t.nav.apk, icon: 'apk', run: () => setPage('apk') },
     { id: 'running', label: t.nav.running, icon: 'running', run: () => navigate('profiles', 'running') },
     { id: 'attention', label: t.nav.attention, icon: 'alert', run: () => navigate('profiles', 'attention') },
     { id: 'proxies', label: t.nav.proxies, icon: 'proxy', run: () => setPage('proxies') },
@@ -197,11 +203,11 @@ export default function App() {
   }
   return (
     <div className={`app${pro?.active ? ' is-pro' : ''}`} key={lang}>
-      <Sidebar page={page} view={view} counts={counts} tags={tags} sites={sites} siteCounts={siteCounts} proxyCount={proxyCount} mobileCount={mobile.rows.length}
+      <Sidebar page={page} view={view} counts={counts} tags={tags} sites={sites} siteCounts={siteCounts} proxyCount={proxyCount} mobileCount={mobile.rows.length} apkCount={apkCount}
         pro={pro}
         engineReady={engineReady}
         engineLabel={defaultEngine ? (engineReady ? t.engines.ready(engineName, defaultEngine.version) : t.engines.missing(engineName)) : ''}
-        onNavigate={navigate} onNewProfile={newProfile} onOpenTools={() => setToolsOpen(true)} />
+        onNavigate={navigate} onNewProfile={newProfile} />
       <main className="main">
         {page === 'profiles' && (
           <ProfilesPage rows={profiles.rows} sites={sites} view={view} engineReady={engines === null || engineReady}
@@ -210,11 +216,13 @@ export default function App() {
             activeId={activeId} setActiveId={setActiveId} />
         )}
         {page === 'mobile' && <MobilePage mobile={mobile} onOpenPro={() => openSettings('settings-pro')} onOpenSettings={() => openSettings()} />}
+        {page === 'apk' && <ApkPage mobile={mobile} onOpenPro={() => openSettings('settings-pro')} onOpenMobile={() => setPage('mobile')} onChanged={refreshAPKs} />}
         {page === 'proxies' && <ProxiesPage onChanged={() => { refreshProxies(); profiles.reload(); mobile.reload() }} />}
         {page === 'trash' && <TrashPage onChanged={() => { profiles.reload(); mobile.reload() }} />}
         {page === 'settings' && (
           <SettingsPage mobile={mobile} engines={engines ?? []} engineCounts={engineCounts} defaults={defaults} onEnginesChanged={refreshEngines} theme={theme} onTheme={setTheme} fileVaultOn={fileVaultOn}
-            lang={lang} onLanguage={changeLanguage} openProfiles={profiles.rows.filter((r) => r.state === 'running').length} checkUpdate={checkUpdate} />
+            lang={lang} onLanguage={changeLanguage} openProfiles={profiles.rows.filter((r) => r.state === 'running').length} checkUpdate={checkUpdate}
+            onOpenTools={() => setToolsOpen(true)} />
         )}
       </main>
       {toolsOpen && <ToolsDialog onClose={() => setToolsOpen(false)}

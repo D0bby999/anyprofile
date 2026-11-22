@@ -2,7 +2,7 @@
 // Answers the generated Wails bindings with fixtures so the UI renders in a
 // plain browser. Loaded before src/main.tsx by preview.html; never bundled into
 // the app (Vite only builds index.html).
-import { defaults, engines, mobileAvailability, mobileDevices, profiles, proxies } from './fixtures'
+import { defaults, engines, mobileAPKs, mobileAvailability, mobileDevices, profiles, proxies } from './fixtures'
 
 let proActive = true
 // ?theme=light|dark and ?pro=0 pin the two states a screenshot needs.
@@ -26,6 +26,7 @@ const noop = () => {}
 const unsubscribe = () => noop
 
 const previewProxies = [...proxies]
+let previewAPKs = [...(mobileAPKs as unknown as Array<Record<string, unknown>>)]
 
 const answers: Record<string, unknown> = {
   Language: async () => 'en',
@@ -76,7 +77,72 @@ const answers: Record<string, unknown> = {
     { id: 'other', name: 'Other', group: '', domains: [], startUrl: '', icon: '', color: '#64748B' },
   ],
   ListMobileDevices: async () => mobileDevices,
-  MobileAvailability: async () => mobileAvailability,
+  MobileAvailability: async () => ({ ...(mobileAvailability as Record<string, unknown>), pro: proActive }),
+  ListAPKs: async () => previewAPKs,
+  PickAPKFile: async () => '/Users/dobby/Downloads/TikTok-37.4.xapk',
+  InspectAPK: async () => ({
+    filePath: '/Users/dobby/Downloads/TikTok-37.4.xapk',
+    sizeBytes: 148 * 1024 * 1024,
+    package: 'com.zhiliaoapp.musically',
+    label: 'TikTok',
+    versionName: '37.4.3',
+    versionCode: 2023704030,
+    minSdk: 21,
+    targetSdk: 35,
+    launchActivity: 'com.ss.android.ugc.aweme.splash.SplashActivity',
+    orientation: 'portrait',
+    abis: ['arm64-v8a'],
+    isSplitBundle: true,
+    iconData: '',
+    abiCompatible: true,
+    abiWarning: '',
+  }),
+  AddAPK: async (input: Record<string, unknown>) => {
+    const rec = {
+      package: 'com.zhiliaoapp.musically',
+      label: (input.label as string) || 'TikTok',
+      versionName: '37.4.3',
+      versionCode: 2023704030,
+      launchActivity: 'com.ss.android.ugc.aweme.splash.SplashActivity',
+      orientation: input.orientation || 'portrait',
+      abis: ['arm64-v8a'],
+      filePath: input.filePath || '',
+      iconData: '',
+      deviceId: input.deviceId || '',
+      proxyId: input.proxyId || '',
+      notes: input.notes || '',
+      shortcutPath: input.createShortcut ? '/Users/dobby/Applications/AnyProfile Apps/TikTok.app' : '',
+      installedAt: new Date().toISOString(),
+      lastOpenAt: '',
+    }
+    previewAPKs = [rec, ...previewAPKs.filter((a) => a.package !== rec.package)]
+    return rec
+  },
+  UpdateAPK: async (input: Record<string, unknown>) => {
+    const pkg = String(input.package || '')
+    let updated: Record<string, unknown> | undefined
+    previewAPKs = previewAPKs.map((a) => {
+      if (a.package !== pkg) return a
+      updated = { ...a, label: input.label || a.label, orientation: input.orientation || a.orientation, proxyId: input.proxyId ?? '', notes: input.notes ?? '' }
+      return updated
+    })
+    return updated ?? previewAPKs[0]
+  },
+  SetAPKOrientation: async (pkg: string, orientation: string) => {
+    previewAPKs = previewAPKs.map((a) => (a.package === pkg ? { ...a, orientation } : a))
+  },
+  SetAPKDevice: async (pkg: string, deviceId: string) => {
+    previewAPKs = previewAPKs.map((a) => (a.package === pkg ? { ...a, deviceId } : a))
+  },
+  CreateAPKShortcut: async (pkg: string) => {
+    const sc = `/Users/dobby/Applications/AnyProfile Apps/${pkg}.app`
+    previewAPKs = previewAPKs.map((a) => (a.package === pkg ? { ...a, shortcutPath: sc } : a))
+    return sc
+  },
+  DeleteAPK: async (pkg: string) => {
+    previewAPKs = previewAPKs.filter((a) => a.package !== pkg)
+  },
+  LaunchAPK: async () => {},
   MobileFastStart: async () => true,
   MaxConcurrentLaunches: async () => 0,
   SetMaxConcurrentLaunches: async () => {},

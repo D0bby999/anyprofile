@@ -36,7 +36,11 @@ func main() {
 		// Two instances would each try to manage the same browsers.
 		SingleInstanceLock: &options.SingleInstanceLock{
 			UniqueId: "dev.anyprofile.app",
-			OnSecondInstanceLaunch: func(options.SecondInstanceData) {
+			OnSecondInstanceLaunch: func(data options.SecondInstanceData) {
+				if pkg := launchAPKArg(data.Args); pkg != "" {
+					go func() { _ = app.LaunchAPK(pkg, "") }()
+					return
+				}
 				app.showMainWindow()
 			},
 		},
@@ -50,4 +54,13 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+func launchAPKArg(args []string) string {
+	for i := 0; i+1 < len(args); i++ {
+		if args[i] == "--launch-apk" && args[i+1] != "" {
+			return args[i+1]
+		}
+	}
+	return ""
 }
