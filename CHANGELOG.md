@@ -3,6 +3,12 @@
 The notes of each release tag are shown in the app's update prompt; this file
 keeps them together.
 
+## 1.0.0 (2026-11-22)
+
+- First 1.0.0 release.
+- Compacted Mobile device cards into a balanced 2-column grid at default window widths.
+- Fixed Settings → AnyProfile Pro layout: aligned `Sign out` header action, formatted pack release notes as readable bullets with inline code tags, hid `Manage subscription` for non-Stripe keys, and badged `this computer` in Devices.
+
 ## 0.2.12 (2026-11-22)
 
 - Added standalone APK runner with per-APK proxy, hardware fingerprint, and drawer UI, plus mobile and standalone APK MCP tools.
