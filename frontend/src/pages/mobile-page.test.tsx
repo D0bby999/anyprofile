@@ -116,10 +116,17 @@ describe('MobilePage', () => {
   it('opens a device and warns when memory is tight', async () => {
     api.StartMobileDevice.mockResolvedValueOnce({ warning: 'ram_tight' })
     page([device()], avail())
-    expect(await screen.findByText('gw.example:1')).toBeTruthy()
+    const proxy = await screen.findByText('gw.example:1')
+    expect(proxy.closest('.sr-only')).toBeNull()
     fireEvent.click(screen.getByRole('button', { name: t.mobile.open }))
     await waitFor(() => expect(api.StartMobileDevice).toHaveBeenCalledWith('d1'))
     expect(await screen.findByText(t.mobile.ramTight)).toBeTruthy()
+  })
+
+  it('shows direct connection visibly on a device card when no proxy is assigned', async () => {
+    page([device({ proxyId: '' })], avail())
+    const direct = await screen.findByText(t.common.direct)
+    expect(direct.closest('.sr-only')).toBeNull()
   })
 
   it('says a running device has no network when its proxy stopped answering', async () => {

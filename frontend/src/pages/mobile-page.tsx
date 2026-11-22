@@ -214,7 +214,7 @@ export function MobilePage({ mobile, onOpenPro, onOpenSettings }: Props) {
     return (
       <span className="proxy-pill">
         <Icon name="proxy" className="icon xs" />
-        <span>{p.label}{p.country && <span className="faint"> · {p.country}</span>}</span>
+        <span title={p.country ? `${p.label} · ${p.country}` : p.label}>{p.label}{p.country && <span className="faint"> · {p.country}</span>}</span>
         {p.failedAt && <small className="danger">{r.state === 'running' ? t.mobile.proxyDown : t.proxies.failed}</small>}
       </span>
     )
@@ -450,11 +450,12 @@ export function MobilePage({ mobile, onOpenPro, onOpenSettings }: Props) {
           <div className="mumu-card-pills">
             <span className="mumu-spec-pill">{r.cpus} Cores</span>
             <span className="mumu-spec-pill">{r.ramMb / 1024} GB</span>
-            <span className="sr-only">{specs}{proxy}</span>
+            <span className="sr-only">{specs}</span>
           </div>
           <div className="mumu-card-meta">
             <span className="mumu-res-line">{r.screenW || 780} × {r.screenH || 1688} | {r.density || 320} DPI</span>
           </div>
+          {proxy}
           {error}
         </div>
         <div className="row mobile-actions mumu-card-actions">{actions}</div>
