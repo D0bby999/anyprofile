@@ -3,6 +3,10 @@
 The notes of each release tag are shown in the app's update prompt; this file
 keeps them together.
 
+## 1.0.3 (2026-11-23)
+
+- Added country flag badges for proxies across all tables (Web profiles, Proxies, Mobile devices, APK apps, and Profile sessions) as well as the proxy selector dropdown.
+
 ## 1.0.2 (2026-11-23)
 
 - Redesigned New APK into a unified 2-step dialog with live Google Play app search dropdown (including local popular app merge and regional locale support), smart HTTPS `.apk` URL paste, clean local-file dropzone, and consistent proxy/device configuration across all sources.
