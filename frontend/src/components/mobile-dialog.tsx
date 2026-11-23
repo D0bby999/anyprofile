@@ -75,21 +75,29 @@ export function MobileDialog({ existingNames, onClose, onSaved }: Props) {
         <input className="input" autoFocus onFocus={(e) => e.currentTarget.select()} disabled={busy} value={name}
           placeholder={t.mobile.namePlaceholder} onChange={(e) => setName(e.target.value)} />
       </label>
-      <div className="mobile-create-summary">
-        <span>{t.mobile.deviceSpecs(cpus, ram / 1024)}</span>
-        <span>{t.mobile.screen(screenW, screenH, density)}</span>
-        {withGms && <span>Google Play</span>}
-        <span>{proxyId === 'auto' ? t.defaults.proxyAuto : proxies?.find((p) => p.id === proxyId)?.label ?? t.create.proxyDirect}</span>
+      <div className="field">
+        <span className="label">{t.mobile.proxy}</span>
+        <ProxySelect value={proxyId} onChange={setProxyId} proxies={proxies ?? []} allowAuto disabled={busy || (!proxies && !proxyError)} />
+        {proxyError && proxyId === 'auto' && <span className="hint" role="status">{t.mobile.quickProxyError}</span>}
       </div>
       {proxyId === '' && <RealIpWarning text={t.mobile.realIpWarning} />}
-      {proxyError && proxyId === 'auto' && <p className="hint" role="status">{t.mobile.quickProxyError}</p>}
+      <div className="mobile-spec-strip" aria-label={t.mobile.preset}>
+        <div className="mobile-spec-cell">
+          <span className="mobile-spec-label">CPU · RAM</span>
+          <span className="mobile-spec-val">{t.mobile.deviceSpecs(cpus, ram / 1024)}</span>
+        </div>
+        <div className="mobile-spec-cell">
+          <span className="mobile-spec-label">{t.mobile.screenPreset}</span>
+          <span className="mobile-spec-val">{screenW}×{screenH} <span className="mobile-spec-sub">{density} dpi</span></span>
+        </div>
+        <div className="mobile-spec-cell">
+          <span className="mobile-spec-label">Google Play</span>
+          <span className="mobile-spec-val">{withGms ? 'GMS' : 'AOSP'}</span>
+        </div>
+      </div>
       <details className="mobile-create-advanced">
         <summary>{t.drawer.advanced}</summary>
         <div className="mobile-create-fields">
-          <div className="field">
-            <span className="label">{t.mobile.proxy}</span>
-            <ProxySelect value={proxyId} onChange={setProxyId} proxies={proxies ?? []} allowAuto disabled={busy || (!proxies && !proxyError)} />
-          </div>
           <label className="field">
             <span className="label">{t.mobile.preset}</span>
             <select className="select" value={preset} disabled={busy} onChange={(e) => {

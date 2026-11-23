@@ -37,6 +37,9 @@ describe('MobileDialog', () => {
     expect(nameInput.value).toBe(t.mobile.defaultName(2))
     expect(screen.getByText(t.mobile.deviceSpecs(3, 4))).toBeTruthy()
     expect(screen.getByText(t.drawer.advanced).parentElement?.hasAttribute('open')).toBe(false)
+    // Proxy selector is surfaced directly in the main form without opening Advanced.
+    const proxySelect = screen.getByLabelText(t.create.proxy) as HTMLSelectElement
+    expect(proxySelect.closest('details')).toBeNull()
     const create = screen.getByRole('button', { name: t.mobile.create }) as HTMLButtonElement
     await waitFor(() => expect(create.disabled).toBe(false))
     fireEvent.click(create)
