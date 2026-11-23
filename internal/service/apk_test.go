@@ -354,7 +354,9 @@ func TestSearchAPKStore(t *testing.T) {
 	raw, _ := json.Marshal(payload)
 	html := `<script>AF_initDataCallback({key: 'ds:4', hash: '9', data:` + string(raw) + `, sideChannel: {}});</script>`
 
+	var seenGL string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		seenGL = r.URL.Query().Get("gl")
 		if r.URL.Query().Get("q") == "offline-test" {
 			http.Error(w, "down", http.StatusBadGateway)
 			return
@@ -381,6 +383,23 @@ func TestSearchAPKStore(t *testing.T) {
 	}
 	if got[0].Package != "com.shopee.vn" || got[0].Title != "Shopee VN" || got[0].Developer != "Shopee" || !strings.HasSuffix(got[0].IconURL, "=s96") {
 		t.Fatalf("unexpected parsed app: %+v", got[0])
+	}
+	if seenGL != "US" {
+		t.Fatalf("expected default gl=US, got %q", seenGL)
+	}
+
+	// Region override from proxy country sends gl=<country> to Google Play.
+	if gotRegion := sPro.fetchPlayStoreApps(ctx, "shopee", "", "DE"); len(gotRegion) != 1 || seenGL != "DE" {
+		t.Fatalf("regional fetch = %d apps, gl=%q; want 1 app and gl=DE", len(gotRegion), seenGL)
+	}
+	if err := sPro.Store.CreateProxy(&store.Proxy{ID: "px-de", Label: "DE Exit", Scheme: "socks5", Host: "127.0.0.1", Port: 1080}); err != nil {
+		t.Fatalf("CreateProxy: %v", err)
+	}
+	if err := sPro.Store.SaveProxyCheck(store.Proxy{ID: "px-de", ExitIP: "5.6.7.8", Country: "de"}); err != nil {
+		t.Fatalf("SaveProxyCheck: %v", err)
+	}
+	if cc := sPro.proxyRegion("px-de"); cc != "DE" {
+		t.Fatalf("proxyRegion = %q, want DE", cc)
 	}
 
 	// Network error falls back cleanly without erroring.

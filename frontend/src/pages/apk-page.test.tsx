@@ -200,6 +200,7 @@ describe('ApkPage', () => {
     mockApi.ListAPKs.mockResolvedValue([])
     mockApi.ListProxies.mockResolvedValue([
       { id: 'px1', label: 'US Exit', country: 'US', exitIp: '1.2.3.4', scheme: 'socks5', host: '1.2.3.4', port: 1080, usedBy: [], assignable: true, rotating: false },
+      { id: 'px2', label: 'DE Exit', country: 'DE', exitIp: '5.6.7.8', scheme: 'socks5', host: '5.6.7.8', port: 1080, usedBy: [], assignable: true, rotating: false },
     ])
     mockApi.ListUncatalogedAPKs.mockResolvedValue([
       { package: 'com.instagram.android', deviceId: 'apk-runner' },
@@ -223,14 +224,23 @@ describe('ApkPage', () => {
     fireEvent.click((await screen.findAllByRole('button', { name: t.apk.addApk }))[0])
     expect(await screen.findByText('com.instagram.android')).toBeTruthy()
 
-    // Select TikTok from the search dropdown -> unified configure step -> open Aurora Store with auto-selected free proxy
+    // Choose proxy right in Step 1 before searching/picking an app
+    const proxySelect = screen.getByLabelText(t.create.proxy) as HTMLSelectElement
+    expect(proxySelect.value).toBe('px1')
+    fireEvent.change(proxySelect, { target: { value: 'px2' } })
+    fireEvent.change(screen.getByRole('combobox', { name: t.apk.storeSearchLabel }), { target: { value: 'tiktok' } })
+    await waitFor(() => {
+      expect(mockApi.SearchAPKStore).toHaveBeenCalledWith('tiktok', 'px2')
+    })
+
+    // Select TikTok from the search dropdown -> unified configure step -> open Aurora Store with chosen DE proxy
     const tiktokOpt = await screen.findByRole('option', { name: /TikTok/i })
     fireEvent.click(tiktokOpt)
     fireEvent.click(screen.getByRole('button', { name: t.apk.openStoreBtn }))
     await waitFor(() => {
       expect(mockApi.OpenAPKStore).toHaveBeenCalledWith(expect.objectContaining({
         query: 'com.zhiliaoapp.musically',
-        proxyId: 'px1',
+        proxyId: 'px2',
         deviceId: '',
       }))
     })

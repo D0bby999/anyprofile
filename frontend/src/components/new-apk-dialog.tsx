@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Api, service, store } from '../api'
 import { t } from '../i18n'
 import { errorText } from '../lib/format'
+import { countryFlag } from '../lib/flags'
 import { MODELS } from '../lib/mobile-presets'
 import { Dialog } from './dialog'
 import { Icon } from './icons'
@@ -126,7 +127,7 @@ export function NewApkDialog({
     const delay = trimmedQuery ? 240 : 0
     if (trimmedQuery) setSearching(true)
     const timer = window.setTimeout(() => {
-      Api.SearchAPKStore(trimmedQuery, '')
+      Api.SearchAPKStore(trimmedQuery, proxyId)
         .then((list) => {
           if (searchSeqRef.current !== seq) return
           setResults(list ?? [])
@@ -141,11 +142,10 @@ export function NewApkDialog({
         })
     }, delay)
     return () => window.clearTimeout(timer)
-  }, [mode, target, trimmedQuery, isHttpsUrl])
+  }, [mode, target, trimmedQuery, isHttpsUrl, proxyId])
 
   const enterConfigure = (next: SelectedTarget) => {
     setTarget(next)
-    setProxyId((cur) => cur || defaultProxyId(proxies))
     setModel('')
     setNotes('')
     setMakeShortcut(true)
@@ -299,6 +299,17 @@ export function NewApkDialog({
     }
   }
 
+  const selectedProxy = useMemo(
+    () => (proxyId ? proxies.find((p) => p.id === proxyId) ?? null : null),
+    [proxyId, proxies],
+  )
+  const regionBadge = selectedProxy?.country
+    ? [countryFlag(selectedProxy.country), selectedProxy.country].filter(Boolean).join(' ')
+    : ''
+  const proxySummary = selectedProxy
+    ? [countryFlag(selectedProxy.country), selectedProxy.label, selectedProxy.country].filter(Boolean).join(' ')
+    : t.common.direct
+
   const oriLabel = orientation === 'portrait'
     ? t.apk.oriPortrait
     : orientation === 'landscape'
@@ -348,6 +359,17 @@ export function NewApkDialog({
     >
       {!target ? (
         <div className="apk-step">
+          <label className="field">
+            <span className="label">{t.apk.proxyField}</span>
+            <ProxySelect value={proxyId} onChange={setProxyId} proxies={proxies} disabled={busy} />
+          </label>
+          {proxyId === '' && (
+            <p className="apk-ip-note">
+              <Icon name="alert" className="icon xs" />
+              <span>{t.apk.realIpNote}</span>
+            </p>
+          )}
+
           <div className="seg apk-mode-tabs" role="tablist" aria-label={t.apk.newTitle}>
             <button
               type="button"
@@ -420,7 +442,11 @@ export function NewApkDialog({
                 ) : (
                   <>
                     <div className="apk-results-head">
-                      <span>{trimmedQuery ? t.apk.storeResultsLabel : t.apk.storePopularLabel}</span>
+                      <span>
+                        {trimmedQuery
+                          ? `${t.apk.storeResultsLabel}${regionBadge ? ` · ${regionBadge}` : ''}`
+                          : t.apk.storePopularLabel}
+                      </span>
                       {searching && <span className="apk-results-status">{t.apk.searchingStore}</span>}
                     </div>
 
@@ -649,10 +675,6 @@ export function NewApkDialog({
             </div>
           )}
 
-          <label className="field">
-            <span className="label">{t.apk.proxyField}</span>
-            <ProxySelect value={proxyId} onChange={setProxyId} proxies={proxies} />
-          </label>
           {proxyId === '' && (
             <p className="apk-ip-note">
               <Icon name="alert" className="icon xs" />
@@ -661,6 +683,7 @@ export function NewApkDialog({
           )}
 
           <div className="mobile-create-summary">
+            <span>{proxySummary}</span>
             <span>{oriLabel}</span>
             <span>{modelLabel}</span>
             {makeShortcut && <span>{t.apk.shortcutShort}</span>}

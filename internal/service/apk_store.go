@@ -558,7 +558,8 @@ func (s *Service) SearchAPKStore(ctx context.Context, query, proxyID string) ([]
 	}
 
 	proxyID = strings.TrimSpace(proxyID)
-	cacheKey := strings.ToLower(q) + "|" + proxyID
+	region := s.proxyRegion(proxyID)
+	cacheKey := strings.ToLower(q) + "|" + proxyID + "|" + region
 	apkSearchCacheMu.Lock()
 	if hit, ok := apkSearchCache[cacheKey]; ok && time.Now().Before(hit.exp) {
 		out := make([]APKStoreApp, len(hit.apps))
@@ -568,31 +569,9 @@ func (s *Service) SearchAPKStore(ctx context.Context, query, proxyID string) ([]
 	}
 	apkSearchCacheMu.Unlock()
 
-	apps := s.fetchPlayStoreApps(ctx, q, proxyID)
-	local := filterPopularAPKStoreApps(q)
-	if len(local) > 0 {
-		seen := make(map[string]bool, len(apps)+len(local))
-		merged := make([]APKStoreApp, 0, len(apps)+len(local))
-		// Prefer live Play metadata (including real iconUrl) when both match the same package.
-		liveByPkg := make(map[string]APKStoreApp, len(apps))
-		for _, a := range apps {
-			liveByPkg[a.Package] = a
-		}
-		for _, a := range local {
-			if live, ok := liveByPkg[a.Package]; ok {
-				merged = append(merged, live)
-			} else {
-				merged = append(merged, a)
-			}
-			seen[a.Package] = true
-		}
-		for _, a := range apps {
-			if !seen[a.Package] {
-				merged = append(merged, a)
-				seen[a.Package] = true
-			}
-		}
-		apps = merged
+	apps := s.fetchPlayStoreApps(ctx, q, proxyID, region)
+	if len(apps) == 0 {
+		apps = filterPopularAPKStoreApps(q)
 	}
 	if len(apps) > 8 {
 		apps = apps[:8]
@@ -610,7 +589,22 @@ func (s *Service) SearchAPKStore(ctx context.Context, query, proxyID string) ([]
 	return out, nil
 }
 
-func (s *Service) fetchPlayStoreApps(ctx context.Context, query, proxyID string) []APKStoreApp {
+func (s *Service) proxyRegion(proxyID string) string {
+	if proxyID == "" {
+		return ""
+	}
+	p, err := s.Store.GetProxy(proxyID)
+	if err != nil {
+		return ""
+	}
+	cc := strings.ToUpper(strings.TrimSpace(p.Country))
+	if len(cc) != 2 {
+		return ""
+	}
+	return cc
+}
+
+func (s *Service) fetchPlayStoreApps(ctx context.Context, query, proxyID, region string) []APKStoreApp {
 	transport := apkHTTPTransport()
 	if proxyID != "" {
 		up, err := s.proxyUpstream(proxyID)
@@ -632,9 +626,14 @@ func (s *Service) fetchPlayStoreApps(ctx context.Context, query, proxyID string)
 	v.Set("c", "apps")
 	if s.Language() == "vi" {
 		v.Set("hl", "vi")
-		v.Set("gl", "VN")
 	} else {
 		v.Set("hl", "en")
+	}
+	if region != "" {
+		v.Set("gl", region)
+	} else if s.Language() == "vi" {
+		v.Set("gl", "VN")
+	} else {
 		v.Set("gl", "US")
 	}
 	u.RawQuery = v.Encode()
