@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { Api, onDataChanged, store } from '../../api'
 import { t } from '../../i18n'
 import { formatDateTime, relativeTime, sinceSpan } from '../../lib/format'
-import { countryName, flagText } from '../../lib/flags'
+import { countryFlag, countryName, flagText } from '../../lib/flags'
 
 /** Notes for one session, compared with the next older session that measured an exit. */
 function notesFor(list: store.Session[], i: number): { text: string; tone: string }[] {
@@ -42,7 +42,7 @@ export function SessionsTab({ profileId }: { profileId: string }) {
           <tr key={s.id}>
             <td title={formatDateTime(s.startedAt)}>{relativeTime(s.startedAt)}</td>
             <td className="nowrap">{s.stoppedAt ? spanBetween(s.startedAt, s.stoppedAt) : t.sessions.running}</td>
-            <td><span className="mono selectable">{s.exitIp || '–'}</span>{s.exitCountry && <small title={countryName(s.exitCountry)}> {s.exitCountry}</small>}</td>
+            <td><span className="mono selectable">{s.exitIp || '–'}</span>{s.exitCountry && <small title={countryName(s.exitCountry)}> {countryFlag(s.exitCountry)}{countryFlag(s.exitCountry) ? ' ' : ''}{s.exitCountry}</small>}</td>
             <td>
               {checkChip(s.checks)}
               {notesFor(list, i).map((n) => <span key={n.text} className={`chip ${n.tone}`}>{n.text}</span>)}

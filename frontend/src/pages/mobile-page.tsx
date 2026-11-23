@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Api, onEngineProgress, openExternal, service, type EngineProgress } from '../api'
 import { language, t } from '../i18n'
 import { errorText, fold, relativeTime } from '../lib/format'
+import { countryFlag, countryName } from '../lib/flags'
 import { groupOf, mergeOrder, moveTo, rank } from '../lib/profile-order'
 import { rangeSelect } from '../lib/selection'
 import { tagColor } from '../lib/tags'
@@ -211,10 +212,11 @@ export function MobilePage({ mobile, onOpenPro, onOpenSettings }: Props) {
     if (!r.proxyId) return <span className="proxy-pill"><Icon name="direct" className="icon xs" /><span className="faint">{t.common.direct}</span></span>
     const p = proxies.find((x) => x.id === r.proxyId)
     if (!p) return <span className="proxy-pill"><Icon name="proxy" className="icon xs" /><span className="faint">…</span></span>
+    const flag = countryFlag(p.country)
     return (
       <span className="proxy-pill">
-        <Icon name="proxy" className="icon xs" />
-        <span title={p.country ? `${p.label} · ${p.country}` : p.label}>{p.label}{p.country && <span className="faint"> · {p.country}</span>}</span>
+        {flag ? <span className="cc-flag" aria-hidden="true" title={countryName(p.country)}>{flag}</span> : <Icon name="proxy" className="icon xs" />}
+        <span title={p.country ? `${p.label} · ${countryName(p.country)}` : p.label}>{p.label}{p.country && <span className="faint"> · {p.country}</span>}</span>
         {p.failedAt && <small className="danger">{r.state === 'running' ? t.mobile.proxyDown : t.proxies.failed}</small>}
       </span>
     )

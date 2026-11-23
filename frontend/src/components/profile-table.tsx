@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { service } from '../api'
 import { t } from '../i18n'
 import { relativeTime, sinceSpan } from '../lib/format'
+import { countryFlag, countryName } from '../lib/flags'
 import { machineKnown, machineLabel } from '../lib/persona'
 import type { Site } from '../lib/sites'
 import { Icon } from './icons'
@@ -64,10 +65,14 @@ function ProxyCell({ row }: { row: service.ProfileRow }) {
   // The exit measured at the last launch wins over the proxy's last check.
   const ip = row.lastExit?.ip || row.proxyExitIp
   const cc = row.lastExit?.country || row.proxyCountry
+  const flag = countryFlag(cc)
   const moved = (row.flags ?? []).some((f) => f.id === 'country_changed')
   return (
     <span className="cellproxy">
-      <span className={`cc${moved ? ' danger' : ''}`}>{cc || '?'}</span>
+      <span className={`cc${moved ? ' danger' : ''}`} title={cc ? countryName(cc) : undefined}>
+        {flag && <span className="cc-flag" aria-hidden="true">{flag}</span>}
+        {cc || '?'}
+      </span>
       <span>
         {ip ? <span className="mono selectable">{ip}</span> : <span className="faint">{t.proxies.unchecked}</span>}
         <small title={row.proxyLabel}>{row.proxyLabel}</small>
@@ -161,7 +166,12 @@ export function ProfileTable(p: Props) {
                       the reason it exists. */}
                   {r.proxyLabel && (
                     <span className="proxy-inline" title={`${t.profiles.colProxy}: ${r.proxyLabel}`}>
-                      {r.proxyCountry && <em className="cc">{r.proxyCountry}</em>}{r.proxyLabel}
+                      {r.proxyCountry && (
+                        <em className="cc" title={countryName(r.proxyCountry)}>
+                          {countryFlag(r.proxyCountry) && <span className="cc-flag" aria-hidden="true">{countryFlag(r.proxyCountry)}</span>}
+                          {r.proxyCountry}
+                        </em>
+                      )}{r.proxyLabel}
                     </span>
                   )}
                   {machineKnown(r) && <span>{machineLabel(r)}</span>}

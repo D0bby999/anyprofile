@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Api, onDataChanged, service } from '../api'
 import { t } from '../i18n'
 import { errorText, formatDate, proxyLineError, relativeTime } from '../lib/format'
+import { countryFlag, countryName } from '../lib/flags'
 import { EmptyState } from '../components/empty-state'
 import { Icon } from '../components/icons'
 import { PageHead } from '../components/page-head'
@@ -214,7 +215,10 @@ export function ProxiesPage({ onChanged }: { onChanged: () => void }) {
                         </td>
                         <td>{p.exitIp ? (
                           <span className="cellproxy">
-                            <span className="cc" title={p.country || '?'}>{p.country || '?'}</span>
+                            <span className="cc" title={p.country ? countryName(p.country) : '?'}>
+                              {countryFlag(p.country) && <span className="cc-flag" aria-hidden="true">{countryFlag(p.country)}</span>}
+                              {p.country || '?'}
+                            </span>
                             <span className="exittext">
                               <span className="mono selectable" title={p.exitIp}>{p.exitIp}</span>{p.timezone && <span className="tzline" title={p.timezone}>{p.timezone}</span>}
                               {p.timezone6 && p.timezone6 !== p.timezone && (

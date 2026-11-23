@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Api, onDataChanged, service, store } from '../api'
 import { t } from '../i18n'
 import { errorText, fold } from '../lib/format'
+import { countryFlag, countryName } from '../lib/flags'
 import type { useMobile } from '../hooks/use-mobile'
 import { ApkDrawer } from '../components/apk-drawer'
 import { EmptyState } from '../components/empty-state'
@@ -175,9 +176,10 @@ export function ApkPage({ mobile, onOpenPro, onOpenMobile, onChanged }: Props) {
         </span>
       )
     }
+    const flag = countryFlag(p.country)
     return (
-      <span className="proxy-pill" title={`${p.label} (${p.scheme}://${p.host}:${p.port})`}>
-        <Icon name="proxy" className="icon xs" />
+      <span className="proxy-pill" title={`${p.label}${p.country ? ` · ${countryName(p.country)}` : ''} (${p.scheme}://${p.host}:${p.port})`}>
+        {flag ? <span className="cc-flag" aria-hidden="true">{flag}</span> : <Icon name="proxy" className="icon xs" />}
         <span>
           {p.label}
           {p.country && <span className="faint"> · {p.country}</span>}

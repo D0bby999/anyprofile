@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { service } from '../api'
 import { t } from '../i18n'
+import { countryFlag } from '../lib/flags'
 import { Icon } from './icons'
 import { BuyProxiesButton } from './partner-grid'
 
@@ -18,7 +19,7 @@ export function ProxySelect({ value, onChange, proxies, allowAuto, currentProfil
       <option value="">{t.create.proxyDirect}</option>
       {proxies.map((p) => {
         const others = p.usedBy.filter((n) => n !== currentProfile)
-        const where = [p.country, p.exitIp].filter(Boolean).join(' ')
+        const where = [countryFlag(p.country), p.country, p.exitIp].filter(Boolean).join(' ')
         const note = p.rotating ? t.proxies.rotating : p.failedAt ? t.proxies.failed : others.length ? others.join(', ') : ''
         return (
           <option key={p.id} value={p.id} disabled={p.rotating}>

@@ -702,6 +702,7 @@ kbd { display: inline-flex; align-items: center; min-width: 22px; height: 20px; 
 .mobile-device-error { display: block; overflow-wrap: anywhere; }
 .proxy-pill { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; max-width: 100%; width: fit-content; color: var(--ink-soft); font-size: var(--t-xs); overflow-wrap: anywhere; }
 .proxy-pill .icon { color: var(--accent); }
+.proxy-pill .cc-flag { flex: 0 0 auto; }
 .proxy-pill .danger { flex-basis: 100%; }
 .mobile-actions { justify-content: flex-end; gap: 6px; flex-wrap: wrap; }
 .mobile-actions .actbtn { white-space: nowrap; }
@@ -852,8 +853,9 @@ kbd { display: inline-flex; align-items: center; min-width: 22px; height: 20px; 
 .mumu-card-info .mobile-name { font-size: 16px; font-weight: 600; letter-spacing: -.01em; color: var(--ink); }
 .mumu-card-model { font-size: 11.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mumu-card-info .proxy-pill { display: flex; min-width: 0; width: auto; max-width: 100%; }
-.mumu-card-info .proxy-pill .icon { flex: 0 0 auto; }
-.mumu-card-info .proxy-pill > span { flex: 1 1 0; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mumu-card-info .proxy-pill .icon,
+.mumu-card-info .proxy-pill .cc-flag { flex: 0 0 auto; }
+.mumu-card-info .proxy-pill > span:not(.cc-flag) { flex: 1 1 0; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mumu-card-info .chip { min-width: 0; overflow: hidden; }
 .mumu-tag { height: 20px; padding: 0 7px; font-size: 11px; }
 .mumu-card-pills { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
@@ -1027,8 +1029,9 @@ kbd { display: inline-flex; align-items: center; min-width: 22px; height: 20px; 
   width: 100%; max-width: 100%; white-space: nowrap; overflow: hidden;
 }
 .apk-table .proxy-pill .icon,
+.apk-table .proxy-pill .cc-flag,
 .apk-table .proxy-pill svg { flex: 0 0 auto; }
-.apk-table .proxy-pill > span { flex: 1 1 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.apk-table .proxy-pill > span:not(.cc-flag) { flex: 1 1 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 .apk-table .apk-col-shortcut { width: 92px; }
 .apk-table .col-actions { width: 158px; position: sticky; right: 0; }
 .apk-table th.col-actions { z-index: 2; }

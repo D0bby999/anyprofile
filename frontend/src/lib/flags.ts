@@ -3,6 +3,13 @@ import { language, t } from '../i18n'
 
 export type Flag = { id: string; level: string; params: Record<string, string> }
 
+/** "DE" -> "🇩🇪"; unknown or empty codes return "". */
+export function countryFlag(cc: string): string {
+  const s = (cc ?? '').trim().toUpperCase()
+  if (!/^[A-Z]{2}$/.test(s)) return ''
+  return String.fromCodePoint(0x1F1E6 + s.charCodeAt(0) - 65, 0x1F1E6 + s.charCodeAt(1) - 65)
+}
+
 /** "DE" -> "Germany" in the UI language; unknown codes pass through. */
 export function countryName(cc: string): string {
   if (!cc) return ''
