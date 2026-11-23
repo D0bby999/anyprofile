@@ -3,6 +3,11 @@
 The notes of each release tag are shown in the app's update prompt; this file
 keeps them together.
 
+## 1.0.1 (2026-11-23)
+
+- Expanded Mobile VM internal storage to 32 GB sparse (`userdata.img`), fixing insufficient storage errors when installing large apps such as TikTok, and fixed sparse disk size reporting on macOS.
+- Added unified New APK dialog: deep-link directly to apps in Aurora Store with quick-pick popular apps, proxy selection, and automatic sync of newly installed apps into the APK list, plus direct HTTPS APK download and import from running Mobile devices.
+
 ## 1.0.0 (2026-11-22)
 
 - First 1.0.0 release.
