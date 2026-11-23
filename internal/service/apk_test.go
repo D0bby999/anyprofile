@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/binary"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -321,5 +322,73 @@ func TestAPKStoreHelpersAndDownload(t *testing.T) {
 	}
 	if _, err := os.Stat(dlInfo.FilePath); err != nil {
 		t.Fatalf("expected downloaded temp file to exist: %v", err)
+	}
+}
+
+func TestSearchAPKStore(t *testing.T) {
+	s, _ := newMobileService(t, "")
+	ctx := context.Background()
+	if _, err := s.SearchAPKStore(ctx, "tiktok", ""); err == nil {
+		t.Fatal("SearchAPKStore must be Pro-gated")
+	}
+
+	sPro, _ := newMobileService(t, "active")
+
+	// Empty query returns popular catalog with zero network traffic.
+	pop, err := sPro.SearchAPKStore(ctx, "", "")
+	if err != nil || len(pop) < 5 {
+		t.Fatalf("empty SearchAPKStore = %d, %v", len(pop), err)
+	}
+
+	// Build a minimal Play Store ds:4 HTML payload with a list item.
+	item := make([]any, 16)
+	item[0] = []any{"com.shopee.vn", 7}
+	item[1] = []any{nil, 2, []any{512, 512}, []any{nil, nil, "https://play-lh.googleusercontent.com/abc123"}}
+	item[3] = "Shopee VN"
+	item[4] = []any{"4.6", 4.6}
+	item[5] = "Shopping"
+	item[14] = "Shopee"
+	sec := make([]any, 24)
+	sec[22] = []any{[]any{[]any{item}}}
+	payload := []any{[]any{nil, []any{sec}}}
+	raw, _ := json.Marshal(payload)
+	html := `<script>AF_initDataCallback({key: 'ds:4', hash: '9', data:` + string(raw) + `, sideChannel: {}});</script>`
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Query().Get("q") == "offline-test" {
+			http.Error(w, "down", http.StatusBadGateway)
+			return
+		}
+		_, _ = w.Write([]byte(html))
+	}))
+	defer srv.Close()
+
+	prevURL := apkPlaySearchURL
+	apkPlaySearchURL = srv.URL
+	apkSearchCacheMu.Lock()
+	apkSearchCache = map[string]apkSearchCacheEntry{}
+	apkSearchCacheMu.Unlock()
+	defer func() {
+		apkPlaySearchURL = prevURL
+		apkSearchCacheMu.Lock()
+		apkSearchCache = map[string]apkSearchCacheEntry{}
+		apkSearchCacheMu.Unlock()
+	}()
+
+	got, err := sPro.SearchAPKStore(ctx, "shopee", "")
+	if err != nil || len(got) != 1 {
+		t.Fatalf("SearchAPKStore live = %+v, %v", got, err)
+	}
+	if got[0].Package != "com.shopee.vn" || got[0].Title != "Shopee VN" || got[0].Developer != "Shopee" || !strings.HasSuffix(got[0].IconURL, "=s96") {
+		t.Fatalf("unexpected parsed app: %+v", got[0])
+	}
+
+	// Network error falls back cleanly without erroring.
+	fb, err := sPro.SearchAPKStore(ctx, "offline-test", "")
+	if err != nil {
+		t.Fatalf("fallback returned error: %v", err)
+	}
+	if len(fb) != 0 {
+		t.Fatalf("expected 0 fallback matches for unknown query, got %+v", fb)
 	}
 }

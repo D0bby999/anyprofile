@@ -544,6 +544,28 @@ export namespace service {
 	        this.abiWarning = source["abiWarning"];
 	    }
 	}
+	export class APKStoreApp {
+	    package: string;
+	    title: string;
+	    developer: string;
+	    iconUrl: string;
+	    rating?: string;
+	    category?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new APKStoreApp(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.package = source["package"];
+	        this.title = source["title"];
+	        this.developer = source["developer"];
+	        this.iconUrl = source["iconUrl"];
+	        this.rating = source["rating"];
+	        this.category = source["category"];
+	    }
+	}
 	export class APKStoreRequest {
 	    query: string;
 	    proxyId: string;

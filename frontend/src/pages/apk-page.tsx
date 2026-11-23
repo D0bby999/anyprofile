@@ -3,14 +3,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Api, onDataChanged, service, store } from '../api'
 import { t } from '../i18n'
 import { errorText, fold } from '../lib/format'
-import { MODELS } from '../lib/mobile-presets'
 import type { useMobile } from '../hooks/use-mobile'
 import { ApkDrawer } from '../components/apk-drawer'
-import { Dialog } from '../components/dialog'
 import { EmptyState } from '../components/empty-state'
 import { Icon } from '../components/icons'
+import { NewApkDialog, type PendingStoreConfig } from '../components/new-apk-dialog'
 import { PageHead } from '../components/page-head'
-import { ProxySelect, RealIpWarning } from '../components/proxy-select'
 import { useConfirm } from '../components/confirm'
 import { useToast } from '../components/toast'
 
@@ -22,24 +20,6 @@ type Props = {
 }
 
 type OriFilter = 'all' | 'portrait' | 'landscape'
-type NewTab = 'store' | 'file'
-
-const POPULAR_APPS: ReadonlyArray<readonly [label: string, pkg: string]> = [
-  ['TikTok', 'com.zhiliaoapp.musically'],
-  ['Instagram', 'com.instagram.android'],
-  ['Facebook', 'com.facebook.katana'],
-  ['Telegram', 'org.telegram.messenger'],
-  ['WhatsApp', 'com.whatsapp'],
-  ['Shopee', 'com.shopee.vn'],
-  ['X', 'com.twitter.android'],
-  ['Zalo', 'com.zing.zalo'],
-]
-
-function formatBytes(n: number): string {
-  if (!n || n <= 0) return '0 MB'
-  const mb = n / (1024 * 1024)
-  return mb >= 1000 ? `${(mb / 1024).toFixed(2)} GB` : `${mb.toFixed(1)} MB`
-}
 
 /** Standalone Android APK apps: an AnyProfile Pro feature with its own background Android host. */
 export function ApkPage({ mobile, onOpenPro, onOpenMobile, onChanged }: Props) {
@@ -51,33 +31,15 @@ export function ApkPage({ mobile, onOpenPro, onOpenMobile, onChanged }: Props) {
   const [activePkg, setActivePkg] = useState<string | null>(null)
   const [busyPkg, setBusyPkg] = useState('')
   const [error, setError] = useState('')
-  const [inspect, setInspect] = useState<service.APKInspect | null>(null)
-  const [targetLabel, setTargetLabel] = useState('')
-  const [targetProxy, setTargetProxy] = useState('')
-  const [targetOri, setTargetOri] = useState('auto')
-  const [targetModel, setTargetModel] = useState('')
-  const [targetNotes, setTargetNotes] = useState('')
-  const [makeShortcut, setMakeShortcut] = useState(true)
-  const [adding, setAdding] = useState(false)
 
-  // New APK modal state (Store deep-link + auto-sync, local file, direct URL, running Mobile import).
+  // Unified New APK modal + Aurora Store auto-sync watcher.
   const [newOpen, setNewOpen] = useState(false)
-  const [newTab, setNewTab] = useState<NewTab>('store')
-  const [storeQuery, setStoreQuery] = useState('')
-  const [storeProxy, setStoreProxy] = useState('')
-  const [openingStore, setOpeningStore] = useState(false)
   const [storeWatching, setStoreWatching] = useState(false)
   const [syncing, setSyncing] = useState(false)
   const [detected, setDetected] = useState<service.UncatalogedAPK[]>([])
-  const [importingPkg, setImportingPkg] = useState('')
-  const [urlInput, setUrlInput] = useState('')
-  const [urlProxy, setUrlProxy] = useState('')
-  const [downloadingUrl, setDownloadingUrl] = useState(false)
-  const [mobileSourceId, setMobileSourceId] = useState('')
-  const [mobileApps, setMobileApps] = useState<service.UncatalogedAPK[]>([])
-  const [mobileScanned, setMobileScanned] = useState(false)
   const storeBaselineRef = useRef<Set<string>>(new Set())
   const importingRef = useRef<Set<string>>(new Set())
+  const pendingStoreCfgRef = useRef<PendingStoreConfig | null>(null)
 
   const toast = useToast()
   const confirm = useConfirm()
@@ -86,6 +48,10 @@ export function ApkPage({ mobile, onOpenPro, onOpenMobile, onChanged }: Props) {
   const runningMobile = useMemo(
     () => (mobile.rows ?? []).filter((r) => r.state === 'running'),
     [mobile.rows],
+  )
+  const existingPackages = useMemo(
+    () => new Set(apps.map((a) => a.package)),
+    [apps],
   )
 
   const reload = useCallback(() => {
@@ -108,17 +74,6 @@ export function ApkPage({ mobile, onOpenPro, onOpenMobile, onChanged }: Props) {
   useEffect(() => onDataChanged(['apk'], reload), [reload])
   useEffect(() => onDataChanged(['proxies'], reloadProxies), [])
 
-  const openInspect = (meta: service.APKInspect, initialProxy = '') => {
-    setNewOpen(false)
-    setInspect(meta)
-    setTargetLabel(meta.label || '')
-    setTargetProxy(initialProxy)
-    setTargetOri(meta.orientation || 'auto')
-    setTargetModel('')
-    setTargetNotes('')
-    setMakeShortcut(true)
-  }
-
   const syncFromStore = useCallback(async (autoImportNew: boolean) => {
     if (!canUse) return
     setSyncing(true)
@@ -129,17 +84,18 @@ export function ApkPage({ mobile, onOpenPro, onOpenMobile, onChanged }: Props) {
       for (const item of list) {
         if (storeBaselineRef.current.has(item.package) || importingRef.current.has(item.package)) continue
         importingRef.current.add(item.package)
-        setImportingPkg(item.package)
+        const cfg = pendingStoreCfgRef.current
+        const matchesPkg = cfg && (!cfg.package || cfg.package === item.package)
         try {
           const rec = await Api.ImportInstalledAPK(service.APKImportInput.createFrom({
             package: item.package,
             deviceId: item.deviceId,
-            label: '',
-            proxyId: storeProxy,
-            notes: '',
-            orientation: 'auto',
-            identityTemplate: '',
-            createShortcut: true,
+            label: matchesPkg ? cfg.label : '',
+            proxyId: cfg?.proxyId ?? '',
+            notes: matchesPkg ? cfg.notes : '',
+            orientation: matchesPkg ? cfg.orientation : 'auto',
+            identityTemplate: matchesPkg ? cfg.identityTemplate : '',
+            createShortcut: cfg ? cfg.createShortcut : true,
           }))
           storeBaselineRef.current.add(item.package)
           setDetected((cur) => cur.filter((x) => x.package !== item.package))
@@ -149,7 +105,6 @@ export function ApkPage({ mobile, onOpenPro, onOpenMobile, onChanged }: Props) {
           toast.error(errorText(e))
         } finally {
           importingRef.current.delete(item.package)
-          setImportingPkg('')
         }
       }
     } catch {
@@ -157,7 +112,7 @@ export function ApkPage({ mobile, onOpenPro, onOpenMobile, onChanged }: Props) {
     } finally {
       setSyncing(false)
     }
-  }, [canUse, reload, storeProxy, toast])
+  }, [canUse, reload, toast])
 
   useEffect(() => {
     if (!storeWatching) return
@@ -172,87 +127,15 @@ export function ApkPage({ mobile, onOpenPro, onOpenMobile, onChanged }: Props) {
 
   const openNewDialog = () => {
     setError('')
-    setNewTab('store')
-    setMobileScanned(false)
-    setMobileApps([])
-    if (runningMobile.length > 0 && !mobileSourceId) {
-      setMobileSourceId(runningMobile[0].id)
-    }
     setNewOpen(true)
     void syncFromStore(false)
   }
 
-  const openStore = async () => {
-    setOpeningStore(true)
-    try {
-      const existing = (await Api.ListUncatalogedAPKs('')) ?? []
-      storeBaselineRef.current = new Set(existing.map((x) => x.package))
-      await Api.OpenAPKStore(service.APKStoreRequest.createFrom({
-        query: storeQuery.trim(),
-        proxyId: storeProxy,
-        deviceId: '',
-      }))
-      setStoreWatching(true)
-    } catch (e) {
-      toast.error(errorText(e))
-    } finally {
-      setOpeningStore(false)
-    }
-  }
-
-  const importOne = async (item: service.UncatalogedAPK, proxyId: string) => {
-    setImportingPkg(item.package)
-    try {
-      const rec = await Api.ImportInstalledAPK(service.APKImportInput.createFrom({
-        package: item.package,
-        deviceId: item.deviceId,
-        label: '',
-        proxyId,
-        notes: '',
-        orientation: 'auto',
-        identityTemplate: '',
-        createShortcut: true,
-      }))
-      storeBaselineRef.current.add(item.package)
-      setDetected((cur) => cur.filter((x) => x.package !== item.package))
-      setMobileApps((cur) => cur.filter((x) => x.package !== item.package))
-      toast.success(t.apk.installed(rec.label))
-      reload()
-    } catch (e) {
-      toast.error(errorText(e))
-    } finally {
-      setImportingPkg('')
-    }
-  }
-
-  const downloadFromUrl = async () => {
-    const raw = urlInput.trim()
-    if (!raw) return
-    setDownloadingUrl(true)
-    try {
-      const meta = await Api.DownloadAPKFromURL(raw, urlProxy)
-      setUrlInput('')
-      openInspect(meta, urlProxy)
-    } catch (e) {
-      toast.error(errorText(e))
-    } finally {
-      setDownloadingUrl(false)
-    }
-  }
-
-  const scanMobileDevice = async () => {
-    const id = mobileSourceId || runningMobile[0]?.id || ''
-    if (!id) return
-    setSyncing(true)
-    try {
-      const list = (await Api.ListUncatalogedAPKs(id)) ?? []
-      setMobileApps(list)
-      setMobileScanned(true)
-    } catch (e) {
-      toast.error(errorText(e))
-    } finally {
-      setSyncing(false)
-    }
+  const handleStoreOpened = (cfg: PendingStoreConfig) => {
+    pendingStoreCfgRef.current = cfg
+    storeBaselineRef.current = new Set(detected.map((x) => x.package))
+    setStoreWatching(true)
+    setNewOpen(false)
   }
 
   const active = activePkg ? apps.find((a) => a.package === activePkg) ?? null : null
@@ -273,42 +156,6 @@ export function ApkPage({ mobile, onOpenPro, onOpenMobile, onChanged }: Props) {
       )
     })
   }, [apps, query, oriFilter, proxyById])
-
-  const pickAndInspect = async () => {
-    setError('')
-    try {
-      const file = await Api.PickAPKFile()
-      if (!file) return
-      const meta = await Api.InspectAPK(file)
-      openInspect(meta)
-    } catch (e) {
-      toast.error(errorText(e))
-    }
-  }
-
-  const confirmAdd = async () => {
-    if (!inspect || !inspect.abiCompatible) return
-    setAdding(true)
-    try {
-      const rec = await Api.AddAPK(service.APKInput.createFrom({
-        filePath: inspect.filePath,
-        label: targetLabel.trim(),
-        deviceId: '',
-        proxyId: targetProxy,
-        notes: targetNotes.trim(),
-        orientation: targetOri,
-        identityTemplate: targetModel,
-        createShortcut: makeShortcut,
-      }))
-      setInspect(null)
-      toast.success(t.apk.installed(rec.label))
-      reload()
-    } catch (e) {
-      toast.error(errorText(e))
-    } finally {
-      setAdding(false)
-    }
-  }
 
   const renderProxy = (proxyId: string) => {
     if (!proxyId) {
@@ -637,280 +484,18 @@ export function ApkPage({ mobile, onOpenPro, onOpenMobile, onChanged }: Props) {
       </div>
 
       {newOpen && (
-        <Dialog
-          title={t.apk.newTitle}
-          icon="apk"
-          onClose={() => !openingStore && !downloadingUrl && setNewOpen(false)}
-          footer={newTab === 'store' ? (
-            <>
-              <button type="button" className="btn" disabled={openingStore} onClick={() => setNewOpen(false)}>
-                {t.common.close}
-              </button>
-              <button type="button" className="btn primary" disabled={openingStore} onClick={() => void openStore()}>
-                <Icon name="download" className="icon xs" />
-                {openingStore ? t.apk.openingStore : t.apk.openStoreBtn}
-              </button>
-            </>
-          ) : (
-            <button type="button" className="btn" disabled={downloadingUrl} onClick={() => setNewOpen(false)}>
-              {t.common.close}
-            </button>
-          )}
-        >
-          <div className="seg apk-new-tabs" role="tablist">
-            <button type="button" role="tab" aria-selected={newTab === 'store'} aria-pressed={newTab === 'store'} onClick={() => setNewTab('store')}>
-              {t.apk.tabStore}
-            </button>
-            <button type="button" role="tab" aria-selected={newTab === 'file'} aria-pressed={newTab === 'file'} onClick={() => setNewTab('file')}>
-              {t.apk.tabFileUrl}
-            </button>
-          </div>
-
-          {newTab === 'store' ? (
-            <div className="apk-inspect-fields">
-              <label className="field">
-                <span>{t.apk.storeSearchLabel}</span>
-                <input
-                  className="input"
-                  value={storeQuery}
-                  placeholder={t.apk.storeSearchPlaceholder}
-                  onChange={(e) => setStoreQuery(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter' && !openingStore) void openStore() }}
-                />
-              </label>
-
-              <div className="field">
-                <span>{t.apk.storePopularLabel}</span>
-                <div className="apk-chips">
-                  {POPULAR_APPS.map(([label, pkg]) => {
-                    const selected = storeQuery.trim() === pkg
-                    return (
-                      <button
-                        key={pkg}
-                        type="button"
-                        className="apk-chip"
-                        aria-pressed={selected}
-                        onClick={() => setStoreQuery(selected ? '' : pkg)}
-                      >
-                        {label}
-                      </button>
-                    )
-                  })}
-                </div>
-              </div>
-
-              <label className="field">
-                <span>{t.apk.proxyField}</span>
-                <ProxySelect value={storeProxy} onChange={setStoreProxy} proxies={proxies} />
-              </label>
-              {storeProxy === '' && <RealIpWarning />}
-
-              <p className="desc" style={{ margin: 0 }}>{t.apk.storeHint}</p>
-
-              {storeWatching && (
-                <div className="banner" role="status">
-                  <Icon name="refresh" />
-                  <span className="grow">{t.apk.storeWatching}</span>
-                  <button type="button" className="btn sm" disabled={syncing} onClick={() => void syncFromStore(true)}>
-                    {syncing ? t.apk.syncing : t.apk.syncNow}
-                  </button>
-                </div>
-              )}
-
-              {detected.length > 0 && (
-                <div className="apk-found-list">
-                  <div className="apk-source-head">{t.apk.detectedApps}</div>
-                  {detected.map((item) => (
-                    <div key={item.package} className="apk-found-row">
-                      <span className="apk-found-pkg">{item.package}</span>
-                      <button
-                        type="button"
-                        className="btn sm primary"
-                        disabled={importingPkg === item.package}
-                        onClick={() => void importOne(item, storeProxy)}
-                      >
-                        {importingPkg === item.package ? t.apk.importing : t.apk.importBtn}
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="apk-inspect-fields">
-              <div className="apk-source-block">
-                <div className="apk-source-head">{t.apk.fromComputerLabel}</div>
-                <p className="desc" style={{ margin: 0 }}>{t.apk.fromComputerHint}</p>
-                <div className="row">
-                  <button type="button" className="btn primary" onClick={pickAndInspect}>
-                    <Icon name="plus" className="icon xs" />{t.apk.chooseFileBtn}
-                  </button>
-                </div>
-              </div>
-
-              <div className="apk-source-block">
-                <div className="apk-source-head">{t.apk.fromUrlLabel}</div>
-                <input
-                  className="input"
-                  value={urlInput}
-                  placeholder={t.apk.fromUrlPlaceholder}
-                  onChange={(e) => setUrlInput(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter' && !downloadingUrl) void downloadFromUrl() }}
-                />
-                <ProxySelect value={urlProxy} onChange={setUrlProxy} proxies={proxies} />
-                <div className="row">
-                  <button
-                    type="button"
-                    className="btn"
-                    disabled={!urlInput.trim() || downloadingUrl}
-                    onClick={() => void downloadFromUrl()}
-                  >
-                    <Icon name="download" className="icon xs" />
-                    {downloadingUrl ? t.apk.downloadingUrl : t.apk.downloadUrlBtn}
-                  </button>
-                </div>
-              </div>
-
-              {runningMobile.length > 0 && (
-                <div className="apk-source-block">
-                  <div className="apk-source-head">{t.apk.fromMobileLabel}</div>
-                  <div className="row">
-                    <select
-                      className="input grow"
-                      value={mobileSourceId || runningMobile[0].id}
-                      onChange={(e) => { setMobileSourceId(e.target.value); setMobileScanned(false); setMobileApps([]) }}
-                    >
-                      {runningMobile.map((m) => (
-                        <option key={m.id} value={m.id}>{m.name}</option>
-                      ))}
-                    </select>
-                    <button type="button" className="btn" disabled={syncing} onClick={() => void scanMobileDevice()}>
-                      {syncing ? t.apk.syncing : t.apk.scanMobileBtn}
-                    </button>
-                  </div>
-                  {mobileScanned && mobileApps.length === 0 && (
-                    <p className="desc" style={{ margin: 0 }}>{t.apk.noMobileApps}</p>
-                  )}
-                  {mobileApps.length > 0 && (
-                    <div className="apk-found-list">
-                      {mobileApps.map((item) => (
-                        <div key={item.package} className="apk-found-row">
-                          <span className="apk-found-pkg">{item.package}</span>
-                          <button
-                            type="button"
-                            className="btn sm primary"
-                            disabled={importingPkg === item.package}
-                            onClick={() => void importOne(item, '')}
-                          >
-                            {importingPkg === item.package ? t.apk.importing : t.apk.importBtn}
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-        </Dialog>
-      )}
-
-      {inspect && (
-        <Dialog
-          title={t.apk.dialogTitle}
-          icon="apk"
-          onClose={() => !adding && setInspect(null)}
-          footer={(
-            <>
-              <button type="button" className="btn" disabled={adding} onClick={() => setInspect(null)}>
-                {t.common.cancel}
-              </button>
-              <button
-                type="button"
-                className="btn primary"
-                disabled={!inspect.abiCompatible || adding}
-                onClick={confirmAdd}
-              >
-                {adding ? t.apk.installing : t.apk.installBtn}
-              </button>
-            </>
-          )}
-        >
-          <div className="apk-inspect-head">
-            <div className="apk-icon lg">
-              {inspect.iconData ? (
-                <img src={inspect.iconData} alt="" />
-              ) : (
-                <span>{inspect.label.slice(0, 2).toUpperCase()}</span>
-              )}
-            </div>
-            <div className="min0">
-              <div className="apk-name">{inspect.label}</div>
-              <div className="apk-meta">
-                {inspect.package} · v{inspect.versionName} · {formatBytes(inspect.sizeBytes)}
-              </div>
-              <div style={{ marginTop: 6 }}>
-                {inspect.abiCompatible ? (
-                  <span className="pill ok">
-                    {inspect.abis?.length ? inspect.abis.join(', ') : t.apk.universalAbi}
-                  </span>
-                ) : (
-                  <span className="pill danger">{inspect.abiWarning}</span>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div className="apk-inspect-fields">
-            <label className="field">
-              <span>{t.apk.nameField}</span>
-              <input
-                className="input"
-                value={targetLabel}
-                placeholder={t.apk.namePlaceholder}
-                onChange={(e) => setTargetLabel(e.target.value)}
-              />
-            </label>
-
-            <label className="field">
-              <span>{t.apk.proxyField}</span>
-              <ProxySelect value={targetProxy} onChange={setTargetProxy} proxies={proxies} />
-            </label>
-            {targetProxy === '' && <RealIpWarning />}
-
-            <label className="field">
-              <span>{t.mobile.deviceModel}</span>
-              <select className="input" value={targetModel} onChange={(e) => setTargetModel(e.target.value)}>
-                <option value="">{t.mobile.modelAuto}</option>
-                {MODELS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-              </select>
-            </label>
-
-            <label className="field">
-              <span>{t.apk.orientationField}</span>
-              <select className="input" value={targetOri} onChange={(e) => setTargetOri(e.target.value)}>
-                <option value="auto">{t.apk.oriAuto}</option>
-                <option value="portrait">{t.apk.oriPortrait}</option>
-                <option value="landscape">{t.apk.oriLandscape}</option>
-              </select>
-            </label>
-
-            <label className="field">
-              <span>{t.apk.notesField}</span>
-              <input
-                className="input"
-                value={targetNotes}
-                placeholder={t.apk.notesPlaceholder}
-                onChange={(e) => setTargetNotes(e.target.value)}
-              />
-            </label>
-
-            <label className="row checkrow">
-              <input type="checkbox" checked={makeShortcut} onChange={(e) => setMakeShortcut(e.target.checked)} />
-              <span>{t.apk.shortcutField}</span>
-            </label>
-          </div>
-        </Dialog>
+        <NewApkDialog
+          proxies={proxies}
+          existingPackages={existingPackages}
+          runningMobile={runningMobile}
+          detected={detected}
+          onClose={() => setNewOpen(false)}
+          onAdded={() => {
+            setNewOpen(false)
+            reload()
+          }}
+          onStoreOpened={handleStoreOpened}
+        />
       )}
     </>
   )

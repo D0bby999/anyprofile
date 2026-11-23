@@ -542,6 +542,10 @@ export function ScreenshotMobileDevice(arg1) {
   return window['go']['main']['App']['ScreenshotMobileDevice'](arg1);
 }
 
+export function SearchAPKStore(arg1, arg2) {
+  return window['go']['main']['App']['SearchAPKStore'](arg1, arg2);
+}
+
 export function Sessions(arg1) {
   return window['go']['main']['App']['Sessions'](arg1);
 }

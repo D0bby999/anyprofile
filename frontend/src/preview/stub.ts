@@ -143,6 +143,23 @@ const answers: Record<string, unknown> = {
     previewAPKs = previewAPKs.filter((a) => a.package !== pkg)
   },
   OpenAPKStore: async () => {},
+  SearchAPKStore: async (query: string) => {
+    const catalog = [
+      { package: 'com.zhiliaoapp.musically', title: 'TikTok', developer: 'TikTok Pte. Ltd.', iconUrl: '', rating: '4.4', category: 'Social' },
+      { package: 'com.instagram.android', title: 'Instagram', developer: 'Instagram', iconUrl: '', rating: '4.3', category: 'Social' },
+      { package: 'com.facebook.katana', title: 'Facebook', developer: 'Meta Platforms, Inc.', iconUrl: '', rating: '4.1', category: 'Social' },
+      { package: 'org.telegram.messenger', title: 'Telegram', developer: 'Telegram FZ-LLC', iconUrl: '', rating: '4.5', category: 'Communication' },
+      { package: 'com.whatsapp', title: 'WhatsApp Messenger', developer: 'WhatsApp LLC', iconUrl: '', rating: '4.3', category: 'Communication' },
+      { package: 'com.shopee.vn', title: 'Shopee', developer: 'Shopee', iconUrl: '', rating: '4.6', category: 'Shopping' },
+      { package: 'com.lemon.lvoverseas', title: 'CapCut', developer: 'Bytedance Pte. Ltd.', iconUrl: '', rating: '4.5', category: 'Video' },
+      { package: 'com.zing.zalo', title: 'Zalo', developer: 'VNG Corporation', iconUrl: '', rating: '4.2', category: 'Communication' },
+    ]
+    const q = (query || '').trim().toLowerCase()
+    if (!q) return catalog
+    return catalog.filter((a) =>
+      a.title.toLowerCase().includes(q) || a.package.toLowerCase().includes(q) || a.developer.toLowerCase().includes(q),
+    )
+  },
   ListUncatalogedAPKs: async () => [
     { package: 'com.instagram.android', deviceId: 'apk-runner' },
   ],

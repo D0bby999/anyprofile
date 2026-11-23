@@ -76,6 +76,13 @@ func (a *App) OpenAPKStore(req service.APKStoreRequest) error {
 	return a.must(func() error { return a.svc.OpenAPKStore(a.ctx, req) })
 }
 
+func (a *App) SearchAPKStore(query, proxyID string) ([]service.APKStoreApp, error) {
+	if err := a.ready(); err != nil {
+		return nil, err
+	}
+	return a.svc.SearchAPKStore(a.ctx, query, proxyID)
+}
+
 func (a *App) ListUncatalogedAPKs(deviceID string) ([]service.UncatalogedAPK, error) {
 	if err := a.ready(); err != nil {
 		return nil, err

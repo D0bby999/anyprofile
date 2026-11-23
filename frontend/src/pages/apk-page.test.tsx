@@ -20,6 +20,10 @@ const mockApi = vi.hoisted(() => ({
   CreateAPKShortcut: vi.fn(),
   DeleteAPK: vi.fn(),
   OpenAPKStore: vi.fn().mockResolvedValue(undefined),
+  SearchAPKStore: vi.fn().mockResolvedValue([
+    { package: 'com.zhiliaoapp.musically', title: 'TikTok', developer: 'TikTok Pte. Ltd.', iconUrl: '', rating: '4.4', category: 'Social' },
+    { package: 'com.shopee.vn', title: 'Shopee', developer: 'Shopee', iconUrl: '', rating: '4.6', category: 'Shopping' },
+  ]),
   ListUncatalogedAPKs: vi.fn().mockResolvedValue([]),
   ImportInstalledAPK: vi.fn(),
   DownloadAPKFromURL: vi.fn(),
@@ -31,6 +35,7 @@ vi.mock('../api', () => ({
   service: {
     APKInput: { createFrom: (x: unknown) => x },
     APKUpdate: { createFrom: (x: unknown) => x },
+    APKStoreApp: { createFrom: (x: unknown) => x },
     APKStoreRequest: { createFrom: (x: unknown) => x },
     APKImportInput: { createFrom: (x: unknown) => x },
   },
@@ -182,16 +187,16 @@ describe('ApkPage', () => {
       }))
     })
 
-    // Add APK modal opens on Store tab -> File/URL tab -> incompatible ABI disables confirm button
+    // Add APK modal opens on Search tab -> Local File tab -> incompatible ABI disables confirm button
     fireEvent.click(screen.getByRole('button', { name: t.apk.addApk }))
-    fireEvent.click(screen.getByRole('tab', { name: t.apk.tabFileUrl }))
-    fireEvent.click(screen.getByRole('button', { name: t.apk.chooseFileBtn }))
+    fireEvent.click(screen.getByRole('tab', { name: t.apk.tabLocalFile }))
+    fireEvent.click(screen.getByRole('button', { name: new RegExp(t.apk.chooseFileBtn) }))
     expect(await screen.findByText(/incompatible ABI/i)).toBeTruthy()
     const installBtn = screen.getByRole('button', { name: t.apk.installBtn }) as HTMLButtonElement
     expect(installBtn.disabled).toBe(true)
   })
 
-  it('opens Aurora Store deep-linked to a popular app and imports detected apps from New APK modal', async () => {
+  it('searches apps in dropdown, configures proxy, opens Aurora Store, and imports detected apps from unified New APK modal', async () => {
     mockApi.ListAPKs.mockResolvedValue([])
     mockApi.ListProxies.mockResolvedValue([
       { id: 'px1', label: 'US Exit', country: 'US', exitIp: '1.2.3.4', scheme: 'socks5', host: '1.2.3.4', port: 1080, usedBy: [], assignable: true, rotating: false },
@@ -218,23 +223,28 @@ describe('ApkPage', () => {
     fireEvent.click((await screen.findAllByRole('button', { name: t.apk.addApk }))[0])
     expect(await screen.findByText('com.instagram.android')).toBeTruthy()
 
-    // Select TikTok quick-pick chip and open Aurora Store
-    fireEvent.click(screen.getByRole('button', { name: 'TikTok' }))
+    // Select TikTok from the search dropdown -> unified configure step -> open Aurora Store with auto-selected free proxy
+    const tiktokOpt = await screen.findByRole('option', { name: /TikTok/i })
+    fireEvent.click(tiktokOpt)
     fireEvent.click(screen.getByRole('button', { name: t.apk.openStoreBtn }))
     await waitFor(() => {
       expect(mockApi.OpenAPKStore).toHaveBeenCalledWith(expect.objectContaining({
         query: 'com.zhiliaoapp.musically',
-        proxyId: '',
+        proxyId: 'px1',
         deviceId: '',
       }))
     })
 
-    // One-click import detected app
+    // Reopen modal and import detected app through unified configure step
+    fireEvent.click((await screen.findAllByRole('button', { name: t.apk.addApk }))[0])
+    const detectedBtn = await screen.findByRole('button', { name: /com\.instagram\.android/i })
+    fireEvent.click(detectedBtn)
     fireEvent.click(screen.getByRole('button', { name: t.apk.importBtn }))
     await waitFor(() => {
       expect(mockApi.ImportInstalledAPK).toHaveBeenCalledWith(expect.objectContaining({
         package: 'com.instagram.android',
         deviceId: 'apk-runner',
+        proxyId: 'px1',
       }))
     })
   })

@@ -5,6 +5,7 @@ package service
 import (
 	"archive/zip"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -13,8 +14,10 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/D0bby999/anyprofile/internal/apperr"
@@ -22,6 +25,42 @@ import (
 	"github.com/D0bby999/anyprofile/internal/mobile/apk"
 	"github.com/D0bby999/anyprofile/internal/store"
 )
+
+// APKStoreApp is a search result row shown in the New APK search dropdown.
+type APKStoreApp struct {
+	Package   string `json:"package"`
+	Title     string `json:"title"`
+	Developer string `json:"developer"`
+	IconURL   string `json:"iconUrl"`
+	Rating    string `json:"rating,omitempty"`
+	Category  string `json:"category,omitempty"`
+}
+
+var popularAPKStoreApps = []APKStoreApp{
+	{Package: "com.zhiliaoapp.musically", Title: "TikTok", Developer: "TikTok Pte. Ltd.", Category: "Social"},
+	{Package: "com.instagram.android", Title: "Instagram", Developer: "Instagram", Category: "Social"},
+	{Package: "com.facebook.katana", Title: "Facebook", Developer: "Meta Platforms, Inc.", Category: "Social"},
+	{Package: "org.telegram.messenger", Title: "Telegram", Developer: "Telegram FZ-LLC", Category: "Communication"},
+	{Package: "com.whatsapp", Title: "WhatsApp Messenger", Developer: "WhatsApp LLC", Category: "Communication"},
+	{Package: "com.shopee.vn", Title: "Shopee", Developer: "Shopee", Category: "Shopping"},
+	{Package: "com.twitter.android", Title: "X", Developer: "X Corp.", Category: "Social"},
+	{Package: "com.zing.zalo", Title: "Zalo", Developer: "VNG Corporation", Category: "Communication"},
+	{Package: "com.lemon.lvoverseas", Title: "CapCut", Developer: "Bytedance Pte. Ltd.", Category: "Video"},
+	{Package: "com.ss.android.ugc.trill", Title: "TikTok Asia", Developer: "TikTok Pte. Ltd.", Category: "Social"},
+}
+
+var (
+	apkPlaySearchURL = "https://play.google.com/store/search"
+	apkSearchCacheMu sync.Mutex
+	apkSearchCache   = map[string]apkSearchCacheEntry{}
+	playDetailsIDRe  = regexp.MustCompile(`details\?id=([A-Za-z][A-Za-z0-9_.]+)`)
+	playDS4Re        = regexp.MustCompile(`AF_initDataCallback\(\{key:\s*'ds:4',\s*hash:\s*'[^']+',\s*data:([\s\S]*?),\s*sideChannel:`)
+)
+
+type apkSearchCacheEntry struct {
+	apps []APKStoreApp
+	exp  time.Time
+}
 
 const (
 	auroraStorePkg   = "com.aurora.store"
@@ -501,4 +540,234 @@ func apkExtFromURL(p string) string {
 	default:
 		return ".apk"
 	}
+}
+
+// SearchAPKStore searches public Google Play for Android apps matching query,
+// returning icons, titles, developers and package IDs for the New APK dropdown.
+// Empty queries return the curated popular list with zero network traffic;
+// network or parse failures fall back to filtering the curated list.
+func (s *Service) SearchAPKStore(ctx context.Context, query, proxyID string) ([]APKStoreApp, error) {
+	if err := s.mobileAllowed(); err != nil {
+		return nil, err
+	}
+	q := strings.TrimSpace(query)
+	if q == "" {
+		out := make([]APKStoreApp, len(popularAPKStoreApps))
+		copy(out, popularAPKStoreApps)
+		return out, nil
+	}
+
+	proxyID = strings.TrimSpace(proxyID)
+	cacheKey := strings.ToLower(q) + "|" + proxyID
+	apkSearchCacheMu.Lock()
+	if hit, ok := apkSearchCache[cacheKey]; ok && time.Now().Before(hit.exp) {
+		out := make([]APKStoreApp, len(hit.apps))
+		copy(out, hit.apps)
+		apkSearchCacheMu.Unlock()
+		return out, nil
+	}
+	apkSearchCacheMu.Unlock()
+
+	apps := s.fetchPlayStoreApps(ctx, q, proxyID)
+	local := filterPopularAPKStoreApps(q)
+	if len(local) > 0 {
+		seen := make(map[string]bool, len(apps)+len(local))
+		merged := make([]APKStoreApp, 0, len(apps)+len(local))
+		// Prefer live Play metadata (including real iconUrl) when both match the same package.
+		liveByPkg := make(map[string]APKStoreApp, len(apps))
+		for _, a := range apps {
+			liveByPkg[a.Package] = a
+		}
+		for _, a := range local {
+			if live, ok := liveByPkg[a.Package]; ok {
+				merged = append(merged, live)
+			} else {
+				merged = append(merged, a)
+			}
+			seen[a.Package] = true
+		}
+		for _, a := range apps {
+			if !seen[a.Package] {
+				merged = append(merged, a)
+				seen[a.Package] = true
+			}
+		}
+		apps = merged
+	}
+	if len(apps) > 8 {
+		apps = apps[:8]
+	}
+
+	apkSearchCacheMu.Lock()
+	if len(apkSearchCache) > 64 {
+		apkSearchCache = map[string]apkSearchCacheEntry{}
+	}
+	apkSearchCache[cacheKey] = apkSearchCacheEntry{apps: apps, exp: time.Now().Add(5 * time.Minute)}
+	apkSearchCacheMu.Unlock()
+
+	out := make([]APKStoreApp, len(apps))
+	copy(out, apps)
+	return out, nil
+}
+
+func (s *Service) fetchPlayStoreApps(ctx context.Context, query, proxyID string) []APKStoreApp {
+	transport := apkHTTPTransport()
+	if proxyID != "" {
+		up, err := s.proxyUpstream(proxyID)
+		if err != nil {
+			return nil
+		}
+		transport.Proxy = nil
+		transport.DialContext = func(ctx context.Context, _, addr string) (net.Conn, error) {
+			return up.DialTunnel(ctx, addr)
+		}
+	}
+	client := &http.Client{Transport: transport, Timeout: 8 * time.Second}
+	u, err := url.Parse(apkPlaySearchURL)
+	if err != nil {
+		return nil
+	}
+	v := u.Query()
+	v.Set("q", query)
+	v.Set("c", "apps")
+	if s.Language() == "vi" {
+		v.Set("hl", "vi")
+		v.Set("gl", "VN")
+	} else {
+		v.Set("hl", "en")
+		v.Set("gl", "US")
+	}
+	u.RawQuery = v.Encode()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), nil)
+	if err != nil {
+		return nil
+	}
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36")
+	req.Header.Set("Accept-Language", "en-US,en;q=0.9")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil
+	}
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 4<<20))
+	if err != nil {
+		return nil
+	}
+	return parsePlaySearchHTML(string(body))
+}
+
+func filterPopularAPKStoreApps(query string) []APKStoreApp {
+	q := strings.ToLower(strings.TrimSpace(query))
+	var out []APKStoreApp
+	for _, a := range popularAPKStoreApps {
+		if strings.Contains(strings.ToLower(a.Title), q) ||
+			strings.Contains(strings.ToLower(a.Package), q) ||
+			strings.Contains(strings.ToLower(a.Developer), q) {
+			out = append(out, a)
+		}
+	}
+	return out
+}
+
+func parsePlaySearchHTML(html string) []APKStoreApp {
+	m := playDS4Re.FindStringSubmatch(html)
+	if len(m) < 2 {
+		return nil
+	}
+	var root []any
+	if err := json.Unmarshal([]byte(m[1]), &root); err != nil {
+		return nil
+	}
+	sections := jsonSlice(jsonAt(root, 0, 1))
+	if len(sections) == 0 {
+		return nil
+	}
+	seen := map[string]bool{}
+	var out []APKStoreApp
+	add := func(app APKStoreApp) {
+		app.Package = strings.TrimSpace(app.Package)
+		app.Title = strings.TrimSpace(app.Title)
+		if app.Package == "" || app.Title == "" || !apk.ValidPackageName(app.Package) || seen[app.Package] {
+			return
+		}
+		if app.IconURL != "" && strings.Contains(app.IconURL, "play-lh.googleusercontent.com") && !strings.Contains(app.IconURL, "=s") {
+			app.IconURL += "=s96"
+		}
+		seen[app.Package] = true
+		out = append(out, app)
+	}
+
+	for _, sec := range sections {
+		// Hero top-match card (section[23][16][2]).
+		if hero := jsonAt(sec, 23, 16, 2); hero != nil {
+			title := jsonStr(jsonAt(hero, 0, 0))
+			dev := jsonStr(jsonAt(hero, 68, 0))
+			icon := jsonStr(jsonAt(hero, 95, 0, 3, 2))
+			rating := jsonStr(jsonAt(hero, 51, 0, 0))
+			pkg := findDetailsPackage(sec)
+			if pkg != "" && title != "" {
+				add(APKStoreApp{Package: pkg, Title: title, Developer: dev, IconURL: icon, Rating: rating})
+			}
+		}
+		// Standard search result list (section[22][0]).
+		for _, entry := range jsonSlice(jsonAt(sec, 22, 0)) {
+			it := jsonAt(entry, 0)
+			if it == nil {
+				continue
+			}
+			pkg := jsonStr(jsonAt(it, 0, 0))
+			title := jsonStr(jsonAt(it, 3))
+			icon := jsonStr(jsonAt(it, 1, 3, 2))
+			rating := jsonStr(jsonAt(it, 4, 0))
+			cat := jsonStr(jsonAt(it, 5))
+			dev := jsonStr(jsonAt(it, 14))
+			if pkg != "" && title != "" {
+				add(APKStoreApp{Package: pkg, Title: title, Developer: dev, IconURL: icon, Rating: rating, Category: cat})
+			}
+		}
+	}
+	return out
+}
+
+func jsonAt(v any, indices ...int) any {
+	cur := v
+	for _, idx := range indices {
+		arr, ok := cur.([]any)
+		if !ok || idx < 0 || idx >= len(arr) {
+			return nil
+		}
+		cur = arr[idx]
+	}
+	return cur
+}
+
+func jsonSlice(v any) []any {
+	arr, _ := v.([]any)
+	return arr
+}
+
+func jsonStr(v any) string {
+	s, _ := v.(string)
+	return s
+}
+
+func findDetailsPackage(v any) string {
+	switch x := v.(type) {
+	case string:
+		if m := playDetailsIDRe.FindStringSubmatch(x); len(m) == 2 {
+			return m[1]
+		}
+	case []any:
+		for _, child := range x {
+			if pkg := findDetailsPackage(child); pkg != "" {
+				return pkg
+			}
+		}
+	}
+	return ""
 }

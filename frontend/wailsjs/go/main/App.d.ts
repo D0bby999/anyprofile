@@ -281,6 +281,8 @@ export function RunMobileMacro(arg1:string,arg2:Array<string>,arg3:macro.PlayOpt
 
 export function ScreenshotMobileDevice(arg1:string):Promise<string>;
 
+export function SearchAPKStore(arg1:string,arg2:string):Promise<Array<service.APKStoreApp>>;
+
 export function Sessions(arg1:string):Promise<Array<store.Session>>;
 
 export function SetAPISettings(arg1:service.APISettings):Promise<main.APIStatus>;
