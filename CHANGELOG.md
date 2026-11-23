@@ -3,6 +3,12 @@
 The notes of each release tag are shown in the app's update prompt; this file
 keeps them together.
 
+## 1.0.2 (2026-11-23)
+
+- Redesigned New APK into a unified 2-step dialog with live Google Play app search dropdown (including local popular app merge and regional locale support), smart HTTPS `.apk` URL paste, clean local-file dropzone, and consistent proxy/device configuration across all sources.
+- Fixed APK table layout and dark-mode contrast: kept proxy pills on a single truncated line without overlapping package IDs, widened the Orientation column so `Landscape` never clips, and improved muted text contrast.
+- Improved New mobile device dialog: surfaced the Proxy selector directly in the main form (instead of inside Advanced) and replaced the plain text summary with a 3-cell hardware spec strip (`CPU · RAM`, `Screen frame`, `Google Play`).
+
 ## 1.0.1 (2026-11-23)
 
 - Expanded Mobile VM internal storage to 32 GB sparse (`userdata.img`), fixing insufficient storage errors when installing large apps such as TikTok, and fixed sparse disk size reporting on macOS.
