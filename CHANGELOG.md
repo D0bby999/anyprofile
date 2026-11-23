@@ -3,6 +3,11 @@
 The notes of each release tag are shown in the app's update prompt; this file
 keeps them together.
 
+## 1.0.4 (2026-11-24)
+
+- Moved Proxy selection to Step 1 of the New APK dialog so users pick their region/proxy before searching Google Play, pasting an `.apk` URL, or installing a local package.
+- Scoped live Google Play APK search (`SearchAPKStore`) to the selected proxy's tunnel and exit country (`gl=<country>`), prioritizing regional Play Store results over local fallbacks.
+
 ## 1.0.3 (2026-11-23)
 
 - Added country flag badges for proxies across all tables (Web profiles, Proxies, Mobile devices, APK apps, and Profile sessions) as well as the proxy selector dropdown.
