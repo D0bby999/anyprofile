@@ -8,9 +8,12 @@ import (
 	"context"
 	"encoding/binary"
 	"errors"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/D0bby999/anyprofile/internal/apperr"
@@ -226,4 +229,97 @@ func miniManifestAXML(pkg, label string) []byte {
 	out.Write(sp.Bytes())
 	out.Write(body.Bytes())
 	return out.Bytes()
+}
+
+func TestAPKStoreHelpersAndDownload(t *testing.T) {
+	// 1. Deep-link command generation
+	if cmd := storeDeepLinkCmd(""); cmd != "" {
+		t.Fatalf("empty query cmd = %q", cmd)
+	}
+	if cmd := storeDeepLinkCmd("com.zhiliaoapp.musically"); !strings.Contains(cmd, "market://details?id=com.zhiliaoapp.musically") || !strings.Contains(cmd, "-p com.aurora.store") {
+		t.Fatalf("package deep-link = %q", cmd)
+	}
+	if cmd := storeDeepLinkCmd("TikTok 'US'; rm -rf /"); !strings.Contains(cmd, "market://search?q=") || strings.Contains(cmd, "; rm") {
+		t.Fatalf("search deep-link not escaped: %q", cmd)
+	}
+
+	// 2. Third-party package filter excludes Aurora, Play Store, known catalog entries, and invalid names
+	raw := "package:com.aurora.store\npackage:com.android.vending\npackage:com.zhiliaoapp.musically\npackage:com.instagram.android\npackage:bad pkg!\n"
+	got := parseThirdPartyPackages(raw, map[string]bool{"com.instagram.android": true})
+	if len(got) != 1 || got[0] != "com.zhiliaoapp.musically" {
+		t.Fatalf("parseThirdPartyPackages = %v, want [com.zhiliaoapp.musically]", got)
+	}
+
+	// 3. Split APK packing produces an .apks bundle readable by InspectAPK
+	tmp := t.TempDir()
+	baseAPK := writeMiniAPK(t, tmp, "com.example.split", "Split App", "lib/arm64-v8a/liba.so")
+	cfgAPK := filepath.Join(tmp, "config.arm64_v8a.apk")
+	if err := os.WriteFile(cfgAPK, []byte("PK\x03\x04"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	packed := filepath.Join(tmp, "com.example.split.apks")
+	if err := packSplitAPKs([]string{baseAPK, cfgAPK}, packed); err != nil {
+		t.Fatalf("packSplitAPKs: %v", err)
+	}
+
+	sPro, _ := newMobileService(t, "active")
+	ctx := context.Background()
+	info, err := sPro.InspectAPK(ctx, packed)
+	if err != nil {
+		t.Fatalf("InspectAPK(packed .apks): %v", err)
+	}
+	if info.Package != "com.example.split" || info.Label != "Split App" || !info.IsSplitBundle {
+		t.Fatalf("unexpected packed split inspect: %+v", info)
+	}
+
+	// 4. Pro gate on store/import/download methods
+	sFree, _ := newMobileService(t, "")
+	if err := sFree.OpenAPKStore(ctx, APKStoreRequest{Query: "TikTok"}); err == nil {
+		t.Fatal("OpenAPKStore must require Pro")
+	}
+	if _, err := sFree.ListUncatalogedAPKs(ctx, ""); err == nil {
+		t.Fatal("ListUncatalogedAPKs must require Pro")
+	}
+	if _, err := sFree.DownloadAPKFromURL(ctx, "https://example.com/app.apk", ""); err == nil {
+		t.Fatal("DownloadAPKFromURL must require Pro")
+	}
+
+	// 5. DownloadAPKFromURL validates HTTPS, ZIP magic, and inspects valid APK
+	apkBytes, err := os.ReadFile(baseAPK)
+	if err != nil {
+		t.Fatal(err)
+	}
+	srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/ok.apk":
+			_, _ = w.Write(apkBytes)
+		case "/html.apk":
+			_, _ = w.Write([]byte("<html>not an apk</html>"))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+	prevTransport := apkHTTPTransport
+	apkHTTPTransport = func() *http.Transport {
+		return srv.Client().Transport.(*http.Transport).Clone()
+	}
+	defer func() { apkHTTPTransport = prevTransport }()
+
+	if _, err := sPro.DownloadAPKFromURL(ctx, "http://example.com/a.apk", ""); err == nil {
+		t.Fatal("expected http:// URL to be rejected")
+	}
+	if _, err := sPro.DownloadAPKFromURL(ctx, srv.URL+"/html.apk", ""); err == nil {
+		t.Fatal("expected HTML response to be rejected")
+	}
+	dlInfo, err := sPro.DownloadAPKFromURL(ctx, srv.URL+"/ok.apk", "")
+	if err != nil {
+		t.Fatalf("DownloadAPKFromURL valid apk: %v", err)
+	}
+	if dlInfo.Package != "com.example.split" || dlInfo.Label != "Split App" {
+		t.Fatalf("unexpected DownloadAPKFromURL inspect: %+v", dlInfo)
+	}
+	if _, err := os.Stat(dlInfo.FilePath); err != nil {
+		t.Fatalf("expected downloaded temp file to exist: %v", err)
+	}
 }

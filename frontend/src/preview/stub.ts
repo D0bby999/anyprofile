@@ -142,6 +142,49 @@ const answers: Record<string, unknown> = {
   DeleteAPK: async (pkg: string) => {
     previewAPKs = previewAPKs.filter((a) => a.package !== pkg)
   },
+  OpenAPKStore: async () => {},
+  ListUncatalogedAPKs: async () => [
+    { package: 'com.instagram.android', deviceId: 'apk-runner' },
+  ],
+  ImportInstalledAPK: async (input: Record<string, unknown>) => {
+    const pkg = String(input.package || 'com.instagram.android')
+    const rec = {
+      package: pkg,
+      label: String(input.label || (pkg === 'com.instagram.android' ? 'Instagram' : pkg)),
+      versionName: '355.0',
+      versionCode: 355000,
+      launchActivity: '',
+      orientation: String(input.orientation || 'portrait'),
+      abis: ['arm64-v8a'],
+      filePath: '',
+      iconData: '',
+      deviceId: 'apk-runner',
+      proxyId: String(input.proxyId || ''),
+      notes: String(input.notes || ''),
+      shortcutPath: input.createShortcut ? '/Users/dobby/Applications/AnyProfile Apps/Instagram.app' : '',
+      installedAt: new Date().toISOString(),
+      lastOpenAt: '',
+    }
+    previewAPKs = [rec, ...previewAPKs.filter((a) => a.package !== rec.package)]
+    return rec
+  },
+  DownloadAPKFromURL: async () => ({
+    filePath: '/Users/dobby/Downloads/app-from-url.apk',
+    sizeBytes: 92 * 1024 * 1024,
+    package: 'org.telegram.messenger',
+    label: 'Telegram',
+    versionName: '11.4.2',
+    versionCode: 54000,
+    minSdk: 21,
+    targetSdk: 35,
+    launchActivity: '',
+    orientation: 'portrait',
+    abis: ['arm64-v8a'],
+    isSplitBundle: false,
+    iconData: '',
+    abiCompatible: true,
+    abiWarning: '',
+  }),
   LaunchAPK: async () => {},
   MobileFastStart: async () => true,
   MaxConcurrentLaunches: async () => 0,

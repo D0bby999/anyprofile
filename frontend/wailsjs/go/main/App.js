@@ -170,6 +170,10 @@ export function DeleteTemplate(arg1) {
   return window['go']['main']['App']['DeleteTemplate'](arg1);
 }
 
+export function DownloadAPKFromURL(arg1, arg2) {
+  return window['go']['main']['App']['DownloadAPKFromURL'](arg1, arg2);
+}
+
 export function DuplicateProfile(arg1) {
   return window['go']['main']['App']['DuplicateProfile'](arg1);
 }
@@ -224,6 +228,10 @@ export function ImportBookmarks(arg1, arg2) {
 
 export function ImportCookies(arg1) {
   return window['go']['main']['App']['ImportCookies'](arg1);
+}
+
+export function ImportInstalledAPK(arg1) {
+  return window['go']['main']['App']['ImportInstalledAPK'](arg1);
 }
 
 export function ImportProxies(arg1, arg2) {
@@ -302,6 +310,10 @@ export function ListTemplates() {
   return window['go']['main']['App']['ListTemplates']();
 }
 
+export function ListUncatalogedAPKs(arg1) {
+  return window['go']['main']['App']['ListUncatalogedAPKs'](arg1);
+}
+
 export function MatchExit(arg1) {
   return window['go']['main']['App']['MatchExit'](arg1);
 }
@@ -352,6 +364,10 @@ export function NewAPIToken() {
 
 export function Onboarded() {
   return window['go']['main']['App']['Onboarded']();
+}
+
+export function OpenAPKStore(arg1) {
+  return window['go']['main']['App']['OpenAPKStore'](arg1);
 }
 
 export function OpenAgentFolder(arg1) {

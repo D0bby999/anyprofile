@@ -1031,3 +1031,31 @@ kbd { display: inline-flex; align-items: center; min-width: 22px; height: 20px; 
 }
 .apk-inspect-head { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
 .apk-inspect-fields { display: flex; flex-direction: column; gap: 12px; }
+.apk-new-tabs { margin-bottom: 14px; width: fit-content; }
+.apk-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.apk-chip {
+  height: 28px; padding: 0 11px; border-radius: var(--r-pill);
+  border: 1px solid var(--line); background: var(--surface);
+  color: var(--ink-soft); font-size: 12px; font-weight: 500;
+  cursor: pointer; transition: border-color .15s, background .15s, color .15s;
+}
+.apk-chip:hover { border-color: var(--accent-line); background: var(--surface-hover); color: var(--ink); }
+.apk-chip[aria-pressed='true'] {
+  border-color: var(--accent-line); background: var(--accent-soft); color: var(--accent-ink); font-weight: 600;
+}
+.apk-source-block {
+  display: flex; flex-direction: column; gap: 10px;
+  padding: 12px; border: 1px solid var(--line); border-radius: var(--r-md);
+  background: var(--raised);
+}
+.apk-source-head { font-size: 13px; font-weight: 500; color: var(--ink); }
+.apk-found-list {
+  display: flex; flex-direction: column; gap: 6px;
+  padding-top: 10px; border-top: 1px solid var(--line-soft);
+}
+.apk-found-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 7px 10px; border: 1px solid var(--line); border-radius: var(--r-sm);
+  background: var(--raised); font-size: 12.5px;
+}
+.apk-found-pkg { font-family: var(--mono, ui-monospace, monospace); font-size: 12px; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

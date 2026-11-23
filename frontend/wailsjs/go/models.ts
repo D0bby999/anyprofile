@@ -452,6 +452,32 @@ export namespace service {
 	        this.agentManage = source["agentManage"];
 	    }
 	}
+	export class APKImportInput {
+	    package: string;
+	    deviceId: string;
+	    label: string;
+	    proxyId: string;
+	    notes: string;
+	    orientation: string;
+	    identityTemplate: string;
+	    createShortcut: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new APKImportInput(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.package = source["package"];
+	        this.deviceId = source["deviceId"];
+	        this.label = source["label"];
+	        this.proxyId = source["proxyId"];
+	        this.notes = source["notes"];
+	        this.orientation = source["orientation"];
+	        this.identityTemplate = source["identityTemplate"];
+	        this.createShortcut = source["createShortcut"];
+	    }
+	}
 	export class APKInput {
 	    filePath: string;
 	    label: string;
@@ -516,6 +542,22 @@ export namespace service {
 	        this.iconData = source["iconData"];
 	        this.abiCompatible = source["abiCompatible"];
 	        this.abiWarning = source["abiWarning"];
+	    }
+	}
+	export class APKStoreRequest {
+	    query: string;
+	    proxyId: string;
+	    deviceId: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new APKStoreRequest(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.query = source["query"];
+	        this.proxyId = source["proxyId"];
+	        this.deviceId = source["deviceId"];
 	    }
 	}
 	export class APKUpdate {
@@ -1410,6 +1452,20 @@ export namespace service {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.code = source["code"];
 	        this.secondsLeft = source["secondsLeft"];
+	    }
+	}
+	export class UncatalogedAPK {
+	    package: string;
+	    deviceId: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new UncatalogedAPK(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.package = source["package"];
+	        this.deviceId = source["deviceId"];
 	    }
 	}
 	export class UpdateStatus {

@@ -71,3 +71,28 @@ func (a *App) CreateAPKShortcut(pkg string) (string, error) {
 func (a *App) DeleteAPK(pkg string, uninstall bool) error {
 	return a.must(func() error { return a.svc.DeleteAPK(a.ctx, pkg, uninstall) })
 }
+
+func (a *App) OpenAPKStore(req service.APKStoreRequest) error {
+	return a.must(func() error { return a.svc.OpenAPKStore(a.ctx, req) })
+}
+
+func (a *App) ListUncatalogedAPKs(deviceID string) ([]service.UncatalogedAPK, error) {
+	if err := a.ready(); err != nil {
+		return nil, err
+	}
+	return a.svc.ListUncatalogedAPKs(a.ctx, deviceID)
+}
+
+func (a *App) ImportInstalledAPK(in service.APKImportInput) (store.MobileAPK, error) {
+	if err := a.ready(); err != nil {
+		return store.MobileAPK{}, err
+	}
+	return a.svc.ImportInstalledAPK(a.ctx, in)
+}
+
+func (a *App) DownloadAPKFromURL(rawURL, proxyID string) (service.APKInspect, error) {
+	if err := a.ready(); err != nil {
+		return service.APKInspect{}, err
+	}
+	return a.svc.DownloadAPKFromURL(a.ctx, rawURL, proxyID)
+}

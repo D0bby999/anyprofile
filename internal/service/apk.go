@@ -208,6 +208,9 @@ func (s *Service) AddAPK(ctx context.Context, in APKInput) (store.MobileAPK, err
 		dst := filepath.Join(dir, info.Package+strings.ToLower(filepath.Ext(in.FilePath)))
 		if copyAPKFile(in.FilePath, dst) == nil {
 			cachedPath = dst
+			if dlDir := filepath.Join(dir, apkDownloadsSubd) + string(os.PathSeparator); strings.HasPrefix(in.FilePath, dlDir) {
+				_ = os.Remove(in.FilePath)
+			}
 		}
 	}
 

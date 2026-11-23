@@ -95,6 +95,8 @@ export function DeleteSnapshot(arg1:number):Promise<void>;
 
 export function DeleteTemplate(arg1:string):Promise<void>;
 
+export function DownloadAPKFromURL(arg1:string,arg2:string):Promise<service.APKInspect>;
+
 export function DuplicateProfile(arg1:service.DuplicateInput):Promise<Array<store.Profile>>;
 
 export function DuplicateTemplate(arg1:string):Promise<store.Template>;
@@ -122,6 +124,8 @@ export function ImportBackup(arg1:string):Promise<service.BackupResult>;
 export function ImportBookmarks(arg1:string,arg2:string):Promise<number>;
 
 export function ImportCookies(arg1:string):Promise<service.CookieImport>;
+
+export function ImportInstalledAPK(arg1:service.APKImportInput):Promise<store.MobileAPK>;
 
 export function ImportProxies(arg1:string,arg2:string):Promise<service.ImportResult>;
 
@@ -161,6 +165,8 @@ export function ListProxies():Promise<Array<service.ProxyRow>>;
 
 export function ListTemplates():Promise<Array<store.Template>>;
 
+export function ListUncatalogedAPKs(arg1:string):Promise<Array<service.UncatalogedAPK>>;
+
 export function MatchExit(arg1:string):Promise<void>;
 
 export function MaxConcurrentLaunches():Promise<number>;
@@ -186,6 +192,8 @@ export function MoveProfilesToFolder(arg1:Array<string>,arg2:string):Promise<num
 export function NewAPIToken():Promise<void>;
 
 export function Onboarded():Promise<boolean>;
+
+export function OpenAPKStore(arg1:service.APKStoreRequest):Promise<void>;
 
 export function OpenAgentFolder(arg1:string):Promise<void>;
 

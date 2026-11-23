@@ -19,6 +19,10 @@ const mockApi = vi.hoisted(() => ({
   SetAPKDevice: vi.fn(),
   CreateAPKShortcut: vi.fn(),
   DeleteAPK: vi.fn(),
+  OpenAPKStore: vi.fn().mockResolvedValue(undefined),
+  ListUncatalogedAPKs: vi.fn().mockResolvedValue([]),
+  ImportInstalledAPK: vi.fn(),
+  DownloadAPKFromURL: vi.fn(),
 }))
 
 vi.mock('../api', () => ({
@@ -27,6 +31,8 @@ vi.mock('../api', () => ({
   service: {
     APKInput: { createFrom: (x: unknown) => x },
     APKUpdate: { createFrom: (x: unknown) => x },
+    APKStoreRequest: { createFrom: (x: unknown) => x },
+    APKImportInput: { createFrom: (x: unknown) => x },
   },
   store: {},
 }))
@@ -176,10 +182,60 @@ describe('ApkPage', () => {
       }))
     })
 
-    // Add APK with incompatible ABI disables confirm button
+    // Add APK modal opens on Store tab -> File/URL tab -> incompatible ABI disables confirm button
     fireEvent.click(screen.getByRole('button', { name: t.apk.addApk }))
+    fireEvent.click(screen.getByRole('tab', { name: t.apk.tabFileUrl }))
+    fireEvent.click(screen.getByRole('button', { name: t.apk.chooseFileBtn }))
     expect(await screen.findByText(/incompatible ABI/i)).toBeTruthy()
     const installBtn = screen.getByRole('button', { name: t.apk.installBtn }) as HTMLButtonElement
     expect(installBtn.disabled).toBe(true)
+  })
+
+  it('opens Aurora Store deep-linked to a popular app and imports detected apps from New APK modal', async () => {
+    mockApi.ListAPKs.mockResolvedValue([])
+    mockApi.ListProxies.mockResolvedValue([
+      { id: 'px1', label: 'US Exit', country: 'US', exitIp: '1.2.3.4', scheme: 'socks5', host: '1.2.3.4', port: 1080, usedBy: [], assignable: true, rotating: false },
+    ])
+    mockApi.ListUncatalogedAPKs.mockResolvedValue([
+      { package: 'com.instagram.android', deviceId: 'apk-runner' },
+    ])
+    mockApi.ImportInstalledAPK.mockResolvedValue({
+      package: 'com.instagram.android',
+      label: 'Instagram',
+      versionName: '355.0',
+      versionCode: 1,
+      orientation: 'portrait',
+    })
+
+    render(
+      <ToastProvider>
+        <ConfirmProvider>
+          <ApkPage mobile={baseMobile(true)} onOpenPro={vi.fn()} onOpenMobile={vi.fn()} />
+        </ConfirmProvider>
+      </ToastProvider>,
+    )
+
+    fireEvent.click((await screen.findAllByRole('button', { name: t.apk.addApk }))[0])
+    expect(await screen.findByText('com.instagram.android')).toBeTruthy()
+
+    // Select TikTok quick-pick chip and open Aurora Store
+    fireEvent.click(screen.getByRole('button', { name: 'TikTok' }))
+    fireEvent.click(screen.getByRole('button', { name: t.apk.openStoreBtn }))
+    await waitFor(() => {
+      expect(mockApi.OpenAPKStore).toHaveBeenCalledWith(expect.objectContaining({
+        query: 'com.zhiliaoapp.musically',
+        proxyId: '',
+        deviceId: '',
+      }))
+    })
+
+    // One-click import detected app
+    fireEvent.click(screen.getByRole('button', { name: t.apk.importBtn }))
+    await waitFor(() => {
+      expect(mockApi.ImportInstalledAPK).toHaveBeenCalledWith(expect.objectContaining({
+        package: 'com.instagram.android',
+        deviceId: 'apk-runner',
+      }))
+    })
   })
 })
