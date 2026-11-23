@@ -437,3 +437,73 @@ func TestWindowedMinimized(t *testing.T) {
 		t.Fatal("expected Windowed() == true after restore")
 	}
 }
+
+func TestShowOnFocusesOrRelaunchesOpenView(t *testing.T) {
+	dir := t.TempDir()
+	view := filepath.Join(dir, "view.sh")
+	starts := filepath.Join(dir, "starts")
+	if err := os.WriteFile(view, []byte("#!/bin/sh\necho \"$*\" >> \""+starts+"\"\nsleep 30\n"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	drv := New(dir, filepath.Join(dir, "devices"), nil)
+	dev := mobile.Device{ID: "dev-focus", Name: "Phone", ScreenW: 780, ScreenH: 1688}
+	if err := os.MkdirAll(drv.dir(dev), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	p := &proc{rt: Runtime{View: view}}
+	drv.procs[dev.ID] = p
+	t.Cleanup(func() { drv.closeWindow(p) })
+
+	// 1. Initial show launches view.
+	drv.showOn(context.Background(), dev, p)
+	first := p.view
+	if first == nil || first.Process == nil {
+		t.Fatal("expected initial view process")
+	}
+
+	origActivate := activateView
+	t.Cleanup(func() { activateView = origActivate })
+	var activated int
+	activateView = func(pid int) bool {
+		activated = pid
+		return true
+	}
+
+	// 2. NoFocus keeps existing view without activating.
+	drv.showOn(context.Background(), mobile.Device{ID: dev.ID, Name: dev.Name, ScreenW: dev.ScreenW, ScreenH: dev.ScreenH, NoFocus: true}, p)
+	if activated != 0 || p.view != first {
+		t.Fatalf("NoFocus should not activate or relaunch: activated=%d same=%v", activated, p.view == first)
+	}
+
+	// 3. Explicit Show (NoFocus: false) activates existing view PID when not minimized.
+	drv.showOn(context.Background(), dev, p)
+	if activated != first.Process.Pid || p.view != first {
+		t.Fatalf("expected activate PID %d without relaunch, got %d same=%v", first.Process.Pid, activated, p.view == first)
+	}
+
+	// 4. Minimized window relaunches so it un-minimizes and focuses.
+	if err := drv.saveWindow(dev, vm.WindowState{X: 100, Y: 100, W: 360, H: 720, Minimized: true}); err != nil {
+		t.Fatal(err)
+	}
+	drv.showOn(context.Background(), dev, p)
+	if p.view == nil || p.view == first {
+		t.Fatal("expected minimized view to relaunch")
+	}
+}
+
+func TestPrepareBlankUserdata(t *testing.T) {
+	dir := t.TempDir()
+	if err := prepareBlankUserdata(dir); err != nil {
+		t.Fatal(err)
+	}
+	info, err := os.Stat(filepath.Join(dir, "userdata.img"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if info.Size() != defaultUserdataBytes {
+		t.Fatalf("userdata.img size = %d, want %d", info.Size(), defaultUserdataBytes)
+	}
+	if perm := info.Mode().Perm(); perm != 0o600 {
+		t.Fatalf("userdata.img perm = %o, want 600", perm)
+	}
+}

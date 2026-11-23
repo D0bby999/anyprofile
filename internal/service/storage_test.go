@@ -6,6 +6,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 )
 
@@ -88,5 +89,28 @@ func TestDeleteOrphansRefusesRoot(t *testing.T) {
 		if _, err := os.Stat(path); err != nil {
 			t.Fatalf("%s was deleted: %v", path, err)
 		}
+	}
+}
+
+func TestDirSizeSparse(t *testing.T) {
+	if runtime.GOOS != "darwin" {
+		t.Skip("sparse block accounting is darwin-only")
+	}
+	dir := t.TempDir()
+	p := filepath.Join(dir, "userdata.img")
+	f, err := os.OpenFile(p, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o600)
+	if err != nil {
+		t.Fatal(err)
+	}
+	const virtual int64 = 32 << 30
+	if err := f.Truncate(virtual); err != nil {
+		f.Close()
+		t.Fatal(err)
+	}
+	if err := f.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if got := dirSize(dir); got >= 1<<20 {
+		t.Fatalf("dirSize(sparse 32 GiB) = %d, want < 1 MiB allocated", got)
 	}
 }

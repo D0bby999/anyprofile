@@ -23,9 +23,30 @@ import (
 )
 
 const (
-	gappsReadyStamp = "cuttlefish-mtg-16.0-v3\n"
-	cleanReadyStamp = "cuttlefish-clean-16.0-v2\n"
+	gappsReadyStamp = "cuttlefish-mtg-16.0-v4\n"
+	cleanReadyStamp = "cuttlefish-clean-16.0-v3\n"
+
+	// defaultUserdataBytes is the virtual size of each device's /data partition.
+	// Cuttlefish's built-in userdata.img is only 8 GiB, and adb remount reserves
+	// ~6.5–8 GiB for /data/gsi/remount/scratch.img on GMS bases, leaving <1 GiB
+	// free. A 32 GiB sparse file lets Android format a 32 GiB f2fs partition
+	// (~23 GiB free with GMS) while consuming only written blocks on APFS.
+	defaultUserdataBytes int64 = 32 << 30
 )
+
+func prepareBlankUserdata(instDir string) error {
+	p := filepath.Join(instDir, "userdata.img")
+	f, err := os.OpenFile(p, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o600)
+	if err != nil {
+		return err
+	}
+	if err := f.Truncate(defaultUserdataBytes); err != nil {
+		f.Close()
+		_ = os.Remove(p)
+		return err
+	}
+	return f.Close()
+}
 
 // instanceDisks are the per-instance mutable Cuttlefish disk files backed up,
 // restored, and cloned from the shared base templates.
@@ -169,7 +190,7 @@ func cloneCleanDisks(rt Runtime, dstDir string) error {
 
 // PrepareCleanBase boots Cuttlefish once without GMS so userdata.img is pre-formatted,
 // GPU layers are baked in, and VirtWifi is pre-enabled; subsequent non-GMS devices
-// clone in <50ms via APFS clonefile instead of formatting 8 GB f2fs on first boot.
+// clone in <50ms via APFS clonefile instead of formatting 32 GB f2fs on first boot.
 func (d *Driver) PrepareCleanBase(ctx context.Context, rt Runtime) (string, error) {
 	if dir, ok := cleanBaseReady(rt); ok {
 		return dir, nil
@@ -195,6 +216,9 @@ func (d *Driver) PrepareCleanBase(ctx context.Context, rt Runtime) (string, erro
 	instDir := filepath.Join(workDir, "inst")
 	if err := os.MkdirAll(instDir, 0o700); err != nil {
 		return "", err
+	}
+	if err := prepareBlankUserdata(instDir); err != nil {
+		return "", fmt.Errorf("create userdata.img: %w", err)
 	}
 	dummy := mobile.Device{
 		ID:      "clean-build",
@@ -284,6 +308,9 @@ func (d *Driver) PrepareGMSBase(ctx context.Context, rt Runtime) (string, error)
 	instDir := filepath.Join(workDir, "inst")
 	if err := os.MkdirAll(instDir, 0o700); err != nil {
 		return "", err
+	}
+	if err := prepareBlankUserdata(instDir); err != nil {
+		return "", fmt.Errorf("create userdata.img: %w", err)
 	}
 	dummy := mobile.Device{
 		ID:      "gms-build",

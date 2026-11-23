@@ -3,11 +3,14 @@
 package service
 
 import (
+	"io/fs"
 	"os"
 	"os/exec"
 	"strings"
 	"syscall"
 )
+
+func fileDiskBytes(info fs.FileInfo) int64 { return info.Size() }
 
 // FileVaultOn reports whether the system volume is encrypted (FileVault on
 // macOS, BitLocker on Windows). Profile data other than cookies (history,

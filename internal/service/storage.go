@@ -57,7 +57,7 @@ func dirSize(path string) int64 {
 			return nil
 		}
 		if info, err := d.Info(); err == nil && d.Type().IsRegular() {
-			total += info.Size()
+			total += fileDiskBytes(info)
 		}
 		return nil
 	})

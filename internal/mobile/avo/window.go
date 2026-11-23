@@ -70,8 +70,15 @@ func (d *Driver) showOn(ctx context.Context, dev mobile.Device, p *proc) {
 	d.mu.Lock()
 	if p.view != nil {
 		if p.viewTitle == title && p.viewAppMode == dev.AppMode {
-			d.mu.Unlock()
-			return
+			if dev.NoFocus {
+				d.mu.Unlock()
+				return
+			}
+			saved, ok := d.loadWindow(dev)
+			if (!ok || !saved.Minimized) && p.view.Process != nil && activateView(p.view.Process.Pid) {
+				d.mu.Unlock()
+				return
+			}
 		}
 		d.mu.Unlock()
 		d.closeWindow(p)
