@@ -3,6 +3,11 @@
 The notes of each release tag are shown in the app's update prompt; this file
 keeps them together.
 
+## 1.0.5 (2026-11-24)
+
+- Added one-click direct APK and split-APK (`.apks`) download, installation, and auto-launch through the selected proxy (`Download & open`) without needing to open Aurora Store manually, with Aurora Store kept as a clean fallback (and fixed Aurora Store's uninitialized deep-link crash).
+- Fixed deleted APK apps reappearing when adding a new app: `DeleteAPK` now resumes paused APK hosts to uninstall immediately, queues pending uninstalls when the host is stopped to flush on next boot, and takes a post-boot baseline when syncing from Store.
+
 ## 1.0.4 (2026-11-24)
 
 - Moved Proxy selection to Step 1 of the New APK dialog so users pick their region/proxy before searching Google Play, pasting an `.apk` URL, or installing a local package.
