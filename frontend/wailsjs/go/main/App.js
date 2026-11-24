@@ -74,6 +74,10 @@ export function ClearCache() {
   return window['go']['main']['App']['ClearCache']();
 }
 
+export function ClearUploads() {
+  return window['go']['main']['App']['ClearUploads']();
+}
+
 export function ClearTOTP(arg1, arg2) {
   return window['go']['main']['App']['ClearTOTP'](arg1, arg2);
 }

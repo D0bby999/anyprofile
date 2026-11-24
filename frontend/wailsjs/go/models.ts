@@ -1456,6 +1456,12 @@ export namespace service {
 	    profilesBytes: number;
 	    snapshotsBytes: number;
 	    mobileBytes: number;
+	    mobileRuntimeBytes: number;
+	    enginesBytes: number;
+	    apkCacheBytes: number;
+	    uploadsBytes: number;
+	    logsBytes: number;
+	    totalBytes: number;
 	    orphans: Orphan[];
 	
 	    static createFrom(source: any = {}) {
@@ -1467,6 +1473,12 @@ export namespace service {
 	        this.profilesBytes = source["profilesBytes"];
 	        this.snapshotsBytes = source["snapshotsBytes"];
 	        this.mobileBytes = source["mobileBytes"];
+	        this.mobileRuntimeBytes = source["mobileRuntimeBytes"];
+	        this.enginesBytes = source["enginesBytes"];
+	        this.apkCacheBytes = source["apkCacheBytes"];
+	        this.uploadsBytes = source["uploadsBytes"];
+	        this.logsBytes = source["logsBytes"];
+	        this.totalBytes = source["totalBytes"];
 	        this.orphans = this.convertValues(source["orphans"], Orphan);
 	    }
 	

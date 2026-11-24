@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"sort"
 	"strings"
 	"time"
 
@@ -95,7 +96,7 @@ func (s *Service) ListAPKs() ([]store.MobileAPK, error) {
 	}
 	for i := range list {
 		if list[i].IdentityJSON == "" || list[i].AndroidID == "" {
-			idn, aid := ensureAPKIdentityFields(list[i].Package, list[i].IdentityJSON, list[i].AndroidID, "")
+			idn, aid := s.ensureAPKIdentityFields(list[i].Package, list[i].IdentityJSON, list[i].AndroidID, "")
 			list[i].IdentityJSON, list[i].AndroidID = idn, aid
 			_ = s.Store.SetMobileAPKIdentity(list[i].Package, idn, aid)
 		}
@@ -103,7 +104,51 @@ func (s *Service) ListAPKs() ([]store.MobileAPK, error) {
 	return list, nil
 }
 
-func ensureAPKIdentityFields(pkg, curIdentity, curAndroidID, template string) (string, string) {
+func (s *Service) pickAPKIdentity(seed, template, excludePkg string) vm.Identity {
+	tpl := strings.TrimSpace(template)
+	if tpl == "auto" {
+		tpl = ""
+	}
+	avoProfiles := s.loadAVOProfiles()
+	if tpl != "" {
+		if p, ok := avoProfiles[tpl]; ok {
+			if id, ok := avoProfileToIdentity(seed, p); ok {
+				return id
+			}
+		}
+		return vm.IdentityFor(seed, tpl)
+	}
+	used := map[string]int{}
+	if s.Store != nil {
+		if list, err := s.Store.ListMobileAPKs(); err == nil {
+			for _, a := range list {
+				if a.Package == excludePkg {
+					continue
+				}
+				if id, ok := vm.ParseIdentity(a.IdentityJSON); ok && id.Template != "" {
+					used[id.Template]++
+					if c := canonicalMobileTemplate(id.Template); c != id.Template {
+						used[c]++
+					}
+				}
+			}
+		}
+	}
+	if len(avoProfiles) > 0 {
+		cands := make([]string, 0, len(avoProfiles))
+		for id := range avoProfiles {
+			cands = append(cands, id)
+		}
+		sort.Strings(cands)
+		picked := vm.PickDistinctTemplate(seed, cands, used)
+		if id, ok := avoProfileToIdentity(seed, avoProfiles[picked]); ok {
+			return id
+		}
+	}
+	return vm.IdentityFor(seed, vm.PickDistinctTemplate(seed, vm.IdentityTemplates(), used))
+}
+
+func (s *Service) ensureAPKIdentityFields(pkg, curIdentity, curAndroidID, template string) (string, string) {
 	idn := curIdentity
 	aid := curAndroidID
 	tpl := strings.TrimSpace(template)
@@ -123,9 +168,9 @@ func ensureAPKIdentityFields(pkg, curIdentity, curAndroidID, template string) (s
 		} else if tpl == "auto" {
 			tpl = ""
 		}
-		idn = vm.MarshalIdentity(vm.IdentityFor(seed, tpl))
+		idn = vm.MarshalIdentity(s.pickAPKIdentity(seed, tpl, pkg))
 	} else if idn == "" {
-		idn = vm.MarshalIdentity(vm.IdentityFor(pkg+":"+randomHex(4), ""))
+		idn = vm.MarshalIdentity(s.pickAPKIdentity(pkg+":"+randomHex(4), "", pkg))
 	}
 	if aid == "" {
 		aid = randomHex(8)
@@ -180,6 +225,10 @@ func (s *Service) InspectAPK(_ context.Context, pkgPath string) (APKInspect, err
 // AddAPK inspects, caches, installs onto the chosen (or shared) Android device,
 // catalogs the APK, and optionally creates a desktop shortcut (Pro-gated).
 func (s *Service) AddAPK(ctx context.Context, in APKInput) (store.MobileAPK, error) {
+	return s.addAPK(ctx, in, true)
+}
+
+func (s *Service) addAPK(ctx context.Context, in APKInput, cacheFile bool) (store.MobileAPK, error) {
 	if err := s.mobileAllowed(); err != nil {
 		return store.MobileAPK{}, err
 	}
@@ -195,7 +244,7 @@ func (s *Service) AddAPK(ctx context.Context, in APKInput) (store.MobileAPK, err
 	if err != nil {
 		return store.MobileAPK{}, err
 	}
-	idn, aid := ensureAPKIdentityFields(info.Package, "", "", in.IdentityTemplate)
+	idn, aid := s.ensureAPKIdentityFields(info.Package, "", "", in.IdentityTemplate)
 	// Align the APK host's hardware identity BEFORE booting it so an immediate
 	// LaunchAPK right after AddAPK doesn't need to reboot the VM mid-dexopt.
 	if !s.mobileRunning(devID) {
@@ -217,16 +266,25 @@ func (s *Service) AddAPK(ctx context.Context, in APKInput) (store.MobileAPK, err
 		return store.MobileAPK{}, err
 	}
 
-	// Copy the package into AnyProfile's apk cache so re-installing on another
-	// Mobile device later keeps working even if the Downloads file is deleted.
-	cachedPath := in.FilePath
-	if dir := s.apkCacheDir(); os.MkdirAll(dir, 0o700) == nil {
-		dst := filepath.Join(dir, info.Package+strings.ToLower(filepath.Ext(in.FilePath)))
-		if copyAPKFile(in.FilePath, dst) == nil {
-			cachedPath = dst
-			if dlDir := filepath.Join(dir, apkDownloadsSubd) + string(os.PathSeparator); strings.HasPrefix(in.FilePath, dlDir) {
-				_ = os.Remove(in.FilePath)
+	// Local file installs keep a cached copy so re-installing on another device
+	// survives moving the original file; Store downloads can be re-fetched on
+	// demand and skip caching to avoid piling up hundreds of MB in mobile/apks/.
+	cachedPath := ""
+	if cacheFile {
+		cachedPath = in.FilePath
+		if dir := s.apkCacheDir(); os.MkdirAll(dir, 0o700) == nil {
+			dst := filepath.Join(dir, info.Package+strings.ToLower(filepath.Ext(in.FilePath)))
+			if copyAPKFile(in.FilePath, dst) == nil {
+				cachedPath = dst
+				if dlDir := filepath.Join(dir, apkDownloadsSubd) + string(os.PathSeparator); strings.HasPrefix(in.FilePath, dlDir) {
+					_ = os.Remove(in.FilePath)
+				}
 			}
+		}
+	} else if dir := s.apkCacheDir(); dir != "" {
+		// Remove any stale cached installer from a previous install of this package.
+		for _, ext := range []string{".apk", ".apks", ".xapk", ".apkm"} {
+			_ = os.Remove(filepath.Join(dir, info.Package+ext))
 		}
 	}
 
@@ -304,7 +362,7 @@ func (s *Service) launchAPK(ctx context.Context, pkg, deviceID string, showWindo
 		rec.DeviceID = targetID
 	}
 	if rec.IdentityJSON == "" || rec.AndroidID == "" {
-		rec.IdentityJSON, rec.AndroidID = ensureAPKIdentityFields(rec.Package, rec.IdentityJSON, rec.AndroidID, "")
+		rec.IdentityJSON, rec.AndroidID = s.ensureAPKIdentityFields(rec.Package, rec.IdentityJSON, rec.AndroidID, "")
 		_ = s.Store.SetMobileAPKIdentity(rec.Package, rec.IdentityJSON, rec.AndroidID)
 	}
 	// Ensure the dedicated APK host boots with THIS APK's exact hardware identity
@@ -508,7 +566,7 @@ func (s *Service) UpdateAPK(ctx context.Context, in APKUpdate) (store.MobileAPK,
 	if err != nil {
 		return store.MobileAPK{}, err
 	}
-	idn, aid := ensureAPKIdentityFields(cur.Package, cur.IdentityJSON, cur.AndroidID, in.IdentityTemplate)
+	idn, aid := s.ensureAPKIdentityFields(cur.Package, cur.IdentityJSON, cur.AndroidID, in.IdentityTemplate)
 	if err := s.Store.UpdateMobileAPK(in.Package, label, ori, proxyID, strings.TrimSpace(in.Notes), idn, aid); err != nil {
 		return store.MobileAPK{}, err
 	}

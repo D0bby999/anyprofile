@@ -314,6 +314,9 @@ export function MobileDrawer({
                       <select className="select" value={curTpl} disabled={row.state !== 'stopped' || isBusy}
                         onChange={(e) => update({ identityTemplate: e.target.value || 'auto' })}>
                         <option value="">{t.mobile.modelAuto}</option>
+                        {curTpl && !MODELS.some(([value]) => value === curTpl) && (
+                          <option value={curTpl}>{idn?.model ? `${idn.manufacturer || idn.brand || ''} ${idn.model}`.trim() : curTpl}</option>
+                        )}
                         {MODELS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
                       </select>
                     </label>

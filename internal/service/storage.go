@@ -3,10 +3,13 @@
 package service
 
 import (
+	"encoding/json"
 	"io/fs"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
+	"time"
 
 	"github.com/D0bby999/anyprofile/internal/secrets"
 	"github.com/D0bby999/anyprofile/internal/store"
@@ -23,8 +26,14 @@ type StorageInfo struct {
 	SnapshotsBytes int64 `json:"snapshotsBytes"`
 	// MobileBytes is the mobile devices and their backups; LDPlayer keeps its
 	// own devices in its own folder, which is not counted.
-	MobileBytes int64    `json:"mobileBytes"`
-	Orphans     []Orphan `json:"orphans"`
+	MobileBytes        int64    `json:"mobileBytes"`
+	MobileRuntimeBytes int64    `json:"mobileRuntimeBytes"`
+	EnginesBytes       int64    `json:"enginesBytes"`
+	APKCacheBytes      int64    `json:"apkCacheBytes"`
+	UploadsBytes       int64    `json:"uploadsBytes"`
+	LogsBytes          int64    `json:"logsBytes"`
+	TotalBytes         int64    `json:"totalBytes"`
+	Orphans            []Orphan `json:"orphans"`
 }
 
 // cacheDirs are Chromium caches, safe to delete while the browser is closed.
@@ -107,19 +116,29 @@ func (s *Service) running() map[string]bool {
 	return m
 }
 
-// Storage measures the profiles directory and finds orphan folders.
+// Storage measures every major data directory and finds orphan profile folders.
 func (s *Service) Storage() (StorageInfo, error) {
 	ids, err := s.orphanIDs()
 	if err != nil {
 		return StorageInfo{}, err
 	}
-	info := StorageInfo{Orphans: []Orphan{}, ProfilesBytes: dirSize(s.Dirs.Profiles())}
-	info.SnapshotsBytes, _ = s.Store.SnapshotBytes()
-	info.MobileBytes = dirSize(s.Dirs.MobileDevices()) + dirSize(s.Dirs.MobileBackups())
+	info := StorageInfo{
+		Orphans:            []Orphan{},
+		ProfilesBytes:      dirSize(s.Dirs.Profiles()),
+		SnapshotsBytes:     dirSize(s.Dirs.Snapshots()),
+		MobileBytes:        dirSize(s.Dirs.MobileDevices()) + dirSize(s.Dirs.MobileBackups()),
+		MobileRuntimeBytes: dirSize(filepath.Join(s.Dirs.Mobile(), "avo")) + dirSize(s.Dirs.MobileRuntime()),
+		EnginesBytes:       dirSize(s.Dirs.Engines()),
+		APKCacheBytes:      s.apkInstallerCacheBytes(),
+		UploadsBytes:       dirSize(s.Dirs.Uploads()),
+		LogsBytes:          dirSize(s.Dirs.Logs()),
+	}
+	info.TotalBytes = info.ProfilesBytes + info.SnapshotsBytes + info.MobileBytes +
+		info.MobileRuntimeBytes + info.EnginesBytes + info.APKCacheBytes + info.UploadsBytes + info.LogsBytes
 	for _, id := range ids {
 		info.Orphans = append(info.Orphans, Orphan{ID: id, Bytes: dirSize(s.Dirs.Profile(id))})
 	}
-	s.Log.Info("storage measured", "profilesBytes", info.ProfilesBytes, "orphans", len(info.Orphans))
+	s.Log.Info("storage measured", "profilesBytes", info.ProfilesBytes, "totalBytes", info.TotalBytes, "orphans", len(info.Orphans))
 	return info, nil
 }
 
@@ -167,8 +186,9 @@ func (s *Service) DeleteOrphans(ids []string) error {
 	return nil
 }
 
-// ClearCache frees the Chromium caches of every profile that is not running.
-// Cookies and logins are kept. It returns the number of bytes removed.
+// ClearCache frees the Chromium caches of every profile that is not running,
+// cached APK installer bundles (keeping icons), orphan snapshot files, and
+// stale trace/cookie-backup logs. Cookies, logins and uploads are kept.
 func (s *Service) ClearCache() (int64, error) {
 	known, err := s.knownIDs()
 	if err != nil {
@@ -190,6 +210,177 @@ func (s *Service) ClearCache() (int64, error) {
 		}
 		cleared++
 	}
+	total += s.clearAPKInstallerCache()
+	total += s.PruneSnapshots()
+	total += s.PruneLogs(7 * 24 * time.Hour)
 	s.Log.Info("cache cleared", "profiles", cleared, "bytes", total)
 	return total, nil
+}
+
+// ClearUploads deletes every staged file or pack inside the uploads directory.
+func (s *Service) ClearUploads() (int64, error) {
+	root := s.Dirs.Uploads()
+	entries, err := os.ReadDir(root)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return 0, nil
+		}
+		return 0, err
+	}
+	var freed int64
+	for _, e := range entries {
+		p := filepath.Join(root, e.Name())
+		if e.IsDir() {
+			freed += dirSize(p)
+		} else if info, err := e.Info(); err == nil {
+			freed += fileDiskBytes(info)
+		}
+		if err := os.RemoveAll(p); err != nil {
+			return freed, err
+		}
+	}
+	s.Log.Info("uploads cleared", "bytes", freed)
+	s.notify("settings")
+	return freed, nil
+}
+
+func isAPKInstallerFile(name string) bool {
+	switch strings.ToLower(filepath.Ext(name)) {
+	case ".apk", ".apks", ".xapk", ".apkm":
+		return true
+	default:
+		return false
+	}
+}
+
+func (s *Service) apkInstallerCacheBytes() int64 {
+	dir := s.apkCacheDir()
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return 0
+	}
+	var total int64
+	for _, e := range entries {
+		if e.Name() == "icons" {
+			continue
+		}
+		p := filepath.Join(dir, e.Name())
+		if e.IsDir() && e.Name() == apkDownloadsSubd {
+			total += dirSize(p)
+		} else if !e.IsDir() && isAPKInstallerFile(e.Name()) {
+			if info, err := e.Info(); err == nil {
+				total += fileDiskBytes(info)
+			}
+		}
+	}
+	return total
+}
+
+func (s *Service) clearAPKInstallerCache() int64 {
+	dir := s.apkCacheDir()
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return 0
+	}
+	var freed int64
+	for _, e := range entries {
+		if e.Name() == "icons" {
+			continue
+		}
+		p := filepath.Join(dir, e.Name())
+		if e.IsDir() && e.Name() == apkDownloadsSubd {
+			freed += dirSize(p)
+			_ = os.RemoveAll(p)
+		} else if !e.IsDir() && isAPKInstallerFile(e.Name()) {
+			if info, err := e.Info(); err == nil {
+				freed += fileDiskBytes(info)
+			}
+			_ = os.Remove(p)
+		}
+	}
+	return freed
+}
+
+const maxKeptTraces = 100
+
+// PruneLogs removes stale API trace files and unreferenced cookie-jar backups
+// older than maxAge. Active cookie-backup state files and their referenced jars
+// are never deleted.
+func (s *Service) PruneLogs(maxAge time.Duration) int64 {
+	cutoff := time.Now().Add(-maxAge)
+	var freed int64
+
+	// 1. Prune logs/traces by age and total count cap.
+	tracesDir := filepath.Join(s.Dirs.Logs(), "traces")
+	if entries, err := os.ReadDir(tracesDir); err == nil {
+		type traceFile struct {
+			path string
+			mod  time.Time
+			size int64
+		}
+		var kept []traceFile
+		for _, e := range entries {
+			if e.IsDir() {
+				continue
+			}
+			info, err := e.Info()
+			if err != nil {
+				continue
+			}
+			p := filepath.Join(tracesDir, e.Name())
+			sz := fileDiskBytes(info)
+			if info.ModTime().Before(cutoff) {
+				freed += sz
+				_ = os.Remove(p)
+				continue
+			}
+			kept = append(kept, traceFile{path: p, mod: info.ModTime(), size: sz})
+		}
+		if len(kept) > maxKeptTraces {
+			sort.Slice(kept, func(i, j int) bool { return kept[i].mod.After(kept[j].mod) })
+			for _, old := range kept[maxKeptTraces:] {
+				freed += old.size
+				_ = os.Remove(old.path)
+			}
+		}
+	}
+
+	// 2. Prune stale, unreferenced files in logs/cookie-backups.
+	cbDir := filepath.Join(s.Dirs.Logs(), "cookie-backups")
+	if entries, err := os.ReadDir(cbDir); err == nil {
+		active := map[string]bool{}
+		for _, e := range entries {
+			if e.IsDir() || !strings.HasSuffix(e.Name(), ".json") {
+				continue
+			}
+			b, err := os.ReadFile(filepath.Join(cbDir, e.Name()))
+			if err != nil {
+				continue
+			}
+			var st struct {
+				Backup string `json:"backup"`
+			}
+			if json.Unmarshal(b, &st) == nil && st.Backup != "" {
+				active[st.Backup] = true
+			}
+		}
+		for _, e := range entries {
+			if e.IsDir() || !strings.HasSuffix(e.Name(), ".db") || active[e.Name()] {
+				continue
+			}
+			info, err := e.Info()
+			if err != nil {
+				continue
+			}
+			if info.ModTime().Before(cutoff) {
+				freed += fileDiskBytes(info)
+				_ = os.Remove(filepath.Join(cbDir, e.Name()))
+			}
+		}
+	}
+
+	if freed > 0 {
+		s.Log.Info("stale logs pruned", "bytes", freed)
+	}
+	return freed
 }

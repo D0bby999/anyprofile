@@ -491,7 +491,14 @@ kbd { display: inline-flex; align-items: center; min-width: 22px; height: 20px; 
 .checklist p { margin: 2px 0 0; color: var(--ink-soft); }
 .checklist small { display: block; margin-top: 2px; color: var(--muted); overflow-wrap: anywhere; }
 .table.sessions td .chip + .chip { margin-left: 4px; }
-.snapsettings { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; padding-top: 4px; }
+.snapsettings { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; padding-top: 8px; border-top: 1px solid var(--line-soft); margin-top: 4px; }
+.storage-breakdown { margin: 0 0 4px; padding: 0; display: flex; flex-direction: column; }
+.storage-row { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; padding: 6px 0; font-size: var(--t-sm); }
+.storage-row + .storage-row { border-top: 1px solid var(--line-soft); }
+.storage-row dt { margin: 0; color: var(--ink-soft); }
+.storage-row dd { margin: 0; color: var(--ink); font-variant-numeric: tabular-nums; text-align: right; }
+.storage-total { border-top: 1px solid var(--line) !important; padding-top: 8px; font-weight: 600; }
+.storage-total dt { color: var(--ink); }
 .keepinput { width: 64px; }
 .snaptab { display: flex; flex-direction: column; gap: 12px; }
 .snaptab > .btn { align-self: flex-start; }

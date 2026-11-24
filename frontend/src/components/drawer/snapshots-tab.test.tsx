@@ -13,7 +13,7 @@ vi.mock('../../api', async (orig) => ({
     RestoreSnapshot: (...a: unknown[]) => restore(...a),
     TakeSnapshot: () => Promise.resolve({}),
     Storage: () => Promise.resolve({ profilesBytes: 1024, snapshotsBytes: 5 * 1048576, orphans: [] }),
-    SnapshotSettings: () => Promise.resolve({ auto: true, keep: 5 }),
+    SnapshotSettings: () => Promise.resolve({ auto: true, keep: 1 }),
   },
 }))
 const { SnapshotsTab } = await import('./snapshots-tab')

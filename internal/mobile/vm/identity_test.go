@@ -78,3 +78,38 @@ func TestCarrierAndBatteryScripts(t *testing.T) {
 		t.Fatalf("battery = %q", bat)
 	}
 }
+
+func TestPickDistinctTemplateAvoidsDuplicates(t *testing.T) {
+	cands := []string{"a", "b", "c", "d"}
+	used := map[string]int{}
+	seen := map[string]bool{}
+	for i := 0; i < len(cands); i++ {
+		got := PickDistinctTemplate(string(rune('0'+i)), cands, used)
+		if seen[got] {
+			t.Fatalf("step %d picked duplicate %q before exhausting pool (used=%v)", i, got, used)
+		}
+		seen[got] = true
+		used[got]++
+	}
+}
+
+func TestIdentityFromProfile(t *testing.T) {
+	props := map[string]string{
+		"ro.product.brand":        "vivo",
+		"ro.product.manufacturer": "vivo",
+		"ro.product.model":        "V2409",
+		"ro.product.device":       "PD2419",
+		"ro.product.name":         "PD2419",
+		"ro.build.fingerprint":    "vivo/PD2419/PD2419:15/AP3A.240905.015.A2/1728000000:user/release-keys",
+	}
+	id, ok := IdentityFromProfile("dev-99", "vivo-x200", props, "mt6991", "mt6991", "mt6991", "ARM", "Immortalis-G925")
+	if !ok {
+		t.Fatal("expected valid identity")
+	}
+	if id.Template != "vivo-x200" || id.Model != "V2409" || id.BuildID != "AP3A.240905.015.A2" || id.Incremental != "1728000000" {
+		t.Fatalf("unexpected identity: %+v", id)
+	}
+	if !ValidIMEI(id.IMEI) || len(id.Serial) != 14 {
+		t.Fatalf("invalid serial/imei: %q / %q", id.Serial, id.IMEI)
+	}
+}

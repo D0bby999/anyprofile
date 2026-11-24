@@ -27,7 +27,7 @@ import (
 // its cookies, the newest copy goes back before the browser reads it, so the
 // sessions come back instead of a login page.
 const (
-	cookieBackupKeep   = 10
+	cookieBackupKeep   = 3
 	cookieBackupMaxAge = 14 * 24 * time.Hour
 	// cookieLostShare is the share of the jar that has to disappear between two
 	// launches before the loss counts as an emptied jar. Sites sign out their

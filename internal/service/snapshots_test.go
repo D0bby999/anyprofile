@@ -115,8 +115,8 @@ func TestSnapshotOnCloseAndKeep(t *testing.T) {
 	}
 	list, _ := s.Snapshots(id)
 	files, _ := os.ReadDir(s.Dirs.ProfileSnapshots(id))
-	if len(list) != 5 || len(files) != 5 {
-		t.Fatalf("kept %d rows and %d files, want 5", len(list), len(files))
+	if len(list) != 1 || len(files) != 1 {
+		t.Fatalf("kept %d rows and %d files, want 1", len(list), len(files))
 	}
 	if err := s.SetSnapshotSettings(SnapshotSettings{Auto: false, Keep: 11}); err == nil || !strings.Contains(err.Error(), "bad_keep") {
 		t.Fatalf("keep 11 err = %v", err)
@@ -146,5 +146,34 @@ func TestPurgeRemovesSnapshots(t *testing.T) {
 	}
 	if _, err := os.Stat(s.Dirs.ProfileSnapshots(id)); !os.IsNotExist(err) {
 		t.Fatal("snapshot folder survived the purge")
+	}
+}
+
+func TestSetSnapshotSettingsPrunesImmediatelyAndOrphans(t *testing.T) {
+	s, id := snapshotProfile(t)
+	if err := s.SetSnapshotSettings(SnapshotSettings{Auto: true, Keep: 3}); err != nil {
+		t.Fatal(err)
+	}
+	for i := 0; i < 3; i++ {
+		if _, err := s.TakeSnapshot(id, "close"); err != nil {
+			t.Fatal(err)
+		}
+	}
+	orphan := filepath.Join(s.Dirs.ProfileSnapshots(id), "20250101-000000-orphan.apsnap")
+	if err := os.WriteFile(orphan, []byte("stale"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.SetSnapshotSettings(SnapshotSettings{Auto: true, Keep: 1}); err != nil {
+		t.Fatal(err)
+	}
+	list, err := s.Snapshots(id)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(list) != 1 {
+		t.Fatalf("expected 1 snapshot after lowering keep to 1, got %d", len(list))
+	}
+	if _, err := os.Stat(orphan); !os.IsNotExist(err) {
+		t.Fatal("orphan .apsnap file survived PruneSnapshots")
 	}
 }

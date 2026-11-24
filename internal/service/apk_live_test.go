@@ -166,8 +166,8 @@ func TestAPKDirectStoreInstallAndDeleteNoResurrect(t *testing.T) {
 		t.Fatalf("InstallStoreAPK(com.shopee.vn): %v", err)
 	}
 	t.Logf("installed split-APK: pkg=%s label=%q ver=%s abis=%v file=%s", shopee.Package, shopee.Label, shopee.VersionName, shopee.ABIs, shopee.FilePath)
-	if shopee.Package != "com.shopee.vn" || !strings.HasSuffix(shopee.FilePath, ".apks") {
-		t.Fatalf("expected cached .apks split bundle for shopee, got %+v", shopee)
+	if shopee.Package != "com.shopee.vn" || shopee.FilePath != "" {
+		t.Fatalf("expected store install without leftover cached bundle for shopee, got %+v", shopee)
 	}
 
 	// 2. Direct download & install of an F-Droid / Aptoide single APK (NewPipe).

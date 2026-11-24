@@ -589,6 +589,13 @@ func (a *App) ClearCache() (int64, error) {
 	return a.svc.ClearCache()
 }
 
+func (a *App) ClearUploads() (int64, error) {
+	if err := a.ready(); err != nil {
+		return 0, err
+	}
+	return a.svc.ClearUploads()
+}
+
 // Accounts: one per platform of a profile, named by the platform's site id.
 
 func (a *App) SetAccountLogin(id, site, login string) error {

@@ -173,6 +173,10 @@ func (a *App) init() error {
 	a.svc.ApplyLaunchCeiling()
 	a.svc.LoadEngineList()
 	go a.svc.PruneEngines(context.Background())
+	go func() {
+		a.svc.PruneSnapshots()
+		a.svc.PruneLogs(14 * 24 * time.Hour)
+	}()
 	l.Adopt()
 	a.svc.AdoptMobileDevices(context.Background())
 	a.agent = agent.NewHub(time.Minute)

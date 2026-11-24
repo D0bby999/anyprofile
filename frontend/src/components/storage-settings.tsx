@@ -21,6 +21,7 @@ export function StorageSettings() {
     setError('')
     try {
       await Api.SetSnapshotSettings(next)
+      load()
     } catch (e) {
       setError(errorText(e))
     }
@@ -63,6 +64,22 @@ export function StorageSettings() {
     }
   }
 
+  const clearUploads = async () => {
+    if (!(await confirm({ ...t.confirm.clearUploads, danger: true }))) return
+    setBusy('uploads')
+    setError('')
+    setFreed('')
+    try {
+      const n = await Api.ClearUploads()
+      setFreed(t.storage.cleared(formatBytes(Number(n))))
+      load()
+    } catch (e) {
+      setError(errorText(e))
+    } finally {
+      setBusy('')
+    }
+  }
+
   const deleteOrphans = async () => {
     const ids = (info?.orphans ?? []).map((o) => o.id)
     if (!ids.length || !(await confirm({ ...t.confirm.orphans(ids.length), danger: true }))) return
@@ -78,18 +95,53 @@ export function StorageSettings() {
     }
   }
 
+  const profilesBytes = Number(info?.profilesBytes || 0)
+  const snapshotsBytes = Number(info?.snapshotsBytes || 0)
+  const mobileBytes = Number(info?.mobileBytes || 0)
+  const runtimeBytes = Number(info?.enginesBytes || 0) + Number(info?.mobileRuntimeBytes || 0)
+  const apkCacheBytes = Number(info?.apkCacheBytes || 0)
+  const uploadsBytes = Number(info?.uploadsBytes || 0)
+  const logsBytes = Number(info?.logsBytes || 0)
+  const totalBytes = Number(info?.totalBytes || 0) ||
+    (profilesBytes + snapshotsBytes + mobileBytes + runtimeBytes + apkCacheBytes + uploadsBytes + logsBytes)
+
+  const rows: [string, number][] = [
+    [t.storage.profiles, profilesBytes],
+    [t.storage.snapshots, snapshotsBytes],
+    ...(mobileBytes > 0 ? [[t.storage.mobileDevices, mobileBytes] as [string, number]] : []),
+    ...(runtimeBytes > 0 ? [[t.storage.runtimeAndEngines, runtimeBytes] as [string, number]] : []),
+    ...(apkCacheBytes > 0 ? [[t.storage.apkCache, apkCacheBytes] as [string, number]] : []),
+    ...(uploadsBytes > 0 ? [[t.storage.uploads, uploadsBytes] as [string, number]] : []),
+    ...(logsBytes > 0 ? [[t.storage.logs, logsBytes] as [string, number]] : []),
+  ]
+
   return (
     <div className="field">
-      <p className="desc" style={{ margin: 0 }}>
-        {info ? t.storage.profilesSize(formatBytes(Number(info.profilesBytes))) : t.common.loading}
-      </p>
-      {!!info && Number(info.mobileBytes) > 0 && (
-        <p className="desc" style={{ margin: 0 }}>{t.storage.mobileSize(formatBytes(Number(info.mobileBytes)))}</p>
+      {info ? (
+        <dl className="storage-breakdown">
+          {rows.map(([label, bytes]) => (
+            <div className="storage-row" key={label}>
+              <dt>{label}</dt>
+              <dd>{formatBytes(bytes)}</dd>
+            </div>
+          ))}
+          <div className="storage-row storage-total">
+            <dt>{t.storage.total}</dt>
+            <dd>{formatBytes(totalBytes)}</dd>
+          </div>
+        </dl>
+      ) : (
+        <p className="desc" style={{ margin: 0 }}>{t.common.loading}</p>
       )}
-      <div className="row">
+      <div className="row" style={{ flexWrap: 'wrap' }}>
         <button className="btn" disabled={busy !== ''} onClick={clearCache}>
           <Icon name="trash" className="icon sm" />{t.storage.clearCache}
         </button>
+        {uploadsBytes > 0 && (
+          <button className="btn" disabled={busy !== ''} onClick={clearUploads}>
+            <Icon name="trash" className="icon sm" />{t.storage.clearUploads(formatBytes(uploadsBytes))}
+          </button>
+        )}
       </div>
       <span className="hint">{t.storage.clearCacheHint}</span>
       {!!info?.orphans?.length && (

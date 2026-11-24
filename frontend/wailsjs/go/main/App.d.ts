@@ -47,6 +47,8 @@ export function ClearAccountPassword(arg1:string,arg2:string):Promise<void>;
 
 export function ClearCache():Promise<number>;
 
+export function ClearUploads():Promise<number>;
+
 export function ClearTOTP(arg1:string,arg2:string):Promise<void>;
 
 export function CopyAPIToken():Promise<void>;

@@ -231,6 +231,22 @@ const answers: Record<string, unknown> = {
   AgentProfiles: async () => [],
   ListExtensions: async () => [],
   APIStatus: async () => ({ enabled: false, port: 0, running: false }),
+  Storage: async () => ({
+    profilesBytes: 3.9 * 1024 * 1024 * 1024,
+    snapshotsBytes: 798 * 1024 * 1024,
+    mobileBytes: 30 * 1024 * 1024 * 1024,
+    mobileRuntimeBytes: 7.8 * 1024 * 1024 * 1024,
+    enginesBytes: 1.0 * 1024 * 1024 * 1024,
+    apkCacheBytes: 516 * 1024 * 1024,
+    uploadsBytes: 1.2 * 1024 * 1024 * 1024,
+    logsBytes: 45 * 1024 * 1024,
+    totalBytes: 45.26 * 1024 * 1024 * 1024,
+    orphans: [],
+  }),
+  SnapshotSettings: async () => ({ auto: true, keep: 1 }),
+  SetSnapshotSettings: async () => {},
+  ClearCache: async () => 580 * 1024 * 1024,
+  ClearUploads: async () => 1.2 * 1024 * 1024 * 1024,
 }
 
 const app = new Proxy(

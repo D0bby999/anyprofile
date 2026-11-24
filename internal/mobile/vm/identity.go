@@ -244,6 +244,144 @@ var countryCarriers = map[string]Carrier{
 	"BR": {Alpha: "Vivo", Numeric: "72410", ISO: "br"},
 }
 
+// IdentityTemplates returns the built-in mobile hardware template IDs.
+func IdentityTemplates() []string {
+	out := make([]string, len(identityTemplates))
+	for i, tpl := range identityTemplates {
+		out[i] = tpl.Template
+	}
+	return out
+}
+
+// PickDistinctTemplate chooses a template from candidates deterministically
+// from seed while strongly preferring templates with the lowest count in used.
+func PickDistinctTemplate(seed string, candidates []string, used map[string]int) string {
+	if len(candidates) == 0 {
+		return ""
+	}
+	minUse := -1
+	for _, c := range candidates {
+		n := used[c]
+		if minUse < 0 || n < minUse {
+			minUse = n
+		}
+	}
+	pool := make([]string, 0, len(candidates))
+	for _, c := range candidates {
+		if used[c] == minUse {
+			pool = append(pool, c)
+		}
+	}
+	h := sha256.Sum256([]byte("anyprofile-mobile-pick:" + seed))
+	idx := (int(h[0])<<8 | int(h[1])) % len(pool)
+	return pool[idx]
+}
+
+// IdentityFromProfile constructs a valid device Identity from an external
+// hardware profile (such as an AVO device JSON) with deterministic Serial/IMEI.
+func IdentityFromProfile(deviceID, templateID string, props map[string]string, board, platform, hardware, glVendor, glRenderer string) (Identity, bool) {
+	model := strings.TrimSpace(props["ro.product.model"])
+	brand := strings.TrimSpace(props["ro.product.brand"])
+	if model == "" || brand == "" {
+		return Identity{}, false
+	}
+	mfr := strings.TrimSpace(props["ro.product.manufacturer"])
+	if mfr == "" {
+		mfr = brand
+	}
+	dev := strings.TrimSpace(props["ro.product.device"])
+	if dev == "" {
+		dev = strings.ToLower(strings.ReplaceAll(model, " ", "_"))
+	}
+	prod := strings.TrimSpace(props["ro.product.name"])
+	if prod == "" {
+		prod = dev
+	}
+	fp := strings.TrimSpace(props["ro.build.fingerprint"])
+	buildID := strings.TrimSpace(props["ro.build.id"])
+	inc := strings.TrimSpace(props["ro.build.version.incremental"])
+	if fp != "" && (buildID == "" || inc == "") {
+		// Format: brand/product/device:release/buildID/incremental:type/tags
+		if parts := strings.Split(fp, "/"); len(parts) >= 5 {
+			if buildID == "" {
+				buildID = parts[3]
+			}
+			if inc == "" {
+				inc = strings.SplitN(parts[4], ":", 2)[0]
+			}
+		}
+	}
+	if buildID == "" {
+		buildID = "AP3A.240905.015.A2"
+	}
+	if inc == "" {
+		inc = "13578691"
+	}
+	if fp == "" {
+		fp = fmt.Sprintf("%s/%s/%s:15/%s/%s:user/release-keys", brand, prod, dev, buildID, inc)
+	}
+	if board == "" {
+		board = dev
+	}
+	if platform == "" {
+		platform = board
+	}
+	if hardware == "" {
+		hardware = platform
+	}
+	tac := tacForBrand(brand)
+	h := sha256.Sum256([]byte("anyprofile-mobile-identity:" + deviceID))
+	id := Identity{
+		Template:     templateID,
+		Model:        model,
+		Brand:        brand,
+		Manufacturer: mfr,
+		Device:       dev,
+		Product:      prod,
+		Board:        board,
+		Platform:     platform,
+		Hardware:     hardware,
+		Baseband:     "msm",
+		Fingerprint:  fp,
+		BuildID:      buildID,
+		Incremental:  inc,
+		SecurityDate: "2025-05-01",
+		MIDR:         "0x411fd410",
+		Serial:       strings.ToUpper(hex.EncodeToString(h[1:8])),
+		IMEI:         luhnIMEI(tac, h[8:14]),
+		TAC:          tac,
+		GLVendor:     glVendor,
+		GLRenderer:   glRenderer,
+	}
+	if strings.EqualFold(brand, "google") {
+		id.Baseband = "g5300q-240919-241106-B-12612894"
+	}
+	return id, true
+}
+
+func tacForBrand(brand string) string {
+	switch strings.ToLower(strings.TrimSpace(brand)) {
+	case "google":
+		return "35391811"
+	case "samsung":
+		return "35089412"
+	case "xiaomi", "redmi", "poco":
+		return "86789105"
+	case "oneplus":
+		return "86492106"
+	case "oppo", "realme":
+		return "86394205"
+	case "vivo":
+		return "86612405"
+	case "asus":
+		return "35762911"
+	case "nothing":
+		return "35841209"
+	default:
+		return "35482912"
+	}
+}
+
 // IdentityFor returns a deterministic device identity for deviceID. If template
 // is empty or unknown, a template is chosen deterministically from deviceID.
 func IdentityFor(deviceID, template string) Identity {

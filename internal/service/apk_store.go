@@ -432,7 +432,7 @@ func (s *Service) ImportInstalledAPK(ctx context.Context, in APKImportInput) (st
 	if label == "" {
 		label = info.Label
 	}
-	idn, aid := ensureAPKIdentityFields(info.Package, "", "", in.IdentityTemplate)
+	idn, aid := s.ensureAPKIdentityFields(info.Package, "", "", in.IdentityTemplate)
 	rec := store.MobileAPK{
 		Package:        info.Package,
 		Label:          label,
@@ -775,7 +775,7 @@ func (s *Service) InstallStoreAPK(ctx context.Context, req APKStoreInstallInput)
 		}
 	}
 
-	rec, err := s.AddAPK(ctx, APKInput{
+	rec, err := s.addAPK(ctx, APKInput{
 		FilePath:         pkgPath,
 		Label:            req.Label,
 		ProxyID:          proxyID,
@@ -783,7 +783,7 @@ func (s *Service) InstallStoreAPK(ctx context.Context, req APKStoreInstallInput)
 		Orientation:      req.Orientation,
 		IdentityTemplate: req.IdentityTemplate,
 		CreateShortcut:   req.CreateShortcut,
-	})
+	}, false)
 	if err != nil {
 		return store.MobileAPK{}, err
 	}

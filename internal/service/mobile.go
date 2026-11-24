@@ -5,11 +5,13 @@ package service
 import (
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -38,9 +40,9 @@ const (
 	maxScreenH         = 3200
 	minDensity         = 160
 	maxDensity         = 480
-	// mobileDiskNeed is the room a new device needs: about 1.5 GB after its
-	// first boot, and some to spare.
-	mobileDiskNeed = 3 << 30
+	// mobileDiskNeed is the minimum free disk space before creating a mobile
+	// device: a real Android 16 VM quickly grows to 5-7 GB after setup and apps.
+	mobileDiskNeed = 6 << 30
 )
 
 // MobileAvailability tells the UI what stands between the user and a device.
@@ -366,7 +368,7 @@ func (s *Service) CreateMobileDevice(ctx context.Context, in MobileInput) (store
 		return store.MobileDevice{}, err
 	}
 	if free, err := mobile.FreeBytes(s.Dirs.Mobile()); err == nil && free < mobileDiskNeed {
-		return store.MobileDevice{}, apperr.New("disk_full", "free at least 3 GB of disk space first")
+		return store.MobileDevice{}, apperr.New("disk_full", "free at least 6 GB of disk space first")
 	}
 	if in.ProxyID == AutoProxy {
 		id, err := s.nextFreeProxy()
@@ -385,7 +387,7 @@ func (s *Service) CreateMobileDevice(ctx context.Context, in MobileInput) (store
 	withGMS := resolveWithGMS(in)
 	identityJSON := ""
 	if withGMS || in.IdentityTemplate != "" {
-		identityJSON = vm.MarshalIdentity(vm.IdentityFor(devID, in.IdentityTemplate))
+		identityJSON = vm.MarshalIdentity(s.pickMobileIdentity(devID, in.IdentityTemplate, ""))
 	}
 	d := store.MobileDevice{ID: devID, Name: in.Name, Driver: s.Mobile.Driver().Name(),
 		Platform: runtime.GOOS, ProxyID: in.ProxyID, RAMMB: in.RAMMB, CPUs: in.CPUs,
@@ -455,9 +457,9 @@ func (s *Service) UpdateMobileDevice(ctx context.Context, id string, in MobileIn
 		} else if tpl == "auto" {
 			tpl = ""
 		}
-		d.IdentityJSON = vm.MarshalIdentity(vm.IdentityFor(seed, tpl))
+		d.IdentityJSON = vm.MarshalIdentity(s.pickMobileIdentity(seed, tpl, d.ID))
 	} else if d.WithGMS && d.IdentityJSON == "" {
-		d.IdentityJSON = vm.MarshalIdentity(vm.IdentityFor(d.ID, ""))
+		d.IdentityJSON = vm.MarshalIdentity(s.pickMobileIdentity(d.ID, "", d.ID))
 	}
 	d.Name, d.ProxyID, d.RAMMB, d.CPUs, d.Preset, d.ScreenW, d.ScreenH, d.Density, d.Notes, d.Tags, d.Pinned =
 		in.Name, in.ProxyID, in.RAMMB, in.CPUs, in.Preset, in.ScreenW, in.ScreenH, in.Density,
@@ -1303,4 +1305,144 @@ func (s *Service) mobileUsesProxy(proxyID string) (string, error) {
 		}
 	}
 	return "", nil
+}
+
+type avoProfileFile struct {
+	ID         string            `json:"id"`
+	Properties map[string]string `json:"properties"`
+	Hardware   *struct {
+		SoC *struct {
+			Manufacturer string `json:"manufacturer"`
+			Platform     string `json:"platform"`
+			Board        string `json:"board"`
+			Hardware     string `json:"hardware"`
+		} `json:"soc"`
+		GPU *struct {
+			GLVendor   string `json:"glVendor"`
+			GLRenderer string `json:"glRenderer"`
+		} `json:"gpu"`
+	} `json:"hardware"`
+}
+
+var legacyAVOAlias = map[string]string{
+	"pixel8":        "google-pixel-8-pro",
+	"pixel9":        "google-pixel-9-pro",
+	"s24ultra":      "samsung-galaxy-s24-ultra",
+	"s24":           "samsung-galaxy-s24",
+	"s23ultra":      "samsung-galaxy-s24-ultra",
+	"a54":           "samsung-galaxy-a54",
+	"xiaomi14pro":   "xiaomi-14",
+	"xiaomi13ultra": "xiaomi-14",
+	"oneplus12":     "oneplus-12",
+	"oppofindx6pro": "oppo-reno8-5g",
+}
+
+func canonicalMobileTemplate(tpl string) string {
+	t := strings.ToLower(strings.TrimSpace(tpl))
+	if alias, ok := legacyAVOAlias[t]; ok {
+		return alias
+	}
+	return t
+}
+
+func (s *Service) loadAVOProfiles() map[string]avoProfileFile {
+	dir := filepath.Join(s.Dirs.Mobile(), "avo", "profiles")
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return nil
+	}
+	out := make(map[string]avoProfileFile, len(entries))
+	for _, e := range entries {
+		if e.IsDir() || !strings.HasSuffix(e.Name(), ".json") || e.Name() == "avo-virtual-device.json" {
+			continue
+		}
+		b, err := os.ReadFile(filepath.Join(dir, e.Name()))
+		if err != nil {
+			continue
+		}
+		var p avoProfileFile
+		if json.Unmarshal(b, &p) != nil || p.ID == "" || p.Properties["ro.product.model"] == "" {
+			continue
+		}
+		out[p.ID] = p
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return out
+}
+
+func avoProfileToIdentity(seed string, p avoProfileFile) (vm.Identity, bool) {
+	var board, platform, hardware, glVendor, glRenderer string
+	if p.Hardware != nil {
+		if p.Hardware.SoC != nil {
+			board = p.Hardware.SoC.Board
+			platform = p.Hardware.SoC.Platform
+			hardware = p.Hardware.SoC.Hardware
+			if hardware == "" {
+				if p.Hardware.SoC.Manufacturer == "QTI" {
+					hardware = "qcom"
+				} else {
+					hardware = platform
+				}
+			}
+		}
+		if p.Hardware.GPU != nil {
+			glVendor = p.Hardware.GPU.GLVendor
+			glRenderer = p.Hardware.GPU.GLRenderer
+		}
+	}
+	return vm.IdentityFromProfile(seed, p.ID, p.Properties, board, platform, hardware, glVendor, glRenderer)
+}
+
+// pickMobileIdentity chooses an identity for a mobile device. Explicit
+// templates are honoured; automatic selection draws from installed AVO device
+// profiles (falling back to built-in templates) and avoids models already used
+// by other devices so new phones do not repeat the same model.
+func (s *Service) pickMobileIdentity(seed, template, excludeDeviceID string) vm.Identity {
+	tpl := strings.TrimSpace(template)
+	if tpl == "auto" {
+		tpl = ""
+	}
+	avoProfiles := s.loadAVOProfiles()
+	if tpl != "" {
+		if p, ok := avoProfiles[tpl]; ok {
+			if id, ok := avoProfileToIdentity(seed, p); ok {
+				return id
+			}
+		}
+		return vm.IdentityFor(seed, tpl)
+	}
+
+	used := map[string]int{}
+	if s.Store != nil {
+		if ds, err := s.Store.ListMobileDevices(store.ProfileFilter{}); err == nil {
+			for _, d := range ds {
+				if d.ID == excludeDeviceID || d.Notes == apkHostNotes {
+					continue
+				}
+				if id, ok := vm.ParseIdentity(d.IdentityJSON); ok && id.Template != "" {
+					used[id.Template]++
+					if c := canonicalMobileTemplate(id.Template); c != id.Template {
+						used[c]++
+					}
+				}
+			}
+		}
+	}
+
+	if len(avoProfiles) > 0 {
+		cands := make([]string, 0, len(avoProfiles))
+		for id := range avoProfiles {
+			cands = append(cands, id)
+		}
+		sort.Strings(cands)
+		picked := vm.PickDistinctTemplate(seed, cands, used)
+		if id, ok := avoProfileToIdentity(seed, avoProfiles[picked]); ok {
+			return id
+		}
+	}
+
+	picked := vm.PickDistinctTemplate(seed, vm.IdentityTemplates(), used)
+	return vm.IdentityFor(seed, picked)
 }

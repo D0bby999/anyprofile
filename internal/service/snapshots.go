@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/D0bby999/anyprofile/internal/apperr"
@@ -22,7 +23,7 @@ import (
 const (
 	// autoSnapshotAfter is the shortest session that gets a snapshot on close.
 	autoSnapshotAfter = 2 * time.Minute
-	defaultKeep       = 5
+	defaultKeep       = 1
 	// keepOther is how many manual, before-restore and before-import snapshots stay.
 	keepOther = 3
 	// busyWait is how long a launch waits for a snapshot of its profile.
@@ -108,8 +109,105 @@ func (s *Service) SetSnapshotSettings(st SnapshotSettings) error {
 	if err := s.Store.SetSetting("snapshots_keep", strconv.Itoa(st.Keep)); err != nil {
 		return err
 	}
+	s.PruneSnapshots()
 	s.notify("settings")
 	return nil
+}
+
+// PruneSnapshots enforces the current keep limit across all profiles and
+// removes orphan .apsnap files not referenced by the database.
+func (s *Service) PruneSnapshots() int64 {
+	keep := s.SnapshotSettings().Keep
+	all, err := s.Store.AllSnapshots()
+	if err != nil {
+		return 0
+	}
+	profiles := map[string]bool{}
+	for _, x := range all {
+		profiles[x.ProfileID] = true
+	}
+	var freed int64
+	for pid := range profiles {
+		old, err := s.Store.SnapshotsToPrune(pid, "close", keep)
+		if err != nil {
+			continue
+		}
+		for _, o := range old {
+			if info, err := os.Stat(filepath.Join(s.Dirs.ProfileSnapshots(o.ProfileID), o.File)); err == nil {
+				freed += fileDiskBytes(info)
+			}
+			s.removeSnapshot(o)
+		}
+	}
+	tracked := map[string]map[string]bool{}
+	if remaining, err := s.Store.AllSnapshots(); err == nil {
+		for _, x := range remaining {
+			if tracked[x.ProfileID] == nil {
+				tracked[x.ProfileID] = map[string]bool{}
+			}
+			tracked[x.ProfileID][x.File] = true
+		}
+	}
+	freed += s.pruneOrphanSnapshotFiles(tracked)
+	if freed > 0 {
+		s.Log.Info("snapshots pruned", "bytes", freed, "keep", keep)
+		s.notify("snapshots")
+	}
+	return freed
+}
+
+func (s *Service) pruneOrphanSnapshotFiles(tracked map[string]map[string]bool) int64 {
+	root := s.Dirs.Snapshots()
+	dirs, err := os.ReadDir(root)
+	if err != nil {
+		return 0
+	}
+	var freed int64
+	cutoff := time.Now().Add(-time.Hour)
+	for _, d := range dirs {
+		if !d.IsDir() {
+			continue
+		}
+		pid := d.Name()
+		pdir := filepath.Join(root, pid)
+		files, err := os.ReadDir(pdir)
+		if err != nil {
+			continue
+		}
+		kept := tracked[pid]
+		remaining := 0
+		for _, f := range files {
+			if f.IsDir() {
+				remaining++
+				continue
+			}
+			name := f.Name()
+			if kept[name] {
+				remaining++
+				continue
+			}
+			full := filepath.Join(pdir, name)
+			info, err := f.Info()
+			if err != nil {
+				continue
+			}
+			// Leave in-progress temp writes alone; delete stale temps and untracked .apsnap files.
+			if strings.HasPrefix(name, ".tmp-") && info.ModTime().After(cutoff) {
+				remaining++
+				continue
+			}
+			if strings.HasSuffix(name, ".apsnap") || strings.HasPrefix(name, ".tmp-") {
+				freed += fileDiskBytes(info)
+				_ = os.Remove(full)
+				continue
+			}
+			remaining++
+		}
+		if remaining == 0 {
+			_ = os.Remove(pdir)
+		}
+	}
+	return freed
 }
 
 // snapshotKey reads the snapshot key, creating it on first use.
@@ -303,6 +401,7 @@ func (s *Service) DeleteAllSnapshots() error {
 	for _, x := range all {
 		s.removeSnapshot(x)
 	}
+	s.pruneOrphanSnapshotFiles(map[string]map[string]bool{})
 	s.notify("snapshots")
 	return nil
 }
