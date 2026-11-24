@@ -262,6 +262,10 @@ export function InstallMobileRuntime() {
   return window['go']['main']['App']['InstallMobileRuntime']();
 }
 
+export function InstallStoreAPK(arg1) {
+  return window['go']['main']['App']['InstallStoreAPK'](arg1);
+}
+
 export function InstallUpdate() {
   return window['go']['main']['App']['InstallUpdate']();
 }

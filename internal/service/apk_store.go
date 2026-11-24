@@ -5,6 +5,7 @@ package service
 import (
 	"archive/zip"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -50,7 +51,13 @@ var popularAPKStoreApps = []APKStoreApp{
 }
 
 var (
-	apkPlaySearchURL = "https://play.google.com/store/search"
+	apkPlaySearchURL      = "https://play.google.com/store/search"
+	aptoideMetaBaseURL    = "https://ws75.aptoide.com/api/7/app/getMeta"
+	fdroidAPIBaseURL      = "https://f-droid.org/api/v1/packages"
+	fdroidRepoBaseURL     = "https://f-droid.org/repo"
+	directOfficialAPKURLs = map[string]string{
+		"org.telegram.messenger": "https://telegram.org/dl/android/apk",
+	}
 	apkSearchCacheMu sync.Mutex
 	apkSearchCache   = map[string]apkSearchCacheEntry{}
 	playDetailsIDRe  = regexp.MustCompile(`details\?id=([A-Za-z][A-Za-z0-9_.]+)`)
@@ -74,6 +81,20 @@ type APKStoreRequest struct {
 	Query    string `json:"query"`
 	ProxyID  string `json:"proxyId"`
 	DeviceID string `json:"deviceId"`
+}
+
+// APKStoreInstallInput downloads a store package directly through the optional
+// proxy (single APK or split APKs), installs it onto the APK host, catalogs it,
+// and optionally launches it immediately without requiring Aurora Store UI.
+type APKStoreInstallInput struct {
+	Package          string `json:"package"`
+	Label            string `json:"label"`
+	ProxyID          string `json:"proxyId"`
+	Orientation      string `json:"orientation"`
+	IdentityTemplate string `json:"identityTemplate"`
+	Notes            string `json:"notes"`
+	CreateShortcut   bool   `json:"createShortcut"`
+	LaunchAfter      bool   `json:"launchAfter"`
 }
 
 // UncatalogedAPK represents a 3rd-party app installed on an Android device
@@ -138,14 +159,26 @@ func (s *Service) OpenAPKStore(ctx context.Context, req APKStoreRequest) error {
 		return err
 	}
 	_, _ = c.ADB.Shell(ctx, "dumpsys deviceidle unforce 2>/dev/null || true; settings put system screen_off_timeout 2147483647; svc power stayon true; input keyevent 224; wm dismiss-keyguard")
+	s.flushPendingAPKUninstalls(ctx, c)
 	if err := c.EnsureAurora(ctx); err != nil {
 		return apperr.New("mobile_store", fmt.Sprintf("could not prepare Aurora Store: %v", err))
 	}
-	if cmd := storeDeepLinkCmd(req.Query); cmd != "" {
-		if out, err := c.ADB.Shell(ctx, cmd); err != nil || strings.Contains(out, "Error:") {
-			if lerr := c.Launch(ctx, auroraStorePkg); lerr != nil {
-				return lerr
+	// Only deep-link straight to an app page if Aurora Store has already finished
+	// first-time onboarding / anonymous sign-in; deep-linking with null authData
+	// causes Aurora's AppDetailsHelper to throw NullPointerException.
+	auroraReady := false
+	if out, err := c.ADB.Shell(ctx, "su 0 grep -q PREFERENCE_AUTH_DATA /data/data/com.aurora.store/shared_prefs/*.xml 2>/dev/null && echo OK"); err == nil && strings.Contains(out, "OK") {
+		auroraReady = true
+	}
+	if auroraReady {
+		if cmd := storeDeepLinkCmd(req.Query); cmd != "" {
+			if out, err := c.ADB.Shell(ctx, cmd); err != nil || strings.Contains(out, "Error:") {
+				if lerr := c.Launch(ctx, auroraStorePkg); lerr != nil {
+					return lerr
+				}
 			}
+		} else if err := c.Launch(ctx, auroraStorePkg); err != nil {
+			return err
 		}
 	} else if err := c.Launch(ctx, auroraStorePkg); err != nil {
 		return err
@@ -184,6 +217,11 @@ func (s *Service) ListUncatalogedAPKs(ctx context.Context, deviceID string) ([]U
 	if err != nil {
 		return []UncatalogedAPK{}, nil
 	}
+	// If this is the dedicated APK host, clear any pending deletions before listing
+	// so previously deleted apps can never reappear in the catalog.
+	if apkHost, ok := s.apkHostID(""); ok && apkHost == hostID {
+		s.flushPendingAPKUninstalls(ctx, c)
+	}
 	pctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 	out, err := c.ADB.Shell(pctx, "pm list packages -3")
@@ -197,6 +235,9 @@ func (s *Service) ListUncatalogedAPKs(ctx context.Context, deviceID string) ([]U
 	known := make(map[string]bool, len(existing))
 	for _, a := range existing {
 		known[a.Package] = true
+	}
+	for _, p := range s.pendingAPKUninstalls() {
+		known[p] = true
 	}
 	pkgs := parseThirdPartyPackages(out, known)
 	res := make([]UncatalogedAPK, 0, len(pkgs))
@@ -356,6 +397,7 @@ func (s *Service) ImportInstalledAPK(ctx context.Context, in APKImportInput) (st
 	if err := s.Store.UpsertMobileAPK(&rec); err != nil {
 		return store.MobileAPK{}, err
 	}
+	s.removePendingAPKUninstall(rec.Package)
 	s.notify("apk")
 	return s.Store.GetMobileAPK(rec.Package)
 }
@@ -540,6 +582,327 @@ func apkExtFromURL(p string) string {
 	default:
 		return ".apk"
 	}
+}
+
+type storeAPKPart struct {
+	name   string
+	url    string
+	altURL string
+}
+
+func (s *Service) apkHTTPClient(proxyID string, timeout time.Duration) (*http.Client, error) {
+	transport := apkHTTPTransport()
+	proxyID = strings.TrimSpace(proxyID)
+	if proxyID != "" {
+		up, err := s.proxyUpstream(proxyID)
+		if err != nil {
+			return nil, err
+		}
+		transport.Proxy = nil
+		transport.DialContext = func(ctx context.Context, _, addr string) (net.Conn, error) {
+			return up.DialTunnel(ctx, addr)
+		}
+	}
+	return &http.Client{
+		Transport: transport,
+		Timeout:   timeout,
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			if len(via) >= 10 {
+				return errors.New("too many redirects")
+			}
+			if req.URL.Scheme != "https" {
+				return errors.New("refusing non-https redirect")
+			}
+			return nil
+		},
+	}, nil
+}
+
+// InstallStoreAPK downloads a package (single APK or split APK bundle) directly
+// through req.ProxyID, installs and catalogs it on the APK host, and launches
+// it directly when req.LaunchAfter is true (Pro-gated).
+func (s *Service) InstallStoreAPK(ctx context.Context, req APKStoreInstallInput) (store.MobileAPK, error) {
+	if err := s.mobileAllowed(); err != nil {
+		return store.MobileAPK{}, err
+	}
+	pkg := strings.TrimSpace(req.Package)
+	if !apk.ValidPackageName(pkg) {
+		return store.MobileAPK{}, apperr.New("mobile_package", "invalid package name")
+	}
+	proxyID := strings.TrimSpace(req.ProxyID)
+	if proxyID != "" {
+		if _, err := s.Store.GetProxy(proxyID); err != nil {
+			return store.MobileAPK{}, apperr.New("proxy_not_found", "selected proxy does not exist")
+		}
+	}
+
+	metaClient, err := s.apkHTTPClient(proxyID, 15*time.Second)
+	if err != nil {
+		return store.MobileAPK{}, err
+	}
+	parts, err := s.resolveStoreAPKParts(ctx, metaClient, pkg)
+	if err != nil {
+		return store.MobileAPK{}, err
+	}
+
+	dlClient, err := s.apkHTTPClient(proxyID, 10*time.Minute)
+	if err != nil {
+		return store.MobileAPK{}, err
+	}
+	dlDir := filepath.Join(s.apkCacheDir(), apkDownloadsSubd)
+	if err := os.MkdirAll(dlDir, 0o700); err != nil {
+		return store.MobileAPK{}, err
+	}
+	tmpDir, err := os.MkdirTemp(dlDir, "store-*")
+	if err != nil {
+		return store.MobileAPK{}, err
+	}
+	defer os.RemoveAll(tmpDir)
+
+	var remaining int64 = maxAPKURLBytes
+	downloaded := make([]string, 0, len(parts))
+	for i, part := range parts {
+		dst := filepath.Join(tmpDir, fmt.Sprintf("%02d_%s", i, part.name))
+		n, dlErr := downloadAPKPart(ctx, dlClient, part.url, dst, remaining)
+		if dlErr != nil && part.altURL != "" {
+			n, dlErr = downloadAPKPart(ctx, dlClient, part.altURL, dst, remaining)
+		}
+		if dlErr != nil {
+			return store.MobileAPK{}, apperr.New("mobile_apk", fmt.Sprintf("download failed for %s: %v", pkg, dlErr))
+		}
+		remaining -= n
+		downloaded = append(downloaded, dst)
+	}
+
+	pkgPath := downloaded[0]
+	if len(downloaded) > 1 {
+		pkgPath = filepath.Join(tmpDir, pkg+".apks")
+		if err := packSplitAPKs(downloaded, pkgPath); err != nil {
+			return store.MobileAPK{}, err
+		}
+	}
+
+	rec, err := s.AddAPK(ctx, APKInput{
+		FilePath:         pkgPath,
+		Label:            req.Label,
+		ProxyID:          proxyID,
+		Notes:            req.Notes,
+		Orientation:      req.Orientation,
+		IdentityTemplate: req.IdentityTemplate,
+		CreateShortcut:   req.CreateShortcut,
+	})
+	if err != nil {
+		return store.MobileAPK{}, err
+	}
+	if req.LaunchAfter {
+		if err := s.LaunchAPK(ctx, rec.Package, ""); err != nil {
+			return rec, err
+		}
+		if fresh, ferr := s.Store.GetMobileAPK(rec.Package); ferr == nil {
+			rec = fresh
+		}
+	}
+	return rec, nil
+}
+
+func (s *Service) resolveStoreAPKParts(ctx context.Context, client *http.Client, pkg string) ([]storeAPKPart, error) {
+	if direct, ok := directOfficialAPKURLs[pkg]; ok && isHTTPSURL(direct) {
+		return []storeAPKPart{{name: "base.apk", url: direct}}, nil
+	}
+	if parts, ok := s.fetchAptoideAPKParts(ctx, client, pkg); ok {
+		return parts, nil
+	}
+	if parts, ok := s.fetchFDroidAPKParts(ctx, client, pkg); ok {
+		return parts, nil
+	}
+	return nil, apperr.New("apk_store_fallback", fmt.Sprintf("direct download unavailable for %s; open in Aurora Store instead", pkg))
+}
+
+type aptoideMetaResp struct {
+	Data struct {
+		File struct {
+			Path    string `json:"path"`
+			PathAlt string `json:"path_alt"`
+			Malware struct {
+				Rank string `json:"rank"`
+			} `json:"malware"`
+		} `json:"file"`
+		AAB *struct {
+			Splits []struct {
+				Name string `json:"name"`
+				Type string `json:"type"`
+				Path string `json:"path"`
+			} `json:"splits"`
+		} `json:"aab"`
+	} `json:"data"`
+}
+
+func (s *Service) fetchAptoideAPKParts(ctx context.Context, client *http.Client, pkg string) ([]storeAPKPart, bool) {
+	abis := s.apkHostABIs()
+	hw := base64.StdEncoding.EncodeToString([]byte("myCPU=" + strings.Join(abis, ",") + "&sdk=35&myService=gms"))
+	u, err := url.Parse(aptoideMetaBaseURL)
+	if err != nil {
+		return nil, false
+	}
+	q := u.Query()
+	q.Set("package_name", pkg)
+	q.Set("aab", "1")
+	q.Set("q", hw)
+	u.RawQuery = q.Encode()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), nil)
+	if err != nil {
+		return nil, false
+	}
+	req.Header.Set("User-Agent", "AnyProfile/1.0")
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, false
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil, false
+	}
+	var parsed aptoideMetaResp
+	if err := json.NewDecoder(io.LimitReader(resp.Body, 2<<20)).Decode(&parsed); err != nil {
+		return nil, false
+	}
+	rank := strings.ToUpper(strings.TrimSpace(parsed.Data.File.Malware.Rank))
+	if rank == "CRITICAL" || rank == "WARNING" {
+		return nil, false
+	}
+	baseURL := strings.TrimSpace(parsed.Data.File.Path)
+	altURL := strings.TrimSpace(parsed.Data.File.PathAlt)
+	if !isHTTPSURL(baseURL) {
+		if !isHTTPSURL(altURL) {
+			return nil, false
+		}
+		baseURL, altURL = altURL, ""
+	}
+	if !isHTTPSURL(altURL) {
+		altURL = ""
+	}
+	parts := []storeAPKPart{{name: "base.apk", url: baseURL, altURL: altURL}}
+	if parsed.Data.AAB != nil {
+		for i, sp := range parsed.Data.AAB.Splits {
+			spURL := strings.TrimSpace(sp.Path)
+			if !isHTTPSURL(spURL) {
+				continue
+			}
+			if strings.EqualFold(sp.Type, "ABI") && !splitABIMatches(sp.Name, abis) {
+				continue
+			}
+			safe := sanitizeAPKPartName(sp.Name)
+			if safe == "" {
+				safe = fmt.Sprintf("split_%d", i)
+			}
+			parts = append(parts, storeAPKPart{name: safe + ".apk", url: spURL})
+		}
+	}
+	return parts, true
+}
+
+func (s *Service) fetchFDroidAPKParts(ctx context.Context, client *http.Client, pkg string) ([]storeAPKPart, bool) {
+	metaURL := strings.TrimRight(fdroidAPIBaseURL, "/") + "/" + url.PathEscape(pkg)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, metaURL, nil)
+	if err != nil {
+		return nil, false
+	}
+	req.Header.Set("User-Agent", "AnyProfile/1.0")
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, false
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil, false
+	}
+	var meta struct {
+		SuggestedVersionCode int64 `json:"suggestedVersionCode"`
+	}
+	if err := json.NewDecoder(io.LimitReader(resp.Body, 1<<20)).Decode(&meta); err != nil || meta.SuggestedVersionCode <= 0 {
+		return nil, false
+	}
+	apkURL := fmt.Sprintf("%s/%s_%d.apk", strings.TrimRight(fdroidRepoBaseURL, "/"), pkg, meta.SuggestedVersionCode)
+	if !isHTTPSURL(apkURL) {
+		return nil, false
+	}
+	return []storeAPKPart{{name: "base.apk", url: apkURL}}, true
+}
+
+func downloadAPKPart(ctx context.Context, client *http.Client, rawURL, dstPath string, limit int64) (int64, error) {
+	if limit < 4 {
+		return 0, errors.New("APK download exceeds the 2 GB size limit")
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, rawURL, nil)
+	if err != nil {
+		return 0, err
+	}
+	req.Header.Set("User-Agent", "AnyProfile/1.0")
+	resp, err := client.Do(req)
+	if err != nil {
+		return 0, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return 0, fmt.Errorf("HTTP %d", resp.StatusCode)
+	}
+	var magic [4]byte
+	n, err := io.ReadFull(resp.Body, magic[:])
+	if err != nil || n < 4 || !isZIPMagic(magic[:]) {
+		return 0, errors.New("response is not a valid APK archive")
+	}
+	f, err := os.OpenFile(dstPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o600)
+	if err != nil {
+		return 0, err
+	}
+	cleanup := func() {
+		_ = f.Close()
+		_ = os.Remove(dstPath)
+	}
+	if _, err := f.Write(magic[:]); err != nil {
+		cleanup()
+		return 0, err
+	}
+	written, err := io.Copy(f, io.LimitReader(resp.Body, limit-4+1))
+	if err != nil {
+		cleanup()
+		return 0, err
+	}
+	if written > limit-4 {
+		cleanup()
+		return 0, errors.New("APK download exceeds the 2 GB size limit")
+	}
+	if err := f.Close(); err != nil {
+		_ = os.Remove(dstPath)
+		return 0, err
+	}
+	return written + 4, nil
+}
+
+func isHTTPSURL(raw string) bool {
+	u, err := url.Parse(strings.TrimSpace(raw))
+	return err == nil && u.Scheme == "https" && u.Host != ""
+}
+
+func splitABIMatches(name string, hostABIs []string) bool {
+	norm := strings.ToLower(strings.ReplaceAll(name, "-", "_"))
+	for _, abi := range hostABIs {
+		if strings.Contains(norm, strings.ToLower(strings.ReplaceAll(abi, "-", "_"))) {
+			return true
+		}
+	}
+	return false
+}
+
+func sanitizeAPKPartName(name string) string {
+	var b strings.Builder
+	for _, r := range name {
+		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '.' || r == '_' || r == '-' {
+			b.WriteRune(r)
+		}
+	}
+	return strings.Trim(b.String(), ".")
 }
 
 // SearchAPKStore searches public Google Play for Android apps matching query,

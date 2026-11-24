@@ -141,6 +141,8 @@ export function InstallMobileAurora(arg1:string):Promise<void>;
 
 export function InstallMobileRuntime():Promise<void>;
 
+export function InstallStoreAPK(arg1:service.APKStoreInstallInput):Promise<store.MobileAPK>;
+
 export function InstallUpdate():Promise<void>;
 
 export function Language():Promise<string>;

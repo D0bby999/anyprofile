@@ -84,8 +84,13 @@ export function ApkPage({ mobile, onOpenPro, onOpenMobile, onChanged }: Props) {
       if (!autoImportNew) return
       for (const item of list) {
         if (storeBaselineRef.current.has(item.package) || importingRef.current.has(item.package)) continue
-        importingRef.current.add(item.package)
         const cfg = pendingStoreCfgRef.current
+        // When watching for a specific app from Aurora Store, ignore unrelated pre-existing packages.
+        if (cfg?.package && cfg.package !== item.package) {
+          storeBaselineRef.current.add(item.package)
+          continue
+        }
+        importingRef.current.add(item.package)
         const matchesPkg = cfg && (!cfg.package || cfg.package === item.package)
         try {
           const rec = await Api.ImportInstalledAPK(service.APKImportInput.createFrom({
@@ -132,9 +137,19 @@ export function ApkPage({ mobile, onOpenPro, onOpenMobile, onChanged }: Props) {
     void syncFromStore(false)
   }
 
-  const handleStoreOpened = (cfg: PendingStoreConfig) => {
+  const handleStoreOpened = async (cfg: PendingStoreConfig) => {
     pendingStoreCfgRef.current = cfg
-    storeBaselineRef.current = new Set(detected.map((x) => x.package))
+    // Snapshot baseline AFTER OpenAPKStore has booted/resumed the Android host
+    // so pre-existing packages never get mistaken for newly installed apps.
+    let baseline = detected
+    try {
+      const live = (await Api.ListUncatalogedAPKs('')) ?? []
+      baseline = live
+      setDetected(live)
+    } catch {
+      // Keep current detected list if probe fails.
+    }
+    storeBaselineRef.current = new Set(baseline.map((x) => x.package))
     setStoreWatching(true)
     setNewOpen(false)
   }
@@ -233,6 +248,8 @@ export function ApkPage({ mobile, onOpenPro, onOpenMobile, onChanged }: Props) {
     setBusyPkg(app.package)
     try {
       await Api.DeleteAPK(app.package, true)
+      storeBaselineRef.current.add(app.package)
+      setDetected((cur) => cur.filter((x) => x.package !== app.package))
       if (activePkg === app.package) setActivePkg(null)
       toast.success(t.apk.removed(app.label))
       reload()

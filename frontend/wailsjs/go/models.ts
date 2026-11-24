@@ -566,6 +566,32 @@ export namespace service {
 	        this.category = source["category"];
 	    }
 	}
+	export class APKStoreInstallInput {
+	    package: string;
+	    label: string;
+	    proxyId: string;
+	    orientation: string;
+	    identityTemplate: string;
+	    notes: string;
+	    createShortcut: boolean;
+	    launchAfter: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new APKStoreInstallInput(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.package = source["package"];
+	        this.label = source["label"];
+	        this.proxyId = source["proxyId"];
+	        this.orientation = source["orientation"];
+	        this.identityTemplate = source["identityTemplate"];
+	        this.notes = source["notes"];
+	        this.createShortcut = source["createShortcut"];
+	        this.launchAfter = source["launchAfter"];
+	    }
+	}
 	export class APKStoreRequest {
 	    query: string;
 	    proxyId: string;

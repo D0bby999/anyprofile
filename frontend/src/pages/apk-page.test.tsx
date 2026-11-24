@@ -20,6 +20,13 @@ const mockApi = vi.hoisted(() => ({
   CreateAPKShortcut: vi.fn(),
   DeleteAPK: vi.fn(),
   OpenAPKStore: vi.fn().mockResolvedValue(undefined),
+  InstallStoreAPK: vi.fn().mockResolvedValue({
+    package: 'com.zhiliaoapp.musically',
+    label: 'TikTok',
+    versionName: '47.9.3',
+    versionCode: 2024709030,
+    orientation: 'auto',
+  }),
   SearchAPKStore: vi.fn().mockResolvedValue([
     { package: 'com.zhiliaoapp.musically', title: 'TikTok', developer: 'TikTok Pte. Ltd.', iconUrl: '', rating: '4.4', category: 'Social' },
     { package: 'com.shopee.vn', title: 'Shopee', developer: 'Shopee', iconUrl: '', rating: '4.6', category: 'Shopping' },
@@ -37,6 +44,7 @@ vi.mock('../api', () => ({
     APKUpdate: { createFrom: (x: unknown) => x },
     APKStoreApp: { createFrom: (x: unknown) => x },
     APKStoreRequest: { createFrom: (x: unknown) => x },
+    APKStoreInstallInput: { createFrom: (x: unknown) => x },
     APKImportInput: { createFrom: (x: unknown) => x },
   },
   store: {},
@@ -233,15 +241,15 @@ describe('ApkPage', () => {
       expect(mockApi.SearchAPKStore).toHaveBeenCalledWith('tiktok', 'px2')
     })
 
-    // Select TikTok from the search dropdown -> unified configure step -> open Aurora Store with chosen DE proxy
+    // Select TikTok from the search dropdown -> unified configure step -> direct download & open with chosen DE proxy
     const tiktokOpt = await screen.findByRole('option', { name: /TikTok/i })
     fireEvent.click(tiktokOpt)
-    fireEvent.click(screen.getByRole('button', { name: t.apk.openStoreBtn }))
+    fireEvent.click(screen.getByRole('button', { name: t.apk.downloadOpenBtn }))
     await waitFor(() => {
-      expect(mockApi.OpenAPKStore).toHaveBeenCalledWith(expect.objectContaining({
-        query: 'com.zhiliaoapp.musically',
+      expect(mockApi.InstallStoreAPK).toHaveBeenCalledWith(expect.objectContaining({
+        package: 'com.zhiliaoapp.musically',
         proxyId: 'px2',
-        deviceId: '',
+        launchAfter: true,
       }))
     })
 

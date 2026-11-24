@@ -143,6 +143,28 @@ const answers: Record<string, unknown> = {
     previewAPKs = previewAPKs.filter((a) => a.package !== pkg)
   },
   OpenAPKStore: async () => {},
+  InstallStoreAPK: async (input: Record<string, unknown>) => {
+    const pkg = String(input.package || 'com.zhiliaoapp.musically')
+    const rec = {
+      package: pkg,
+      label: String(input.label || pkg),
+      versionName: '47.9.3',
+      versionCode: 2024709030,
+      launchActivity: '',
+      orientation: String(input.orientation || 'auto'),
+      abis: ['arm64-v8a'],
+      filePath: `/tmp/${pkg}.apks`,
+      iconData: '',
+      deviceId: 'apk-runner',
+      proxyId: String(input.proxyId || ''),
+      notes: String(input.notes || ''),
+      shortcutPath: input.createShortcut ? `/Users/dobby/Applications/AnyProfile Apps/${pkg}.app` : '',
+      installedAt: new Date().toISOString(),
+      lastOpenAt: new Date().toISOString(),
+    }
+    previewAPKs = [rec, ...previewAPKs.filter((a) => a.package !== pkg)]
+    return rec
+  },
   SearchAPKStore: async (query: string) => {
     const catalog = [
       { package: 'com.zhiliaoapp.musically', title: 'TikTok', developer: 'TikTok Pte. Ltd.', iconUrl: '', rating: '4.4', category: 'Social' },

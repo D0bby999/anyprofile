@@ -5,12 +5,14 @@ package service
 import (
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/D0bby999/anyprofile/internal/apperr"
 	"github.com/D0bby999/anyprofile/internal/mobile"
@@ -63,8 +65,9 @@ type APKUpdate struct {
 }
 
 const (
-	defaultAPKDeviceName = "APK Runner"
-	apkHostNotes         = "__anyprofile_apk_runner__"
+	defaultAPKDeviceName       = "APK Runner"
+	apkHostNotes               = "__anyprofile_apk_runner__"
+	settingAPKPendingUninstall = "apk_pending_uninstall"
 )
 
 func (s *Service) apkHostABIs() []string {
@@ -196,6 +199,11 @@ func (s *Service) AddAPK(ctx context.Context, in APKInput) (store.MobileAPK, err
 		if _, err := s.StartMobileDeviceHeadless(ctx, devID); err != nil {
 			return store.MobileAPK{}, err
 		}
+	}
+	s.resumeAPKHost(devID)
+	s.removePendingAPKUninstall(info.Package)
+	if c, cerr := s.MobileControl(devID); cerr == nil {
+		s.flushPendingAPKUninstalls(ctx, c)
 	}
 	if _, err := s.InstallMobileApps(ctx, devID, []string{in.FilePath}); err != nil {
 		return store.MobileAPK{}, err
@@ -334,6 +342,7 @@ func (s *Service) launchAPK(ctx context.Context, pkg, deviceID string, showWindo
 	// which otherwise leaves SurfaceFlinger producing black frames), apply per-APK runtime
 	// identity (SSAID android_id, device_name, battery), and tombstone other cataloged APKs.
 	_, _ = c.ADB.Shell(ctx, "dumpsys deviceidle unforce 2>/dev/null || true; settings put system screen_off_timeout 2147483647; svc power stayon true; input keyevent 224; wm dismiss-keyguard")
+	s.flushPendingAPKUninstalls(ctx, c)
 	s.apkApplyRuntimeIdentity(ctx, c, rec)
 	s.apkTrimBloat(ctx, c)
 	s.apkTombstoneOthers(ctx, c, rec.Package)
@@ -632,15 +641,34 @@ func (s *Service) CreateAPKShortcut(pkg string) (string, error) {
 }
 
 // DeleteAPK removes an APK entry from AnyProfile, deletes its shortcut & cached
-// file, and optionally uninstalls it from its target device when running.
+// file, and optionally uninstalls it from its target device (immediately when
+// running/paused, or queued for next boot so deleted apps never resurrect).
 func (s *Service) DeleteAPK(ctx context.Context, pkg string, uninstall bool) error {
 	rec, err := s.Store.GetMobileAPK(pkg)
 	if err != nil {
 		return err
 	}
-	if uninstall && rec.DeviceID != "" && s.mobileRunning(rec.DeviceID) && apk.ValidPackageName(rec.Package) {
-		if c, err := s.MobileControl(rec.DeviceID); err == nil {
-			_, _ = c.ADB.Run(ctx, "uninstall", rec.Package)
+	if uninstall && apk.ValidPackageName(rec.Package) {
+		s.addPendingAPKUninstall(rec.Package)
+		hostID, ok := s.apkHostID(rec.DeviceID)
+		if ok && s.mobileRunning(hostID) {
+			wasPaused := false
+			if s.Mobile != nil {
+				if p, ok := s.Mobile.Driver().(mobile.Pauser); ok && p.Paused(hostID) {
+					wasPaused = true
+					s.resumeAPKHost(hostID)
+				}
+			}
+			if c, cerr := s.MobileControl(hostID); cerr == nil {
+				if uninstallAPKOnDevice(ctx, c, rec.Package) {
+					s.removePendingAPKUninstall(rec.Package)
+				}
+			}
+			if wasPaused && s.Mobile != nil {
+				if p, ok := s.Mobile.Driver().(mobile.Pauser); ok {
+					_ = p.Pause(hostID)
+				}
+			}
 		}
 	}
 	if rec.ShortcutPath != "" {
@@ -654,6 +682,106 @@ func (s *Service) DeleteAPK(ctx context.Context, pkg string, uninstall bool) err
 	}
 	s.notify("apk")
 	return nil
+}
+
+func (s *Service) resumeAPKHost(hostID string) {
+	if s.Mobile == nil || hostID == "" {
+		return
+	}
+	if resumer, ok := s.Mobile.Driver().(interface{ Resume(id string) error }); ok {
+		_ = resumer.Resume(hostID)
+	}
+}
+
+func (s *Service) pendingAPKUninstalls() []string {
+	if s.Store == nil {
+		return nil
+	}
+	raw, err := s.Store.GetSetting(settingAPKPendingUninstall)
+	if err != nil || strings.TrimSpace(raw) == "" {
+		return nil
+	}
+	var pkgs []string
+	if err := json.Unmarshal([]byte(raw), &pkgs); err != nil {
+		return nil
+	}
+	return pkgs
+}
+
+func (s *Service) setPendingAPKUninstalls(pkgs []string) {
+	if s.Store == nil {
+		return
+	}
+	if len(pkgs) == 0 {
+		_ = s.Store.SetSetting(settingAPKPendingUninstall, "")
+		return
+	}
+	b, err := json.Marshal(pkgs)
+	if err != nil {
+		return
+	}
+	_ = s.Store.SetSetting(settingAPKPendingUninstall, string(b))
+}
+
+func (s *Service) addPendingAPKUninstall(pkg string) {
+	pkg = strings.TrimSpace(pkg)
+	if pkg == "" {
+		return
+	}
+	cur := s.pendingAPKUninstalls()
+	for _, p := range cur {
+		if p == pkg {
+			return
+		}
+	}
+	s.setPendingAPKUninstalls(append(cur, pkg))
+}
+
+func (s *Service) removePendingAPKUninstall(pkg string) {
+	pkg = strings.TrimSpace(pkg)
+	if pkg == "" {
+		return
+	}
+	cur := s.pendingAPKUninstalls()
+	if len(cur) == 0 {
+		return
+	}
+	var next []string
+	for _, p := range cur {
+		if p != pkg {
+			next = append(next, p)
+		}
+	}
+	if len(next) != len(cur) {
+		s.setPendingAPKUninstalls(next)
+	}
+}
+
+func uninstallAPKOnDevice(ctx context.Context, c *control.Device, pkg string) bool {
+	uctx, cancel := context.WithTimeout(ctx, 15*time.Second)
+	defer cancel()
+	_, _ = c.ADB.Run(uctx, "uninstall", pkg)
+	// `pm path` exits non-zero when pkg is absent, so append a sentinel that only
+	// prints if ADB shell itself succeeded and pkg is gone.
+	out, err := c.ADB.Shell(uctx, "pm path "+pkg+" 2>/dev/null || echo __ABSENT__")
+	return err == nil && !strings.Contains(out, "package:") && strings.Contains(out, "__ABSENT__")
+}
+
+func (s *Service) flushPendingAPKUninstalls(ctx context.Context, c *control.Device) {
+	pending := s.pendingAPKUninstalls()
+	if len(pending) == 0 || c == nil {
+		return
+	}
+	var remain []string
+	for _, pkg := range pending {
+		if !apk.ValidPackageName(pkg) {
+			continue
+		}
+		if !uninstallAPKOnDevice(ctx, c, pkg) {
+			remain = append(remain, pkg)
+		}
+	}
+	s.setPendingAPKUninstalls(remain)
 }
 
 func (s *Service) makeAPKShortcut(rec store.MobileAPK) (string, error) {

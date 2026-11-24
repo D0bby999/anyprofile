@@ -411,3 +411,111 @@ func TestSearchAPKStore(t *testing.T) {
 		t.Fatalf("expected 0 fallback matches for unknown query, got %+v", fb)
 	}
 }
+
+func TestDeleteAPKQueuesPendingUninstallWhenStopped(t *testing.T) {
+	s, _ := newMobileService(t, "active")
+	ctx := context.Background()
+	rec := store.MobileAPK{Package: "org.fdroid.fdroid", Label: "F-Droid", DeviceID: "stopped-host"}
+	if err := s.Store.UpsertMobileAPK(&rec); err != nil {
+		t.Fatalf("UpsertMobileAPK: %v", err)
+	}
+	if err := s.DeleteAPK(ctx, "org.fdroid.fdroid", true); err != nil {
+		t.Fatalf("DeleteAPK: %v", err)
+	}
+	pending := s.pendingAPKUninstalls()
+	if len(pending) != 1 || pending[0] != "org.fdroid.fdroid" {
+		t.Fatalf("pendingAPKUninstalls = %v, want [org.fdroid.fdroid]", pending)
+	}
+	// Re-adding or removing clears it cleanly.
+	s.removePendingAPKUninstall("org.fdroid.fdroid")
+	if got := s.pendingAPKUninstalls(); len(got) != 0 {
+		t.Fatalf("expected pending list cleared, got %v", got)
+	}
+}
+
+func TestResolveStoreAPKPartsAndFallback(t *testing.T) {
+	s, _ := newMobileService(t, "active")
+	ctx := context.Background()
+
+	var srvURL string
+	srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.URL.Path == "/aptoide":
+			pkg := r.URL.Query().Get("package_name")
+			switch pkg {
+			case "com.example.split":
+				_ = json.NewEncoder(w).Encode(map[string]any{
+					"data": map[string]any{
+						"file": map[string]any{
+							"path":    srvURL + "/dl/base.apk",
+							"malware": map[string]any{"rank": "TRUSTED"},
+						},
+						"aab": map[string]any{
+							"splits": []map[string]any{
+								{"name": "config.arm64_v8a", "type": "ABI", "path": srvURL + "/dl/arm64.apk"},
+								{"name": "config.armeabi_v7a", "type": "ABI", "path": srvURL + "/dl/arm32.apk"},
+								{"name": "config.xhdpi", "type": "DENSITY", "path": srvURL + "/dl/xhdpi.apk"},
+							},
+						},
+					},
+				})
+			case "com.example.bad":
+				_ = json.NewEncoder(w).Encode(map[string]any{
+					"data": map[string]any{
+						"file": map[string]any{
+							"path":    srvURL + "/dl/bad.apk",
+							"malware": map[string]any{"rank": "CRITICAL"},
+						},
+					},
+				})
+			default:
+				http.NotFound(w, r)
+			}
+		case r.URL.Path == "/fdroid/api/org.example.foss":
+			_ = json.NewEncoder(w).Encode(map[string]any{"suggestedVersionCode": 42})
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+	srvURL = srv.URL
+
+	prevAptoide, prevFDAPI, prevFDRepo := aptoideMetaBaseURL, fdroidAPIBaseURL, fdroidRepoBaseURL
+	aptoideMetaBaseURL = srv.URL + "/aptoide"
+	fdroidAPIBaseURL = srv.URL + "/fdroid/api"
+	fdroidRepoBaseURL = srv.URL + "/fdroid/repo"
+	defer func() {
+		aptoideMetaBaseURL, fdroidAPIBaseURL, fdroidRepoBaseURL = prevAptoide, prevFDAPI, prevFDRepo
+	}()
+
+	client := srv.Client()
+
+	// 1. Aptoide split app resolves base + matching ABI + density (drops incompatible arm32 on arm64 host).
+	parts, err := s.resolveStoreAPKParts(ctx, client, "com.example.split")
+	if err != nil {
+		t.Fatalf("resolveStoreAPKParts(split): %v", err)
+	}
+	if len(parts) < 2 || parts[0].url != srvURL+"/dl/base.apk" {
+		t.Fatalf("unexpected parts: %+v", parts)
+	}
+	foundArm64 := false
+	for _, p := range parts {
+		if strings.Contains(p.url, "arm64.apk") {
+			foundArm64 = true
+		}
+	}
+	if !foundArm64 {
+		t.Fatalf("expected arm64 split in %+v", parts)
+	}
+
+	// 2. Malware-flagged Aptoide entry is rejected and falls back to apk_store_fallback error.
+	if _, err := s.resolveStoreAPKParts(ctx, client, "com.example.bad"); err == nil || !strings.Contains(err.Error(), "direct download unavailable") {
+		t.Fatalf("expected malware entry to be rejected, got %v", err)
+	}
+
+	// 3. F-Droid fallback resolves open-source app when Aptoide returns 404.
+	fdParts, err := s.resolveStoreAPKParts(ctx, client, "org.example.foss")
+	if err != nil || len(fdParts) != 1 || fdParts[0].url != srvURL+"/fdroid/repo/org.example.foss_42.apk" {
+		t.Fatalf("F-Droid fallback = %+v, %v", fdParts, err)
+	}
+}

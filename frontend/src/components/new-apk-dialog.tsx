@@ -107,6 +107,7 @@ export function NewApkDialog({
   const [notes, setNotes] = useState('')
   const [makeShortcut, setMakeShortcut] = useState(true)
   const [submitting, setSubmitting] = useState(false)
+  const [storeFallback, setStoreFallback] = useState(false)
 
   const searchInputRef = useRef<HTMLInputElement>(null)
   const searchSeqRef = useRef(0)
@@ -146,6 +147,7 @@ export function NewApkDialog({
 
   const enterConfigure = (next: SelectedTarget) => {
     setTarget(next)
+    setStoreFallback(false)
     setModel('')
     setNotes('')
     setMakeShortcut(true)
@@ -205,6 +207,30 @@ export function NewApkDialog({
     }
   }
 
+  const openAuroraFallback = async () => {
+    if (!target || target.kind !== 'store' || submitting) return
+    setSubmitting(true)
+    try {
+      await Api.OpenAPKStore(service.APKStoreRequest.createFrom({
+        query: target.app.package || target.app.title,
+        proxyId,
+        deviceId: '',
+      }))
+      onStoreOpened({
+        package: target.app.package,
+        label: label.trim(),
+        proxyId,
+        orientation,
+        identityTemplate: model,
+        notes: notes.trim(),
+        createShortcut: makeShortcut,
+      })
+    } catch (e) {
+      toast.error(errorText(e))
+      setSubmitting(false)
+    }
+  }
+
   const submitConfigure = async () => {
     if (!target || submitting) return
     if (target.kind === 'file' && !target.inspect.abiCompatible) return
@@ -240,6 +266,21 @@ export function NewApkDialog({
         onAdded(rec)
         return
       }
+      if (target.app.package && !storeFallback) {
+        const rec = await Api.InstallStoreAPK(service.APKStoreInstallInput.createFrom({
+          package: target.app.package,
+          label: label.trim(),
+          proxyId,
+          orientation,
+          identityTemplate: model,
+          notes: notes.trim(),
+          createShortcut: makeShortcut,
+          launchAfter: true,
+        }))
+        toast.success(t.apk.installed(rec.label))
+        onAdded(rec)
+        return
+      }
       await Api.OpenAPKStore(service.APKStoreRequest.createFrom({
         query: target.app.package || target.app.title,
         proxyId,
@@ -255,7 +296,11 @@ export function NewApkDialog({
         createShortcut: makeShortcut,
       })
     } catch (e) {
-      toast.error(errorText(e))
+      const msg = errorText(e)
+      if (target.kind === 'store' && target.app.package && /direct download unavailable|apk_store_fallback/i.test(msg)) {
+        setStoreFallback(true)
+      }
+      toast.error(msg)
       setSubmitting(false)
     }
   }
@@ -318,10 +363,13 @@ export function NewApkDialog({
   const modelLabel = MODELS.find(([v]) => v === model)?.[1] ?? t.mobile.modelAuto
   const abiBlocked = target?.kind === 'file' && !target.inspect.abiCompatible
 
+  const canDirectDownload = target?.kind === 'store' && !!target.app.package && !storeFallback
+
   const primaryBtnLabel = (() => {
     if (!target) return ''
     if (target.kind === 'file') return submitting ? t.apk.installing : t.apk.installBtn
     if (target.kind === 'import') return submitting ? t.apk.importing : t.apk.importBtn
+    if (canDirectDownload) return submitting ? t.apk.downloadingApp : t.apk.downloadOpenBtn
     return submitting ? t.apk.openingStore : t.apk.openStoreBtn
   })()
 
@@ -744,7 +792,31 @@ export function NewApkDialog({
           </details>
 
           {target.kind === 'store' && (
-            <p className="hint" style={{ margin: 0 }}>{t.apk.storeHint}</p>
+            <>
+              {storeFallback ? (
+                <div className="banner" role="status">
+                  <Icon name="alert" className="icon sm" />
+                  <span className="grow">{t.apk.storeFallbackNotice}</span>
+                </div>
+              ) : (
+                <p className="hint" style={{ margin: 0 }}>
+                  {canDirectDownload ? t.apk.directStoreHint : t.apk.storeHint}
+                </p>
+              )}
+              {canDirectDownload && (
+                <div className="apk-alt-links">
+                  <button
+                    type="button"
+                    className="apk-alt-link"
+                    disabled={submitting}
+                    onClick={() => void openAuroraFallback()}
+                  >
+                    <Icon name="download" className="icon xs" />
+                    {t.apk.openInAuroraLink}
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </div>
       )}

@@ -76,6 +76,13 @@ func (a *App) OpenAPKStore(req service.APKStoreRequest) error {
 	return a.must(func() error { return a.svc.OpenAPKStore(a.ctx, req) })
 }
 
+func (a *App) InstallStoreAPK(in service.APKStoreInstallInput) (store.MobileAPK, error) {
+	if err := a.ready(); err != nil {
+		return store.MobileAPK{}, err
+	}
+	return a.svc.InstallStoreAPK(a.ctx, in)
+}
+
 func (a *App) SearchAPKStore(query, proxyID string) ([]service.APKStoreApp, error) {
 	if err := a.ready(); err != nil {
 		return nil, err

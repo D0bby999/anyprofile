@@ -127,3 +127,145 @@ func TestAPKStoreLiveDownloadAndImport(t *testing.T) {
 	}
 	t.Log("OpenAPKStore succeeded")
 }
+
+func TestAPKDirectStoreInstallAndDeleteNoResurrect(t *testing.T) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		t.Fatal(err)
+	}
+	qemuRuntime := filepath.Join(home, "Library", "Application Support", "AnyProfile", "mobile", "runtime")
+	if !avo.Staged(avo.RootFor(qemuRuntime)) {
+		t.Skip("avo runtime not staged")
+	}
+
+	s, _ := newMobileService(t, "active")
+	devicesDir := t.TempDir()
+	drv := avo.New(qemuRuntime, devicesDir, slog.New(slog.NewTextHandler(os.Stdout, nil)))
+	s.Mobile = mobile.NewManager(drv, s.Store, s.Log, nil)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+	defer cancel()
+
+	t.Cleanup(func() {
+		if id, ok := s.apkHostID(""); ok && s.mobileRunning(id) {
+			sctx, scancel := context.WithTimeout(context.Background(), 30*time.Second)
+			defer scancel()
+			_ = s.StopMobileDevice(sctx, id)
+		}
+	})
+
+	// 1. Direct download & install of an Aptoide split-APK bundle (Shopee VN: base + arm64 + density splits).
+	t.Log("step 1: InstallStoreAPK(com.shopee.vn) — real split-APK download & install")
+	shopee, err := s.InstallStoreAPK(ctx, APKStoreInstallInput{
+		Package:        "com.shopee.vn",
+		Orientation:    "portrait",
+		CreateShortcut: false,
+		LaunchAfter:    false,
+	})
+	if err != nil {
+		t.Fatalf("InstallStoreAPK(com.shopee.vn): %v", err)
+	}
+	t.Logf("installed split-APK: pkg=%s label=%q ver=%s abis=%v file=%s", shopee.Package, shopee.Label, shopee.VersionName, shopee.ABIs, shopee.FilePath)
+	if shopee.Package != "com.shopee.vn" || !strings.HasSuffix(shopee.FilePath, ".apks") {
+		t.Fatalf("expected cached .apks split bundle for shopee, got %+v", shopee)
+	}
+
+	// 2. Direct download & install of an F-Droid / Aptoide single APK (NewPipe).
+	t.Log("step 2: InstallStoreAPK(org.schabi.newpipe)")
+	newpipe, err := s.InstallStoreAPK(ctx, APKStoreInstallInput{
+		Package:        "org.schabi.newpipe",
+		Orientation:    "portrait",
+		CreateShortcut: false,
+		LaunchAfter:    false,
+	})
+	if err != nil {
+		t.Fatalf("InstallStoreAPK(org.schabi.newpipe): %v", err)
+	}
+	t.Logf("installed single APK: pkg=%s label=%q ver=%s", newpipe.Package, newpipe.Label, newpipe.VersionName)
+
+	// 3. Pause APK Runner, then delete NewPipe while PAUSED (verifies resume -> uninstall -> re-pause).
+	hostID, ok := s.apkHostID("")
+	if !ok {
+		t.Fatal("missing apkHostID")
+	}
+	if err := drv.Pause(hostID); err != nil {
+		t.Fatalf("Pause: %v", err)
+	}
+	t.Log("step 3: DeleteAPK(org.schabi.newpipe, uninstall=true) while APK Runner is PAUSED")
+	if err := s.DeleteAPK(ctx, "org.schabi.newpipe", true); err != nil {
+		t.Fatalf("DeleteAPK(newpipe): %v", err)
+	}
+	if pending := s.pendingAPKUninstalls(); len(pending) != 0 {
+		t.Fatalf("expected paused uninstall to succeed immediately, pending=%v", pending)
+	}
+
+	// 4. Stop APK Runner completely, then delete Shopee while STOPPED (queues pending uninstall).
+	t.Log("step 4: stopping APK Runner and DeleteAPK(com.shopee.vn, uninstall=true) while STOPPED")
+	if err := s.StopMobileDevice(ctx, hostID); err != nil {
+		t.Fatalf("StopMobileDevice: %v", err)
+	}
+	if err := s.DeleteAPK(ctx, "com.shopee.vn", true); err != nil {
+		t.Fatalf("DeleteAPK(shopee): %v", err)
+	}
+	if pending := s.pendingAPKUninstalls(); len(pending) != 1 || pending[0] != "com.shopee.vn" {
+		t.Fatalf("expected com.shopee.vn queued for pending uninstall, got %v", pending)
+	}
+
+	// 5. Install a brand new app (Telegram) via InstallStoreAPK with LaunchAfter=false (headless launch via LaunchAPKHeadless)
+	//    and verify BOTH deleted apps are gone on the VM, never reappear in ListUncatalogedAPKs, and Telegram launches cleanly.
+	t.Log("step 5: InstallStoreAPK(org.telegram.messenger) + LaunchAPKHeadless")
+	tg, err := s.InstallStoreAPK(ctx, APKStoreInstallInput{
+		Package:        "org.telegram.messenger",
+		Orientation:    "portrait",
+		CreateShortcut: false,
+		LaunchAfter:    false,
+	})
+	if err != nil {
+		t.Fatalf("InstallStoreAPK(org.telegram.messenger): %v", err)
+	}
+	if err := s.LaunchAPKHeadless(ctx, tg.Package); err != nil {
+		t.Fatalf("LaunchAPKHeadless(telegram): %v", err)
+	}
+
+	if pending := s.pendingAPKUninstalls(); len(pending) != 0 {
+		t.Fatalf("expected pending uninstalls flushed on boot, still pending: %v", pending)
+	}
+	c, err := s.MobileControl(hostID)
+	if err != nil {
+		t.Fatalf("MobileControl: %v", err)
+	}
+	pkgsOut, err := c.ADB.Shell(ctx, "pm list packages -3")
+	if err != nil {
+		t.Fatalf("pm list packages -3: %v", err)
+	}
+	t.Logf("installed 3rd-party packages on VM:\n%s", strings.TrimSpace(pkgsOut))
+	if strings.Contains(pkgsOut, "org.schabi.newpipe") || strings.Contains(pkgsOut, "com.shopee.vn") {
+		t.Fatalf("deleted packages still present on VM:\n%s", pkgsOut)
+	}
+	if !strings.Contains(pkgsOut, tg.Package) {
+		t.Fatalf("expected %s on VM, got:\n%s", tg.Package, pkgsOut)
+	}
+
+	uncat, err := s.ListUncatalogedAPKs(ctx, "")
+	if err != nil {
+		t.Fatalf("ListUncatalogedAPKs: %v", err)
+	}
+	if len(uncat) != 0 {
+		t.Fatalf("expected 0 uncataloged/resurrected APKs, got %+v", uncat)
+	}
+	catalog, err := s.ListAPKs()
+	if err != nil {
+		t.Fatalf("ListAPKs: %v", err)
+	}
+	if len(catalog) != 1 || catalog[0].Package != tg.Package {
+		t.Fatalf("expected only %s in catalog, got %+v", tg.Package, catalog)
+	}
+
+	// Verify Telegram actually launched to foreground.
+	time.Sleep(2 * time.Second)
+	focusOut, _ := c.ADB.Shell(ctx, "dumpsys window | grep -E 'mCurrentFocus|mFocusedApp'")
+	t.Logf("foreground window after LaunchAPKHeadless:\n%s", strings.TrimSpace(focusOut))
+	if !strings.Contains(focusOut, tg.Package) {
+		t.Fatalf("expected %s in foreground, got:\n%s", tg.Package, focusOut)
+	}
+}
