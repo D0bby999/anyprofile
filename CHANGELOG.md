@@ -3,6 +3,12 @@
 The notes of each release tag are shown in the app's update prompt; this file
 keeps them together.
 
+## 1.0.6 (2026-11-24)
+
+- Added live download, install, and launch progress (`apk:progress`, showing MB downloaded, percentage, and current phase) in the New APK dialog.
+- Upgraded Popular apps to adapt by proxy region (Global/US/EU, VN, JP/TW/TH) with verified official Google Play app logos for both Popular apps and live Search results.
+- Polished APK UX: routed TikTok (`com.zhiliaoapp.musically`) directly to Aurora Store so all 16 dynamic feature splits install cleanly without an error flash, aligned APK host identity before boot to skip redundant reboots, auto-dismissed the Aurora Store banner after import, disabled macOS autocorrect popups in the APK search box, and fixed ellipsis truncation in the APK table.
+
 ## 1.0.5 (2026-11-24)
 
 - Added one-click direct APK and split-APK (`.apks`) download, installation, and auto-launch through the selected proxy (`Download & open`) without needing to open Aurora Store manually, with Aurora Store kept as a clean fallback (and fixed Aurora Store's uninitialized deep-link crash).
