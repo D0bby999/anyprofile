@@ -3,6 +3,13 @@
 The notes of each release tag are shown in the app's update prompt; this file
 keeps them together.
 
+## 1.0.7 (2026-11-25)
+
+- Randomized Mobile and APK device identities across the full installed AVO hardware catalog while avoiding models already used by existing devices, fixing repeated Galaxy S24 Ultra assignments.
+- Changed default automatic Web profile snapshot retention from 5 to 1 per profile, immediately pruned excess and orphan `.apsnap` files when lowering `Keep`, and added background pruning on startup.
+- Stopped caching Store-downloaded `.apk`/`.apks` bundles in `mobile/apks/` after install, added full disk usage breakdown (`Profiles`, `Snapshots`, `Mobile devices`, `Browsers & Android runtime`, `Cached APK installers`, `Staged uploads`, `Logs`, `Total`) plus safe cache and uploads cleanup in Settings → Storage.
+- Added automatic retention for old trace logs and unreferenced cookie-jar backups, trimmed per-profile cookie backups from 10 to 3, and raised the minimum free disk requirement for new Mobile devices from 3 GB to 6 GB.
+
 ## 1.0.6 (2026-11-24)
 
 - Added live download, install, and launch progress (`apk:progress`, showing MB downloaded, percentage, and current phase) in the New APK dialog.
