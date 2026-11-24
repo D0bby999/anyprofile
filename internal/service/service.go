@@ -53,6 +53,8 @@ type Service struct {
 	// OnChange is told the kind of data a write changed: "profiles",
 	// "proxies", "sites", "settings" or "mobile". Nil in tests that do not care.
 	OnChange func(kind string)
+	// OnAPKProgress reports live download/install/launch progress for InstallStoreAPK.
+	OnAPKProgress func(pkg, phase string, done, total int64)
 	// CheckProxy measures a proxy's exit; netproxy.Check outside tests.
 	CheckProxy func(ctx context.Context, up netproxy.Upstream) (netproxy.Exit, error)
 	// PingProxy opens one connection through up; nil means a real one.

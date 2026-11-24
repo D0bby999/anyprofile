@@ -57,3 +57,9 @@ export function onMenu(fn: (what: string) => void): () => void {
 export function onUpdateProgress(fn: (done: number, total: number) => void): () => void {
   return EventsOn('update:progress', fn)
 }
+
+export type APKProgress = { package: string; phase: string; done: number; total: number }
+
+export function onAPKProgress(fn: (p: APKProgress) => void): () => void {
+  return EventsOn('apk:progress', fn)
+}

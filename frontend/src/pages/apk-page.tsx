@@ -105,6 +105,9 @@ export function ApkPage({ mobile, onOpenPro, onOpenMobile, onChanged }: Props) {
           }))
           storeBaselineRef.current.add(item.package)
           setDetected((cur) => cur.filter((x) => x.package !== item.package))
+          if (cfg?.package && cfg.package === item.package) {
+            setStoreWatching(false)
+          }
           toast.success(t.apk.autoImported(rec.label))
           reload()
         } catch (e) {

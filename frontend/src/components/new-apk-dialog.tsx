@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Api, service, store } from '../api'
+import { Api, onAPKProgress, service, store, type APKProgress } from '../api'
 import { t } from '../i18n'
 import { errorText } from '../lib/format'
 import { countryFlag } from '../lib/flags'
@@ -41,6 +41,8 @@ type SelectedTarget =
   | { kind: 'import'; item: service.UncatalogedAPK; label: string }
 
 const PKG_RE = /^[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z0-9_]+)+$/
+// Packages whose Aptoide aab=1 feed omits dynamic DEX splits; open straight in Aurora Store.
+const STORE_ONLY_PACKAGES = new Set(['com.zhiliaoapp.musically'])
 
 function formatBytes(n: number): string {
   if (!n || n <= 0) return '0 MB'
@@ -55,6 +57,7 @@ function defaultProxyId(proxies: service.ProxyRow[]): string {
 
 function StoreAppIcon({ title, iconUrl, size = 'md' }: { title: string; iconUrl?: string; size?: 'md' | 'lg' }) {
   const [failed, setFailed] = useState(false)
+  useEffect(() => { setFailed(false) }, [iconUrl])
   const cls = size === 'lg' ? 'apk-icon lg' : 'apk-icon sm'
   if (iconUrl && !failed) {
     return (
@@ -108,6 +111,18 @@ export function NewApkDialog({
   const [makeShortcut, setMakeShortcut] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [storeFallback, setStoreFallback] = useState(false)
+  const [progress, setProgress] = useState<APKProgress | null>(null)
+
+  useEffect(() => {
+    if (!submitting || target?.kind !== 'store' || !target.app.package) {
+      setProgress(null)
+      return
+    }
+    const pkg = target.app.package
+    return onAPKProgress((p) => {
+      if (p && p.package === pkg) setProgress(p)
+    })
+  }, [submitting, target])
 
   const searchInputRef = useRef<HTMLInputElement>(null)
   const searchSeqRef = useRef(0)
@@ -305,7 +320,7 @@ export function NewApkDialog({
     }
   }
 
-  const visibleResults = useMemo(() => results.slice(0, 6), [results])
+  const visibleResults = useMemo(() => results.slice(0, 8), [results])
 
   const selectFallbackQuery = () => {
     if (!trimmedQuery) return
@@ -352,7 +367,7 @@ export function NewApkDialog({
     ? [countryFlag(selectedProxy.country), selectedProxy.country].filter(Boolean).join(' ')
     : ''
   const proxySummary = selectedProxy
-    ? [countryFlag(selectedProxy.country), selectedProxy.label, selectedProxy.country].filter(Boolean).join(' ')
+    ? `${countryFlag(selectedProxy.country) ? `${countryFlag(selectedProxy.country)} ` : ''}${selectedProxy.label}${selectedProxy.country ? ` · ${selectedProxy.country}` : ''}`
     : t.common.direct
 
   const oriLabel = orientation === 'portrait'
@@ -363,7 +378,11 @@ export function NewApkDialog({
   const modelLabel = MODELS.find(([v]) => v === model)?.[1] ?? t.mobile.modelAuto
   const abiBlocked = target?.kind === 'file' && !target.inspect.abiCompatible
 
-  const canDirectDownload = target?.kind === 'store' && !!target.app.package && !storeFallback
+  const canDirectDownload =
+    target?.kind === 'store' &&
+    !!target.app.package &&
+    !storeFallback &&
+    !STORE_ONLY_PACKAGES.has(target.app.package)
 
   const primaryBtnLabel = (() => {
     if (!target) return ''
@@ -453,6 +472,10 @@ export function NewApkDialog({
                   aria-label={t.apk.storeSearchLabel}
                   value={query}
                   placeholder={t.apk.storeSearchPlaceholder}
+                  autoComplete="off"
+                  autoCorrect="off"
+                  autoCapitalize="off"
+                  spellCheck={false}
                   onChange={(e) => setQuery(e.target.value)}
                   onKeyDown={onSearchKeyDown}
                 />
@@ -491,9 +514,8 @@ export function NewApkDialog({
                   <>
                     <div className="apk-results-head">
                       <span>
-                        {trimmedQuery
-                          ? `${t.apk.storeResultsLabel}${regionBadge ? ` · ${regionBadge}` : ''}`
-                          : t.apk.storePopularLabel}
+                        {(trimmedQuery ? t.apk.storeResultsLabel : t.apk.storePopularLabel)}
+                        {regionBadge ? ` · ${regionBadge}` : ''}
                       </span>
                       {searching && <span className="apk-results-status">{t.apk.searchingStore}</span>}
                     </div>
@@ -791,6 +813,41 @@ export function NewApkDialog({
             </div>
           </details>
 
+          {submitting && progress && (
+            <div className="apk-progress" role="status" aria-live="polite">
+              <div className="apk-progress-head">
+                <span>
+                  {progress.phase === 'resolving'
+                    ? t.apk.progressResolving
+                    : progress.phase === 'installing'
+                      ? t.apk.progressInstalling
+                      : progress.phase === 'launching'
+                        ? t.apk.progressLaunching
+                        : t.apk.progressDownloading}
+                </span>
+                {progress.phase === 'downloading' && progress.done > 0 && (
+                  <span className="apk-progress-meta">
+                    {progress.total > 0
+                      ? `${formatBytes(progress.done)} / ${formatBytes(progress.total)} (${Math.min(100, Math.round((progress.done / progress.total) * 100))}%)`
+                      : formatBytes(progress.done)}
+                  </span>
+                )}
+              </div>
+              <div className="apk-progress-bar">
+                <div
+                  className={`apk-progress-fill${progress.phase === 'resolving' || (progress.phase === 'downloading' && progress.total <= 0) ? ' indeterminate' : ''}`}
+                  style={{
+                    width: progress.phase === 'installing' || progress.phase === 'launching'
+                      ? '100%'
+                      : progress.total > 0
+                        ? `${Math.min(100, Math.round((progress.done / progress.total) * 100))}%`
+                        : '35%',
+                  }}
+                />
+              </div>
+            </div>
+          )}
+
           {target.kind === 'store' && (
             <>
               {storeFallback ? (
@@ -803,7 +860,7 @@ export function NewApkDialog({
                   {canDirectDownload ? t.apk.directStoreHint : t.apk.storeHint}
                 </p>
               )}
-              {canDirectDownload && (
+              {canDirectDownload && !submitting && (
                 <div className="apk-alt-links">
                   <button
                     type="button"

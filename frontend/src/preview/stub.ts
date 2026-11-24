@@ -167,14 +167,14 @@ const answers: Record<string, unknown> = {
   },
   SearchAPKStore: async (query: string) => {
     const catalog = [
-      { package: 'com.zhiliaoapp.musically', title: 'TikTok', developer: 'TikTok Pte. Ltd.', iconUrl: '', rating: '4.4', category: 'Social' },
-      { package: 'com.instagram.android', title: 'Instagram', developer: 'Instagram', iconUrl: '', rating: '4.3', category: 'Social' },
-      { package: 'com.facebook.katana', title: 'Facebook', developer: 'Meta Platforms, Inc.', iconUrl: '', rating: '4.1', category: 'Social' },
-      { package: 'org.telegram.messenger', title: 'Telegram', developer: 'Telegram FZ-LLC', iconUrl: '', rating: '4.5', category: 'Communication' },
-      { package: 'com.whatsapp', title: 'WhatsApp Messenger', developer: 'WhatsApp LLC', iconUrl: '', rating: '4.3', category: 'Communication' },
-      { package: 'com.shopee.vn', title: 'Shopee', developer: 'Shopee', iconUrl: '', rating: '4.6', category: 'Shopping' },
-      { package: 'com.lemon.lvoverseas', title: 'CapCut', developer: 'Bytedance Pte. Ltd.', iconUrl: '', rating: '4.5', category: 'Video' },
-      { package: 'com.zing.zalo', title: 'Zalo', developer: 'VNG Corporation', iconUrl: '', rating: '4.2', category: 'Communication' },
+      { package: 'com.zhiliaoapp.musically', title: 'TikTok', developer: 'TikTok Pte. Ltd.', iconUrl: 'https://play-lh.googleusercontent.com/2o7iuqPe-0msP3DvNhzoOgNo4eZ6GkL_RtGVeKyBn5UBQAW5cw-GW5V3wDOHB1yTQuqWzrFLFOv2u4_5ea1uhg=s96', rating: '4.4', category: 'Social' },
+      { package: 'com.instagram.android', title: 'Instagram', developer: 'Instagram', iconUrl: 'https://play-lh.googleusercontent.com/yHi59jmO_lVamcyJ1i3rM1_E8bAiAspShnGjjURq05ipQQSUksO3QVEsXTegRSqul038-4YNA7O644XAcx251Q=s96', rating: '4.4', category: 'Social' },
+      { package: 'com.facebook.katana', title: 'Facebook', developer: 'Meta Platforms, Inc.', iconUrl: 'https://play-lh.googleusercontent.com/12KEJDhgk6oyE1VgmfCuFzFrQripZ_endElbvEhU1rZawQgV3RI-v3II8fDslI1sdC_WKBkmtxS3jxuIihk33Q=s96', rating: '4.3', category: 'Social' },
+      { package: 'com.twitter.android', title: 'X', developer: 'X Corp.', iconUrl: 'https://play-lh.googleusercontent.com/IsLsCD4eLC2CYvlkgTI6Z5TROj0BJIBgUF7BZ5eliTzyyTjqG_mbofeG4kw2s7oG_JZMSi5ErLz_qsDi169C8w=s96', rating: '4.2', category: 'Social' },
+      { package: 'com.whatsapp', title: 'WhatsApp Messenger', developer: 'WhatsApp LLC', iconUrl: 'https://play-lh.googleusercontent.com/Gqxk4T0uZsDwFp07DE-508hkyvcNmgFuRwPiwTEfF7D7OzGv1FdHDzEyMxNsSBZLOJlGpe3ULvVM2RgrRAlBqA=s96', rating: '4.3', category: 'Communication' },
+      { package: 'org.telegram.messenger', title: 'Telegram', developer: 'Telegram FZ-LLC', iconUrl: 'https://play-lh.googleusercontent.com/PyZ3akMGXPV0tKKirKNwfO--PSQW3FHR6rD_H9mAaukZ8LiHyYFuBLeU8UZ2ok6r5SP79-3prkfybWKh98AZAD0=s96', rating: '4.5', category: 'Communication' },
+      { package: 'com.lemon.lvoverseas', title: 'CapCut', developer: 'Bytedance Pte. Ltd.', iconUrl: 'https://play-lh.googleusercontent.com/M78HyakHaxKrjoeqYx41E9DXfVYYtx67nvc7Ks4G4zFQeaAJdGCi8gzzGSrHIwlrmnJS6zD9S4fAXqdEwfuHQAQ=s96', rating: '4.4', category: 'Video' },
+      { package: 'com.shopee.vn', title: 'Shopee', developer: 'Shopee', iconUrl: 'https://play-lh.googleusercontent.com/mlS7AEDM9Ef-bEd_kc25xhtmJQN6hgpEEd3BQm20kIWMJNKWYfO93tuNJBT9WVcs8oZ9tpHdAPbEXI6FSsyw=s96', rating: '4.6', category: 'Shopping' },
     ]
     const q = (query || '').trim().toLowerCase()
     if (!q) return catalog

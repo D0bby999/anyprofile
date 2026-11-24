@@ -195,7 +195,15 @@ func (s *Service) AddAPK(ctx context.Context, in APKInput) (store.MobileAPK, err
 	if err != nil {
 		return store.MobileAPK{}, err
 	}
+	idn, aid := ensureAPKIdentityFields(info.Package, "", "", in.IdentityTemplate)
+	// Align the APK host's hardware identity BEFORE booting it so an immediate
+	// LaunchAPK right after AddAPK doesn't need to reboot the VM mid-dexopt.
 	if !s.mobileRunning(devID) {
+		if hostDev, herr := s.liveMobile(devID); herr == nil {
+			hostDev.IdentityJSON = idn
+			hostDev.ProxyID = strings.TrimSpace(in.ProxyID)
+			_ = s.Store.UpdateMobileDevice(hostDev)
+		}
 		if _, err := s.StartMobileDeviceHeadless(ctx, devID); err != nil {
 			return store.MobileAPK{}, err
 		}
@@ -236,7 +244,6 @@ func (s *Service) AddAPK(ctx context.Context, in APKInput) (store.MobileAPK, err
 	if label == "" {
 		label = info.Label
 	}
-	idn, aid := ensureAPKIdentityFields(info.Package, "", "", in.IdentityTemplate)
 	rec := store.MobileAPK{
 		Package:        info.Package,
 		Label:          label,

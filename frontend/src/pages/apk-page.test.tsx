@@ -39,6 +39,7 @@ const mockApi = vi.hoisted(() => ({
 vi.mock('../api', () => ({
   Api: mockApi,
   onDataChanged: () => () => {},
+  onAPKProgress: () => () => {},
   service: {
     APKInput: { createFrom: (x: unknown) => x },
     APKUpdate: { createFrom: (x: unknown) => x },
@@ -241,13 +242,13 @@ describe('ApkPage', () => {
       expect(mockApi.SearchAPKStore).toHaveBeenCalledWith('tiktok', 'px2')
     })
 
-    // Select TikTok from the search dropdown -> unified configure step -> direct download & open with chosen DE proxy
-    const tiktokOpt = await screen.findByRole('option', { name: /TikTok/i })
-    fireEvent.click(tiktokOpt)
+    // Select Shopee from the search dropdown -> unified configure step -> direct download & open with chosen DE proxy
+    const shopeeOpt = await screen.findByRole('option', { name: /Shopee/i })
+    fireEvent.click(shopeeOpt)
     fireEvent.click(screen.getByRole('button', { name: t.apk.downloadOpenBtn }))
     await waitFor(() => {
       expect(mockApi.InstallStoreAPK).toHaveBeenCalledWith(expect.objectContaining({
-        package: 'com.zhiliaoapp.musically',
+        package: 'com.shopee.vn',
         proxyId: 'px2',
         launchAfter: true,
       }))

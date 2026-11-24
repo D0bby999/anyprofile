@@ -269,3 +269,79 @@ func TestAPKDirectStoreInstallAndDeleteNoResurrect(t *testing.T) {
 		t.Fatalf("expected %s in foreground, got:\n%s", tg.Package, focusOut)
 	}
 }
+
+func TestAPKTikTokLiveAndAuroraFallback(t *testing.T) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		t.Fatal(err)
+	}
+	qemuRuntime := filepath.Join(home, "Library", "Application Support", "AnyProfile", "mobile", "runtime")
+	if !avo.Staged(avo.RootFor(qemuRuntime)) {
+		t.Skip("avo runtime not staged")
+	}
+
+	s, _ := newMobileService(t, "active")
+	devicesDir := t.TempDir()
+	drv := avo.New(qemuRuntime, devicesDir, slog.New(slog.NewTextHandler(os.Stdout, nil)))
+	s.Mobile = mobile.NewManager(drv, s.Store, s.Log, nil)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+	defer cancel()
+
+	t.Cleanup(func() {
+		if id, ok := s.apkHostID(""); ok && s.mobileRunning(id) {
+			sctx, scancel := context.WithTimeout(context.Background(), 30*time.Second)
+			defer scancel()
+			_ = s.StopMobileDevice(sctx, id)
+		}
+	})
+
+	// 1. Direct download & install of TikTok (4-part split APK ~199 MB) + launch headless.
+	t0 := time.Now()
+	t.Log("step 1: InstallStoreAPK(com.zhiliaoapp.musically)")
+	tt, err := s.InstallStoreAPK(ctx, APKStoreInstallInput{
+		Package:        "com.zhiliaoapp.musically",
+		Orientation:    "portrait",
+		CreateShortcut: false,
+		LaunchAfter:    false,
+	})
+	if err != nil {
+		t.Fatalf("InstallStoreAPK(TikTok): %v", err)
+	}
+	t.Logf("TikTok installed in %s: pkg=%s label=%q ver=%s activity=%q abis=%v",
+		time.Since(t0).Round(time.Second), tt.Package, tt.Label, tt.VersionName, tt.LaunchActivity, tt.ABIs)
+
+	if err := s.LaunchAPKHeadless(ctx, tt.Package); err != nil {
+		t.Fatalf("LaunchAPKHeadless(TikTok): %v", err)
+	}
+	hostID, _ := s.apkHostID("")
+	c, err := s.MobileControl(hostID)
+	if err != nil {
+		t.Fatalf("MobileControl: %v", err)
+	}
+	time.Sleep(6 * time.Second)
+	focusOut, _ := c.ADB.Shell(ctx, "dumpsys window | grep -E 'mCurrentFocus|mFocusedApp'")
+	t.Logf("TikTok foreground:\n%s", strings.TrimSpace(focusOut))
+	if !strings.Contains(focusOut, "com.zhiliaoapp.musically") {
+		pidOut, _ := c.ADB.Shell(ctx, "logcat -d | grep -E 'FATAL EXCEPTION|Process: com.zhiliaoapp.musically|aoapp.musically|ClassLoader|DexPathList|dalvikvm|art.*musically|ziparchive' | tail -n 60")
+		t.Fatalf("TikTok did not stay in foreground:\n%s\nart/dex log:\n%s", focusOut, pidOut)
+	}
+	// Capture real screenshot of TikTok running on APK Runner.
+	if png, err := c.Screenshot(ctx); err == nil && len(png) > 0 {
+		outPath := "/Users/dobby/.gemini/antigravity/brain/7ca0e5b0-3741-4196-b823-4a04bc3dd94e/scratch/live_apk_tiktok.png"
+		_ = os.WriteFile(outPath, png, 0o644)
+		t.Logf("saved TikTok screenshot: %s (%d bytes)", outPath, len(png))
+	}
+
+	// 2. Verify Aurora Store fallback on fresh VM does NOT crash with HeaderProvider NPE.
+	t.Log("step 2: OpenAPKStore fallback on fresh VM (must open onboarding cleanly, 0 NPE)")
+	if err := s.OpenAPKStore(ctx, APKStoreRequest{Query: "com.ss.android.ugc.trill"}); err != nil {
+		t.Fatalf("OpenAPKStore: %v", err)
+	}
+	time.Sleep(3 * time.Second)
+	auroraLog, _ := c.ADB.Shell(ctx, "logcat -d | grep -E 'HeaderProvider|NullPointerException|com.aurora.store' | tail -n 20")
+	if strings.Contains(auroraLog, "HeaderProvider.getDefaultHeaders") {
+		t.Fatalf("Aurora Store still threw HeaderProvider NPE:\n%s", auroraLog)
+	}
+	t.Log("Aurora Store opened cleanly with 0 HeaderProvider NPE")
+}

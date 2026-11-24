@@ -334,10 +334,21 @@ func TestSearchAPKStore(t *testing.T) {
 
 	sPro, _ := newMobileService(t, "active")
 
-	// Empty query returns popular catalog with zero network traffic.
+	// Empty query returns popular catalog with real icon URLs and zero network traffic.
 	pop, err := sPro.SearchAPKStore(ctx, "", "")
-	if err != nil || len(pop) < 5 {
+	if err != nil || len(pop) < 8 {
 		t.Fatalf("empty SearchAPKStore = %d, %v", len(pop), err)
+	}
+	for _, a := range pop {
+		if !strings.HasPrefix(a.IconURL, "https://play-lh.googleusercontent.com/") {
+			t.Fatalf("popular app %s missing verified icon URL: %q", a.Package, a.IconURL)
+		}
+	}
+	if jp := sPro.popularAppsForRegion("JP"); len(jp) < 2 || jp[1].Package != "jp.naver.line.android" {
+		t.Fatalf("expected LINE near top for JP popular apps, got %+v", jp[:2])
+	}
+	if vn := sPro.popularAppsForRegion("VN"); len(vn) < 4 || vn[2].Package != "com.zing.zalo" {
+		t.Fatalf("expected Zalo near top for VN popular apps, got %+v", vn[:4])
 	}
 
 	// Build a minimal Play Store ds:4 HTML payload with a list item.

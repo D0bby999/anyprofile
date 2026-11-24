@@ -38,16 +38,71 @@ type APKStoreApp struct {
 }
 
 var popularAPKStoreApps = []APKStoreApp{
-	{Package: "com.zhiliaoapp.musically", Title: "TikTok", Developer: "TikTok Pte. Ltd.", Category: "Social"},
-	{Package: "com.instagram.android", Title: "Instagram", Developer: "Instagram", Category: "Social"},
-	{Package: "com.facebook.katana", Title: "Facebook", Developer: "Meta Platforms, Inc.", Category: "Social"},
-	{Package: "org.telegram.messenger", Title: "Telegram", Developer: "Telegram FZ-LLC", Category: "Communication"},
-	{Package: "com.whatsapp", Title: "WhatsApp Messenger", Developer: "WhatsApp LLC", Category: "Communication"},
-	{Package: "com.shopee.vn", Title: "Shopee", Developer: "Shopee", Category: "Shopping"},
-	{Package: "com.twitter.android", Title: "X", Developer: "X Corp.", Category: "Social"},
-	{Package: "com.zing.zalo", Title: "Zalo", Developer: "VNG Corporation", Category: "Communication"},
-	{Package: "com.lemon.lvoverseas", Title: "CapCut", Developer: "Bytedance Pte. Ltd.", Category: "Video"},
-	{Package: "com.ss.android.ugc.trill", Title: "TikTok Asia", Developer: "TikTok Pte. Ltd.", Category: "Social"},
+	{Package: "com.zhiliaoapp.musically", Title: "TikTok", Developer: "TikTok Pte. Ltd.", Category: "Social", Rating: "4.4", IconURL: "https://play-lh.googleusercontent.com/2o7iuqPe-0msP3DvNhzoOgNo4eZ6GkL_RtGVeKyBn5UBQAW5cw-GW5V3wDOHB1yTQuqWzrFLFOv2u4_5ea1uhg=s96"},
+	{Package: "com.instagram.android", Title: "Instagram", Developer: "Instagram", Category: "Social", Rating: "4.4", IconURL: "https://play-lh.googleusercontent.com/yHi59jmO_lVamcyJ1i3rM1_E8bAiAspShnGjjURq05ipQQSUksO3QVEsXTegRSqul038-4YNA7O644XAcx251Q=s96"},
+	{Package: "com.facebook.katana", Title: "Facebook", Developer: "Meta Platforms, Inc.", Category: "Social", Rating: "4.3", IconURL: "https://play-lh.googleusercontent.com/12KEJDhgk6oyE1VgmfCuFzFrQripZ_endElbvEhU1rZawQgV3RI-v3II8fDslI1sdC_WKBkmtxS3jxuIihk33Q=s96"},
+	{Package: "com.twitter.android", Title: "X", Developer: "X Corp.", Category: "Social", Rating: "4.2", IconURL: "https://play-lh.googleusercontent.com/IsLsCD4eLC2CYvlkgTI6Z5TROj0BJIBgUF7BZ5eliTzyyTjqG_mbofeG4kw2s7oG_JZMSi5ErLz_qsDi169C8w=s96"},
+	{Package: "com.whatsapp", Title: "WhatsApp Messenger", Developer: "WhatsApp LLC", Category: "Communication", Rating: "4.3", IconURL: "https://play-lh.googleusercontent.com/Gqxk4T0uZsDwFp07DE-508hkyvcNmgFuRwPiwTEfF7D7OzGv1FdHDzEyMxNsSBZLOJlGpe3ULvVM2RgrRAlBqA=s96"},
+	{Package: "org.telegram.messenger", Title: "Telegram", Developer: "Telegram FZ-LLC", Category: "Communication", Rating: "4.5", IconURL: "https://play-lh.googleusercontent.com/PyZ3akMGXPV0tKKirKNwfO--PSQW3FHR6rD_H9mAaukZ8LiHyYFuBLeU8UZ2ok6r5SP79-3prkfybWKh98AZAD0=s96"},
+	{Package: "com.lemon.lvoverseas", Title: "CapCut", Developer: "Bytedance Pte. Ltd.", Category: "Video", Rating: "4.4", IconURL: "https://play-lh.googleusercontent.com/M78HyakHaxKrjoeqYx41E9DXfVYYtx67nvc7Ks4G4zFQeaAJdGCi8gzzGSrHIwlrmnJS6zD9S4fAXqdEwfuHQAQ=s96"},
+	{Package: "com.instagram.barcelona", Title: "Threads", Developer: "Instagram", Category: "Social", Rating: "4.4", IconURL: "https://play-lh.googleusercontent.com/6PzXaP0KaRU4DifAfsXKbWNVA3JPrP9uklvEh5EDhzPRdPfHV4tzszhAavQa4bq0YGdbnphBucz9vEUXiu1Ebg=s96"},
+	{Package: "com.google.android.youtube", Title: "YouTube", Developer: "Google LLC", Category: "Video", Rating: "4.3", IconURL: "https://play-lh.googleusercontent.com/QNmuZQc9I6Zbe3mWnSr0hycnENqGFCI5p3yE29Hkxtf22T0IWS6zTrpxULLyyjWpB7ONAXDsDQXnXcVWokl3eg=s96"},
+	{Package: "com.discord", Title: "Discord", Developer: "Discord Inc.", Category: "Communication", Rating: "4.5", IconURL: "https://play-lh.googleusercontent.com/w2DdjDHGSj3DQElQQM0_J3PsNsALS-WD3CBeH0aXOYceR-F3aT02gFonhoFzz-Tc9ec8Dx9cLqh48-tzIFcP=s96"},
+	{Package: "com.reddit.frontpage", Title: "Reddit", Developer: "reddit Inc.", Category: "Social", Rating: "4.6", IconURL: "https://play-lh.googleusercontent.com/8FVS0kvM60JwqZWRNzBIlwrZZxJa8vpli8IWaaTo8QXRe1PHmCNJ8UpWoXkGPV3jKEaTY2OVAeYoisOnGJXY=s96"},
+	{Package: "com.snapchat.android", Title: "Snapchat", Developer: "Snap Inc", Category: "Social", Rating: "4.2", IconURL: "https://play-lh.googleusercontent.com/nOJWJoDAzuRSHmlFfpzHXAj8UbTJwk_JGYf0uAPTKPtiiIX_2Y7r5ATO1ZtxHRqaFTqfIDZ40PnBK4hukeJh=s96"},
+	{Package: "com.pinterest", Title: "Pinterest", Developer: "Pinterest", Category: "Lifestyle", Rating: "4.6", IconURL: "https://play-lh.googleusercontent.com/VExMwhu9Fe5kz72YnPWP6mHrNA5WfgZ-PJMnBnQmXFpLncTAOaaHtK4b8w7b2xxGxtqycDatYslVyNSLucl9QA=s96"},
+	{Package: "com.amazon.mShop.android.shopping", Title: "Amazon Shopping", Developer: "Amazon Mobile LLC", Category: "Shopping", Rating: "4.5", IconURL: "https://play-lh.googleusercontent.com/UIYZ9hTFNg-zZUg_uzLS9YdyDpvoo1VHNFb6VlzHy5JqNMq9Uq-p2S1VPwzXCipHTFacfGKhJkyAuKL19VVlcWA=s96"},
+	{Package: "com.shopee.vn", Title: "Shopee", Developer: "Shopee", Category: "Shopping", Rating: "4.6", IconURL: "https://play-lh.googleusercontent.com/mlS7AEDM9Ef-bEd_kc25xhtmJQN6hgpEEd3BQm20kIWMJNKWYfO93tuNJBT9WVcs8oZ9tpHdAPbEXI6FSsyw=s96"},
+	{Package: "com.zing.zalo", Title: "Zalo", Developer: "VNG Corporation", Category: "Communication", Rating: "4.2", IconURL: "https://play-lh.googleusercontent.com/D3QF_jSgL9vmGcZ4GwaaqoyIRi-KqXh10aeHkMNZyNO4PT2MoGqmfsW63u-4CLCNQ-BdCPbKofBg8V7Rh8wgWQ=s96"},
+	{Package: "jp.naver.line.android", Title: "LINE", Developer: "LY Corporation", Category: "Communication", Rating: "4.2", IconURL: "https://play-lh.googleusercontent.com/7PeaZXtTu7EuCuWzGpkXWAnT9pLs_Ly9MbVSeZUULlIc5H02wGWzvrbmqxj86UnkM9gjUaGSeAcKbYbfbegTJw=s96"},
+}
+
+var regionalPopularOrder = map[string][]string{
+	"VN": {
+		"com.zhiliaoapp.musically", "com.facebook.katana", "com.zing.zalo", "com.shopee.vn",
+		"com.instagram.android", "org.telegram.messenger", "com.lemon.lvoverseas", "com.whatsapp",
+		"com.instagram.barcelona", "com.google.android.youtube",
+	},
+	"JP": {
+		"com.zhiliaoapp.musically", "jp.naver.line.android", "com.twitter.android", "com.instagram.android",
+		"com.google.android.youtube", "com.facebook.katana", "org.telegram.messenger", "com.discord",
+		"com.lemon.lvoverseas", "com.instagram.barcelona",
+	},
+	"TW": {
+		"com.zhiliaoapp.musically", "jp.naver.line.android", "com.instagram.android", "com.facebook.katana",
+		"com.instagram.barcelona", "com.google.android.youtube", "org.telegram.messenger", "com.twitter.android",
+	},
+	"TH": {
+		"com.zhiliaoapp.musically", "jp.naver.line.android", "com.facebook.katana", "com.instagram.android",
+		"com.lemon.lvoverseas", "org.telegram.messenger", "com.twitter.android", "com.google.android.youtube",
+	},
+}
+
+func (s *Service) popularAppsForRegion(region string) []APKStoreApp {
+	byPkg := make(map[string]APKStoreApp, len(popularAPKStoreApps))
+	for _, a := range popularAPKStoreApps {
+		byPkg[a.Package] = a
+	}
+	cc := strings.ToUpper(strings.TrimSpace(region))
+	if cc == "" && s.Language() == "vi" {
+		cc = "VN"
+	}
+	order := regionalPopularOrder[cc]
+	if len(order) == 0 {
+		// Global / US / EU order: social, messaging, creator & shopping leaders.
+		order = []string{
+			"com.zhiliaoapp.musically", "com.instagram.android", "com.facebook.katana", "com.twitter.android",
+			"com.whatsapp", "org.telegram.messenger", "com.lemon.lvoverseas", "com.instagram.barcelona",
+			"com.discord", "com.reddit.frontpage", "com.snapchat.android", "com.amazon.mShop.android.shopping",
+		}
+	}
+	out := make([]APKStoreApp, 0, len(order))
+	for _, pkg := range order {
+		if a, ok := byPkg[pkg]; ok {
+			out = append(out, a)
+		}
+	}
+	return out
 }
 
 var (
@@ -57,6 +112,11 @@ var (
 	fdroidRepoBaseURL     = "https://f-droid.org/repo"
 	directOfficialAPKURLs = map[string]string{
 		"org.telegram.messenger": "https://telegram.org/dl/android/apk",
+	}
+	// Packages whose Aptoide aab=1 response omits required dynamic-feature DEX splits
+	// (causing immediate ClassNotFoundException on startup); route these to Aurora Store.
+	aptoideIncompleteSplitPkgs = map[string]bool{
+		"com.zhiliaoapp.musically": true,
 	}
 	apkSearchCacheMu sync.Mutex
 	apkSearchCache   = map[string]apkSearchCacheEntry{}
@@ -588,6 +648,13 @@ type storeAPKPart struct {
 	name   string
 	url    string
 	altURL string
+	size   int64
+}
+
+func (s *Service) emitAPKProgress(pkg, phase string, done, total int64) {
+	if s.OnAPKProgress != nil {
+		s.OnAPKProgress(pkg, phase, done, total)
+	}
 }
 
 func (s *Service) apkHTTPClient(proxyID string, timeout time.Duration) (*http.Client, error) {
@@ -636,6 +703,7 @@ func (s *Service) InstallStoreAPK(ctx context.Context, req APKStoreInstallInput)
 		}
 	}
 
+	s.emitAPKProgress(pkg, "resolving", 0, 0)
 	metaClient, err := s.apkHTTPClient(proxyID, 15*time.Second)
 	if err != nil {
 		return store.MobileAPK{}, err
@@ -659,20 +727,45 @@ func (s *Service) InstallStoreAPK(ctx context.Context, req APKStoreInstallInput)
 	}
 	defer os.RemoveAll(tmpDir)
 
+	var expectedTotal int64
+	for _, p := range parts {
+		expectedTotal += p.size
+	}
+	var doneTotal int64
+	var lastEmit time.Time
+	reportDL := func(partDone, partTotal int64) {
+		tot := expectedTotal
+		if tot <= 0 && partTotal > 0 {
+			tot = partTotal
+		}
+		now := time.Now()
+		if now.Sub(lastEmit) < 150*time.Millisecond && (tot <= 0 || doneTotal+partDone < tot) {
+			return
+		}
+		lastEmit = now
+		s.emitAPKProgress(pkg, "downloading", doneTotal+partDone, tot)
+	}
+	s.emitAPKProgress(pkg, "downloading", 0, expectedTotal)
+
 	var remaining int64 = maxAPKURLBytes
 	downloaded := make([]string, 0, len(parts))
 	for i, part := range parts {
 		dst := filepath.Join(tmpDir, fmt.Sprintf("%02d_%s", i, part.name))
-		n, dlErr := downloadAPKPart(ctx, dlClient, part.url, dst, remaining)
+		n, dlErr := downloadAPKPart(ctx, dlClient, part.url, dst, remaining, reportDL)
 		if dlErr != nil && part.altURL != "" {
-			n, dlErr = downloadAPKPart(ctx, dlClient, part.altURL, dst, remaining)
+			n, dlErr = downloadAPKPart(ctx, dlClient, part.altURL, dst, remaining, reportDL)
 		}
 		if dlErr != nil {
 			return store.MobileAPK{}, apperr.New("mobile_apk", fmt.Sprintf("download failed for %s: %v", pkg, dlErr))
 		}
 		remaining -= n
+		doneTotal += n
+		if expectedTotal > 0 && doneTotal > expectedTotal {
+			expectedTotal = doneTotal
+		}
 		downloaded = append(downloaded, dst)
 	}
+	s.emitAPKProgress(pkg, "installing", doneTotal, doneTotal)
 
 	pkgPath := downloaded[0]
 	if len(downloaded) > 1 {
@@ -695,6 +788,7 @@ func (s *Service) InstallStoreAPK(ctx context.Context, req APKStoreInstallInput)
 		return store.MobileAPK{}, err
 	}
 	if req.LaunchAfter {
+		s.emitAPKProgress(pkg, "launching", doneTotal, doneTotal)
 		if err := s.LaunchAPK(ctx, rec.Package, ""); err != nil {
 			return rec, err
 		}
@@ -721,23 +815,28 @@ func (s *Service) resolveStoreAPKParts(ctx context.Context, client *http.Client,
 type aptoideMetaResp struct {
 	Data struct {
 		File struct {
-			Path    string `json:"path"`
-			PathAlt string `json:"path_alt"`
-			Malware struct {
+			Path     string `json:"path"`
+			PathAlt  string `json:"path_alt"`
+			FileSize int64  `json:"filesize"`
+			Malware  struct {
 				Rank string `json:"rank"`
 			} `json:"malware"`
 		} `json:"file"`
 		AAB *struct {
 			Splits []struct {
-				Name string `json:"name"`
-				Type string `json:"type"`
-				Path string `json:"path"`
+				Name     string `json:"name"`
+				Type     string `json:"type"`
+				Path     string `json:"path"`
+				FileSize int64  `json:"filesize"`
 			} `json:"splits"`
 		} `json:"aab"`
 	} `json:"data"`
 }
 
 func (s *Service) fetchAptoideAPKParts(ctx context.Context, client *http.Client, pkg string) ([]storeAPKPart, bool) {
+	if aptoideIncompleteSplitPkgs[pkg] {
+		return nil, false
+	}
 	abis := s.apkHostABIs()
 	hw := base64.StdEncoding.EncodeToString([]byte("myCPU=" + strings.Join(abis, ",") + "&sdk=35&myService=gms"))
 	u, err := url.Parse(aptoideMetaBaseURL)
@@ -782,7 +881,7 @@ func (s *Service) fetchAptoideAPKParts(ctx context.Context, client *http.Client,
 	if !isHTTPSURL(altURL) {
 		altURL = ""
 	}
-	parts := []storeAPKPart{{name: "base.apk", url: baseURL, altURL: altURL}}
+	parts := []storeAPKPart{{name: "base.apk", url: baseURL, altURL: altURL, size: parsed.Data.File.FileSize}}
 	if parsed.Data.AAB != nil {
 		for i, sp := range parsed.Data.AAB.Splits {
 			spURL := strings.TrimSpace(sp.Path)
@@ -796,7 +895,7 @@ func (s *Service) fetchAptoideAPKParts(ctx context.Context, client *http.Client,
 			if safe == "" {
 				safe = fmt.Sprintf("split_%d", i)
 			}
-			parts = append(parts, storeAPKPart{name: safe + ".apk", url: spURL})
+			parts = append(parts, storeAPKPart{name: safe + ".apk", url: spURL, size: sp.FileSize})
 		}
 	}
 	return parts, true
@@ -830,7 +929,23 @@ func (s *Service) fetchFDroidAPKParts(ctx context.Context, client *http.Client, 
 	return []storeAPKPart{{name: "base.apk", url: apkURL}}, true
 }
 
-func downloadAPKPart(ctx context.Context, client *http.Client, rawURL, dstPath string, limit int64) (int64, error) {
+type progressWriter struct {
+	w      io.Writer
+	done   int64
+	total  int64
+	report func(done, total int64)
+}
+
+func (pw *progressWriter) Write(p []byte) (int, error) {
+	n, err := pw.w.Write(p)
+	pw.done += int64(n)
+	if pw.report != nil && n > 0 {
+		pw.report(pw.done, pw.total)
+	}
+	return n, err
+}
+
+func downloadAPKPart(ctx context.Context, client *http.Client, rawURL, dstPath string, limit int64, report func(done, total int64)) (int64, error) {
 	if limit < 4 {
 		return 0, errors.New("APK download exceeds the 2 GB size limit")
 	}
@@ -864,7 +979,8 @@ func downloadAPKPart(ctx context.Context, client *http.Client, rawURL, dstPath s
 		cleanup()
 		return 0, err
 	}
-	written, err := io.Copy(f, io.LimitReader(resp.Body, limit-4+1))
+	pw := &progressWriter{w: f, done: 4, total: resp.ContentLength, report: report}
+	written, err := io.Copy(pw, io.LimitReader(resp.Body, limit-4+1))
 	if err != nil {
 		cleanup()
 		return 0, err
@@ -914,14 +1030,12 @@ func (s *Service) SearchAPKStore(ctx context.Context, query, proxyID string) ([]
 		return nil, err
 	}
 	q := strings.TrimSpace(query)
-	if q == "" {
-		out := make([]APKStoreApp, len(popularAPKStoreApps))
-		copy(out, popularAPKStoreApps)
-		return out, nil
-	}
-
 	proxyID = strings.TrimSpace(proxyID)
 	region := s.proxyRegion(proxyID)
+	if q == "" {
+		return s.popularAppsForRegion(region), nil
+	}
+
 	cacheKey := strings.ToLower(q) + "|" + proxyID + "|" + region
 	apkSearchCacheMu.Lock()
 	if hit, ok := apkSearchCache[cacheKey]; ok && time.Now().Before(hit.exp) {
@@ -1049,6 +1163,12 @@ func parsePlaySearchHTML(html string) []APKStoreApp {
 	if len(sections) == 0 {
 		return nil
 	}
+	knownIcons := make(map[string]string, len(popularAPKStoreApps))
+	for _, a := range popularAPKStoreApps {
+		if a.IconURL != "" {
+			knownIcons[a.Package] = a.IconURL
+		}
+	}
 	seen := map[string]bool{}
 	var out []APKStoreApp
 	add := func(app APKStoreApp) {
@@ -1057,7 +1177,10 @@ func parsePlaySearchHTML(html string) []APKStoreApp {
 		if app.Package == "" || app.Title == "" || !apk.ValidPackageName(app.Package) || seen[app.Package] {
 			return
 		}
-		if app.IconURL != "" && strings.Contains(app.IconURL, "play-lh.googleusercontent.com") && !strings.Contains(app.IconURL, "=s") {
+		if app.IconURL == "" {
+			app.IconURL = knownIcons[app.Package]
+		}
+		if app.IconURL != "" && strings.Contains(app.IconURL, "play-lh.googleusercontent.com") && !strings.Contains(app.IconURL, "=s") && !strings.Contains(app.IconURL, "=w") {
 			app.IconURL += "=s96"
 		}
 		seen[app.Package] = true
