@@ -6,7 +6,7 @@ import { EventsOn } from '../wailsjs/runtime/runtime'
 import { BrowserOpenURL, ClipboardSetText } from '../wailsjs/runtime/runtime'
 import { debounce } from './lib/debounce'
 
-export type LaunchInfo = { profileId: string; state: string; pid: number; cdpPort: number; error: string }
+export type LaunchInfo = { profileId: string; state: string; mode?: string; pid: number; cdpPort: number; error: string }
 export type EngineProgress = { engine: string; version?: string; done: number; total: number }
 export type DataKind = 'profiles' | 'proxies' | 'sites' | 'settings' | 'snapshots' | 'extensions' | 'update' | 'agent' | 'engines' | 'pro' | 'mobile' | 'apk'
 

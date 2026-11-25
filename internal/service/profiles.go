@@ -24,6 +24,7 @@ import (
 type ProfileRow struct {
 	store.Profile
 	State        launcher.State `json:"state"`
+	Mode         launcher.Mode  `json:"mode"`
 	StateError   string         `json:"stateError"`
 	CDPPort      int            `json:"cdpPort"`
 	ProxyLabel   string         `json:"proxyLabel"`
@@ -100,7 +101,7 @@ func (s *Service) ListProfiles(f store.ProfileFilter) ([]ProfileRow, error) {
 			row.LastExit = &ExitSummary{IP: pair[0].ExitIP, Country: pair[0].ExitCountry, At: pair[0].StartedAt}
 		}
 		if in, ok := running[p.ID]; ok {
-			row.State, row.StateError, row.CDPPort = in.State, in.Error, in.CDPPort
+			row.State, row.Mode, row.StateError, row.CDPPort = in.State, in.Mode, in.Error, in.CDPPort
 		}
 		if px, ok := byID[p.ProxyID]; ok {
 			row.ProxyLabel, row.ProxyCountry, row.ProxyExitIP = px.Label, px.Country, px.ExitIP
@@ -546,6 +547,9 @@ func (s *Service) StartMany(ctx context.Context, ids []string) map[string]string
 	}
 	errs := parallel(ids, func(id string) error {
 		refresh(id)
+		if in, ok := s.Launcher.Info(id); ok && in.Mode == launcher.ModeAgent {
+			return s.Launcher.Start(ctx, id)
+		}
 		return s.Launcher.StartBehind(ctx, id)
 	})
 	opened := make([]string, 0, len(ids))

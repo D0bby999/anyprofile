@@ -47,9 +47,9 @@ export function ClearAccountPassword(arg1:string,arg2:string):Promise<void>;
 
 export function ClearCache():Promise<number>;
 
-export function ClearUploads():Promise<number>;
-
 export function ClearTOTP(arg1:string,arg2:string):Promise<void>;
+
+export function ClearUploads():Promise<number>;
 
 export function CopyAPIToken():Promise<void>;
 
@@ -348,6 +348,8 @@ export function StartMobileRecording(arg1:string):Promise<void>;
 export function StartMobileSync(arg1:string,arg2:Array<string>,arg3:sync.Jitter):Promise<sync.Status>;
 
 export function StartProfile(arg1:string):Promise<void>;
+
+export function StartProfileAgent(arg1:string):Promise<void>;
 
 export function StartProfiles(arg1:Array<string>):Promise<Record<string, string>>;
 

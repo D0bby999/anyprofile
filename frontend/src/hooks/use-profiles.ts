@@ -20,7 +20,7 @@ export function useProfiles() {
   useEffect(() => onDataChanged(['profiles', 'proxies', 'sites'], reload), [reload])
   useEffect(() => onLaunchChanged((info) => {
     setRows((cur) => cur.map((r) => (r.id !== info.profileId ? r : service.ProfileRow.createFrom({
-      ...r, state: info.state, stateError: info.error, cdpPort: info.cdpPort,
+      ...r, state: info.state, mode: info.mode ?? '', stateError: info.error, cdpPort: info.cdpPort,
       lastOpenAt: info.state === 'running' && r.state === 'starting' ? new Date().toISOString() : r.lastOpenAt,
     }))))
     if (info.error) setError(info.error)

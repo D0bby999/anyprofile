@@ -81,7 +81,7 @@ func (l *Launcher) start(ctx context.Context, p *proc) error {
 	// brings back the last session, and the start pages open only when there
 	// is none yet.
 	onOpen, _ := l.st.GetSetting(store.SettingOnOpen)
-	rt.FreshStart = onOpen != "restore"
+	rt.FreshStart = !p.forceRestore && onOpen != "restore"
 	hadSession := hasSession(udd)
 	for _, id := range prof.Extensions {
 		if dir := l.dirs.Extension(id); isDir(dir) {

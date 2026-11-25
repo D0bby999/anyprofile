@@ -10,6 +10,7 @@ import { Icon } from './icons'
 import { SiteBadges } from './site-glyph'
 import { RowMenu } from './row-menu'
 import { HealthPill } from './health-pill'
+import { ModePill } from './mode-pill'
 import type { Column, TablePrefs } from '../lib/table-prefs'
 import { groupOf, moveTo } from '../lib/profile-order'
 import { useRowDrag } from './use-row-drag'
@@ -26,6 +27,7 @@ type Props = {
   onToggle: (id: string, shift?: boolean) => void
   onToggleAll: () => void
   onStart: (id: string) => void
+  onStartAgent?: (id: string) => void
   onStop: (id: string) => void
   onFocus: (id: string) => void
   onEdit: (row: service.ProfileRow) => void
@@ -137,8 +139,8 @@ export function ProfileTable(p: Props) {
           const running = r.state === 'running'
           const queued = r.state === 'queued'
           const busy = r.state === 'starting' || r.state === 'stopping'
-          const agent = !!p.agents?.has(r.id)
-          // An agent's row is tinted instead of a chip, so the status cell keeps only the health.
+          const agentMode = running && r.mode === 'agent'
+          const agent = !!p.agents?.has(r.id) || agentMode
           const cls = [p.selected.has(r.id) ? 'selected' : '', running ? 'running' : '', agent ? 'agent' : '', p.activeId === r.id ? 'active' : '', p.cursorId === r.id ? 'cursor' : '', dragging === r.id ? 'dragging' : ''].join(' ').trim()
           return (
             <tr key={r.id} data-id={r.id} className={cls || undefined}
@@ -184,8 +186,11 @@ export function ProfileTable(p: Props) {
               {shown('status') && (
                 <td className="col-status">
                   <span className="cellstatus">
-                    <HealthPill row={r} now={now} />
-                    {agent && <span className="sr-only">{t.agent.title}</span>}
+                    <span className="statuspills">
+                      <ModePill mode={r.mode} state={r.state} />
+                      <HealthPill row={r} now={now} />
+                    </span>
+                    {agent && <span className="sr-only">{agentMode ? t.mode.agentTitle : t.agent.title}</span>}
                     <LastOpened row={r} now={now} />
                   </span>
                 </td>
@@ -193,11 +198,12 @@ export function ProfileTable(p: Props) {
               <td className="col-actions">
                 <span className="row">
                   {/* Always there, hidden while closed: the column keeps its width when a profile opens. */}
-                  <button className={`iconbtn sm${running ? '' : ' slot'}`} onClick={() => p.onFocus(r.id)} aria-label={t.profiles.focus}
-                    title={running ? t.profiles.focus : undefined} disabled={!running} aria-hidden={!running || undefined} tabIndex={running ? undefined : -1}>
+                  <button className={`iconbtn sm${running ? '' : ' slot'}${agentMode ? ' takeover' : ''}`} onClick={() => p.onFocus(r.id)} aria-label={t.profiles.focus}
+                    title={running ? (agentMode ? t.mode.focusTakeover : t.profiles.focus) : undefined} disabled={!running} aria-hidden={!running || undefined} tabIndex={running ? undefined : -1}>
                     <Icon name="focus" />
                   </button>
-                  <RowMenu row={r} sites={p.sites} onEdit={() => p.onEdit(r)} onDuplicate={() => p.onDuplicate(r)}
+                  <RowMenu row={r} sites={p.sites} onStart={() => p.onStart(r.id)} onStartAgent={p.onStartAgent ? () => p.onStartAgent!(r.id) : undefined}
+                    onEdit={() => p.onEdit(r)} onDuplicate={() => p.onDuplicate(r)}
                     onTrash={() => p.onTrash(r)} onMessage={p.onMessage} onError={p.onError} />
                   {running || queued || r.state === 'stopping' ? (
                     <button className={`btn sm stop actbtn${busy ? ' busy' : ''}`} aria-busy={busy} disabled={busy} onClick={() => p.onStop(r.id)}

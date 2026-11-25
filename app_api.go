@@ -50,7 +50,7 @@ func (b apiBackend) Profiles() ([]api.Profile, error) {
 	out := make([]api.Profile, 0, len(rows))
 	for _, r := range rows {
 		out = append(out, api.Profile{ID: r.ID, Serial: r.Serial, Name: r.Name, Sites: r.Sites, Tags: r.Tags,
-			State: string(r.State), DevToolsPort: r.CDPPort})
+			State: string(r.State), Mode: string(r.Mode), DevToolsPort: r.CDPPort})
 	}
 	return out, nil
 }

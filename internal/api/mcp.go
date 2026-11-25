@@ -42,7 +42,8 @@ func (p profileArg) who() string { return p.Profile }
 
 type openProfileIn struct {
 	Profile  string `json:"profile" jsonschema:"the profile: its id, its exact name, or #serial (see list_profiles)"`
-	Headless bool   `json:"headless,omitempty" jsonschema:"run without a browser window (zero focus stealing); default false so logins and captchas stay visible behind the user's app"`
+	Mode     string `json:"mode,omitempty" jsonschema:"browser launch mode: 'agent' (default, headless agent-only so the user cannot interfere) or 'normal' (visible interactive window)"`
+	Headless *bool  `json:"headless,omitempty" jsonschema:"deprecated alias for mode; true = agent mode, false = normal mode"`
 }
 
 func (p openProfileIn) who() string { return p.Profile }
@@ -449,7 +450,7 @@ func (s *Server) mcpHandler() http.Handler {
 			return text(sb.String()), nil
 		})
 
-	add(s, srv, "open_profile", "Open a profile's browser behind the user's app (with its proxy and accounts) and wait until it is ready. Pass headless: true to run without a window when no manual login or captcha is needed. An open profile is used as it is.", false,
+	add(s, srv, "open_profile", "Open a profile's browser in agent mode by default (headless, agent-only so the user cannot interfere; the user can switch to normal mode at any time via Bring window to front or Open). Pass mode: 'normal' (or headless: false) for a visible window. An open profile is used as it is.", false,
 		func(ctx context.Context, in openProfileIn) (*mcp.CallToolResult, error) {
 			p, err := s.profile(in.Profile)
 			if err != nil {
@@ -461,8 +462,16 @@ func (s *Server) mcpHandler() http.Handler {
 				}
 			}
 			if p.State != "running" {
+				agentMode := true
+				if strings.EqualFold(strings.TrimSpace(in.Mode), "normal") {
+					agentMode = false
+				} else if strings.EqualFold(strings.TrimSpace(in.Mode), "agent") {
+					agentMode = true
+				} else if in.Headless != nil {
+					agentMode = *in.Headless
+				}
 				start := s.backend.Start
-				if in.Headless {
+				if agentMode {
 					start = s.backend.StartHeadless
 				}
 				if err := start(ctx, p.ID, false); err != nil {

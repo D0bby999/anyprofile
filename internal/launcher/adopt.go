@@ -31,7 +31,7 @@ func (l *Launcher) Adopt() {
 			_ = l.st.DeleteLaunch(ln.ProfileID)
 			continue
 		}
-		p := &proc{info: Info{ProfileID: ln.ProfileID, State: Running, PID: ln.PID, CDPPort: ln.CDPPort},
+		p := &proc{info: Info{ProfileID: ln.ProfileID, State: Running, Mode: ModeNormal, PID: ln.PID, CDPPort: ln.CDPPort},
 			done: make(chan struct{})}
 		running[ln.ProfileID] = true
 		if sess, ok, err := l.st.OpenSession(ln.ProfileID); err == nil && ok {

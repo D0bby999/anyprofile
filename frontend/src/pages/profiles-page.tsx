@@ -260,7 +260,7 @@ export function ProfilesPage({ rows, sites, view, engineReady, fileVaultOn, erro
                 <ProfileTable rows={visible} sites={sites} selected={selected} sort={sort} onSort={onSort} agents={agents} onReorder={reorder}
                   onDragBlocked={() => toast.info(t.profiles.dragNeedsNo, { label: t.profiles.sortByNo, run: () => setSort({ key: 'no', desc: false }) })}
                   onToggle={toggle} onToggleAll={toggleAll}
-                  onStart={(id) => run(() => Api.StartProfile(id))} onStop={(id) => run(() => Api.StopProfile(id))}
+                  onStart={(id) => run(() => Api.StartProfile(id))} onStartAgent={(id) => run(() => Api.StartProfileAgent(id))} onStop={(id) => run(() => Api.StopProfile(id))}
                   onFocus={(id) => { Api.FocusProfile(id) }} onEdit={(row) => setActiveId(row.id)}
                 activeId={activeId} cursorId={cursor} onSelectRow={(id) => { setCursorId(id); select(id) }} prefs={prefs}
                   onDuplicate={setDuplicating} onMessage={toast.success} onError={showError}
@@ -291,7 +291,8 @@ export function ProfilesPage({ rows, sites, view, engineReady, fileVaultOn, erro
           </section>
           {active && (
             <ProfileDrawer key={active.id} row={active} sites={sites} knownTags={allTags(rows)} agent={agents.has(active.id)}
-              onClose={() => setActiveId(null)} onStart={(id) => run(() => Api.StartProfile(id))} onStop={(id) => run(() => Api.StopProfile(id))}
+              onClose={() => setActiveId(null)} onStart={(id) => run(() => Api.StartProfile(id))} onStartAgent={(id) => run(() => Api.StartProfileAgent(id))}
+              onFocus={(id) => { Api.FocusProfile(id) }} onStop={(id) => run(() => Api.StopProfile(id))}
               onOpenSettings={onOpenSettings} />
           )}
         </div>

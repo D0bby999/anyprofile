@@ -484,13 +484,19 @@ func TestMCPOpenProfileHeadlessOption(t *testing.T) {
 	if _, isErr := call(t, cs, "open_profile", map[string]any{"profile": "p1"}); isErr {
 		t.Fatal("default open_profile failed")
 	}
-	if f.headless {
-		t.Fatal("default open_profile must not run headless")
-	}
-	if _, isErr := call(t, cs, "open_profile", map[string]any{"profile": "p2", "headless": true}); isErr {
-		t.Fatal("headless open_profile failed")
-	}
 	if !f.headless {
-		t.Fatal("open_profile with headless=true must call StartHeadless")
+		t.Fatal("default open_profile must run in agent (headless) mode")
+	}
+	if _, isErr := call(t, cs, "open_profile", map[string]any{"profile": "p2", "mode": "normal"}); isErr {
+		t.Fatal("normal open_profile failed")
+	}
+	if f.headless {
+		t.Fatal("open_profile with mode=normal must call Start")
+	}
+	if _, isErr := call(t, cs, "open_profile", map[string]any{"profile": "p3", "headless": false}); isErr {
+		t.Fatal("headless=false open_profile failed")
+	}
+	if f.headless {
+		t.Fatal("open_profile with headless=false must call Start")
 	}
 }

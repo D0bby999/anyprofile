@@ -11,6 +11,8 @@ import { PopMenu } from './pop-menu'
 type Props = {
   row: service.ProfileRow
   sites: Site[]
+  onStart?: () => void
+  onStartAgent?: () => void
   onEdit: () => void
   onDuplicate: () => void
   onTrash: () => void
@@ -18,8 +20,8 @@ type Props = {
   onError: (msg: string) => void
 }
 
-/** The "⋯" menu on each row: edit, duplicate, account copies and trash. */
-export function RowMenu({ row, sites, onEdit, onDuplicate, onTrash, onMessage, onError }: Props) {
+/** The "⋯" menu on each row: mode actions, edit, duplicate, account copies and trash. */
+export function RowMenu({ row, sites, onStart, onStartAgent, onEdit, onDuplicate, onTrash, onMessage, onError }: Props) {
   const [open, setOpen] = useState(false)
   const cookies = useCookieActions(row, sites)
   const ref = useRef<HTMLDivElement>(null)
@@ -78,6 +80,15 @@ export function RowMenu({ row, sites, onEdit, onDuplicate, onTrash, onMessage, o
         <Icon name="more" />
       </button>
       <PopMenu anchor={ref} open={open} onClose={() => setOpen(false)}>
+        {row.state === 'stopped' && onStartAgent && (
+          <button role="menuitem" onClick={() => act(onStartAgent)}>{t.mode.openAgent}</button>
+        )}
+        {row.state === 'running' && row.mode === 'agent' && onStart && (
+          <button role="menuitem" onClick={() => act(onStart)}>{t.mode.openNormal}</button>
+        )}
+        {row.state === 'running' && row.mode !== 'agent' && onStartAgent && (
+          <button role="menuitem" onClick={() => act(onStartAgent)}>{t.mode.switchToAgent}</button>
+        )}
         <button role="menuitem" onClick={() => act(onEdit)}>{t.menu.edit}</button>
         <button role="menuitem" onClick={() => act(onDuplicate)}>{t.menu.duplicate}</button>
         <button role="menuitem" onClick={() => act(() => Api.SetPinnedMany([row.id], !row.pinned).catch((e) => onError(errorText(e))))}>

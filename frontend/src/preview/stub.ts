@@ -25,15 +25,35 @@ if (wantedTab) {
 const noop = () => {}
 const unsubscribe = () => noop
 
+const previewProfiles = profiles.map((p) => ({ ...p }))
 const previewProxies = [...proxies]
 let previewAPKs = [...(mobileAPKs as unknown as Array<Record<string, unknown>>)]
+const eventHandlers = new Map<string, Set<(...args: unknown[]) => void>>()
+const emitEvent = (name: string, ...args: unknown[]) => {
+  eventHandlers.get(name)?.forEach((fn) => fn(...args))
+}
+const setPreviewMode = (id: string, state: string, mode: string) => {
+  const row = previewProfiles.find((p) => p.id === id)
+  if (!row) return
+  row.state = state
+  row.mode = mode
+  emitEvent('launch:changed', { profileId: id, state, mode, pid: state === 'running' ? 1234 : 0, cdpPort: row.cdpPort, error: '' })
+}
 
 const answers: Record<string, unknown> = {
-  Language: async () => 'en',
+  Language: async () => (params.get('lang') === 'vi' ? 'vi' : 'en'),
   Onboarded: async () => true,
   StartupError: async () => '',
   FileVaultOn: async () => true,
-  ListProfiles: async () => profiles,
+  ListProfiles: async () => previewProfiles,
+  StartProfile: async (id: string) => { setPreviewMode(id, 'running', 'normal') },
+  StartProfileAgent: async (id: string) => { setPreviewMode(id, 'running', 'agent') },
+  FocusProfile: async (id: string) => {
+    const row = previewProfiles.find((p) => p.id === id)
+    if (row && row.state === 'running' && row.mode === 'agent') setPreviewMode(id, 'running', 'normal')
+    return true
+  },
+  StopProfile: async (id: string) => { setPreviewMode(id, 'stopped', '') },
   ListProxies: async () => previewProxies,
   AddProxy: async (input: { label?: string; scheme?: string; host: string; port: number; username?: string; note?: string; expiresOn?: string }) => {
     const row = {
@@ -270,6 +290,14 @@ const runtime = new Proxy(
   {
     get(_target, prop) {
       const name = String(prop)
+      if (name === 'EventsOn' || name === 'EventsOnMultiple') {
+        return (event: string, fn: (...args: unknown[]) => void) => {
+          let set = eventHandlers.get(event)
+          if (!set) { set = new Set(); eventHandlers.set(event, set) }
+          set.add(fn)
+          return () => { set?.delete(fn) }
+        }
+      }
       if (name.startsWith('Events')) return () => unsubscribe
       if (name === 'ClipboardSetText') return async () => true
       if (/^(Get|Window|Browser)/.test(name)) return async () => ''

@@ -31,10 +31,20 @@ const (
 	Stopped  State = "stopped"
 )
 
+// Mode is how a running browser was opened: "normal" for direct user
+// interaction, or "agent" for headless agent-only automation.
+type Mode string
+
+const (
+	ModeNormal Mode = "normal"
+	ModeAgent  Mode = "agent"
+)
+
 // Info is a profile's process state, as sent to the UI.
 type Info struct {
 	ProfileID string `json:"profileId"`
 	State     State  `json:"state"`
+	Mode      Mode   `json:"mode"` // "normal", "agent", or "" when stopped
 	PID       int    `json:"pid"`
 	CDPPort   int    `json:"cdpPort"` // 0 unless diagnostics were enabled
 	Error     string `json:"error"`
@@ -51,8 +61,10 @@ type proc struct {
 	started time.Time
 	// behind: started for a script or an agent, so it must not take the focus.
 	behind bool
-	// headless: started without a window (MCP opt-in); never steals focus.
+	// headless: agent-only mode (no window; user cannot interact directly).
 	headless bool
+	// forceRestore: preserve tabs when switching between agent and normal mode.
+	forceRestore bool
 	// gated includes adopted browsers; every counted browser releases once.
 	gated bool
 	// cancel aborts admission/startup, but never kills an already running browser.
@@ -166,29 +178,46 @@ func (l *Launcher) set(p *proc, s State, errMsg string) {
 	l.onChange(info)
 }
 
-// Start opens the profile's browser. A profile that is already open is only
-// brought to the front: there is never a second browser on one profile.
+// Start opens the profile's browser in normal mode. A profile already open in
+// normal mode is brought to the front; one open in agent mode is switched to
+// normal mode (preserving its tabs) and brought to the front.
 func (l *Launcher) Start(ctx context.Context, profileID string) error {
-	return l.open(ctx, profileID, false, false)
+	return l.open(ctx, profileID, false, false, false)
 }
 
-// StartBehind opens the profile's browser for a script or an agent: the app
-// the user is in stays in front. An open profile is left where it is.
+// StartBehind opens the profile's browser in normal mode behind the user's app.
+// An already open profile is left where it is.
 func (l *Launcher) StartBehind(ctx context.Context, profileID string) error {
-	return l.open(ctx, profileID, true, false)
+	return l.open(ctx, profileID, true, false, false)
 }
 
-// StartHeadless opens the profile's browser without a window for an MCP agent.
-// An open profile is left as it is.
+// StartHeadless opens the profile's browser in agent-only mode (no window so
+// only the agent can operate on it). An already open profile is left as it is.
 func (l *Launcher) StartHeadless(ctx context.Context, profileID string) error {
-	return l.open(ctx, profileID, true, true)
+	return l.open(ctx, profileID, true, true, false)
+}
+
+// StartAgent opens the profile's browser in agent-only mode. If it is already
+// running in normal mode, it cleanly restarts in agent mode with tabs preserved.
+func (l *Launcher) StartAgent(ctx context.Context, profileID string) error {
+	l.mu.Lock()
+	p, ok := l.procs[profileID]
+	runningNormal := ok && p.info.State == Running && !p.headless
+	l.mu.Unlock()
+	if runningNormal {
+		if err := l.Stop(profileID); err != nil {
+			return err
+		}
+		return l.open(ctx, profileID, true, true, true)
+	}
+	return l.open(ctx, profileID, true, true, false)
 }
 
 // claimFront records that the user has asked for a window now, so a browser
 // still being kept behind from an earlier launch stops fighting for it.
 func (l *Launcher) claimFront() { l.focusEpoch.Add(1) }
 
-func (l *Launcher) open(ctx context.Context, profileID string, behind, headless bool) error {
+func (l *Launcher) open(ctx context.Context, profileID string, behind, headless, forceRestore bool) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}
@@ -198,9 +227,16 @@ func (l *Launcher) open(ctx context.Context, profileID string, behind, headless 
 		return fmt.Errorf("launcher is stopping all profiles")
 	}
 	if p, ok := l.procs[profileID]; ok {
-		pid, state := p.info.PID, p.info.State
+		pid, state, wasHeadless := p.info.PID, p.info.State, p.headless
 		l.mu.Unlock()
 		if state == Running {
+			if !behind && wasHeadless {
+				// User clicked Open on an agent-mode profile: take over in normal mode.
+				if err := l.Stop(profileID); err != nil {
+					return err
+				}
+				return l.open(ctx, profileID, false, false, true)
+			}
 			if !behind {
 				l.claimFront()
 				activate(pid)
@@ -211,12 +247,16 @@ func (l *Launcher) open(ctx context.Context, profileID string, behind, headless 
 	}
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	p := &proc{info: Info{ProfileID: profileID, State: Queued}, done: make(chan struct{}), behind: behind, headless: headless, cancel: cancel}
+	mode := ModeNormal
+	if headless {
+		mode = ModeAgent
+	}
+	p := &proc{info: Info{ProfileID: profileID, State: Queued, Mode: mode}, done: make(chan struct{}), behind: behind, headless: headless, forceRestore: forceRestore, cancel: cancel}
 	// Reserve the profile before waiting so duplicate requests cannot queue a
 	// second launch, and Stop/Trash can find and cancel the pending request.
 	l.procs[profileID] = p
 	l.mu.Unlock()
-	l.onChange(Info{ProfileID: profileID, State: Queued})
+	l.onChange(Info{ProfileID: profileID, State: Queued, Mode: mode})
 
 	err := l.gate.Acquire(ctx)
 	if err == nil {
@@ -238,6 +278,7 @@ func (l *Launcher) open(ctx context.Context, profileID string, behind, headless 
 		if p.gated {
 			l.gate.Release()
 		}
+		p.info.Mode = ""
 		l.mu.Unlock()
 		msg := err.Error()
 		if ctx.Err() != nil {

@@ -159,4 +159,28 @@ describe('ProfileTable', () => {
     fireEvent.click(screen.getByText(t.profiles.colName))
     expect(p.onSort).toHaveBeenCalledWith('name')
   })
+
+  it('shows Normal and Agent mode pills with hover explanations and supports switching modes', () => {
+    const onStartAgent = vi.fn()
+    const p = {
+      ...props([
+        row({ id: 'n1', name: 'Normal Row', state: 'running', mode: 'normal' }),
+        row({ id: 'a1', name: 'Agent Row', state: 'running', mode: 'agent' }),
+        row({ id: 's1', name: 'Stopped Row', state: 'stopped', mode: '' }),
+      ]),
+      onStartAgent,
+    }
+    const { container } = render(<ProfileTable {...p} />)
+    expect(screen.getByText(t.mode.normal)).toBeTruthy()
+    expect(screen.getByText(t.mode.normalDesc)).toBeTruthy()
+    expect(screen.getByText(t.mode.agent)).toBeTruthy()
+    expect(screen.getByText(t.mode.agentDesc)).toBeTruthy()
+    expect(screen.getByText(t.mode.agentTakeover)).toBeTruthy()
+    const agentRow = container.querySelector('tr[data-id="a1"]')!
+    expect(agentRow.className).toContain('agent')
+    const focusBtn = agentRow.querySelector('button[title="' + t.mode.focusTakeover + '"]') as HTMLButtonElement
+    expect(focusBtn).toBeTruthy()
+    fireEvent.click(focusBtn)
+    expect(p.onFocus).toHaveBeenCalledWith('a1')
+  })
 })

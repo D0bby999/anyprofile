@@ -74,12 +74,12 @@ export function ClearCache() {
   return window['go']['main']['App']['ClearCache']();
 }
 
-export function ClearUploads() {
-  return window['go']['main']['App']['ClearUploads']();
-}
-
 export function ClearTOTP(arg1, arg2) {
   return window['go']['main']['App']['ClearTOTP'](arg1, arg2);
+}
+
+export function ClearUploads() {
+  return window['go']['main']['App']['ClearUploads']();
 }
 
 export function CopyAPIToken() {
@@ -676,6 +676,10 @@ export function StartMobileSync(arg1, arg2, arg3) {
 
 export function StartProfile(arg1) {
   return window['go']['main']['App']['StartProfile'](arg1);
+}
+
+export function StartProfileAgent(arg1) {
+  return window['go']['main']['App']['StartProfileAgent'](arg1);
 }
 
 export function StartProfiles(arg1) {

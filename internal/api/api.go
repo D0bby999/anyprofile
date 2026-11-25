@@ -35,6 +35,7 @@ type Profile struct {
 	Sites  []string `json:"sites"`
 	Tags   []string `json:"tags"`
 	State  string   `json:"state"`
+	Mode   string   `json:"mode,omitempty"`
 	// DevToolsPort is the loopback DevTools port, 0 unless this launch has one.
 	DevToolsPort int `json:"devtoolsPort"`
 	// WebSocketDebuggerURL is what Puppeteer's connect and Playwright's
@@ -196,8 +197,9 @@ func (s *Server) get(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) start(w http.ResponseWriter, r *http.Request) {
 	var in struct {
-		DevTools bool `json:"devtools"`
-		Headless bool `json:"headless"`
+		DevTools bool   `json:"devtools"`
+		Headless bool   `json:"headless"`
+		Mode     string `json:"mode"`
 	}
 	body, err := io.ReadAll(io.LimitReader(r.Body, 4096))
 	if err == nil && len(strings.TrimSpace(string(body))) > 0 {
@@ -213,7 +215,7 @@ func (s *Server) start(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	start := s.backend.Start
-	if in.Headless {
+	if in.Headless || strings.EqualFold(in.Mode, "agent") {
 		start = s.backend.StartHeadless
 	}
 	if err := start(r.Context(), id, in.DevTools); err != nil {

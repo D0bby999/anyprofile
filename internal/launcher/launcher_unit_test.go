@@ -197,3 +197,35 @@ func TestStartHeadlessClampsStartURLsAndSkipsBehind(t *testing.T) {
 		t.Fatalf("normal StartURLs = %v, want 2 URLs", eng.gotRT.StartURLs)
 	}
 }
+
+func TestLaunchModeEventsAndClearOnStop(t *testing.T) {
+	dirs := paths.Dirs{Root: t.TempDir()}
+	if err := dirs.Ensure(); err != nil {
+		t.Fatal(err)
+	}
+	st, err := store.Open(dirs.DB(), dirs.Backups())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer st.Close()
+	prof := &store.Profile{ID: "m1", Name: "M", Engine: "stub", EngineVersion: "1", PersonaID: "x",
+		SeedHex: "00112233aabbccdd", Platform: "macos", Timezone: "UTC", Languages: "en-US", UILocale: "en-US"}
+	if err := st.CreateProfile(prof); err != nil {
+		t.Fatal(err)
+	}
+	var events []Info
+	eng := &captureEngine{}
+	l := New(st, secrets.NewMemory(), dirs, []engine.Engine{eng}, func(in Info) {
+		events = append(events, in)
+	}, slog.New(slog.NewTextHandler(io.Discard, nil)))
+
+	_ = l.StartHeadless(context.Background(), "m1")
+	if len(events) < 2 || events[0].Mode != ModeAgent || events[len(events)-1].Mode != "" {
+		t.Fatalf("agent start events = %+v", events)
+	}
+	events = nil
+	_ = l.Start(context.Background(), "m1")
+	if len(events) < 2 || events[0].Mode != ModeNormal || events[len(events)-1].Mode != "" {
+		t.Fatalf("normal start events = %+v", events)
+	}
+}

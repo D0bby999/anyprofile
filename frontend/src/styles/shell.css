@@ -545,7 +545,13 @@ kbd { display: inline-flex; align-items: center; min-width: 22px; height: 20px; 
 .health { position: relative; display: inline-flex; outline-offset: 2px; border-radius: var(--r-pill); }
 .health .chip { white-space: nowrap; }
 .healthpop { display: none; position: absolute; z-index: 20; top: calc(100% + 6px); left: 0; width: max-content; max-width: 280px; padding: 8px 10px; flex-direction: column; gap: 4px; background: var(--raised); border: 1px solid var(--line); border-radius: var(--r-md); box-shadow: var(--sh-pop); color: var(--ink-soft); font-size: var(--t-xs); font-weight: 450; white-space: normal; }
+.healthpop strong { color: var(--ink); font-weight: 600; }
+.col-status .healthpop { left: auto; right: 0; }
 .health:hover .healthpop, .health:focus-visible .healthpop { display: flex; }
+.statuspills { display: inline-flex; align-items: center; gap: 4px; }
+.statuspills:empty { display: none; }
+.iconbtn.takeover { color: var(--accent); background: var(--accent-soft); }
+.iconbtn.takeover:hover:not(:disabled) { color: var(--on-fill); background: var(--accent-fill); }
 .lastopen { display: inline-flex; align-items: center; gap: 6px; font-variant-numeric: tabular-nums; }
 .lastopen.running { color: var(--success-ink); }
 .lastopen .live { width: 7px; height: 7px; border-radius: 50%; background: var(--success); }

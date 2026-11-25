@@ -10,6 +10,7 @@ import { ProfileExtensions } from './extension-settings'
 import { useConfirm } from './confirm'
 import { trashWithUndo } from './trash-undo'
 import { HealthPill } from './health-pill'
+import { ModePill } from './mode-pill'
 import { AgentChip } from './agent-chip'
 import { Icon } from './icons'
 import { SiteGlyph } from './site-glyph'
@@ -34,6 +35,8 @@ type Props = {
   knownTags: string[]
   onClose: () => void
   onStart: (id: string) => void
+  onStartAgent?: (id: string) => void
+  onFocus?: (id: string) => void
   onStop: (id: string) => void
   /** An AI agent is driving this profile now. */
   agent?: boolean
@@ -42,7 +45,7 @@ type Props = {
 }
 
 /** Everything about one profile, edited in place next to the table. */
-export function ProfileDrawer({ row, sites, knownTags, onClose, onStart, onStop, agent, onOpenSettings }: Props) {
+export function ProfileDrawer({ row, sites, knownTags, onClose, onStart, onStartAgent, onFocus, onStop, agent, onOpenSettings }: Props) {
   const toast = useToast()
   const confirm = useConfirm()
   const [tab, setTab] = useState<Tab>('overview')
@@ -113,17 +116,32 @@ export function ProfileDrawer({ row, sites, knownTags, onClose, onStart, onStop,
           <span>{machineLabel(row)} · {engine}</span>
         </div>
         <div className="drawer-actions">
+          <ModePill mode={row.mode} state={row.state} />
           <HealthPill row={row} />
-          {agent && <AgentChip />}
+          {agent && row.mode !== 'agent' && <AgentChip />}
           <span className="spacer" />
           {running || row.state === 'stopping' ? (
-            <button type="button" className="btn sm stop actbtn" disabled={busy} onClick={() => onStop(row.id)}>
-              <Icon name={queued ? 'x' : 'stop'} className="icon sm" />{queued ? t.profiles.cancelQueued : busy ? t.profiles.stopping : t.profiles.stop}
-            </button>
+            <>
+              {row.state === 'running' && row.mode === 'agent' && onFocus && (
+                <button type="button" className="btn sm" onClick={() => onFocus(row.id)} title={t.mode.focusTakeover}>
+                  <Icon name="focus" className="icon sm" />{t.profiles.open}
+                </button>
+              )}
+              <button type="button" className="btn sm stop actbtn" disabled={busy} onClick={() => onStop(row.id)}>
+                <Icon name={queued ? 'x' : 'stop'} className="icon sm" />{queued ? t.profiles.cancelQueued : busy ? t.profiles.stopping : t.profiles.stop}
+              </button>
+            </>
           ) : (
-            <button type="button" className={`btn sm primary actbtn${busy ? ' busy' : ''}`} aria-busy={busy} disabled={busy} onClick={() => onStart(row.id)}>
-              <Icon name={busy ? 'refresh' : 'play'} className="icon sm" />{busy ? t.profiles.opening : t.profiles.open}
-            </button>
+            <>
+              {onStartAgent && (
+                <button type="button" className="btn sm" disabled={busy} onClick={() => onStartAgent(row.id)} title={t.mode.openAgent}>
+                  <Icon name="spark" className="icon sm" />{t.mode.agent}
+                </button>
+              )}
+              <button type="button" className={`btn sm primary actbtn${busy ? ' busy' : ''}`} aria-busy={busy} disabled={busy} onClick={() => onStart(row.id)}>
+                <Icon name={busy ? 'refresh' : 'play'} className="icon sm" />{busy ? t.profiles.opening : t.profiles.open}
+              </button>
+            </>
           )}
         </div>
         <div className="tabs" role="tablist" aria-label={t.drawer.label(row.name)} onKeyDown={onTabKey}>

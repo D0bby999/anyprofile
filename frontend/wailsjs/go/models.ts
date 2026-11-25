@@ -1264,6 +1264,7 @@ export namespace service {
 	    deletedAt: string;
 	    folderId: string;
 	    state: string;
+	    mode: string;
 	    stateError: string;
 	    cdpPort: number;
 	    proxyLabel: string;
@@ -1314,6 +1315,7 @@ export namespace service {
 	        this.deletedAt = source["deletedAt"];
 	        this.folderId = source["folderId"];
 	        this.state = source["state"];
+	        this.mode = source["mode"];
 	        this.stateError = source["stateError"];
 	        this.cdpPort = source["cdpPort"];
 	        this.proxyLabel = source["proxyLabel"];

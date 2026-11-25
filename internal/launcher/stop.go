@@ -38,8 +38,8 @@ func (l *Launcher) watch(p *proc, pid int, wait <-chan error) {
 		l.gate.Release()
 	}
 	// The browser and its DevTools port are gone; the Stopped event must not
-	// carry the old port, or the list keeps warning that it is open.
-	p.info.PID, p.info.CDPPort = 0, 0
+	// carry the old port or mode, or the list keeps warning that it is open.
+	p.info.PID, p.info.CDPPort, p.info.Mode = 0, 0, ""
 	l.mu.Unlock()
 	l.set(p, Stopped, "")
 	close(p.done)
@@ -107,19 +107,25 @@ func closeOverPipe(cdp *cdppipe.Conn) bool {
 	return err == nil
 }
 
-// Focus brings a running profile's windows to the front.
+// Focus brings a running profile's windows to the front. If the profile is
+// running in agent mode (headless), it switches to normal mode first so the
+// user gets an interactive window with the same tabs.
 func (l *Launcher) Focus(profileID string) bool {
 	l.mu.Lock()
 	p, ok := l.procs[profileID]
-	l.mu.Unlock()
 	if !ok {
+		l.mu.Unlock()
 		return false
 	}
-	l.mu.Lock()
-	state, pid := p.info.State, p.info.PID
+	state, pid, headless := p.info.State, p.info.PID, p.headless
 	l.mu.Unlock()
 	if state != Running {
 		return false
+	}
+	if headless {
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+		return l.Start(ctx, profileID) == nil
 	}
 	l.claimFront()
 	return activate(pid)

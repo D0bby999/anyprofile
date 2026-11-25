@@ -435,14 +435,28 @@ func (a *App) ResetFingerprint(id string) error {
 }
 func (a *App) PurgeProfile(id string) error { return a.must(func() error { return a.svc.Purge(id) }) }
 
-// StartProfile opens the browser in front: the user asked for this window, so
-// it is the one to look at. Opening many at once (StartProfiles) is the case
-// that must not take the focus from itself; Focus brings any of them back.
+// StartProfile opens the browser in normal mode (or switches an agent-mode
+// browser to normal mode and brings it to front).
 func (a *App) StartProfile(id string) error {
 	return a.must(func() error {
 		a.svc.Log.Info("ui asked to start", "profile", id)
 		err := a.svc.Launcher.Start(a.ctx, id)
 		a.svc.Log.Info("start returned", "profile", id, "err", err)
+		if errors.Is(err, context.Canceled) && a.ctx.Err() == nil {
+			return nil
+		}
+		return err
+	})
+}
+
+// StartProfileAgent opens the browser in agent-only mode (headless, locked from
+// direct user interaction). If already running in normal mode, it restarts in
+// agent mode while preserving open tabs.
+func (a *App) StartProfileAgent(id string) error {
+	return a.must(func() error {
+		a.svc.Log.Info("ui asked to start agent mode", "profile", id)
+		err := a.svc.Launcher.StartAgent(a.ctx, id)
+		a.svc.Log.Info("start agent returned", "profile", id, "err", err)
 		if errors.Is(err, context.Canceled) && a.ctx.Err() == nil {
 			return nil
 		}
