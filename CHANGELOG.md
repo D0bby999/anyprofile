@@ -3,6 +3,13 @@
 The notes of each release tag are shown in the app's update prompt; this file
 keeps them together.
 
+## 1.0.8 (2026-11-25)
+
+- Upgraded AnyBrowser on macOS to `0.5.1.159` (Chromium `159.0.8154.34`).
+- Enabled Mac laptop camera and microphone access across AnyProfile, AnyBrowser, and AnyMobile (AVO `1.0.3` with live host camera passthrough) for verification flows.
+- Added two browser launch modes (**Normal** and **Agent**): Agent mode runs headless so only AI agents can operate the browser, displays a Mode badge with hover explanation in the profiles table, and switches cleanly to Normal mode with tabs preserved when clicking **Bring window to front** or **Open**.
+- Isolated Agent-mode browsers from stealing screen focus: kept headless processes background-only on macOS, excluded Agent-mode profiles from `Arrange windows` and `⌘1…⌘9` shortcuts, and prevented closing the last headless tab from activating AnyProfile.
+
 ## 1.0.7 (2026-11-25)
 
 - Randomized Mobile and APK device identities across the full installed AVO hardware catalog while avoiding models already used by existing devices, fixing repeated Galaxy S24 Ultra assignments.
