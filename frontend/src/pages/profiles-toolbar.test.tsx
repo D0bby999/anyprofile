@@ -30,11 +30,14 @@ const page = (view: View = 'all', onClearView = vi.fn(), list = rows) => render(
 afterEach(() => { cleanup(); localStorage.clear() })
 
 describe('profiles toolbar', () => {
-  it('offers to arrange windows once two profiles are open', () => {
+  it('offers to arrange windows once two windowed profiles are open', () => {
     page()
     expect(screen.queryByRole('button', { name: t.profiles.arrange })).toBeNull()
     cleanup()
-    const open = (id: string) => service.ProfileRow.createFrom({ ...rows[0], id, name: id, state: 'running' })
+    const open = (id: string, mode = 'normal') => service.ProfileRow.createFrom({ ...rows[0], id, name: id, state: 'running', mode })
+    page('all', vi.fn(), [open('a', 'normal'), open('b', 'agent')])
+    expect(screen.queryByRole('button', { name: t.profiles.arrange })).toBeNull()
+    cleanup()
     page('all', vi.fn(), [open('a'), open('b')])
     fireEvent.click(screen.getByRole('button', { name: t.profiles.arrange }))
     expect(arrangeWindows).toHaveBeenCalledOnce()

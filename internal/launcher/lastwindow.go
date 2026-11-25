@@ -66,7 +66,7 @@ func (l *Launcher) quitWithLastWindow(profileID string, c *cdppipe.Conn) {
 		if empty++; empty < emptyChecks {
 			continue
 		}
-		if in, ok := l.Info(profileID); ok && !leaveBrowser(in.PID) {
+		if in, ok := l.Info(profileID); ok && in.Mode != ModeAgent && !leaveBrowser(in.PID) {
 			continue // quit once the user has moved to another app
 		}
 		l.log.Info("last window closed; quitting the browser", "profile", profileID)

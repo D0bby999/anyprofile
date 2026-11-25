@@ -4,14 +4,15 @@ import { nthRunning } from './open-profiles'
 
 const rows = [
   { id: 'a', state: 'stopped' },
-  { id: 'b', state: 'running' },
+  { id: 'ag', state: 'running', mode: 'agent' },
+  { id: 'b', state: 'running', mode: 'normal' },
   { id: 'c', state: 'starting' },
   { id: 'd', state: 'running' },
   { id: 'e', state: 'running' },
 ]
 
 describe('nthRunning', () => {
-  it('counts only profiles with a window, in list order', () => {
+  it('counts only windowed profiles in list order and skips agent mode', () => {
     expect(nthRunning(rows, 1)?.id).toBe('b')
     expect(nthRunning(rows, 2)?.id).toBe('d')
     expect(nthRunning(rows, 3)?.id).toBe('e')

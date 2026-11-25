@@ -97,7 +97,7 @@ func (l *Launcher) arrange(ctx context.Context, order, only []string, raise bool
 		if only != nil && !wanted[id] {
 			continue
 		}
-		if p.info.State == Running && p.cdp != nil {
+		if p.info.State == Running && !p.headless && p.cdp != nil {
 			place, ok := at[id]
 			if !ok {
 				place = len(order)

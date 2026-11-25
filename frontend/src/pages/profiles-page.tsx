@@ -189,6 +189,7 @@ export function ProfilesPage({ rows, sites, view, engineReady, fileVaultOn, erro
   }
 
   const runningCount = rows.filter((r) => r.state === 'running').length
+  const windowedCount = rows.filter((r) => r.state === 'running' && r.mode !== 'agent').length
   const arrange = () => { Api.ArrangeWindows().then((n) => toast.success(t.profiles.arranged(n))).catch(showError) }
   const attentionCount = rows.filter(needsAttention).length
   const [update] = useUpdate()
@@ -277,7 +278,7 @@ export function ProfilesPage({ rows, sites, view, engineReady, fileVaultOn, erro
                   <Icon name="alert" className="icon sm warnicon" /><b>{attentionCount}</b> {t.profiles.statusAttention(attentionCount)}
                 </button>
               )}
-              {runningCount >= 2 && (
+              {windowedCount >= 2 && (
                 <button type="button" className="statusbtn" title={t.profiles.arrangeHint} onClick={arrange}>
                   <Icon name="monitor" className="icon sm" />{t.profiles.arrange}
                 </button>

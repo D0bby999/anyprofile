@@ -3,8 +3,12 @@
 package launcher
 
 import (
+	"context"
+	"errors"
 	"reflect"
 	"testing"
+
+	"github.com/D0bby999/anyprofile/internal/cdppipe"
 )
 
 func TestGrid(t *testing.T) {
@@ -53,5 +57,32 @@ func TestGridStopsWhenPanesGetTooSmall(t *testing.T) {
 		if usable(n) {
 			t.Fatalf("%d panes are small enough to open tiled", n)
 		}
+	}
+}
+
+func TestArrangeSkipsHeadlessAgentProfiles(t *testing.T) {
+	l := &Launcher{
+		procs: map[string]*proc{
+			"agent1": {
+				info:     Info{ProfileID: "agent1", State: Running, Mode: ModeAgent, PID: 1001},
+				headless: true,
+				cdp:      &cdppipe.Conn{},
+			},
+			"agent2": {
+				info:     Info{ProfileID: "agent2", State: Running, Mode: ModeAgent, PID: 1002},
+				headless: true,
+				cdp:      &cdppipe.Conn{},
+			},
+		},
+	}
+	n, err := l.Arrange(context.Background(), []string{"agent1", "agent2"}, true)
+	if errors.Is(err, ErrNoScreen) {
+		t.Skip("no screen available")
+	}
+	if err != nil {
+		t.Fatalf("Arrange err = %v", err)
+	}
+	if n != 0 {
+		t.Fatalf("Arrange placed %d headless agent profiles, want 0", n)
 	}
 }
