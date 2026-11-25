@@ -27,10 +27,15 @@ const (
 	// Windows still pins the first upstream release, so there is no replaced
 	// build to keep in the catalog yet.
 	previousVersion      = ""
+	previousChromium     = ""
 	previousDate         = ""
+	previousZipName      = ""
 	previousZipSHA256    = ""
 	previousBinarySHA256 = ""
 	previousFrameworkSHA = ""
+	previousAppRel       = ""
+	previousBinRel       = ""
+	previousFrameworkRel = ""
 
 	zipName      = "apostate-155.0.8059.31-windows-x64.zip"
 	zipURL       = "https://github.com/heretic-tech/apostate/releases/download/v0.5.1/" + zipName

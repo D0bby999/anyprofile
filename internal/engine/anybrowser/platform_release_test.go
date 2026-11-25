@@ -25,7 +25,7 @@ func TestBuiltinPlatformPin(t *testing.T) {
 			strings.Contains(r.URL, "example.invalid") || !strings.Contains(r.URL, "/apostate-155.") {
 			t.Fatalf("Windows upstream pin replaced by an unpublished fork: %+v", r)
 		}
-	} else if Version != "0.5.1.157" || Chromium != "156.0.8078.74" || legacyGoogleKeyEnv {
+	} else if Version != "0.5.1.159" || Chromium != "159.0.8154.34" || legacyGoogleKeyEnv {
 		t.Fatal("macOS candidate pin/keyless policy changed")
 	}
 }
@@ -125,10 +125,10 @@ func TestBuiltinCarriesThePreviousRelease(t *testing.T) {
 	if prev.Catalogue != cur.Catalogue {
 		t.Fatalf("previous catalogue %s != %s: a profile could not move", prev.Catalogue[:12], cur.Catalogue[:12])
 	}
-	if prev.App != cur.App || prev.Bin != cur.Bin || prev.TeamID != cur.TeamID {
-		t.Fatalf("previous release layout differs: %+v", prev)
+	if prev.TeamID != cur.TeamID || prev.App == "" || prev.Bin == "" {
+		t.Fatalf("previous release layout invalid: %+v", prev)
 	}
-	if prev.URL == cur.URL || prev.SHA256 == cur.SHA256 || prev.Files[binRel] == cur.Files[binRel] {
+	if prev.URL == cur.URL || prev.SHA256 == cur.SHA256 || prev.Files[prev.Bin] == cur.Files[cur.Bin] {
 		t.Fatal("previous release shares the current archive or hashes")
 	}
 	if len(prev.Files) != 2 {

@@ -41,10 +41,14 @@ func Builtin() []engine.Release {
 	}
 	previous := current
 	previous.Version = previousVersion
+	previous.Chromium = previousChromium
 	previous.Date = previousDate
 	previous.URL = "https://github.com/D0bby999/anyprofile/releases/download/engine-anybrowser-" +
-		previousVersion + "/" + zipName
+		previousVersion + "/" + previousZipName
 	previous.SHA256 = previousZipSHA256
-	previous.Files = map[string]string{binRel: previousBinarySHA256, frameworkRel: previousFrameworkSHA}
+	previous.Bin = previousBinRel
+	previous.App = previousAppRel
+	previous.Files = map[string]string{previousBinRel: previousBinarySHA256}
+	previous.Files[previousFrameworkRel] = previousFrameworkSHA
 	return []engine.Release{current, previous}
 }

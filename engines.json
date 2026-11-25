@@ -1,6 +1,24 @@
 [
   {
     "engine": "anybrowser",
+    "version": "0.5.1.159",
+    "chromium": "159.0.8154.34",
+    "platform": "darwin-arm64",
+    "date": "2026-11-25",
+    "url": "https://github.com/D0bby999/anyprofile/releases/download/engine-anybrowser-0.5.1.159/anybrowser-159.0.8154.34-macos-arm64.zip",
+    "sha256": "46631f041e9646236e951c556423f9c80fea9e5bbc03320aba82605e8d5f6eb4",
+    "files": {
+      "anybrowser-159.0.8154.34-macos-arm64/Chromium.app/Contents/MacOS/Chromium": "2a0f401f171df73a0597cf5a63747d75eeba7fc1b596782af1666748e33e0793",
+      "anybrowser-159.0.8154.34-macos-arm64/Chromium.app/Contents/Frameworks/Chromium Framework.framework/Versions/159.0.8154.34/Chromium Framework": "18ee47b3fdd01efccda6983a0ca5904be885b011e3140cb386824190cf0091d5"
+    },
+    "bin": "anybrowser-159.0.8154.34-macos-arm64/Chromium.app/Contents/MacOS/Chromium",
+    "app": "anybrowser-159.0.8154.34-macos-arm64/Chromium.app",
+    "teamId": "25C8SNXS6Q",
+    "catalogue": "f7520eaac2212793d0ed147a82bf52303e77a8b18b91eb9e900c8e56acf0d117",
+    "minApp": "0.2.0"
+  },
+  {
+    "engine": "anybrowser",
     "version": "0.5.1.157",
     "chromium": "156.0.8078.74",
     "platform": "darwin-arm64",
