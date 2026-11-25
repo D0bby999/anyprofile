@@ -177,6 +177,9 @@ func (a *AnyBrowser) BuildLaunch(ctx context.Context, p store.Profile, rt engine
 		// A covered window keeps painting, so an agent or script working
 		// behind the user's apps gets its clicks and screenshots through.
 		"--disable-backgrounding-occluded-windows",
+		// Chromium 159 disables the v10 macOS Keychain key for custom
+		// --user-data-dir paths under this feature, wiping existing cookies on upgrade.
+		"--disable-features=KeychainKeyProviderUserDataDirProtection",
 		"--window-name="+engine.WindowName(p),
 		// The seed fixes the machine; the platform keeps it the host's OS.
 		"--fingerprint="+p.SeedHex,

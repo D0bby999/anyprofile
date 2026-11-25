@@ -45,6 +45,7 @@ func TestBuildLaunchProxy(t *testing.T) {
 		"--disable-background-networking", "--disable-domain-reliability", "--disable-breakpad",
 		"--safebrowsing-disable-auto-update", "--disable-field-trial-config", "--disk-cache-size=20971520",
 		"--disable-backgrounding-occluded-windows",
+		"--disable-features=KeychainKeyProviderUserDataDirProtection",
 		"--window-name=#3 Shop", "--fingerprint=00000000000a11ce", "--fingerprint-platform=" + platform,
 		"--fingerprint-timezone=Asia/Taipei", "--fingerprint-locale=zh-TW,zh,en",
 		"--fingerprint-hardware-concurrency=8", "--fingerprint-device-memory=16",
