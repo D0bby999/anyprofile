@@ -246,3 +246,60 @@ func TestAvoLiveMetalGMSProxy(t *testing.T) {
 		_ = drv2.Stop(ctx, dev)
 	}
 }
+
+func TestAvoLiveCameras(t *testing.T) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		t.Fatal(err)
+	}
+	qemuRuntime := filepath.Join(home, "Library", "Application Support", "AnyProfile", "mobile", "runtime")
+	if !Staged(RootFor(qemuRuntime)) {
+		t.Skip("avo runtime not staged")
+	}
+
+	devicesDir := t.TempDir()
+	drv := New(qemuRuntime, devicesDir, slog.New(slog.NewTextHandler(os.Stdout, nil)))
+
+	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
+	defer cancel()
+
+	dev := mobile.Device{
+		ID:      "camtest01",
+		Name:    "Camera Test",
+		Driver:  "avo",
+		RAMMB:   3072,
+		CPUs:    4,
+		ScreenW: 780,
+		ScreenH: 1688,
+		Density: 320,
+		WithGMS: false,
+	}
+	if _, _, err := drv.Create(ctx, dev); err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+	if _, err := drv.Start(ctx, dev, mobile.StartOptions{Headless: true}); err != nil {
+		t.Fatalf("Start: %v", err)
+	}
+	defer func() { _ = drv.Stop(context.Background(), dev) }()
+
+	a, ok := drv.ADB(dev)
+	if !ok {
+		t.Fatal("ADB missing")
+	}
+	videos, err := a.Shell(ctx, "ls -la /dev/video*")
+	if err != nil {
+		t.Fatalf("ls /dev/video*: %v (%s)", err, videos)
+	}
+	t.Logf("video nodes:\n%s", videos)
+	if !strings.Contains(videos, "/dev/video1") || !strings.Contains(videos, "/dev/video2") {
+		t.Fatalf("expected /dev/video1 and /dev/video2, got:\n%s", videos)
+	}
+	camDump, err := a.Shell(ctx, "dumpsys media.camera | grep -E 'Number of camera devices|Device [0-9]|Facing|v4l2|external' | head -n 30")
+	if err != nil {
+		t.Fatalf("dumpsys media.camera: %v", err)
+	}
+	t.Logf("dumpsys media.camera:\n%s", camDump)
+	if !strings.Contains(camDump, "Number of camera devices: 2") {
+		t.Fatalf("expected 2 camera devices in dumpsys media.camera, got:\n%s", camDump)
+	}
+}

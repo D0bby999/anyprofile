@@ -507,3 +507,27 @@ func TestPrepareBlankUserdata(t *testing.T) {
 		t.Fatalf("userdata.img perm = %o, want 600", perm)
 	}
 }
+
+func TestCameraManifestAndEntitlements(t *testing.T) {
+	root := filepath.Join("..", "..", "..")
+	checks := []struct {
+		rel  string
+		want []string
+	}{
+		{"build/darwin/Info.plist", []string{"NSCameraUsageDescription", "NSMicrophoneUsageDescription"}},
+		{"build/darwin/Info.dev.plist", []string{"NSCameraUsageDescription", "NSMicrophoneUsageDescription"}},
+		{"build/darwin/entitlements.plist", []string{"com.apple.security.device.camera", "com.apple.security.device.audio-input"}},
+		{"tools/anyprofile-view/entitlements.plist", []string{"com.apple.security.device.camera"}},
+	}
+	for _, c := range checks {
+		b, err := os.ReadFile(filepath.Join(root, c.rel))
+		if err != nil {
+			t.Fatalf("read %s: %v", c.rel, err)
+		}
+		for _, w := range c.want {
+			if !strings.Contains(string(b), w) {
+				t.Errorf("%s missing %q", c.rel, w)
+			}
+		}
+	}
+}

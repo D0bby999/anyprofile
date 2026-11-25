@@ -37,7 +37,7 @@ build: fury-config
 	$(WAILS) build -clean -platform darwin/arm64 -ldflags "$(LDFLAGS)"
 	cp $(FURY_CONFIG) $(APP)/Contents/Resources/fury-config
 	codesign --force $(SIGN_FLAGS) --sign "$(SIGN_ID)" $(APP)/Contents/Resources/fury-config
-	codesign --force --deep $(SIGN_FLAGS) --sign "$(SIGN_ID)" $(APP)
+	codesign --force --deep $(SIGN_FLAGS) --entitlements build/darwin/entitlements.plist --sign "$(SIGN_ID)" $(APP)
 	codesign --verify --deep --strict $(APP)
 
 # The disk image people download (open it, drag AnyProfile to Applications).

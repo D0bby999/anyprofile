@@ -383,6 +383,7 @@ func (d *Driver) launchVMM(ctx context.Context, rt Runtime, dev mobile.Device, i
 		"--gfxstream-dir", rt.GfxstreamDir,
 		"--net-unix", netSock,
 		"--net-mac", mac,
+		"--cameras", "back,front",
 		"--no-microphone",
 	}
 	if dev.Preset == "interactive" {

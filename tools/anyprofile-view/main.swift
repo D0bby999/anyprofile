@@ -1,9 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import AppKit
+import AVFoundation
 import CoreGraphics
+import CoreImage
 import Darwin
 import Foundation
+import ImageIO
 import Metal
 import QuartzCore
 
@@ -133,6 +136,8 @@ final class ADBHelper {
 func connectUnix(_ path: String) -> Int32 {
     let fd = Darwin.socket(AF_UNIX, SOCK_STREAM, 0)
     guard fd >= 0 else { return -1 }
+    var noSigPipe: Int32 = 1
+    _ = setsockopt(fd, SOL_SOCKET, SO_NOSIGPIPE, &noSigPipe, socklen_t(MemoryLayout<Int32>.size))
     var addr = sockaddr_un()
     addr.sun_family = sa_family_t(AF_UNIX)
     let maxLen = MemoryLayout.size(ofValue: addr.sun_path)
@@ -157,6 +162,289 @@ func connectUnix(_ path: String) -> Int32 {
         return -1
     }
     return fd
+}
+
+// Streams frames from the Mac's laptop camera into avo-vmm's virtio-media
+// `camera feed` socket whenever Android opens a front or back camera.
+final class CameraFeeder: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate {
+    private struct Slot {
+        let width: Int
+        let height: Int
+        let fps: Int
+    }
+
+    private let controlPath: String
+    private let metalDevice: MTLDevice?
+    private let onToast: (String) -> Void
+    private let queue = DispatchQueue(label: "anyprofile.view.camera", qos: .userInteractive)
+    private lazy var ciContext: CIContext = metalDevice.map { CIContext(mtlDevice: $0) } ?? CIContext()
+    private let colorSpace = CGColorSpaceCreateDeviceRGB()
+
+    private var slots: [Int: Slot] = [:]
+    private var lastSent: [Int: CFTimeInterval] = [:]
+    private var session: AVCaptureSession?
+    private var feedFd: Int32 = -1
+    private var stopped = false
+    private var authPending = false
+    private var warnedDenied = false
+
+    init(controlPath: String, metalDevice: MTLDevice?, onToast: @escaping (String) -> Void) {
+        self.controlPath = controlPath
+        self.metalDevice = metalDevice
+        self.onToast = onToast
+        super.init()
+    }
+
+    func setActive(index: Int, width: Int, height: Int, fps: Int) {
+        guard index >= 0, index < 2, width > 0, height > 0 else { return }
+        queue.async { [self] in
+            guard !self.stopped else { return }
+            self.slots[index] = Slot(width: width, height: height, fps: max(1, fps))
+            self.lastSent[index] = nil
+            self.ensureStartedLocked()
+        }
+    }
+
+    func setInactive(index: Int) {
+        queue.async { [self] in
+            self.slots.removeValue(forKey: index)
+            self.lastSent.removeValue(forKey: index)
+            if self.slots.isEmpty {
+                self.stopSessionLocked()
+            }
+        }
+    }
+
+    func stopAll() {
+        queue.sync { [self] in
+            self.stopped = true
+            self.slots.removeAll()
+            self.lastSent.removeAll()
+            self.stopSessionLocked()
+        }
+    }
+
+    private func desiredPresetLocked(_ session: AVCaptureSession) -> AVCaptureSession.Preset {
+        let maxW = slots.values.map(\.width).max() ?? 1280
+        if maxW >= 1920, session.canSetSessionPreset(.hd1920x1080) {
+            return .hd1920x1080
+        }
+        if session.canSetSessionPreset(.hd1280x720) {
+            return .hd1280x720
+        }
+        return .high
+    }
+
+    private func ensureStartedLocked() {
+        guard !stopped, !slots.isEmpty else { return }
+        if let s = session {
+            let preset = desiredPresetLocked(s)
+            if s.sessionPreset != preset {
+                s.beginConfiguration()
+                s.sessionPreset = preset
+                s.commitConfiguration()
+            }
+            if !s.isRunning { s.startRunning() }
+            return
+        }
+        switch AVCaptureDevice.authorizationStatus(for: .video) {
+        case .authorized:
+            startSessionLocked()
+        case .notDetermined:
+            guard !authPending else { return }
+            authPending = true
+            AVCaptureDevice.requestAccess(for: .video) { [weak self] granted in
+                guard let self else { return }
+                self.queue.async {
+                    self.authPending = false
+                    guard !self.stopped, !self.slots.isEmpty else { return }
+                    if granted {
+                        self.startSessionLocked()
+                    } else if !self.warnedDenied {
+                        self.warnedDenied = true
+                        self.onToast("Camera denied — enable AnyProfile in System Settings > Privacy > Camera")
+                    }
+                }
+            }
+        case .denied, .restricted:
+            if !warnedDenied {
+                warnedDenied = true
+                onToast("Camera denied — enable AnyProfile in System Settings > Privacy > Camera")
+            }
+        @unknown default:
+            break
+        }
+    }
+
+    private func startSessionLocked() {
+        guard session == nil else { return }
+        guard let device = AVCaptureDevice.default(for: .video) else {
+            onToast("No Mac camera found")
+            return
+        }
+        do {
+            let input = try AVCaptureDeviceInput(device: device)
+            let s = AVCaptureSession()
+            s.beginConfiguration()
+            s.sessionPreset = desiredPresetLocked(s)
+            guard s.canAddInput(input) else {
+                s.commitConfiguration()
+                return
+            }
+            s.addInput(input)
+
+            let output = AVCaptureVideoDataOutput()
+            output.videoSettings = [
+                kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA,
+            ]
+            output.alwaysDiscardsLateVideoFrames = true
+            output.setSampleBufferDelegate(self, queue: queue)
+            guard s.canAddOutput(output) else {
+                s.commitConfiguration()
+                return
+            }
+            s.addOutput(output)
+            s.commitConfiguration()
+            self.session = s
+            s.startRunning()
+        } catch {
+            onToast("Camera open failed")
+        }
+    }
+
+    private func stopSessionLocked() {
+        if let s = session {
+            if s.isRunning { s.stopRunning() }
+            session = nil
+        }
+        closeFeedLocked()
+    }
+
+    private func closeFeedLocked() {
+        if feedFd >= 0 {
+            Darwin.close(feedFd)
+            feedFd = -1
+        }
+    }
+
+    private func ensureFeedSocketLocked() -> Int32 {
+        if feedFd >= 0 { return feedFd }
+        let fd = connectUnix(controlPath)
+        guard fd >= 0 else { return -1 }
+        let cmd = Array("camera feed\n".utf8)
+        guard writeAll(fd, cmd) else {
+            Darwin.close(fd)
+            return -1
+        }
+        // Read handshake reply ("ok\n") before sending binary frame packets.
+        var reply = [UInt8]()
+        var ch: UInt8 = 0
+        while reply.count < 64 {
+            let n = Darwin.read(fd, &ch, 1)
+            if n <= 0 {
+                Darwin.close(fd)
+                return -1
+            }
+            if ch == 0x0A { break }
+            reply.append(ch)
+        }
+        guard String(bytes: reply, encoding: .utf8)?.hasPrefix("ok") == true else {
+            Darwin.close(fd)
+            return -1
+        }
+        feedFd = fd
+        return fd
+    }
+
+    private func writeAll(_ fd: Int32, _ bytes: [UInt8]) -> Bool {
+        return bytes.withUnsafeBytes { raw in
+            guard let base = raw.baseAddress else { return true }
+            return writeAllRaw(fd, base, raw.count)
+        }
+    }
+
+    private func writeAllRaw(_ fd: Int32, _ base: UnsafeRawPointer, _ count: Int) -> Bool {
+        var sent = 0
+        while sent < count {
+            let n = Darwin.write(fd, base.advanced(by: sent), count - sent)
+            if n <= 0 {
+                if n < 0 && errno == EINTR { continue }
+                return false
+            }
+            sent += n
+        }
+        return true
+    }
+
+    private func encodeJPEG(_ image: CIImage, maxBytes: Int) -> Data? {
+        for quality in [0.80, 0.50] {
+            let opts: [CIImageRepresentationOption: Any] = [
+                CIImageRepresentationOption(rawValue: kCGImageDestinationLossyCompressionQuality as String): quality,
+            ]
+            if let data = ciContext.jpegRepresentation(of: image, colorSpace: colorSpace, options: opts),
+               data.count <= maxBytes {
+                return data
+            }
+        }
+        return nil
+    }
+
+    func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
+        guard !stopped, !slots.isEmpty,
+              let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
+        let now = CACurrentMediaTime()
+        let src = CIImage(cvPixelBuffer: pixelBuffer)
+        let srcExtent = src.extent
+        guard srcExtent.width > 0, srcExtent.height > 0 else { return }
+
+        for (index, spec) in slots {
+            if let prev = lastSent[index], now - prev < (0.85 / Double(spec.fps)) {
+                continue
+            }
+            let fd = ensureFeedSocketLocked()
+            guard fd >= 0 else { return }
+
+            let dstW = CGFloat(spec.width)
+            let dstH = CGFloat(spec.height)
+            let scale = max(dstW / srcExtent.width, dstH / srcExtent.height)
+            let scaled = src.transformed(
+                by: CGAffineTransform(translationX: -srcExtent.origin.x, y: -srcExtent.origin.y)
+                    .concatenating(CGAffineTransform(scaleX: scale, y: scale))
+            )
+            let cropX = ((scaled.extent.width - dstW) / 2.0).rounded()
+            let cropY = ((scaled.extent.height - dstH) / 2.0).rounded()
+            let cropped = scaled
+                .cropped(to: CGRect(x: cropX, y: cropY, width: dstW, height: dstH))
+                .transformed(by: CGAffineTransform(translationX: -cropX, y: -cropY))
+
+            guard let jpeg = encodeJPEG(cropped, maxBytes: spec.width * spec.height * 3 / 2) else {
+                continue
+            }
+
+            var header = [UInt8](repeating: 0, count: 16)
+            let words: [UInt32] = [
+                UInt32(index).littleEndian,
+                UInt32(spec.width).littleEndian,
+                UInt32(spec.height).littleEndian,
+                UInt32(jpeg.count).littleEndian,
+            ]
+            words.withUnsafeBytes { srcBytes in
+                header.withUnsafeMutableBytes { dstBytes in
+                    dstBytes.copyMemory(from: srcBytes)
+                }
+            }
+            let wroteHeader = writeAll(fd, header)
+            let wroteBody = wroteHeader && jpeg.withUnsafeBytes { raw in
+                guard let base = raw.baseAddress else { return true }
+                return writeAllRaw(fd, base, raw.count)
+            }
+            if !wroteBody {
+                closeFeedLocked()
+                return
+            }
+            lastSent[index] = now
+        }
+    }
 }
 
 final class MetalRenderer {
@@ -831,6 +1119,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private let adb: ADBHelper
     private let client: ControlClient
     private let metalRenderer = MetalRenderer()
+    private lazy var cameraFeeder = CameraFeeder(controlPath: controlPath, metalDevice: metalRenderer?.device) { [weak self] msg in
+        self?.showToast(msg)
+    }
 
     private var toolbarWidth: CGFloat { appMode ? 0 : kToolbarWidth }
 
@@ -942,6 +1233,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         src.setEventHandler { [weak self] in
             guard let self else { NSApp.terminate(nil); return }
             self.closingFromSignal = true
+            self.cameraFeeder.stopAll()
             self.passFocusToCurrentDesktop()
             self.saveBounds()
             self.window?.orderOut(nil)
@@ -1227,6 +1519,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     func windowWillClose(_ notification: Notification) {
         minimized = false
+        cameraFeeder.stopAll()
         if !closingFromSignal {
             if appMode {
                 // Standalone APK mode: freeze vCPUs immediately for ~0% idle CPU.
@@ -1320,6 +1613,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                         hasNewFrame = true
                     } else if parts.first == "frame", parts.count >= 3, parts[1] == "0" {
                         hasNewFrame = true
+                    } else if parts.first == "camera", parts.count >= 3, let camIdx = Int(parts[1]) {
+                        if parts[2] == "on", parts.count >= 6,
+                           let w = Int(parts[3]), let h = Int(parts[4]), let fps = Int(parts[5]) {
+                            self.cameraFeeder.setActive(index: camIdx, width: w, height: h, fps: fps)
+                        } else if parts[2] == "off" {
+                            self.cameraFeeder.setInactive(index: camIdx)
+                        }
                     }
                 }
                 if hasNewFrame {
@@ -1327,6 +1627,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 }
             }
             Darwin.close(fd)
+            self.cameraFeeder.stopAll()
             DispatchQueue.main.async { NSApp.terminate(nil) }
         }
     }
@@ -1375,6 +1676,7 @@ guard !controlPath.isEmpty else {
     exit(2)
 }
 
+signal(SIGPIPE, SIG_IGN)
 let app = NSApplication.shared
 app.setActivationPolicy(.accessory)
 let delegate = AppDelegate(controlPath: controlPath, title: title,

@@ -23,6 +23,10 @@
         <string>true</string>
         <key>NSHumanReadableCopyright</key>
         <string>{{.Info.Copyright}}</string>
+        <key>NSCameraUsageDescription</key>
+        <string>AnyProfile uses your camera when websites in AnyBrowser or apps in AnyMobile request camera access.</string>
+        <key>NSMicrophoneUsageDescription</key>
+        <string>AnyProfile uses your microphone when websites in AnyBrowser or apps in AnyMobile request microphone access.</string>
         {{if .Info.FileAssociations}}
         <key>CFBundleDocumentTypes</key>
         <array>
