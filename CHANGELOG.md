@@ -3,6 +3,10 @@
 The notes of each release tag are shown in the app's update prompt; this file
 keeps them together.
 
+## 1.0.9 (2026-11-25)
+
+- Fixed Chromium 159 on macOS wiping existing profile cookies when upgrading from AnyBrowser `0.5.1.157` to `0.5.1.159` by disabling `KeychainKeyProviderUserDataDirProtection` so custom `--user-data-dir` profiles continue decrypting their existing `v10` Keychain cookies (and letting CookieGuard automatically restore profiles affected by `1.0.8`).
+
 ## 1.0.8 (2026-11-25)
 
 - Upgraded AnyBrowser on macOS to `0.5.1.159` (Chromium `159.0.8154.34`).
