@@ -271,6 +271,56 @@ func TestBuildLaunchSpecAndClusters(t *testing.T) {
 	}
 }
 
+func TestBuildLaunchSpecConsistentLegacyAliasAndReleaseProps(t *testing.T) {
+	profiles := t.TempDir()
+	tpl := `{
+  "schema": 1,
+  "id": "samsung-galaxy-s24-ultra",
+  "name": "Samsung Galaxy S24 Ultra",
+  "properties": {
+    "ro.product.brand": "samsung",
+    "ro.product.manufacturer": "samsung",
+    "ro.product.model": "SM-S928B",
+    "ro.product.device": "e3q",
+    "ro.product.name": "e3qxxx",
+    "ro.build.fingerprint": "samsung/e3qxxx/e3q:14/UP1A.231005.007/S928BXXU1AXB5:user/release-keys"
+  }
+}`
+	if err := os.WriteFile(filepath.Join(profiles, "samsung-galaxy-s24-ultra.json"), []byte(tpl), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	// Legacy s23ultra aliases to samsung-galaxy-s24-ultra; build/partition props must stay consistent.
+	dev := mobile.Device{
+		ID:           "legacy-s23",
+		CPUs:         3,
+		IdentityJSON: vm.MarshalIdentity(vm.IdentityFor("legacy-s23", "s23ultra")),
+	}
+	spec := BuildLaunchSpec(Runtime{ProfilesDir: profiles}, dev, false)
+	for _, want := range []string{
+		"ro.build.fingerprint=samsung/e3qxxx/e3q:14/UP1A.231005.007/S928BXXU1AXB5:user/release-keys",
+		"ro.build.id=UP1A.231005.007",
+		"ro.build.version.incremental=S928BXXU1AXB5",
+		"ro.product.odm.model=SM-S928B",
+		"ro.product.odm.device=e3q",
+		"ro.product.system.model=SM-S928B",
+		"ro.build.tags=release-keys",
+		"ro.build.type=user",
+		"ro.boot.verifiedbootstate=green",
+		"ro.boot.vbmeta.device_state=locked",
+		"ro.boot.flash.locked=1",
+	} {
+		if !strings.Contains(spec.PropertiesText, want) {
+			t.Fatalf("PropertiesText missing %q:\n%s", want, spec.PropertiesText)
+		}
+	}
+	if strings.Contains(spec.PropertiesText, "SM-S918B") || strings.Contains(spec.PropertiesText, "dm3q") {
+		t.Fatalf("PropertiesText leaked stale legacy alias props:\n%s", spec.PropertiesText)
+	}
+	if strings.Contains(spec.PropertiesText, "ro.debuggable=0") {
+		t.Fatalf("must not set ro.debuggable=0 (breaks adb root):\n%s", spec.PropertiesText)
+	}
+}
+
 func makeZipBytes(t *testing.T, files map[string]string) ([]byte, string, map[string]string) {
 	t.Helper()
 	var buf bytes.Buffer

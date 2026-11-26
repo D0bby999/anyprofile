@@ -154,15 +154,6 @@ func BuildLaunchSpec(rt Runtime, d mobile.Device, enableDebugLayers bool) Launch
 		setProp("ro.build.version.incremental", id.Incremental)
 		setProp("ro.serialno", id.Serial)
 		setProp("ro.boot.serialno", id.Serial)
-		// Keep partition build fingerprints and security_patch intact so KeyMint
-		// unwraps FBE keys created during the shared GMS base image setup.
-		for _, pfx := range []string{"vendor.", "odm.", "product.", "system.", "system_ext."} {
-			setProp("ro.product."+pfx+"model", id.Model)
-			setProp("ro.product."+pfx+"brand", id.Brand)
-			setProp("ro.product."+pfx+"manufacturer", id.Manufacturer)
-			setProp("ro.product."+pfx+"device", id.Device)
-			setProp("ro.product."+pfx+"name", id.Product)
-		}
 		if validHardwareName(id.Hardware) {
 			spec.Hardware = id.Hardware
 		}
@@ -172,6 +163,18 @@ func BuildLaunchSpec(rt Runtime, d mobile.Device, enableDebugLayers bool) Launch
 	if t, ok := loadTemplate(rt.ProfilesDir, tplName); ok {
 		for k, v := range t.Properties {
 			setProp(k, v)
+		}
+		// Keep build.id and incremental consistent when the template overrides
+		// ro.build.fingerprint (e.g. legacy aliases like s23ultra -> s24-ultra).
+		if fp := strings.TrimSpace(t.Properties["ro.build.fingerprint"]); fp != "" {
+			if parts := strings.Split(fp, "/"); len(parts) >= 5 {
+				if t.Properties["ro.build.id"] == "" {
+					setProp("ro.build.id", parts[3])
+				}
+				if t.Properties["ro.build.version.incremental"] == "" {
+					setProp("ro.build.version.incremental", strings.SplitN(parts[4], ":", 2)[0])
+				}
+			}
 		}
 		if t.Hardware != nil && t.Hardware.SoC != nil {
 			for k, v := range t.Hardware.SoC.Properties {
@@ -215,6 +218,26 @@ func BuildLaunchSpec(rt Runtime, d mobile.Device, enableDebugLayers bool) Launch
 				setProp("debug.avo.vk.driver_id", fmt.Sprintf("%d", *g.VKDriverID))
 			}
 		}
+	}
+	// Mirror final product props across partitions after template overrides so
+	// GMS Checkin never sees mismatched model/device between system and odm.
+	// Keep partition build fingerprints and security_patch intact so KeyMint
+	// unwraps FBE keys created during the shared GMS base image setup.
+	if hasID || props["ro.product.model"] != "" {
+		for _, pfx := range []string{"vendor.", "odm.", "product.", "system.", "system_ext."} {
+			setProp("ro.product."+pfx+"model", props["ro.product.model"])
+			setProp("ro.product."+pfx+"brand", props["ro.product.brand"])
+			setProp("ro.product."+pfx+"manufacturer", props["ro.product.manufacturer"])
+			setProp("ro.product."+pfx+"device", props["ro.product.device"])
+			setProp("ro.product."+pfx+"name", props["ro.product.name"])
+		}
+		// Present a release user build to GMS Checkin (do not set ro.debuggable=0,
+		// which would break Cuttlefish adb root / su 0).
+		setProp("ro.build.tags", "release-keys")
+		setProp("ro.build.type", "user")
+		setProp("ro.boot.verifiedbootstate", "green")
+		setProp("ro.boot.vbmeta.device_state", "locked")
+		setProp("ro.boot.flash.locked", "1")
 	}
 	if hasID && props["debug.avo.gl.vendor"] == "" && id.GLVendor != "" {
 		setProp("debug.avo.gl.vendor", id.GLVendor)
