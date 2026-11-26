@@ -3,6 +3,14 @@
 The notes of each release tag are shown in the app's update prompt; this file
 keeps them together.
 
+## 1.2.0 (2026-11-26)
+
+- Added MuMu-class window management for AnyMobile and APK: bundled `anyprofile-view` inside `AnyProfile.app` with a live `view.sock` IPC channel for zero-flicker 1-frame tiling (`set-frame`), overlap-free left-to-right slot placement, live `set-title` switching for standalone APKs, Focus Audio auto-muting for background phones, and macOS global hotkeys (`⌘⇧A` tile, `⌘⇧M` mute all, `⌘⇧B` boss hide/show).
+- Added Smart Resource Governor for Mobile and APK: real-time host RAM/CPU telemetry bar with safe extra-VM recommendations, Multi-instance Eco Mode (`30/10 FPS` cap, `3 GB` RAM / `3 vCPU` ceiling), macOS window-occlusion FPS throttling (`fps 1` when covered), and smart staggered bulk boot.
+- Added instant APFS Golden Master cloning (`< 1s` copy-on-write with fresh Model/Serial/IMEI/MAC and first-boot Android ID / SSAID / Google IDs reset), Compact Disk (`pm trim-caches` + `sm fstrim` when running, APFS `F_PUNCHHOLE` when stopped), 1-click Fix Play Protect (Google Services reset keeping installed apps), and per-APK Clear Cache / Reset Data / Stop Host controls.
+- Added live Proxy & Country status badges (`[🇩🇪 DE ●]`, turning red automatically on proxy failure) on `anyprofile-view` titlebars and direct Master-Window Synchronizer input forwarding over `control.sock` with anti-detect jitter (`50–250ms` delay and per-gesture coordinate offset).
+- Fixed REST API `POST /v1/profiles/{id}/start` defaulting to `normal` mode: both REST API and MCP now default to headless `agent` mode (`--headless=new`) so AI agents never steal screen focus while you work (pass `mode: "normal"` or `headless: false` explicitly to open a visible window).
+
 ## 1.1.1 (2026-11-26)
 
 - Pinned newly downloaded AnyMobile apps onto the first home screen (next to Play Store and Aurora Store) instead of Android Launcher3's second page, while preserving manually dragged icons.
