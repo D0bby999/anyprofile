@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"strings"
 	"time"
@@ -106,13 +107,13 @@ func (l *Launcher) start(ctx context.Context, p *proc) error {
 		l.log.Warn("profile identity clamped for this machine", "profile", prof.ID, "detail", spec.Warning)
 	}
 	spec.Args = append(spec.Args, l.TestArgs...)
-	if p.headless && !slices.ContainsFunc(spec.Args, func(a string) bool { return strings.HasPrefix(a, "--headless") }) {
-		spec.Args = append(spec.Args, "--headless=new")
+	if p.headless {
+		spec.Args = applyHeadlessArgs(spec.Args, l.Screen)
 	}
 	// The first window a profile ever shows is the one nobody sized yet.
 	// Chromium restores the bounds of every later one, so the user's own size
 	// and position are never overridden.
-	if prof.LastOpenAt == "" && l.Screen != nil {
+	if !p.headless && prof.LastOpenAt == "" && l.Screen != nil {
 		if area, ok := l.Screen(); ok {
 			r := firstWindow(area, l.opening())
 			spec.Args = append(spec.Args,
@@ -142,9 +143,7 @@ func (l *Launcher) start(ctx context.Context, p *proc) error {
 			_ = l.st.EndSession(p.sessionID)
 		}
 	}()
-	if p.info.Mode == ModeAgent && !isHeadless {
-		go l.keepHidden(p, pid, front)
-	} else if p.behind && !isHeadless {
+	if p.behind && !isHeadless {
 		epoch := l.focusEpoch.Load()
 		go l.keepBehind(pid, front, 12*time.Second, epoch, p.done)
 	}
@@ -339,53 +338,29 @@ func (l *Launcher) keepBehind(pid, front int, d time.Duration, epoch int64, done
 	}
 }
 
-// keepHidden keeps a stealth headful Agent-mode browser hidden at the OS layer
-// for its entire Agent session so it carries a 100% authentic Chrome fingerprint
-// (no --headless=new tells) while never appearing on screen or stealing focus.
-func (l *Launcher) keepHidden(p *proc, pid, front int) {
-	if pid == 0 {
-		return
+// applyHeadlessArgs adds --headless=new and realistic screen/Retina geometry so
+// Agent-mode Chromium never creates an OS window, switches macOS Spaces, or
+// flickers, while avoiding headless 800x600 / DPR=1 fingerprint tells.
+func applyHeadlessArgs(args []string, screen func() (Rect, bool)) []string {
+	hasPrefix := func(prefix string) bool {
+		return slices.ContainsFunc(args, func(a string) bool { return strings.HasPrefix(a, prefix) })
 	}
-	enforce := func() {
-		if frontPID() == pid {
-			setHidden(pid, true)
-			if front == os.Getpid() {
-				activateSelf()
-			} else if front != 0 && front != pid {
-				activate(front)
+	if !hasPrefix("--headless") {
+		args = append(args, "--headless=new")
+	}
+	if !hasPrefix("--window-size") {
+		w, h := 1440, 900
+		if screen != nil {
+			if area, ok := screen(); ok && area.W > 0 && area.H > 0 {
+				w, h = area.W, area.H
 			}
-			return
 		}
-		if !isHidden(pid) {
-			setHidden(pid, true)
-		}
+		args = append(args, fmt.Sprintf("--window-size=%d,%d", w, h))
 	}
-	// Tight poll during Chromium's startup window (macOS activates the app once
-	// at process launch and again when the first NSWindow maps).
-	fastEnd := time.Now().Add(6 * time.Second)
-	for {
-		select {
-		case <-p.done:
-			return
-		default:
-		}
-		l.mu.Lock()
-		stillAgent := p.info.Mode == ModeAgent
-		l.mu.Unlock()
-		if !stillAgent {
-			return
-		}
-		enforce()
-		interval := 250 * time.Millisecond
-		if time.Now().Before(fastEnd) {
-			interval = 25 * time.Millisecond
-		}
-		select {
-		case <-p.done:
-			return
-		case <-time.After(interval):
-		}
+	if runtime.GOOS == "darwin" && !hasPrefix("--force-device-scale-factor") {
+		args = append(args, "--force-device-scale-factor=2")
 	}
+	return args
 }
 
 // Behind is agent.Hub.Behind: when the browser comes in front of the app the
@@ -395,27 +370,14 @@ func (l *Launcher) Behind(profileID string) func() {
 	p, ok := l.procs[profileID]
 	var pid int
 	var headless bool
-	var agentMode bool
 	if ok {
-		pid, headless, agentMode = p.info.PID, p.headless, p.info.Mode == ModeAgent
+		pid, headless = p.info.PID, p.headless
 	}
 	l.mu.Unlock()
-	front := frontPID()
 	if !ok || headless || pid == 0 {
 		return func() {}
 	}
-	if agentMode {
-		return func() {
-			if frontPID() == pid || !isHidden(pid) {
-				setHidden(pid, true)
-				if front == os.Getpid() {
-					activateSelf()
-				} else if front != 0 && front != pid {
-					activate(front)
-				}
-			}
-		}
-	}
+	front := frontPID()
 	if front == 0 || front == pid {
 		return func() {} // user is looking at this browser, or we cannot tell
 	}

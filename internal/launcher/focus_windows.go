@@ -10,11 +10,6 @@ func frontPID() int { return 0 }
 
 func setHidden(int, bool) bool { return false }
 
-func isHidden(int) bool { return false }
-
-// shortcut: Windows agent mode keeps --headless=new because browserWindows only enumerates visible HWNDs; switch to hidden-headful when adding HWND tracking on Windows QA.
-func supportsHiddenHeadful() bool { return false }
-
 func activateSelf() {}
 
 func selfVisible() bool { return false }

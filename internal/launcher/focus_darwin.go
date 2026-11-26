@@ -116,24 +116,8 @@ static int setHidden(int pid, int hide) {
 		return (hide ? [app hide] : [app unhide]) ? 1 : 0;
 	}
 }
-
-static int isHiddenPID(int pid) {
-	@autoreleasepool {
-		NSRunningApplication *app = [NSRunningApplication runningApplicationWithProcessIdentifier:pid];
-		if (app == nil) return 0;
-		return app.isHidden ? 1 : 0;
-	}
-}
 */
 import "C"
-
-// supportsHiddenHeadful reports whether this OS can run Agent mode as a real
-// headful Chrome hidden via OS-level app hiding (100% real fingerprint, zero
-// --headless=new tells, zero focus stealing, and instant 0ms takeover).
-func supportsHiddenHeadful() bool { return true }
-
-// isHidden reports whether pid's macOS application is currently hidden.
-func isHidden(pid int) bool { return C.isHiddenPID(C.int(pid)) == 1 }
 
 // activate brings the browser's windows to the front. NSRunningApplication
 // needs no Accessibility permission.

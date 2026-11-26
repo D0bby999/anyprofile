@@ -10,6 +10,8 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"runtime"
+	"slices"
 	"testing"
 
 	"github.com/D0bby999/anyprofile/internal/engine"
@@ -186,23 +188,9 @@ func TestStartHeadlessClampsStartURLsAndSkipsBehind(t *testing.T) {
 	if err := l.StartHeadless(context.Background(), "p1"); err == nil || err.Error() != "stop here" {
 		t.Fatalf("StartHeadless err = %v", err)
 	}
-	if supportsHiddenHeadful() {
-		// Stealth hidden-headful runs real Chrome (no --headless=new), so all start URLs stay intact.
-		if len(eng.gotRT.StartURLs) != 2 {
-			t.Fatalf("hidden-headful StartURLs = %v, want 2 URLs", eng.gotRT.StartURLs)
-		}
-	} else if len(eng.gotRT.StartURLs) != 1 || eng.gotRT.StartURLs[0] != "https://a.example" {
+	if len(eng.gotRT.StartURLs) != 1 || eng.gotRT.StartURLs[0] != "https://a.example" {
 		t.Fatalf("headless StartURLs = %v, want single URL", eng.gotRT.StartURLs)
 	}
-	// Explicit --headless TestArgs still clamps to 1 URL.
-	l.TestArgs = []string{"--headless=new"}
-	if err := l.StartHeadless(context.Background(), "p1"); err == nil || err.Error() != "stop here" {
-		t.Fatalf("explicit headless StartHeadless err = %v", err)
-	}
-	if len(eng.gotRT.StartURLs) != 1 || eng.gotRT.StartURLs[0] != "https://a.example" {
-		t.Fatalf("explicit headless StartURLs = %v, want single URL", eng.gotRT.StartURLs)
-	}
-	l.TestArgs = nil
 	// Normal Start keeps every start URL.
 	if err := l.Start(context.Background(), "p1"); err == nil || err.Error() != "stop here" {
 		t.Fatalf("Start err = %v", err)
@@ -212,52 +200,21 @@ func TestStartHeadlessClampsStartURLsAndSkipsBehind(t *testing.T) {
 	}
 }
 
-func TestInstantAgentNormalSwitchWithoutRestart(t *testing.T) {
-	if !supportsHiddenHeadful() {
-		t.Skip("hidden-headful switch is macOS-only")
+func TestApplyHeadlessArgsSetsWindowSizeAndMacRetinaDPR(t *testing.T) {
+	args := applyHeadlessArgs(nil, func() (Rect, bool) { return Rect{W: 1512, H: 945}, true })
+	if !slices.Contains(args, "--headless=new") {
+		t.Fatalf("missing --headless=new in %v", args)
 	}
-	dirs := paths.Dirs{Root: t.TempDir()}
-	if err := dirs.Ensure(); err != nil {
-		t.Fatal(err)
+	if !slices.Contains(args, "--window-size=1512,945") {
+		t.Fatalf("missing screen --window-size in %v", args)
 	}
-	st, err := store.Open(dirs.DB(), dirs.Backups())
-	if err != nil {
-		t.Fatal(err)
+	if runtime.GOOS == "darwin" && !slices.Contains(args, "--force-device-scale-factor=2") {
+		t.Fatalf("missing macOS Retina scale factor in %v", args)
 	}
-	defer st.Close()
-	var events []Info
-	l := New(st, secrets.NewMemory(), dirs, nil, func(in Info) {
-		events = append(events, in)
-	}, slog.New(slog.NewTextHandler(io.Discard, nil)))
-
-	done := make(chan struct{})
-	defer close(done)
-	p := &proc{info: Info{ProfileID: "p1", State: Running, Mode: ModeAgent, PID: 0}, behind: true, headless: false, done: done}
-	l.procs["p1"] = p
-
-	// User clicks Focus ("Bring window to front") -> instant 0ms switch to ModeNormal.
-	if !l.Focus("p1") {
-		t.Fatal("Focus takeover failed")
-	}
-	if in, ok := l.Info("p1"); !ok || in.Mode != ModeNormal {
-		t.Fatalf("expected ModeNormal after Focus takeover, got %+v", in)
-	}
-	// User switches back to Agent -> instant 0ms switch to ModeAgent without stopping/restarting.
-	if err := l.StartAgent(context.Background(), "p1"); err != nil {
-		t.Fatalf("StartAgent switch: %v", err)
-	}
-	if in, ok := l.Info("p1"); !ok || in.Mode != ModeAgent {
-		t.Fatalf("expected ModeAgent after switch, got %+v", in)
-	}
-	// User clicks Open -> instant 0ms switch to ModeNormal without stopping/restarting.
-	if err := l.Start(context.Background(), "p1"); err != nil {
-		t.Fatalf("Start takeover: %v", err)
-	}
-	if in, ok := l.Info("p1"); !ok || in.Mode != ModeNormal {
-		t.Fatalf("expected ModeNormal after Start takeover, got %+v", in)
-	}
-	if len(events) < 3 || events[0].Mode != ModeNormal || events[1].Mode != ModeAgent || events[2].Mode != ModeNormal {
-		t.Fatalf("unexpected mode transition events: %+v", events)
+	// Fallback when Screen is nil uses realistic desktop size instead of 800x600.
+	fallback := applyHeadlessArgs([]string{"--headless=new"}, nil)
+	if !slices.Contains(fallback, "--window-size=1440,900") {
+		t.Fatalf("missing fallback --window-size in %v", fallback)
 	}
 }
 
