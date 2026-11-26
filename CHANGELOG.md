@@ -3,6 +3,11 @@
 The notes of each release tag are shown in the app's update prompt; this file
 keeps them together.
 
+## 1.1.1 (2026-11-26)
+
+- Pinned newly downloaded AnyMobile apps onto the first home screen (next to Play Store and Aurora Store) instead of Android Launcher3's second page, while preserving manually dragged icons.
+- Fixed AnyMobile Play Protect certification mismatches: aligned `ro.build.id`, `ro.build.version.incremental`, and partition `ro.product.*` properties with the active hardware profile on legacy-aliased devices, and set release build properties (`release-keys`, `user`, `green` verified boot) for GMS checkin.
+
 ## 1.1.0 (2026-11-25)
 
 - Upgraded AnyBrowser on macOS to `0.5.1.159` (Chromium `159.0.8154.34`) while preserving existing macOS `v10` Keychain cookies across custom `--user-data-dir` profiles (disabling `KeychainKeyProviderUserDataDirProtection` so upgrades keep all logins intact and CookieGuard restores previously affected profiles).
