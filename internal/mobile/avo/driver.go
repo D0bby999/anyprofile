@@ -246,6 +246,7 @@ func (d *Driver) applyPostBoot(ctx context.Context, dev mobile.Device, o mobile.
 	if !homeLayoutReady(instDir) {
 		configureLauncherHome(ctx, p.adb, instDir, d.log)
 	}
+	startHomePinWatcher(ctx, p.adb, d.log)
 	if err := vm.ApplyLocale(ctx, p.adb, o.Timezone, o.Locale); err != nil {
 		d.log.Warn("avo locale", "device", dev.ID, "err", err)
 	}

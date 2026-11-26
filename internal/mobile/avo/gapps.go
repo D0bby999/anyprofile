@@ -7,6 +7,7 @@ package avo
 import (
 	"archive/zip"
 	"context"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"io"
@@ -155,6 +156,153 @@ func homeLayoutReady(instDir string) bool {
 	}
 	b, err := os.ReadFile(filepath.Join(instDir, ".home_layout_ready"))
 	return err == nil && string(b) == homeLayoutStamp
+}
+
+// homePinWatcherScript keeps newly downloaded apps on screen 0 (the Play Store
+// screen). AOSP Launcher3's WorkspaceItemSpaceFinder skips FIRST_SCREEN_ID (0)
+// and drops new installs onto screen 1; this watcher moves newly inserted
+// desktop app icons (strictly newer than the last seen _id) into the first free
+// cell on screen 0 without overriding manual user drags.
+const homePinWatcherScript = `#!/system/bin/sh
+DB_DIR="${AP_HOMEPIN_DB_DIR:-/data/data/com.android.launcher3/databases}"
+PREFS="${AP_HOMEPIN_PREFS:-/data/data/com.android.launcher3/shared_prefs/com.android.launcher3.prefs.xml}"
+STATE="${AP_HOMEPIN_STATE:-/data/local/tmp/ap-homepin.lastid}"
+PIDFILE="${AP_HOMEPIN_PID:-/data/local/tmp/ap-homepin.pid}"
+SETTLE="${AP_HOMEPIN_SETTLE:-1}"
+
+q() { sqlite3 -cmd ".timeout 3000" "$DB" "$1"; }
+
+resolve_db() {
+  # Launcher3 keeps one DB per grid (launcher.db, launcher_4_by_5.db…); the live one is the newest.
+  DB=$(ls -t "$DB_DIR"/launcher*.db 2>/dev/null | head -n 1)
+  [ -n "$DB" ] || DB="$DB_DIR/launcher.db"
+}
+
+resolve_grid() {
+  COLS=4
+  ROWS=5
+  if [ -f "$PREFS" ]; then
+    GRID=$(sed -n 's/.*name="idp_grid_name">\([0-9][0-9]*\)_by_\([0-9][0-9]*\)<.*/\1 \2/p' "$PREFS" 2>/dev/null | head -n 1)
+    if [ -n "$GRID" ]; then
+      COLS=${GRID%% *}
+      ROWS=${GRID##* }
+    fi
+  fi
+}
+
+relocate_new() {
+  resolve_db
+  [ -f "$DB" ] || return 0
+  command -v sqlite3 >/dev/null 2>&1 || return 0
+
+  LAST_ID=0
+  [ -f "$STATE" ] && LAST_ID=$(cat "$STATE" 2>/dev/null)
+  [ -n "$LAST_ID" ] || LAST_ID=0
+
+  NEW_MAX=$(q "SELECT COALESCE(MAX(_id), 0) FROM favorites;" 2>/dev/null)
+  [ -n "$NEW_MAX" ] || return 0
+  if [ "$NEW_MAX" -lt "$LAST_ID" ]; then
+    echo "$NEW_MAX" > "$STATE"
+    return 0
+  fi
+  [ "$NEW_MAX" -gt "$LAST_ID" ] || return 0
+
+  IDS=$(q "SELECT _id FROM favorites WHERE _id > ${LAST_ID} AND container = -100 AND screen > 0 AND itemType = 0 AND spanX = 1 AND spanY = 1 ORDER BY _id;" 2>/dev/null)
+  if [ -z "$IDS" ]; then
+    echo "$NEW_MAX" > "$STATE"
+    return 0
+  fi
+
+  [ "$SETTLE" -gt 0 ] && sleep "$SETTLE"
+  NEW_MAX=$(q "SELECT COALESCE(MAX(_id), 0) FROM favorites;" 2>/dev/null)
+  IDS=$(q "SELECT _id FROM favorites WHERE _id > ${LAST_ID} AND container = -100 AND screen > 0 AND itemType = 0 AND spanX = 1 AND spanY = 1 ORDER BY _id;" 2>/dev/null)
+  if [ -z "$IDS" ]; then
+    [ -n "$NEW_MAX" ] && echo "$NEW_MAX" > "$STATE"
+    return 0
+  fi
+
+  am force-stop com.android.launcher3 >/dev/null 2>&1 || true
+  resolve_grid
+
+  MOVED=0
+  for ID in $IDS; do
+    FOUND=0
+    Y=0
+    while [ "$Y" -lt "$ROWS" ] && [ "$FOUND" -eq 0 ]; do
+      X=0
+      while [ "$X" -lt "$COLS" ] && [ "$FOUND" -eq 0 ]; do
+        OCC=$(q "SELECT COUNT(*) FROM favorites WHERE container = -100 AND screen = 0 AND cellX <= ${X} AND (cellX + spanX) > ${X} AND cellY <= ${Y} AND (cellY + spanY) > ${Y};" 2>/dev/null)
+        if [ "$OCC" = "0" ]; then
+          q "UPDATE favorites SET screen = 0, cellX = ${X}, cellY = ${Y} WHERE _id = ${ID};" 2>/dev/null
+          FOUND=1
+          MOVED=1
+        fi
+        X=$((X + 1))
+      done
+      Y=$((Y + 1))
+    done
+  done
+
+  if [ "$MOVED" -eq 1 ]; then
+    q "PRAGMA wal_checkpoint(TRUNCATE);" >/dev/null 2>&1 || true
+    OWNER=$(stat -c '%u:%g' "$DB_DIR" 2>/dev/null)
+    [ -n "$OWNER" ] && chown "$OWNER" "$DB"* 2>/dev/null || true
+    restorecon "$DB"* >/dev/null 2>&1 || true
+  fi
+  [ -n "$NEW_MAX" ] && echo "$NEW_MAX" > "$STATE"
+  if [ "$MOVED" -eq 1 ]; then
+    am force-stop com.android.launcher3 >/dev/null 2>&1 || true
+  fi
+}
+
+if [ "$#" -gt 0 ]; then
+  relocate_new
+  exit 0
+fi
+
+if [ -f "$PIDFILE" ]; then
+  OLD=$(cat "$PIDFILE" 2>/dev/null)
+  [ -n "$OLD" ] && kill "$OLD" 2>/dev/null || true
+fi
+echo $$ > "$PIDFILE"
+
+i=0
+while [ "$i" -lt 30 ]; do
+  resolve_db
+  [ -f "$DB" ] && break
+  sleep 1
+  i=$((i + 1))
+done
+[ -f "$DB" ] || exit 0
+command -v sqlite3 >/dev/null 2>&1 || exit 0
+
+INIT_MAX=$(q "SELECT COALESCE(MAX(_id), 0) FROM favorites;" 2>/dev/null)
+echo "${INIT_MAX:-0}" > "$STATE"
+
+if command -v inotifyd >/dev/null 2>&1; then
+  exec inotifyd "$0" "$DB_DIR:wc"
+fi
+while true; do
+  sleep 2
+  relocate_new
+done
+`
+
+// startHomePinWatcher installs and launches the lightweight in-guest watcher
+// that moves newly downloaded app icons onto screen 0 (the Play Store screen).
+func startHomePinWatcher(ctx context.Context, a adb.Client, log *slog.Logger) {
+	c, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+	encoded := base64.StdEncoding.EncodeToString([]byte(homePinWatcherScript))
+	launch := fmt.Sprintf(
+		"echo %s | base64 -d > /data/local/tmp/ap-homepin.sh && chmod 700 /data/local/tmp/ap-homepin.sh && setsid nohup sh /data/local/tmp/ap-homepin.sh </dev/null >/dev/null 2>&1 &",
+		encoded,
+	)
+	if _, err := a.Shell(c, "su 0 sh -c '"+launch+"'"); err != nil {
+		if _, err2 := a.Shell(c, launch); err2 != nil {
+			log.Warn("avo home pin watcher", "err", err)
+		}
+	}
 }
 
 func cloneBaseDisks(srcDir, dstDir string) error {
