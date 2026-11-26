@@ -52,51 +52,133 @@ func (d *Driver) saveWindow(dev mobile.Device, s vm.WindowState) error {
 	return os.Rename(tmp, d.windowFile(dev))
 }
 
-func (d *Driver) openWindowsLocked() int {
-	n := 0
-	for _, p := range d.procs {
-		if p.view != nil {
-			n++
+func rectsOverlap(a, b vm.WindowState) bool {
+	return a.X < b.X+b.W && b.X < a.X+a.W && a.Y < b.Y+b.H && b.Y < a.Y+a.H
+}
+
+// nextCleanSlotLocked picks the first left-to-right MuMu slot that does not
+// overlap any other currently open or booting phone window.
+func (d *Driver) nextCleanSlotLocked(excludeID string, sw, sh int) (vm.WindowState, bool) {
+	if len(d.views) == 0 {
+		return vm.WindowState{}, false
+	}
+	var others []vm.WindowState
+	for id, r := range d.views {
+		if id == excludeID {
+			continue
+		}
+		if s, ok := d.loadWindow(mobile.Device{ID: id}); ok && !s.Minimized {
+			r = s
+		}
+		others = append(others, r)
+	}
+	if len(others) == 0 {
+		return vm.WindowState{}, false
+	}
+	for slot := 0; slot < len(others)+4; slot++ {
+		cand := vm.DefaultWindow(slot, sw, sh)
+		clash := false
+		for _, o := range others {
+			if rectsOverlap(cand, o) {
+				clash = true
+				break
+			}
+		}
+		if !clash {
+			return cand, true
 		}
 	}
-	return n
+	return vm.DefaultWindow(len(others), sw, sh), true
 }
 
 func (d *Driver) showOn(ctx context.Context, dev mobile.Device, p *proc) {
+	d.showOnAt(ctx, dev, p, nil)
+}
+
+func (d *Driver) showOnAt(ctx context.Context, dev mobile.Device, p *proc, forced *vm.WindowState) {
 	title := dev.Name
 	if title == "" {
 		title = "AnyProfile Mobile"
 	}
 	d.mu.Lock()
+	if d.views == nil {
+		d.views = make(map[string]vm.WindowState)
+	}
 	if p.view != nil {
-		if p.viewTitle == title && p.viewAppMode == dev.AppMode {
-			if dev.NoFocus {
-				d.mu.Unlock()
-				return
+		if forced == nil && p.viewAppMode == dev.AppMode {
+			if p.viewTitle != title {
+				if p.ipc != nil && p.ipc.send(map[string]any{"cmd": "set-title", "title": title}) {
+					p.viewTitle = title
+				}
 			}
-			saved, ok := d.loadWindow(dev)
-			if (!ok || !saved.Minimized) && p.view.Process != nil && activateView(p.view.Process.Pid) {
-				d.mu.Unlock()
-				return
+			if p.viewTitle == title {
+				if dev.NoFocus {
+					d.mu.Unlock()
+					return
+				}
+				saved, ok := d.loadWindow(dev)
+				if (!ok || !saved.Minimized) && p.view.Process != nil && activateView(p.view.Process.Pid) {
+					d.mu.Unlock()
+					return
+				}
 			}
 		}
 		d.mu.Unlock()
 		d.closeWindow(p)
 		d.mu.Lock()
 	}
-	n := d.openWindowsLocked()
-	d.mu.Unlock()
 
 	saved, ok := d.loadWindow(dev)
-	pos := saved
-	if !ok {
-		pos = vm.DefaultWindow(n, dev.ScreenW, dev.ScreenH)
-		pos.OnTop, pos.Muted = saved.OnTop, saved.Muted
+	var pos vm.WindowState
+	switch {
+	case forced != nil:
+		pos = *forced
+	default:
+		if next, hasOthers := d.nextCleanSlotLocked(dev.ID, dev.ScreenW, dev.ScreenH); hasOthers {
+			// When other phones are already open, snap cleanly into the next free
+			// MuMu slot so windows line up side-by-side instead of piling up.
+			pos = next
+			pos.OnTop, pos.Muted = saved.OnTop, saved.Muted
+		} else if ok {
+			pos = saved
+		} else {
+			pos = vm.DefaultWindow(0, dev.ScreenW, dev.ScreenH)
+			pos.OnTop, pos.Muted = saved.OnTop, saved.Muted
+		}
 	}
+	// Reserve this slot immediately under d.mu so concurrent device boots
+	// never claim the same coordinates.
+	d.views[dev.ID] = pos
+	d.mu.Unlock()
+
 	if saved.Minimized {
 		saved.Minimized = false
 		_ = d.saveWindow(dev, saved)
 	}
+	var ipc *viewIPC
+	viewSock := ""
+	if p.rtDir != "" {
+		viewSock = filepath.Join(p.rtDir, "view.sock")
+		if v, err := startViewIPC(viewSock, func(v *viewIPC) {
+			d.mu.Lock()
+			fg, bg := d.fpsLimitsLocked()
+			badge, hasBadge := d.badges[dev.ID]
+			sr, hasSync := d.syncRoles[dev.ID]
+			d.mu.Unlock()
+			v.send(map[string]any{"cmd": "set-fps", "fg": fg, "bg": bg})
+			if hasBadge {
+				v.send(map[string]any{"cmd": "badge", "country": badge.Country, "status": badge.Status, "label": badge.Label})
+			}
+			if hasSync {
+				v.send(map[string]any{"cmd": "sync-role", "role": sr.role, "count": sr.count})
+			}
+		}, func(ev viewEvent) {
+			d.handleViewEvent(dev.ID, ev)
+		}); err == nil {
+			ipc = v
+		}
+	}
+
 	args := []string{
 		"--control", p.ctrlSock,
 		"--title", title,
@@ -108,6 +190,9 @@ func (d *Driver) showOn(ctx context.Context, dev mobile.Device, p *proc) {
 		"--adb-bin", p.adb.Bin,
 		"--adb-serial", p.adb.Serial(),
 		"--owner-pid", strconv.Itoa(os.Getpid()),
+	}
+	if ipc != nil && viewSock != "" {
+		args = append(args, "--view-sock", viewSock)
 	}
 	if pos.OnTop {
 		args = append(args, "--on-top")
@@ -127,6 +212,10 @@ func (d *Driver) showOn(ctx context.Context, dev mobile.Device, p *proc) {
 	cmd.Stdout = nil
 	cmd.Stderr = nil
 	if err := cmd.Start(); err != nil {
+		ipc.close()
+		d.mu.Lock()
+		delete(d.views, dev.ID)
+		d.mu.Unlock()
 		d.log.Warn("start anyprofile-view", "device", dev.ID, "err", err)
 		return
 	}
@@ -136,9 +225,11 @@ func (d *Driver) showOn(ctx context.Context, dev mobile.Device, p *proc) {
 	p.viewDone = done
 	p.viewTitle = title
 	p.viewAppMode = dev.AppMode
+	p.ipc = ipc
 	d.mu.Unlock()
 	go func() {
 		_ = cmd.Wait()
+		ipc.close()
 		close(done)
 		d.mu.Lock()
 		if p.view == cmd {
@@ -146,6 +237,8 @@ func (d *Driver) showOn(ctx context.Context, dev mobile.Device, p *proc) {
 			p.viewDone = nil
 			p.viewTitle = ""
 			p.viewAppMode = false
+			p.ipc = nil
+			delete(d.views, dev.ID)
 		}
 		d.mu.Unlock()
 	}()
@@ -156,7 +249,10 @@ func (d *Driver) closeWindow(p *proc) {
 	d.mu.Lock()
 	cmd := p.view
 	done := p.viewDone
+	ipc := p.ipc
+	p.ipc = nil
 	d.mu.Unlock()
+	ipc.close()
 	if cmd == nil {
 		return
 	}
@@ -215,7 +311,8 @@ func (d *Driver) Windowed(id string) bool {
 	return !ok || !s.Minimized
 }
 
-// SetWindowOnTop stores the always-on-top flag and reopens an open viewport.
+// SetWindowOnTop stores the always-on-top flag and applies it live via IPC
+// without reopening the window (falling back to reopen on older view binaries).
 func (d *Driver) SetWindowOnTop(ctx context.Context, dev mobile.Device, on bool) error {
 	s, ok := d.loadWindow(dev)
 	if !ok {
@@ -226,6 +323,9 @@ func (d *Driver) SetWindowOnTop(ctx context.Context, dev mobile.Device, on bool)
 		return err
 	}
 	if p := d.proc(dev.ID); p != nil && p.view != nil {
+		if p.ipc != nil && p.ipc.send(map[string]any{"cmd": "set-on-top", "on": on}) {
+			return nil
+		}
 		dev.NoFocus = true
 		d.closeWindow(p)
 		d.showOn(ctx, dev, p)
@@ -249,6 +349,12 @@ func (d *Driver) SetWindowMuted(ctx context.Context, dev mobile.Device, muted bo
 	if err := d.saveWindow(dev, s); err != nil {
 		return err
 	}
+	d.mu.Lock()
+	if d.userMuted == nil {
+		d.userMuted = make(map[string]bool)
+	}
+	d.userMuted[dev.ID] = muted
+	d.mu.Unlock()
 	if p := d.proc(dev.ID); p != nil {
 		c, cancel := context.WithTimeout(ctx, 5*time.Second)
 		defer cancel()
@@ -258,6 +364,9 @@ func (d *Driver) SetWindowMuted(ctx context.Context, dev mobile.Device, muted bo
 		}
 		_, _ = p.adb.Shell(c, "cmd media_session volume --stream 3 --set "+vol)
 		if p.view != nil {
+			if p.ipc != nil && p.ipc.send(map[string]any{"cmd": "set-muted", "muted": muted}) {
+				return nil
+			}
 			dev.NoFocus = true
 			d.closeWindow(p)
 			d.showOn(ctx, dev, p)
@@ -280,6 +389,7 @@ func (d *Driver) WindowMuted(dev mobile.Device) bool {
 }
 
 // ArrangeWindows repositions every open anyprofile-view window in devs.
+// When view.sock IPC is connected, windows move in a single frame with zero flicker.
 func (d *Driver) ArrangeWindows(ctx context.Context, layout string, devs []mobile.Device) int {
 	a, ok := vm.ScreenWorkArea()
 	if !ok {
@@ -301,9 +411,25 @@ func (d *Driver) ArrangeWindows(ctx context.Context, layout string, devs []mobil
 		s.OnTop, s.Muted = prev.OnTop, prev.Muted
 		_ = d.saveWindow(dev, s)
 		if p := d.proc(dev.ID); p != nil {
+			d.mu.Lock()
+			if d.views == nil {
+				d.views = make(map[string]vm.WindowState)
+			}
+			d.views[dev.ID] = s
+			ipc := p.ipc
+			d.mu.Unlock()
+			if ipc != nil && ipc.send(map[string]any{
+				"cmd": "set-frame",
+				"x":   s.X,
+				"y":   s.Y,
+				"w":   s.W,
+				"h":   s.H,
+			}) {
+				continue
+			}
 			dev.NoFocus = true
 			d.closeWindow(p)
-			d.showOn(ctx, dev, p)
+			d.showOnAt(ctx, dev, p, &s)
 		}
 	}
 	return len(open)

@@ -321,6 +321,52 @@ func TestBuildLaunchSpecConsistentLegacyAliasAndReleaseProps(t *testing.T) {
 	}
 }
 
+func TestShowOnPlacesMultipleDevicesSideBySideWithoutOverlap(t *testing.T) {
+	dir := t.TempDir()
+	viewBin := filepath.Join(dir, "view")
+	if err := os.WriteFile(viewBin, []byte("#!/bin/sh\nsleep 30\n"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	drv := New(dir, dir, nil)
+	// Both devices have identical stale window.json from earlier single-device runs.
+	slot0 := vm.DefaultWindow(0, 780, 1688)
+	d1 := mobile.Device{ID: "dev-1", Name: "Phone 1", ScreenW: 780, ScreenH: 1688}
+	d2 := mobile.Device{ID: "dev-2", Name: "Phone 2", ScreenW: 780, ScreenH: 1688}
+	if err := os.MkdirAll(drv.dir(d1), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(drv.dir(d2), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	_ = drv.saveWindow(d1, slot0)
+	_ = drv.saveWindow(d2, slot0)
+
+	p1 := &proc{rt: Runtime{View: viewBin}, ctrlSock: filepath.Join(dir, "1.sock"), adb: adb.Client{Bin: "/usr/bin/true", Port: 5555}}
+	p2 := &proc{rt: Runtime{View: viewBin}, ctrlSock: filepath.Join(dir, "2.sock"), adb: adb.Client{Bin: "/usr/bin/true", Port: 5556}}
+	defer func() {
+		drv.closeWindow(p1)
+		drv.closeWindow(p2)
+	}()
+
+	// Neither proc is in drv.procs yet (simulating concurrent onReady boot).
+	drv.showOn(context.Background(), d1, p1)
+	drv.showOn(context.Background(), d2, p2)
+
+	drv.mu.Lock()
+	r1, ok1 := drv.views[d1.ID]
+	r2, ok2 := drv.views[d2.ID]
+	drv.mu.Unlock()
+	if !ok1 || !ok2 {
+		t.Fatalf("missing tracked views: ok1=%v ok2=%v", ok1, ok2)
+	}
+	if rectsOverlap(r1, r2) {
+		t.Fatalf("second phone overlapped first: r1=%+v r2=%+v", r1, r2)
+	}
+	if r1.Y != r2.Y || r1.W != r2.W || r1.H != r2.H {
+		t.Fatalf("phones not aligned in row: r1=%+v r2=%+v", r1, r2)
+	}
+}
+
 func makeZipBytes(t *testing.T, files map[string]string) ([]byte, string, map[string]string) {
 	t.Helper()
 	var buf bytes.Buffer

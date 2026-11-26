@@ -616,9 +616,27 @@ func (s *Service) applyAPKProxy(ctx context.Context, devID, proxyID string) erro
 	if err := swapper.SetUpstream(devID, up); err != nil {
 		return err
 	}
-	// Best-effort timezone and carrier sync when the proxy has an exit region.
+	// Update titlebar proxy/country badge immediately on 0ms hot-swap.
+	badgeStatus, badgeCountry, badgeLabel := "direct", "", "Direct connection"
 	if proxyID != "" {
+		badgeStatus = "ok"
+		if px, perr := s.Store.GetProxy(proxyID); perr == nil {
+			badgeCountry = px.Country
+			name := px.Label
+			if name == "" {
+				name = px.Host
+			}
+			if name != "" {
+				badgeLabel = name
+				if px.Country != "" {
+					badgeLabel += " (" + px.Country + ")"
+				}
+			}
+		}
 		if net, err := s.proxyNetwork(ctx, proxyID); err == nil {
+			if net.Country != "" {
+				badgeCountry = net.Country
+			}
 			if c, cerr := s.MobileControl(devID); cerr == nil {
 				var script strings.Builder
 				if net.Timezone != "" {
@@ -633,6 +651,126 @@ func (s *Service) applyAPKProxy(ctx context.Context, devID, proxyID string) erro
 				}
 			}
 		}
+	}
+	s.pushMobileBadge(devID, badgeCountry, badgeStatus, badgeLabel)
+	return nil
+}
+
+// APKHostInfo reports live state and physical disk usage of the dedicated APK host VM.
+type APKHostInfo struct {
+	HostID string `json:"hostId"`
+	State  string `json:"state"` // "stopped", "running", "paused"
+	DiskMB int64  `json:"diskMb"`
+}
+
+// APKHostStatus returns the dedicated APK host's current state and physical APFS disk size.
+func (s *Service) APKHostStatus() APKHostInfo {
+	hostID, ok := s.apkHostID("")
+	if !ok {
+		return APKHostInfo{State: "stopped"}
+	}
+	state := "stopped"
+	if s.mobileRunning(hostID) {
+		state = "running"
+		if s.Mobile != nil {
+			if p, ok := s.Mobile.Driver().(mobile.Pauser); ok && p.Paused(hostID) {
+				state = "paused"
+			}
+		}
+	}
+	var diskMB int64
+	if s.Mobile != nil {
+		if d, err := s.liveMobile(hostID); err == nil {
+			if sz, ok := s.Mobile.Driver().(interface{ PhysicalDiskBytes(mobile.Device) int64 }); ok {
+				diskMB = sz.PhysicalDiskBytes(mobileDevice(d)) >> 20
+			}
+		}
+	}
+	return APKHostInfo{HostID: hostID, State: state, DiskMB: diskMB}
+}
+
+// StopAPKHost stops the dedicated standalone APK host VM to immediately reclaim host RAM.
+func (s *Service) StopAPKHost(ctx context.Context) error {
+	hostID, ok := s.apkHostID("")
+	if !ok || !s.mobileRunning(hostID) {
+		return nil
+	}
+	if err := s.StopMobileDevice(ctx, hostID); err != nil {
+		return err
+	}
+	s.notify("apk")
+	return nil
+}
+
+// CompactAPKHostDisk trims caches/fstrim (when running) or punches APFS sparse
+// holes (when stopped) on the dedicated APK host VM.
+func (s *Service) CompactAPKHostDisk(ctx context.Context) (CompactDiskResult, error) {
+	hostID, ok := s.apkHostID("")
+	if !ok {
+		return CompactDiskResult{}, apperr.New("apk_not_ready", "open an APK once before compacting disk")
+	}
+	if s.mobileRunning(hostID) && s.Mobile != nil {
+		if resumer, ok := s.Mobile.Driver().(interface{ Resume(id string) error }); ok {
+			_ = resumer.Resume(hostID)
+		}
+	}
+	res, err := s.CompactMobileDisk(ctx, hostID)
+	if err == nil {
+		s.notify("apk")
+	}
+	return res, err
+}
+
+// FixAPKHostPlayProtect resets Google Services (gsf/gms/vending) on the running
+// APK host without touching any installed standalone APKs.
+func (s *Service) FixAPKHostPlayProtect(ctx context.Context) error {
+	hostID, ok := s.apkHostID("")
+	if !ok || !s.mobileRunning(hostID) {
+		return apperr.New("apk_not_running", "open an APK first so the Android host is running")
+	}
+	if s.Mobile != nil {
+		if resumer, ok := s.Mobile.Driver().(interface{ Resume(id string) error }); ok {
+			_ = resumer.Resume(hostID)
+		}
+	}
+	return s.FixMobilePlayProtect(ctx, hostID)
+}
+
+// ClearAPKCache clears temporary video/image cache directories for a single APK
+// without logging the user out or deleting app data.
+func (s *Service) ClearAPKCache(ctx context.Context, pkg string) error {
+	if !apk.ValidPackageName(pkg) {
+		return apperr.New("mobile_package", "invalid package name")
+	}
+	c, err := s.APKControl(pkg)
+	if err != nil {
+		return err
+	}
+	cmd := fmt.Sprintf("rm -rf /data/data/%s/cache/* /data/data/%s/code_cache/* /sdcard/Android/data/%s/cache/* 2>/dev/null || true", pkg, pkg, pkg)
+	if _, err := c.ADB.Shell(ctx, "su 0 sh -c '"+cmd+"'"); err != nil {
+		_, _ = c.ADB.Shell(ctx, cmd)
+	}
+	return nil
+}
+
+// ClearAPKData wipes a single APK's local data (pm clear) while keeping the app
+// installed, and rotates its Android ID for a clean fresh login.
+func (s *Service) ClearAPKData(ctx context.Context, pkg string) error {
+	if !apk.ValidPackageName(pkg) {
+		return apperr.New("mobile_package", "invalid package name")
+	}
+	c, err := s.APKControl(pkg)
+	if err != nil {
+		return err
+	}
+	if _, err := c.ADB.Shell(ctx, "pm clear "+pkg); err != nil {
+		return apperr.New("apk_clear_data", err.Error())
+	}
+	if rec, err := s.Store.GetMobileAPK(pkg); err == nil {
+		newAID := randomHex(8)
+		_ = s.Store.SetMobileAPKIdentity(pkg, rec.IdentityJSON, newAID)
+		_, _ = c.ADB.Shell(ctx, "settings put secure android_id "+newAID)
+		s.notify("apk")
 	}
 	return nil
 }

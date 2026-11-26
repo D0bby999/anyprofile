@@ -7,8 +7,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/D0bby999/anyprofile/internal/apperr"
 	"github.com/D0bby999/anyprofile/internal/mobile"
@@ -18,6 +20,10 @@ import (
 	"github.com/D0bby999/anyprofile/internal/mobile/vm"
 	"github.com/D0bby999/anyprofile/internal/store"
 )
+
+// bulkStaggerGap spaces out simultaneous VM starts so host CPU/disk do not
+// spike all at once; tests may set it to 0.
+var bulkStaggerGap = 5 * time.Second
 
 func (s *Service) syncHub() *mobilesync.Hub {
 	s.ctlMu.Lock()
@@ -155,13 +161,28 @@ type BulkMobileResult struct {
 	Errors []string `json:"errors,omitempty"`
 }
 
-// BulkStartMobileDevices starts up to 2 devices concurrently so disk/RAM do not thrash.
+// BulkStartMobileDevices starts devices with smart staggered spacing so host
+// CPU and RAM do not spike simultaneously, then tiles open windows cleanly.
 func (s *Service) BulkStartMobileDevices(ctx context.Context, ids []string) BulkMobileResult {
 	var res BulkMobileResult
 	var mu sync.Mutex
-	sem := make(chan struct{}, 2)
+	maxConc := 2
+	if s.MobileEcoMode() {
+		maxConc = 1
+	} else if ram, err := mobile.TotalRAM(); err == nil && (ram>>30) <= 16 {
+		maxConc = 1
+	}
+	sem := make(chan struct{}, maxConc)
 	var wg sync.WaitGroup
-	for _, id := range ids {
+loop:
+	for i, id := range ids {
+		if i > 0 && bulkStaggerGap > 0 && maxConc > 1 {
+			select {
+			case <-ctx.Done():
+				break loop
+			case <-time.After(bulkStaggerGap):
+			}
+		}
 		wg.Add(1)
 		go func(devID string) {
 			defer wg.Done()
@@ -180,7 +201,149 @@ func (s *Service) BulkStartMobileDevices(ctx context.Context, ids []string) Bulk
 		}(id)
 	}
 	wg.Wait()
+	if res.OK >= 2 {
+		_, _ = s.ArrangeMobileWindows(ctx, "row")
+	}
 	return res
+}
+
+// FixMobilePlayProtect clears Google Services (GSF, GMS, Play Store) cache and
+// registration state on a running device without touching installed user apps
+// such as TikTok or CapCut.
+func (s *Service) FixMobilePlayProtect(ctx context.Context, id string) error {
+	if _, err := s.liveMobile(id); err != nil {
+		return err
+	}
+	c, err := s.MobileControl(id)
+	if err != nil {
+		return err
+	}
+	const cmd = "pm clear com.google.android.gsf && pm clear com.google.android.gms && pm clear com.android.vending"
+	if _, err := c.ADB.Shell(ctx, "su 0 sh -c '"+cmd+"'"); err != nil {
+		if _, err2 := c.ADB.Shell(ctx, cmd); err2 != nil {
+			return apperr.New("mobile_play_protect", err2.Error())
+		}
+	}
+	return nil
+}
+
+// CloneMobileDevice duplicates a stopped Golden Master device using APFS
+// copy-on-write cloning (<1s, ~0 extra bytes initially) and assigns every clone
+// a fresh hardware identity (Model/Serial/IMEI/MAC) plus first-boot Android ID
+// regeneration.
+func (s *Service) CloneMobileDevice(ctx context.Context, sourceID, baseName string, count int, resetGoogleIDs bool) ([]store.MobileDevice, error) {
+	if err := s.mobileReady(); err != nil {
+		return nil, err
+	}
+	if count <= 0 {
+		count = 1
+	}
+	if count > 10 {
+		return nil, apperr.New("mobile_clone_limit", "clone at most 10 devices at once")
+	}
+	src, err := s.liveMobile(sourceID)
+	if err != nil {
+		return nil, err
+	}
+	if s.mobileRunning(sourceID) {
+		return nil, apperr.New("mobile_running", "stop the source device before cloning")
+	}
+	cloner, ok := s.Mobile.Driver().(interface {
+		CloneDevice(context.Context, mobile.Device, mobile.Device, bool) (string, string, error)
+	})
+	if !ok {
+		return nil, errMobileUnsupported
+	}
+	baseName = strings.TrimSpace(baseName)
+	if baseName == "" {
+		baseName = src.Name + " Copy"
+	}
+	var srcTemplate string
+	if idObj, ok := vm.ParseIdentity(src.IdentityJSON); ok {
+		srcTemplate = idObj.Template
+	}
+	created := make([]store.MobileDevice, 0, count)
+	for i := 0; i < count; i++ {
+		name := baseName
+		if count > 1 {
+			name = fmt.Sprintf("%s #%d", baseName, i+1)
+		}
+		devID := randomHex(8)
+		identityJSON := ""
+		if src.WithGMS || src.IdentityJSON != "" {
+			identityJSON = vm.MarshalIdentity(s.pickMobileIdentity(devID, srcTemplate, ""))
+		}
+		dst := store.MobileDevice{
+			ID:           devID,
+			Name:         name,
+			Driver:       s.Mobile.Driver().Name(),
+			Platform:     runtime.GOOS,
+			RAMMB:        src.RAMMB,
+			CPUs:         src.CPUs,
+			Preset:       src.Preset,
+			ScreenW:      src.ScreenW,
+			ScreenH:      src.ScreenH,
+			Density:      src.Density,
+			WithGMS:      src.WithGMS,
+			IdentityJSON: identityJSON,
+			Notes:        src.Notes,
+			Tags:         src.Tags,
+		}
+		if err := s.Store.CreateMobileDevice(&dst); err != nil {
+			return created, err
+		}
+		ref, img, err := cloner.CloneDevice(ctx, mobileDevice(src), mobileDevice(dst), resetGoogleIDs)
+		if err != nil {
+			_ = s.Store.PurgeMobileDevice(dst.ID)
+			_ = os.RemoveAll(s.Dirs.MobileDevice(dst.ID))
+			return created, err
+		}
+		if err := s.Store.SetMobileDriverState(dst.ID, ref, img); err != nil {
+			return created, err
+		}
+		dst.DriverRef, dst.ImageVersion = ref, img
+		created = append(created, dst)
+	}
+	s.notify("mobile")
+	return created, nil
+}
+
+// CompactDiskResult summarizes physical APFS space reclaimed from a device.
+type CompactDiskResult struct {
+	BeforeMB int64 `json:"beforeMb"`
+	AfterMB  int64 `json:"afterMb"`
+	FreedMB  int64 `json:"freedMb"`
+}
+
+// CompactMobileDisk trims app caches / runs fstrim (when running) or punches
+// APFS sparse holes (when stopped) and reports physical space reclaimed.
+func (s *Service) CompactMobileDisk(ctx context.Context, id string) (CompactDiskResult, error) {
+	if s.Mobile == nil {
+		return CompactDiskResult{}, errMobileUnsupported
+	}
+	d, err := s.liveMobile(id)
+	if err != nil {
+		return CompactDiskResult{}, err
+	}
+	compactor, ok := s.Mobile.Driver().(interface {
+		CompactDisk(context.Context, mobile.Device) (int64, int64, error)
+	})
+	if !ok {
+		return CompactDiskResult{}, errMobileUnsupported
+	}
+	before, after, err := compactor.CompactDisk(ctx, mobileDevice(d))
+	if err != nil {
+		return CompactDiskResult{}, err
+	}
+	freed := before - after
+	if freed < 0 {
+		freed = 0
+	}
+	return CompactDiskResult{
+		BeforeMB: before >> 20,
+		AfterMB:  after >> 20,
+		FreedMB:  freed >> 20,
+	}, nil
 }
 
 // BulkStopMobileDevices stops the selected devices in parallel.
@@ -258,13 +421,23 @@ func (s *Service) StartMobileSync(masterID string, followerIDs []string, j mobil
 	if len(targets) == 0 {
 		return mobilesync.Status{}, apperr.New("mobile_sync_args", "select at least one follower different from master")
 	}
+	prev := s.syncHub().Status()
+	if prev.Active {
+		s.clearMobileSyncRoles(prev.MasterID, prev.Followers)
+	}
 	s.syncHub().Start(masterID, targets, j)
+	st := s.syncHub().Status()
+	s.pushMobileSyncRoles(st.MasterID, st.Followers)
 	s.notify("mobile")
-	return s.syncHub().Status(), nil
+	return st, nil
 }
 
 func (s *Service) StopMobileSync() mobilesync.Status {
+	prev := s.syncHub().Status()
 	s.syncHub().Stop()
+	if prev.Active {
+		s.clearMobileSyncRoles(prev.MasterID, prev.Followers)
+	}
 	s.notify("mobile")
 	return s.syncHub().Status()
 }
@@ -364,7 +537,9 @@ func (s *Service) SetMobileLocation(ctx context.Context, id string, lat, lon flo
 		return err
 	}
 	if s.Mobile != nil {
-		if loc, ok := s.Mobile.Driver().(interface{ SetLocation(context.Context, string, float64, float64) }); ok {
+		if loc, ok := s.Mobile.Driver().(interface {
+			SetLocation(context.Context, string, float64, float64)
+		}); ok {
 			loc.SetLocation(ctx, id, lat, lon)
 		}
 	}

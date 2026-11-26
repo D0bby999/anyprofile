@@ -44,3 +44,21 @@ func TotalRAM() (int64, error) {
 	}
 	return int64(ms.TotalPhys), nil
 }
+
+// HostMemory returns total, used, and available physical RAM in bytes.
+func HostMemory() (totalBytes, usedBytes, availBytes int64, err error) {
+	ms := memoryStatusEx{Length: uint32(unsafe.Sizeof(memoryStatusEx{}))}
+	if r, _, err := globalMemoryStatusEx.Call(uintptr(unsafe.Pointer(&ms))); r == 0 {
+		return 0, 0, 0, err
+	}
+	total := int64(ms.TotalPhys)
+	avail := int64(ms.AvailPhys)
+	used := total - avail
+	if used < 0 {
+		used = 0
+	}
+	return total, used, avail, nil
+}
+
+// HostCPUPercent returns 0 on Windows (shortcut: Windows CPU telemetry is deferred until Windows MuMu12 QA).
+func HostCPUPercent() float64 { return 0 }

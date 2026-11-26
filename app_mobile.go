@@ -372,3 +372,49 @@ func (a *App) SyncMobileSharedFolder(id, direction string) (int, error) {
 	}
 	return a.svc.SyncMobileSharedFolder(a.ctx, id, direction)
 }
+
+// FixMobilePlayProtect clears Google Services (gsf/gms/vending) on a running
+// device without touching TikTok or other installed apps.
+func (a *App) FixMobilePlayProtect(id string) error {
+	return a.must(func() error { return a.svc.FixMobilePlayProtect(a.ctx, id) })
+}
+
+// CloneMobileDevice creates 1..10 APFS copy-on-write clones of a stopped
+// Golden Master device with fresh hardware identities and first-boot Android ID reset.
+func (a *App) CloneMobileDevice(sourceID, baseName string, count int, resetGoogleIDs bool) ([]store.MobileDevice, error) {
+	if err := a.ready(); err != nil {
+		return nil, err
+	}
+	return a.svc.CloneMobileDevice(a.ctx, sourceID, baseName, count, resetGoogleIDs)
+}
+
+// CompactMobileDisk trims caches/fstrim (running) or punches APFS sparse holes (stopped).
+func (a *App) CompactMobileDisk(id string) (service.CompactDiskResult, error) {
+	if err := a.ready(); err != nil {
+		return service.CompactDiskResult{}, err
+	}
+	return a.svc.CompactMobileDisk(a.ctx, id)
+}
+
+// MobileHostStats returns live host RAM, CPU, and recommended extra VM capacity.
+func (a *App) MobileHostStats() (mobile.HostStats, error) {
+	if err := a.ready(); err != nil {
+		return mobile.HostStats{}, err
+	}
+	return a.svc.MobileHostStats(), nil
+}
+
+// SetMobileEcoMode toggles Multi-instance Eco Mode (30/10 FPS, RAM/CPU cap).
+func (a *App) SetMobileEcoMode(on bool) error {
+	return a.must(func() error { return a.svc.SetMobileEcoMode(on) })
+}
+
+// SetMobileFocusAudio toggles automatic background phone muting on focus switch.
+func (a *App) SetMobileFocusAudio(on bool) error {
+	return a.must(func() error { return a.svc.SetMobileFocusAudio(on) })
+}
+
+// SetMobileHotkeysEnabled toggles macOS global mobile hotkeys (Cmd+Shift+A/M/B).
+func (a *App) SetMobileHotkeysEnabled(on bool) error {
+	return a.must(func() error { return a.svc.SetMobileHotkeysEnabled(a.ctx, on) })
+}

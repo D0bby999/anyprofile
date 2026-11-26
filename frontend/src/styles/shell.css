@@ -738,6 +738,50 @@ kbd { display: inline-flex; align-items: center; min-width: 22px; height: 20px; 
 .mobile-state-pill.is-busy { background: var(--warn-soft); border-color: var(--warn-line); color: var(--warn-ink); }
 .mobile-state-pill .mobile-device-status { font-size: inherit; color: inherit; }
 
+/* Live Host Resource Governor strip (flat 1px instrument bar, tabular numerals). */
+.mobile-gov-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 8px 16px; min-width: 0;
+  padding: 7px 12px; margin-bottom: 10px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+  font-size: var(--t-xs); color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+.mobile-gov-metrics, .mobile-gov-controls {
+  display: flex; align-items: center; gap: 8px 10px; flex-wrap: wrap; min-width: 0;
+}
+.mobile-gov-stat { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; min-width: 0; }
+.mobile-gov-stat strong { color: var(--ink); font-weight: 600; }
+.mobile-gov-meter {
+  width: 56px; height: 5px; border-radius: 99px;
+  background: var(--surface-sunken); overflow: hidden;
+  border: 1px solid var(--line);
+}
+.mobile-gov-meter > i {
+  display: block; height: 100%; border-radius: 99px;
+  background: var(--accent); transition: width .25s var(--ease);
+}
+.mobile-gov-meter.is-warn > i { background: var(--warn-ink); }
+.mobile-gov-meter.is-tight > i { background: var(--danger-ink); }
+.mobile-gov-sep { width: 1px; height: 12px; background: var(--line); }
+.mobile-gov-hint { color: var(--muted); }
+.mobile-gov-hint.is-tight { color: var(--warn-ink); font-weight: 500; }
+.mobile-gov-toggle {
+  display: inline-flex; align-items: center; gap: 5px;
+  height: 24px; padding: 0 9px; border-radius: var(--r-pill);
+  border: 1px solid var(--line); background: transparent;
+  color: var(--muted); font-size: 11px; font-weight: 500; cursor: pointer;
+  transition: border-color .12s var(--ease), background .12s var(--ease), color .12s var(--ease);
+}
+.mobile-gov-toggle:hover { color: var(--ink); border-color: var(--line-strong); }
+.mobile-gov-toggle[aria-pressed="true"] {
+  background: var(--accent-soft); border-color: var(--accent); color: var(--accent);
+}
+.mobile-gov-dot {
+  width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: .45;
+}
+.mobile-gov-toggle[aria-pressed="true"] .mobile-gov-dot { opacity: 1; }
+
 .mumu-listhead { padding: 8px 16px; border-bottom: 1px solid var(--line); font-size: var(--t-xs); }
 .mumu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 380px), 1fr)); padding: 12px; gap: 10px; }
 .mumu-card {

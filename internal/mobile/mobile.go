@@ -103,6 +103,39 @@ type Metrics struct {
 	SnapshotMS   int64 `json:"snapshotMs"`
 }
 
+// HostStats summarizes live host RAM/CPU capacity and smart governor settings.
+type HostStats struct {
+	TotalRAMMB       int64   `json:"totalRamMb"`
+	UsedRAMMB        int64   `json:"usedRamMb"`
+	AvailableRAMMB   int64   `json:"availableRamMb"`
+	CPUPercent       float64 `json:"cpuPercent"`
+	CPUCores         int     `json:"cpuCores"`
+	RunningDevices   int     `json:"runningDevices"`
+	RecommendedExtra int     `json:"recommendedExtra"`
+	EcoMode          bool    `json:"ecoMode"`
+	FocusAudio       bool    `json:"focusAudio"`
+	HotkeysEnabled   bool    `json:"hotkeysEnabled"`
+}
+
+// ViewBadge is shown on the right side of a native mobile window titlebar.
+type ViewBadge struct {
+	Country string `json:"country"`
+	Status  string `json:"status"` // "ok", "err", "direct"
+	Label   string `json:"label,omitempty"`
+}
+
+// ViewInputEvent is emitted by a Master phone window during live Sync.
+type ViewInputEvent struct {
+	Kind  string  `json:"ev"` // "touch", "scroll", "key", "text"
+	Phase string  `json:"phase,omitempty"`
+	RX    float64 `json:"rx,omitempty"`
+	RY    float64 `json:"ry,omitempty"`
+	DY    float64 `json:"dy,omitempty"`
+	Code  int     `json:"code,omitempty"`
+	Down  bool    `json:"down,omitempty"`
+	Text  string  `json:"text,omitempty"`
+}
+
 // Driver runs one kind of device. Every call may block for as long as the
 // device takes; the Manager calls at most one at a time per device.
 type Driver interface {

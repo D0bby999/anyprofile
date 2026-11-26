@@ -88,6 +88,10 @@ type Service struct {
 	mobileRec   macro.Recorder
 	macroMu     sync.Mutex
 	macroCancel context.CancelFunc
+
+	smartMu         sync.Mutex
+	hotkeyLayoutAlt bool
+	syncGestures    map[string]followerGesture
 }
 
 func (s *Service) notify(kind string) {

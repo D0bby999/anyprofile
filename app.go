@@ -168,6 +168,7 @@ func (a *App) init() error {
 				}
 			})
 		a.svc.OfferMobileRuntime()
+		a.svc.InitMobileRuntimeHooks(a.ctx)
 	}
 	l.BeforeStart, l.AfterExit = a.svc.BeforeLaunch, a.svc.AfterExit
 	a.svc.ApplyLaunchCeiling()
@@ -304,6 +305,7 @@ func (a *App) beforeClose(ctx context.Context) (prevent bool) {
 	if a.svc.Launcher != nil {
 		a.svc.Launcher.StopAll()
 	}
+	a.svc.ShutdownMobileRuntimeHooks()
 	a.svc.StopAllMobile(ctx)
 	return false
 }
@@ -322,6 +324,7 @@ func (a *App) shutdown(ctx context.Context) {
 			if a.svc.Launcher != nil {
 				a.svc.Launcher.StopAll()
 			}
+			a.svc.ShutdownMobileRuntimeHooks()
 			a.svc.StopAllMobile(ctx)
 		}
 	})
@@ -393,6 +396,7 @@ func (a *App) stopAllFromTray() {
 	if a.svc.Launcher != nil {
 		a.svc.Launcher.StopAll()
 	}
+	a.svc.ShutdownMobileRuntimeHooks()
 	a.svc.StopAllMobile(ctx)
 	a.updateTray()
 }

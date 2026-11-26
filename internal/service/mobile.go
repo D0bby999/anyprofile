@@ -48,14 +48,14 @@ const (
 // MobileAvailability tells the UI what stands between the user and a device.
 type MobileAvailability struct {
 	// Install is set when the driver downloads what it runs on (macOS).
-	Install     *mobile.InstallStatus  `json:"install"`
-	Engines     []mobile.InstallStatus `json:"engines"`
+	Install   *mobile.InstallStatus  `json:"install"`
+	Engines   []mobile.InstallStatus `json:"engines"`
 	Supported bool                   `json:"supported"` // this OS has a driver
 	Driver    string                 `json:"driver"`    // "avo" or "ldplayer"
 	Pro       bool                   `json:"pro"`       // a paid-up AnyProfile Pro key
 	Ready     bool                   `json:"ready"`     // the driver can create and open devices
-	Reason      string                 `json:"reason"`      // apperr code when not ready, like "ldplayer_missing"
-	Message     string                 `json:"message"`
+	Reason    string                 `json:"reason"`    // apperr code when not ready, like "ldplayer_missing"
+	Message   string                 `json:"message"`
 }
 
 // MobileRow is a device with its live state.
@@ -641,18 +641,47 @@ func (s *Service) startMobile(ctx context.Context, id string, headless, noFocus 
 	}
 	proxyMS := time.Since(proxyStarted).Milliseconds()
 	o := mobile.StartOptions{Timezone: net.Timezone, Locale: androidLocale(net), Country: net.Country, Lat: net.Lat, Lon: net.Lon, Headless: headless, NoFocus: noFocus}
+	badgeStatus, badgeLabel := "direct", "Direct connection"
 	if d.ProxyID != "" {
 		up, err := s.proxyUpstream(d.ProxyID)
 		if err != nil {
 			return MobileStart{}, err
 		}
 		o.Upstream = &up
+		badgeStatus = "ok"
+		if px, perr := s.Store.GetProxy(d.ProxyID); perr == nil {
+			name := px.Label
+			if name == "" {
+				name = px.Host
+			}
+			if name != "" {
+				badgeLabel = name
+				if net.Country != "" {
+					badgeLabel += " (" + net.Country + ")"
+				}
+			}
+		} else if net.Country != "" {
+			badgeLabel = "Proxy (" + net.Country + ")"
+		}
+	}
+	s.pushMobileBadge(d.ID, net.Country, badgeStatus, badgeLabel)
+	devSpec := mobileDevice(d)
+	if s.MobileEcoMode() {
+		if devSpec.RAMMB <= 0 || devSpec.RAMMB > 3072 {
+			devSpec.RAMMB = 3072
+		}
+		if devSpec.CPUs <= 0 || devSpec.CPUs > 3 {
+			devSpec.CPUs = 3
+		}
+		if devSpec.Preset == "interactive" {
+			devSpec.Preset = "balanced"
+		}
 	}
 	var res MobileStart
 	if tight, err := s.ramTight(); err == nil && tight {
 		res.Warning = "ram_tight"
 	}
-	if err := s.Mobile.Start(ctx, mobileDevice(d), o); err != nil {
+	if err := s.Mobile.Start(ctx, devSpec, o); err != nil {
 		return res, err
 	}
 	s.ctlMu.Lock()

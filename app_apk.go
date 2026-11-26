@@ -110,3 +110,37 @@ func (a *App) DownloadAPKFromURL(rawURL, proxyID string) (service.APKInspect, er
 	}
 	return a.svc.DownloadAPKFromURL(a.ctx, rawURL, proxyID)
 }
+
+func (a *App) CloseAPK(pkg string, stopHost bool) error {
+	return a.must(func() error { return a.svc.CloseAPK(a.ctx, pkg, stopHost) })
+}
+
+func (a *App) APKHostStatus() (service.APKHostInfo, error) {
+	if err := a.ready(); err != nil {
+		return service.APKHostInfo{}, err
+	}
+	return a.svc.APKHostStatus(), nil
+}
+
+func (a *App) StopAPKHost() error {
+	return a.must(func() error { return a.svc.StopAPKHost(a.ctx) })
+}
+
+func (a *App) CompactAPKHostDisk() (service.CompactDiskResult, error) {
+	if err := a.ready(); err != nil {
+		return service.CompactDiskResult{}, err
+	}
+	return a.svc.CompactAPKHostDisk(a.ctx)
+}
+
+func (a *App) FixAPKHostPlayProtect() error {
+	return a.must(func() error { return a.svc.FixAPKHostPlayProtect(a.ctx) })
+}
+
+func (a *App) ClearAPKCache(pkg string) error {
+	return a.must(func() error { return a.svc.ClearAPKCache(a.ctx, pkg) })
+}
+
+func (a *App) ClearAPKData(pkg string) error {
+	return a.must(func() error { return a.svc.ClearAPKData(a.ctx, pkg) })
+}

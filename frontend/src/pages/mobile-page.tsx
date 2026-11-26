@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Api, onEngineProgress, openExternal, service, type EngineProgress } from '../api'
+import { Api, mobile as mobileModels, onEngineProgress, openExternal, service, type EngineProgress } from '../api'
 import { language, t } from '../i18n'
 import { errorText, fold, relativeTime } from '../lib/format'
 import { countryFlag, countryName } from '../lib/flags'
@@ -12,6 +12,7 @@ import { EmptyState } from '../components/empty-state'
 import { Icon } from '../components/icons'
 import { InstallProgress } from '../components/install-progress'
 import { MOBILE_APPS_GUIDE } from '../components/api-settings'
+import { MobileCloneDialog } from '../components/mobile-clone-dialog'
 import { MobileDialog } from '../components/mobile-dialog'
 import { MobileDrawer } from '../components/mobile-drawer'
 import { MobileGpsDialog } from '../components/mobile-gps-dialog'
@@ -71,6 +72,8 @@ export function MobilePage({ mobile, onOpenPro, onOpenSettings }: Props) {
   const [recording, setRecording] = useState<Set<string>>(new Set())
   const [viewing, setViewing] = useState<service.MobileRow | null>(null)
   const [gpsRow, setGpsRow] = useState<service.MobileRow | null>(null)
+  const [cloneRow, setCloneRow] = useState<service.MobileRow | null>(null)
+  const [hostStats, setHostStats] = useState<mobileModels.HostStats | null>(null)
   const [syncOpen, setSyncOpen] = useState(false)
   const [macroOpen, setMacroOpen] = useState(false)
   const [syncActive, setSyncActive] = useState(false)
@@ -325,6 +328,52 @@ export function MobilePage({ mobile, onOpenPro, onOpenSettings }: Props) {
 
   const runningRows = rows.filter((r) => r.state === 'running')
 
+  const refreshHostStats = () => {
+    Api.MobileHostStats?.().then((st) => { if (st && st.totalRamMb > 0) setHostStats(st) }).catch(() => {})
+  }
+  useEffect(() => {
+    refreshHostStats()
+    const timer = window.setInterval(refreshHostStats, 4000)
+    return () => window.clearInterval(timer)
+  }, [])
+
+  const toggleEco = async () => {
+    if (!hostStats) return
+    const next = !hostStats.ecoMode
+    try {
+      await Api.SetMobileEcoMode(next)
+      toast.success(next ? t.mobile.govEcoOn : t.mobile.govEcoOff)
+      refreshHostStats()
+    } catch (e) { toast.error(errorText(e)) }
+  }
+
+  const toggleFocusAudio = async () => {
+    if (!hostStats) return
+    const next = !hostStats.focusAudio
+    try {
+      await Api.SetMobileFocusAudio(next)
+      toast.success(next ? t.mobile.govFocusAudioOn : t.mobile.govFocusAudioOff)
+      refreshHostStats()
+    } catch (e) { toast.error(errorText(e)) }
+  }
+
+  const toggleHotkeys = async () => {
+    if (!hostStats) return
+    const next = !hostStats.hotkeysEnabled
+    try {
+      await Api.SetMobileHotkeysEnabled(next)
+      toast.success(next ? t.mobile.govHotkeysOn : t.mobile.govHotkeysOff)
+      refreshHostStats()
+    } catch (e) { toast.error(errorText(e)) }
+  }
+
+  const fixPlayProtect = (id: string) => run(id, () => Api.FixMobilePlayProtect(id), t.mobile.fixPlayProtectDone)
+
+  const compactDisk = (id: string) => run(id, async () => {
+    const res = await Api.CompactMobileDisk(id)
+    toast.success(t.mobile.compactDone(res.freedMb, res.beforeMb, res.afterMb))
+  })
+
   const installApps = (id: string) => run(id, async () => {
     const n = await Api.InstallMobileApps(id)
     if (n > 0) toast.success(t.mobile.appsInstalled(n))
@@ -391,6 +440,7 @@ export function MobilePage({ mobile, onOpenPro, onOpenSettings }: Props) {
         onGps={() => setGpsRow(r)} onAudio={() => toggleAudio(r.id)} onView={() => setViewing(r)}
         onScreenshot={() => screenshot(r.id)} onRecord={() => toggleRecording(r.id)}
         onTop={() => toggleTop(r.id)} onEdit={() => setActiveId(r.id)}
+        onClone={() => setCloneRow(r)} onCompact={() => compactDisk(r.id)} onFixPlayProtect={() => fixPlayProtect(r.id)}
         onBackup={() => run(r.id, () => Api.BackupMobileDevice(r.id), t.mobile.backupDone)}
         onRestore={async () => { if (await confirm({ ...t.confirm.restoreMobile(relativeTime(r.backedUpAt)), danger: true })) run(r.id, () => Api.RestoreMobileBackup(r.id), t.mobile.restoreDone) }}
         onTrash={() => trash(r)} />
@@ -404,6 +454,7 @@ export function MobilePage({ mobile, onOpenPro, onOpenSettings }: Props) {
         onGps={() => setGpsRow(r)} onAudio={() => toggleAudio(r.id)} onView={() => setViewing(r)}
         onScreenshot={() => screenshot(r.id)} onRecord={() => toggleRecording(r.id)}
         onTop={() => toggleTop(r.id)} onEdit={() => setActiveId(r.id)}
+        onClone={() => setCloneRow(r)} onCompact={() => compactDisk(r.id)} onFixPlayProtect={() => fixPlayProtect(r.id)}
         onBackup={() => run(r.id, () => Api.BackupMobileDevice(r.id), t.mobile.backupDone)}
         onRestore={async () => { if (await confirm({ ...t.confirm.restoreMobile(relativeTime(r.backedUpAt)), danger: true })) run(r.id, () => Api.RestoreMobileBackup(r.id), t.mobile.restoreDone) }}
         onTrash={() => trash(r)} />
@@ -554,6 +605,43 @@ export function MobilePage({ mobile, onOpenPro, onOpenSettings }: Props) {
         {error && <div className="banner danger" role="alert"><Icon name="alert" /><span className="grow">{errorText(error)}</span>
           <button className="iconbtn sm" onClick={() => setError('')} aria-label={t.common.close}><Icon name="x" /></button></div>}
 
+        {canUse && hostStats && hostStats.totalRamMb > 0 && (() => {
+          const ramPct = Math.min(100, Math.round((hostStats.usedRamMb / hostStats.totalRamMb) * 100))
+          const meterCls = ramPct >= 88 ? ' is-tight' : ramPct >= 74 ? ' is-warn' : ''
+          const usedGb = (hostStats.usedRamMb / 1024).toFixed(1)
+          const totalGb = (hostStats.totalRamMb / 1024).toFixed(0)
+          return (
+            <div className="mobile-gov-bar" role="region" aria-label="Host capacity">
+              <div className="mobile-gov-metrics">
+                <span className="mobile-gov-stat">
+                  <span>{t.mobile.govRam(usedGb, totalGb)}</span>
+                  <span className={`mobile-gov-meter${meterCls}`} aria-hidden="true"><i style={{ width: `${ramPct}%` }} /></span>
+                </span>
+                <span className="mobile-gov-sep" aria-hidden="true" />
+                <span className="mobile-gov-stat">{t.mobile.govCpu(Math.round(hostStats.cpuPercent))}</span>
+                <span className="mobile-gov-sep" aria-hidden="true" />
+                <span className={`mobile-gov-hint${hostStats.recommendedExtra === 0 ? ' is-tight' : ''}`}>
+                  {t.mobile.govExtra(hostStats.recommendedExtra)}
+                </span>
+              </div>
+              <div className="mobile-gov-controls">
+                <button type="button" className="mobile-gov-toggle" aria-pressed={hostStats.ecoMode}
+                  title={t.mobile.govEcoTip} onClick={toggleEco}>
+                  <span className="mobile-gov-dot" aria-hidden="true" />{t.mobile.govEco}
+                </button>
+                <button type="button" className="mobile-gov-toggle" aria-pressed={hostStats.focusAudio}
+                  title={t.mobile.govFocusAudioTip} onClick={toggleFocusAudio}>
+                  <span className="mobile-gov-dot" aria-hidden="true" />{t.mobile.govFocusAudio}
+                </button>
+                <button type="button" className="mobile-gov-toggle" aria-pressed={hostStats.hotkeysEnabled}
+                  title={t.mobile.govHotkeysTip} onClick={toggleHotkeys}>
+                  <span className="mobile-gov-dot" aria-hidden="true" />{t.mobile.govHotkeys}
+                </button>
+              </div>
+            </div>
+          )
+        })()}
+
         <div className={`profiles-split mobile-split${active ? ' open' : ''}`}>
           <section className="card fill" style={{ minHeight: 220 }}>
             {rows.length > 0 && <div className={`toolbar mobile-toolbar${selected.size ? ' selecting' : ''}`}>
@@ -639,6 +727,9 @@ export function MobilePage({ mobile, onOpenPro, onOpenSettings }: Props) {
               }}
               onInstallAurora={installAurora}
               onInstallApps={installApps}
+              onClone={(row) => setCloneRow(row)}
+              onCompact={compactDisk}
+              onFixPlayProtect={fixPlayProtect}
               onTrash={trash}
               recording={recording.has(active.id)}
               busy={busy === active.id}
@@ -659,6 +750,10 @@ export function MobilePage({ mobile, onOpenPro, onOpenSettings }: Props) {
       </div>
       {viewing && <MobileViewer row={viewing} onClose={() => setViewing(null)} onOpenGps={() => setGpsRow(viewing)} />}
       {gpsRow && <MobileGpsDialog row={gpsRow} onClose={() => setGpsRow(null)} onToast={(m) => toast.success(m)} />}
+      {cloneRow && (
+        <MobileCloneDialog source={cloneRow} onClose={() => setCloneRow(null)}
+          onCloned={(n) => { toast.success(t.mobile.cloneDone(n)); reload() }} />
+      )}
       {syncOpen && (
         <MobileSyncDialog running={runningRows} onClose={() => setSyncOpen(false)}
           onChanged={(m) => { toast.success(m); Api.MobileSyncStatus().then((st) => setSyncActive(st.active)).catch(() => {}) }} />
@@ -674,10 +769,10 @@ export function MobilePage({ mobile, onOpenPro, onOpenSettings }: Props) {
 
 
 /** The row's controls stay one action + one overflow menu, like the profile table. */
-function MobileRowMenu({ row, running, busy, recording, vertical, onAurora, onApps, onPushMedia, onSharedFolder, onGps, onAudio, onView, onScreenshot, onRecord, onTop, onEdit, onBackup, onRestore, onTrash }: {
+function MobileRowMenu({ row, running, busy, recording, vertical, onAurora, onApps, onPushMedia, onSharedFolder, onGps, onAudio, onView, onScreenshot, onRecord, onTop, onEdit, onClone, onCompact, onFixPlayProtect, onBackup, onRestore, onTrash }: {
   row: service.MobileRow; running: boolean; busy: boolean; recording: boolean; vertical?: boolean
   onAurora: () => void; onApps: () => void; onPushMedia: () => void; onSharedFolder: () => void; onGps: () => void; onAudio: () => void; onView: () => void; onScreenshot: () => void; onRecord: () => void; onTop: () => void
-  onEdit: () => void; onBackup: () => void; onRestore: () => void; onTrash: () => void
+  onEdit: () => void; onClone: () => void; onCompact: () => void; onFixPlayProtect: () => void; onBackup: () => void; onRestore: () => void; onTrash: () => void
 }) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
@@ -697,7 +792,10 @@ function MobileRowMenu({ row, running, busy, recording, vertical, onAurora, onAp
           {running && <button role="menuitem" onClick={() => act(onScreenshot)}>{t.mobile.screenshot}</button>}
           {running && <button role="menuitem" onClick={() => act(onRecord)}>{recording ? t.mobile.stopRecording : t.mobile.recordScreen}</button>}
           {running && <button role="menuitem" onClick={() => act(onTop)}>{t.mobile.alwaysOnTop}</button>}
+          {running && <button role="menuitem" onClick={() => act(onFixPlayProtect)}>{t.mobile.fixPlayProtect}</button>}
           <button role="menuitem" onClick={() => act(onEdit)}>{t.mobile.edit}</button>
+          <button role="menuitem" disabled={running} onClick={() => act(onClone)}>{t.mobile.clone}</button>
+          <button role="menuitem" onClick={() => act(onCompact)}>{t.mobile.compactDisk}</button>
           <button role="menuitem" disabled={running} onClick={() => act(onBackup)}>{t.mobile.backup}</button>
           {row.backedUpAt && <button role="menuitem" disabled={running} onClick={() => act(onRestore)}>{t.mobile.restoreBackup}</button>}
           <hr />

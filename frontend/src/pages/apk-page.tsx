@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Api, onDataChanged, service, store } from '../api'
+import { Api, mobile as mobileModels, onDataChanged, service, store } from '../api'
 import { t } from '../i18n'
 import { errorText, fold } from '../lib/format'
 import { countryFlag, countryName } from '../lib/flags'
@@ -31,6 +31,9 @@ export function ApkPage({ mobile, onOpenPro, onOpenMobile, onChanged }: Props) {
   const [oriFilter, setOriFilter] = useState<OriFilter>('all')
   const [activePkg, setActivePkg] = useState<string | null>(null)
   const [busyPkg, setBusyPkg] = useState('')
+  const [hostBusy, setHostBusy] = useState(false)
+  const [hostStats, setHostStats] = useState<mobileModels.HostStats | null>(null)
+  const [apkHost, setApkHost] = useState<service.APKHostInfo | null>(null)
   const [error, setError] = useState('')
 
   // Unified New APK modal + Aurora Store auto-sync watcher.
@@ -74,6 +77,108 @@ export function ApkPage({ mobile, onOpenPro, onOpenMobile, onChanged }: Props) {
   useEffect(reloadProxies, [])
   useEffect(() => onDataChanged(['apk'], reload), [reload])
   useEffect(() => onDataChanged(['proxies'], reloadProxies), [])
+
+  const refreshHost = useCallback(() => {
+    Api.MobileHostStats?.().then((st) => { if (st && st.totalRamMb > 0) setHostStats(st) }).catch(() => {})
+    Api.APKHostStatus?.().then((info) => { if (info) setApkHost(info) }).catch(() => {})
+  }, [])
+  useEffect(() => {
+    refreshHost()
+    const timer = window.setInterval(refreshHost, 4000)
+    return () => window.clearInterval(timer)
+  }, [refreshHost])
+
+  const hostRunning = apkHost?.state === 'running' || apkHost?.state === 'paused'
+
+  const toggleEco = async () => {
+    if (!hostStats) return
+    const next = !hostStats.ecoMode
+    try {
+      await Api.SetMobileEcoMode(next)
+      toast.success(next ? t.mobile.govEcoOn : t.mobile.govEcoOff)
+      refreshHost()
+    } catch (e) { toast.error(errorText(e)) }
+  }
+
+  const toggleFocusAudio = async () => {
+    if (!hostStats) return
+    const next = !hostStats.focusAudio
+    try {
+      await Api.SetMobileFocusAudio(next)
+      toast.success(next ? t.mobile.govFocusAudioOn : t.mobile.govFocusAudioOff)
+      refreshHost()
+    } catch (e) { toast.error(errorText(e)) }
+  }
+
+  const toggleHotkeys = async () => {
+    if (!hostStats) return
+    const next = !hostStats.hotkeysEnabled
+    try {
+      await Api.SetMobileHotkeysEnabled(next)
+      toast.success(next ? t.mobile.govHotkeysOn : t.mobile.govHotkeysOff)
+      refreshHost()
+    } catch (e) { toast.error(errorText(e)) }
+  }
+
+  const compactHost = async () => {
+    setHostBusy(true)
+    try {
+      const res = await Api.CompactAPKHostDisk()
+      toast.success(t.mobile.compactDone(res.freedMb, res.beforeMb, res.afterMb))
+      refreshHost()
+    } catch (e) { toast.error(errorText(e)) } finally { setHostBusy(false) }
+  }
+
+  const fixHostPlayProtect = async () => {
+    setHostBusy(true)
+    try {
+      await Api.FixAPKHostPlayProtect()
+      toast.success(t.mobile.fixPlayProtectDone)
+    } catch (e) { toast.error(errorText(e)) } finally { setHostBusy(false) }
+  }
+
+  const stopHost = async () => {
+    setHostBusy(true)
+    try {
+      await Api.StopAPKHost()
+      toast.success(t.apk.hostStopped)
+      refreshHost()
+    } catch (e) { toast.error(errorText(e)) } finally { setHostBusy(false) }
+  }
+
+  const closeApp = async (app: store.MobileAPK) => {
+    setBusyPkg(app.package)
+    try {
+      await Api.CloseAPK(app.package, false)
+      toast.success(t.apk.appClosed(app.label))
+      refreshHost()
+    } catch (e) { toast.error(errorText(e)) } finally { setBusyPkg('') }
+  }
+
+  const clearCache = async (app: store.MobileAPK) => {
+    setBusyPkg(app.package)
+    try {
+      await Api.ClearAPKCache(app.package)
+      toast.success(t.apk.cacheCleared(app.label))
+      refreshHost()
+    } catch (e) { toast.error(errorText(e)) } finally { setBusyPkg('') }
+  }
+
+  const clearData = async (app: store.MobileAPK) => {
+    const ok = await confirm({
+      title: t.apk.clearDataTitle(app.label),
+      body: t.apk.clearDataBody,
+      confirm: t.apk.clearData,
+      danger: true,
+    })
+    if (!ok) return
+    setBusyPkg(app.package)
+    try {
+      await Api.ClearAPKData(app.package)
+      toast.success(t.apk.dataCleared(app.label))
+      reload()
+    } catch (e) { toast.error(errorText(e)) } finally { setBusyPkg('') }
+  }
 
   const syncFromStore = useCallback(async (autoImportNew: boolean) => {
     if (!canUse) return
@@ -319,6 +424,59 @@ export function ApkPage({ mobile, onOpenPro, onOpenMobile, onChanged }: Props) {
           </div>
         )}
 
+        {canUse && hostStats && hostStats.totalRamMb > 0 && (() => {
+          const ramPct = Math.min(100, Math.round((hostStats.usedRamMb / hostStats.totalRamMb) * 100))
+          const meterCls = ramPct >= 88 ? ' is-tight' : ramPct >= 74 ? ' is-warn' : ''
+          const usedGb = (hostStats.usedRamMb / 1024).toFixed(1)
+          const totalGb = (hostStats.totalRamMb / 1024).toFixed(0)
+          const hostLabel = t.apk.hostState[apkHost?.state || 'stopped'] || t.apk.hostState.stopped
+          const diskLabel = apkHost && apkHost.diskMb > 0 ? ` · ${(apkHost.diskMb / 1024).toFixed(1)} GB` : ''
+          return (
+            <div className="mobile-gov-bar" role="region" aria-label="APK Host capacity">
+              <div className="mobile-gov-metrics">
+                <span className="mobile-gov-stat">
+                  <span>{t.mobile.govRam(usedGb, totalGb)}</span>
+                  <span className={`mobile-gov-meter${meterCls}`} aria-hidden="true"><i style={{ width: `${ramPct}%` }} /></span>
+                </span>
+                <span className="mobile-gov-sep" aria-hidden="true" />
+                <span className="mobile-gov-stat">{t.mobile.govCpu(Math.round(hostStats.cpuPercent))}</span>
+                <span className="mobile-gov-sep" aria-hidden="true" />
+                <span className="mobile-gov-hint">
+                  {hostLabel}{diskLabel}
+                </span>
+              </div>
+              <div className="mobile-gov-controls">
+                <button type="button" className="mobile-gov-toggle" aria-pressed={hostStats.ecoMode}
+                  title={t.mobile.govEcoTip} onClick={toggleEco}>
+                  <span className="mobile-gov-dot" aria-hidden="true" />{t.mobile.govEco}
+                </button>
+                <button type="button" className="mobile-gov-toggle" aria-pressed={hostStats.focusAudio}
+                  title={t.mobile.govFocusAudioTip} onClick={toggleFocusAudio}>
+                  <span className="mobile-gov-dot" aria-hidden="true" />{t.mobile.govFocusAudio}
+                </button>
+                <button type="button" className="mobile-gov-toggle" aria-pressed={hostStats.hotkeysEnabled}
+                  title={t.mobile.govHotkeysTip} onClick={toggleHotkeys}>
+                  <span className="mobile-gov-dot" aria-hidden="true" />{t.mobile.govHotkeys}
+                </button>
+                <span className="mobile-gov-sep" aria-hidden="true" />
+                <button type="button" className="btn sm" disabled={hostBusy} onClick={compactHost}>
+                  {t.mobile.compactDisk}
+                </button>
+                {hostRunning && (
+                  <>
+                    <button type="button" className="btn sm" disabled={hostBusy} title={t.mobile.fixPlayProtect} onClick={fixHostPlayProtect}>
+                      Play Protect
+                    </button>
+                    <button type="button" className="btn sm" disabled={hostBusy} onClick={stopHost}>
+                      {t.apk.hostStop}
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          )
+        })()}
+
         <div className={`profiles-split${active ? ' open' : ''}`}>
           <section className="card fill" style={{ minHeight: 240 }}>
             {apps.length > 0 && (
@@ -495,8 +653,12 @@ export function ApkPage({ mobile, onOpenPro, onOpenMobile, onChanged }: Props) {
               proxies={proxies}
               canUse={canUse}
               working={busyPkg === active.package}
+              hostRunning={hostRunning}
               onClose={() => setActivePkg(null)}
               onOpen={launch}
+              onCloseApp={closeApp}
+              onClearCache={clearCache}
+              onClearData={clearData}
               onCreateShortcut={createShortcut}
               onRemove={remove}
               onChanged={reload}

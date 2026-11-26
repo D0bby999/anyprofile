@@ -45,6 +45,7 @@ type proc struct {
 	viewDone    chan struct{}
 	viewTitle   string
 	viewAppMode bool
+	ipc         *viewIPC
 	paused      bool
 	exited   chan struct{}
 }
@@ -60,9 +61,17 @@ type Driver struct {
 	gmsMu   sync.Mutex
 	offered engine.Catalog
 
-	mu      sync.Mutex
-	procs   map[string]*proc
-	metrics map[string]mobile.Metrics
+	mu            sync.Mutex
+	procs         map[string]*proc
+	views         map[string]vm.WindowState // live/opening viewport bounds for overlap-free MuMu slot placement
+	metrics       map[string]mobile.Metrics
+	focusAudio    bool
+	userMuted     map[string]bool
+	ecoMode       bool
+	windowsHidden bool
+	badges        map[string]ViewBadge
+	syncRoles     map[string]syncRoleState
+	onMasterInput func(deviceID string, ev ViewInputEvent)
 }
 
 // New creates an Avo Metal mobile driver rooted at avoRoot (or RootFor(qemuRuntime)).
@@ -76,7 +85,12 @@ func New(qemuRuntime, devicesDir string, log *slog.Logger) *Driver {
 		devices:     devicesDir,
 		log:         log,
 		procs:       make(map[string]*proc),
+		views:       make(map[string]vm.WindowState),
 		metrics:     make(map[string]mobile.Metrics),
+		focusAudio:  true,
+		userMuted:   make(map[string]bool),
+		badges:      make(map[string]ViewBadge),
+		syncRoles:   make(map[string]syncRoleState),
 	}
 }
 
@@ -246,6 +260,7 @@ func (d *Driver) applyPostBoot(ctx context.Context, dev mobile.Device, o mobile.
 	if !homeLayoutReady(instDir) {
 		configureLauncherHome(ctx, p.adb, instDir, d.log)
 	}
+	applyCloneReinit(ctx, p.adb, instDir, d.log)
 	startHomePinWatcher(ctx, p.adb, d.log)
 	if err := vm.ApplyLocale(ctx, p.adb, o.Timezone, o.Locale); err != nil {
 		d.log.Warn("avo locale", "device", dev.ID, "err", err)

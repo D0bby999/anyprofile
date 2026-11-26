@@ -91,6 +91,79 @@ final class ControlClient {
     }
 }
 
+final class ViewIPCClient {
+    private let path: String
+    private let onCommand: ([String: Any]) -> Void
+    private let writeQueue = DispatchQueue(label: "anyprofile.view.ipc.write", qos: .userInteractive)
+    private let lock = NSLock()
+    private var fd: Int32 = -1
+
+    init(path: String, onCommand: @escaping ([String: Any]) -> Void) {
+        self.path = path
+        self.onCommand = onCommand
+    }
+
+    func start() {
+        guard !path.isEmpty else { return }
+        DispatchQueue.global(qos: .userInteractive).async { [weak self] in
+            guard let self else { return }
+            let sock = connectUnix(self.path)
+            guard sock >= 0 else { return }
+            self.lock.lock()
+            self.fd = sock
+            self.lock.unlock()
+
+            var buf = Data()
+            var tmp = [UInt8](repeating: 0, count: 4096)
+            while true {
+                let n = Darwin.read(sock, &tmp, tmp.count)
+                if n <= 0 { break }
+                buf.append(tmp, count: n)
+                while let nl = buf.firstIndex(of: 0x0A) {
+                    let lineData = buf.subdata(in: 0..<nl)
+                    buf.removeSubrange(0...nl)
+                    if let obj = try? JSONSerialization.jsonObject(with: lineData) as? [String: Any] {
+                        DispatchQueue.main.async { self.onCommand(obj) }
+                    }
+                }
+            }
+            self.lock.lock()
+            if self.fd == sock { self.fd = -1 }
+            self.lock.unlock()
+            Darwin.close(sock)
+        }
+    }
+
+    func sendEvent(_ dict: [String: Any]) {
+        guard !path.isEmpty else { return }
+        writeQueue.async { [weak self] in
+            guard let self else { return }
+            self.lock.lock()
+            let sock = self.fd
+            self.lock.unlock()
+            guard sock >= 0,
+                  var data = try? JSONSerialization.data(withJSONObject: dict) else { return }
+            data.append(0x0A)
+            _ = data.withUnsafeBytes { raw in
+                guard let base = raw.baseAddress else { return 0 }
+                return Darwin.write(sock, base, raw.count)
+            }
+        }
+    }
+}
+
+func flagEmoji(for country: String) -> String {
+    let code = country.uppercased()
+    guard code.count == 2 else { return "" }
+    var scalars = String.UnicodeScalarView()
+    for scalar in code.unicodeScalars {
+        let v = scalar.value
+        guard v >= 65 && v <= 90, let flag = UnicodeScalar(127397 + v) else { return "" }
+        scalars.append(flag)
+    }
+    return String(scalars)
+}
+
 final class ADBHelper {
     let bin: String
     let serial: String
@@ -676,6 +749,8 @@ final class ViewportView: NSView {
     private let adb: ADBHelper
     private let onToast: (String) -> Void
     private let onShortcut: (String) -> Void
+    var onMasterEvent: (([String: Any]) -> Void)?
+    var syncMaster = false
     let metalLayer: CAMetalLayer?
     private var touching = false
     private var wheelTimer: DispatchWorkItem?
@@ -742,51 +817,75 @@ final class ViewportView: NSView {
         }
     }
 
-    private func touchCoords(for event: NSEvent) -> (Int, Int) {
+    private func normalizedCoords(for event: NSEvent) -> (Double, Double) {
         let pt = convert(event.locationInWindow, from: nil)
         let w = max(bounds.width, 1)
         let h = max(bounds.height, 1)
-        let nx = max(0.0, min(1.0, pt.x / w))
-        let ny = max(0.0, min(1.0, 1.0 - (pt.y / h)))
+        let nx = max(0.0, min(1.0, Double(pt.x / w)))
+        let ny = max(0.0, min(1.0, 1.0 - Double(pt.y / h)))
+        return (nx, ny)
+    }
+
+    private func touchCoords(for event: NSEvent) -> (Int, Int) {
+        let (nx, ny) = normalizedCoords(for: event)
         return (Int(nx * 32767.0), Int(ny * 32767.0))
     }
 
     override func mouseDown(with event: NSEvent) {
         window?.makeFirstResponder(self)
         touching = true
-        let (tx, ty) = touchCoords(for: event)
+        let (nx, ny) = normalizedCoords(for: event)
+        let (tx, ty) = (Int(nx * 32767.0), Int(ny * 32767.0))
         client.send("touch 0 1:\(tx):\(ty)")
+        if syncMaster {
+            onMasterEvent?(["ev": "touch", "phase": "down", "rx": nx, "ry": ny])
+        }
     }
 
     override func mouseDragged(with event: NSEvent) {
         guard touching else { return }
-        let (tx, ty) = touchCoords(for: event)
+        let (nx, ny) = normalizedCoords(for: event)
+        let (tx, ty) = (Int(nx * 32767.0), Int(ny * 32767.0))
         client.send("touch 0 1:\(tx):\(ty)")
+        if syncMaster {
+            onMasterEvent?(["ev": "touch", "phase": "move", "rx": nx, "ry": ny])
+        }
     }
 
     override func mouseUp(with event: NSEvent) {
         guard touching else { return }
         touching = false
         client.send("touch 0")
+        if syncMaster {
+            let (nx, ny) = normalizedCoords(for: event)
+            onMasterEvent?(["ev": "touch", "phase": "up", "rx": nx, "ry": ny])
+        }
     }
 
     override func rightMouseDown(with event: NSEvent) {
         client.sendBatch(["key 158 1", "key 158 0"]) // KEY_BACK
+        if syncMaster {
+            onMasterEvent?(["ev": "key", "code": 158, "down": true])
+        }
     }
 
     override func scrollWheel(with event: NSEvent) {
         let dy = event.scrollingDeltaY
         if abs(dy) < 0.1 { return }
+        let (nx, ny) = normalizedCoords(for: event)
         if !wheelActive {
             wheelActive = true
-            let (tx, ty) = touchCoords(for: event)
-            wheelX = tx
-            wheelY = ty
+            wheelX = Int(nx * 32767.0)
+            wheelY = Int(ny * 32767.0)
             client.send("touch 0 2:\(wheelX):\(wheelY)")
         }
         let step = Int(dy * (event.hasPreciseScrollingDeltas ? 24.0 : 120.0))
         wheelY = max(0, min(32767, wheelY + step))
         client.send("touch 0 2:\(wheelX):\(wheelY)")
+        if syncMaster {
+            let dyNorm = Double(step) / 32767.0
+            onMasterEvent?(["ev": "scroll", "rx": nx, "ry": ny, "dy": dyNorm])
+        }
         wheelTimer?.cancel()
         let work = DispatchWorkItem { [weak self] in
             guard let self = self, self.wheelActive else { return }
@@ -826,6 +925,9 @@ final class ViewportView: NSView {
         }
         if let special = specialKeyCode(event.keyCode) {
             client.sendBatch(["key \(special) 1", "key \(special) 0"])
+            if syncMaster {
+                onMasterEvent?(["ev": "key", "code": special, "down": true])
+            }
             return
         }
         if let chars = event.characters, !chars.isEmpty {
@@ -840,6 +942,9 @@ final class ViewportView: NSView {
             }
             if !batch.isEmpty {
                 client.sendBatch(batch)
+                if syncMaster {
+                    onMasterEvent?(["ev": "text", "text": chars])
+                }
                 return
             }
         }
@@ -877,6 +982,9 @@ final class ViewportView: NSView {
             }
             if allASCII && !batch.isEmpty {
                 client.sendBatch(batch)
+                if syncMaster {
+                    onMasterEvent?(["ev": "text", "text": text])
+                }
                 return
             }
         }
@@ -888,6 +996,9 @@ final class ViewportView: NSView {
             .replacingOccurrences(of: "'", with: "'\\''")
             .replacingOccurrences(of: " ", with: "%s")
         adb.run(["shell", "input text '\(escaped)'"])
+        if syncMaster {
+            onMasterEvent?(["ev": "text", "text": singleLine])
+        }
     }
 
     // MARK: - Drag and Drop (APK install & media push)
@@ -1105,6 +1216,7 @@ final class RailButton: NSButton {
 
 final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private let controlPath: String
+    private let viewSockPath: String
     private let titleText: String
     private let initialRect: NSRect
     private var onTop: Bool
@@ -1113,11 +1225,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private let ownerPID: pid_t
     private let noFocus: Bool
     private var minimized: Bool = false
+    private var isOccluded: Bool = false
+    private var isBossHidden: Bool = false
+    private var fgFPS: Int = 0
+    private var bgFPS: Int = 15
     private var closingFromSignal: Bool = false
     private var termSource: DispatchSourceSignal?
     private let boundsFile: String
     private let adb: ADBHelper
     private let client: ControlClient
+    private var viewIPC: ViewIPCClient?
     private let metalRenderer = MetalRenderer()
     private lazy var cameraFeeder = CameraFeeder(controlPath: controlPath, metalDevice: metalRenderer?.device) { [weak self] msg in
         self?.showToast(msg)
@@ -1132,6 +1249,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var toastTimer: DispatchWorkItem?
     private var pinBtn: RailButton!
     private var muteBtn: RailButton!
+    private var badgeContainer: NSView?
+    private var badgeDot: NSView?
+    private var badgeLabel: NSTextField?
+    private var syncBadgeLabel: NSTextField?
 
     private let surface = ShmSurface()
     private let renderQueue = DispatchQueue(label: "anyprofile.view.render", qos: .userInteractive)
@@ -1142,8 +1263,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var guestH: Int = 0
     private var landscape = false
 
-    init(controlPath: String, title: String, rect: NSRect, onTop: Bool, muted: Bool, appMode: Bool, ownerPID: pid_t, noFocus: Bool, boundsFile: String, adbBin: String, adbSerial: String) {
+    init(controlPath: String, viewSockPath: String, title: String, rect: NSRect, onTop: Bool, muted: Bool, appMode: Bool, ownerPID: pid_t, noFocus: Bool, boundsFile: String, adbBin: String, adbSerial: String) {
         self.controlPath = controlPath
+        self.viewSockPath = viewSockPath
         self.titleText = title
         self.initialRect = rect
         self.onTop = onTop
@@ -1186,7 +1308,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                                     if kind == "screenshot" { self?.actionScreenshot() }
                                     else if kind == "rotate" { self?.actionRotate() }
                                 })
+        viewport.onMasterEvent = { [weak self] ev in
+            self?.viewIPC?.sendEvent(ev)
+        }
         root.addSubview(viewport)
+        installTitlebarAccessory()
 
         rail = buildRail()
         rail.isHidden = appMode
@@ -1223,8 +1349,170 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             window.orderFront(nil)
         }
         installSignalHandler()
-        client.sendBatch(["resume", "fps 0"])
+        if !viewSockPath.isEmpty {
+            let ipc = ViewIPCClient(path: viewSockPath) { [weak self] obj in
+                self?.handleIPCCommand(obj)
+            }
+            self.viewIPC = ipc
+            ipc.start()
+        }
+        client.sendBatch(["resume", "fps \(shouldFocus ? fgFPS : bgFPS)"])
         startFrameReader()
+    }
+
+    private func installTitlebarAccessory() {
+        let holder = NSStackView()
+        holder.orientation = .horizontal
+        holder.alignment = .centerY
+        holder.spacing = 5
+        holder.edgeInsets = NSEdgeInsets(top: 0, left: 0, bottom: 0, right: 8)
+
+        let syncLbl = NSTextField(labelWithString: "")
+        syncLbl.font = .systemFont(ofSize: 10, weight: .semibold)
+        syncLbl.textColor = .white
+        syncLbl.wantsLayer = true
+        syncLbl.layer?.cornerRadius = 4
+        syncLbl.layer?.backgroundColor = NSColor.systemBlue.withAlphaComponent(0.75).cgColor
+        syncLbl.isHidden = true
+        self.syncBadgeLabel = syncLbl
+        holder.addArrangedSubview(syncLbl)
+
+        let pill = NSStackView()
+        pill.orientation = .horizontal
+        pill.alignment = .centerY
+        pill.spacing = 4
+        pill.edgeInsets = NSEdgeInsets(top: 2, left: 6, bottom: 2, right: 6)
+        pill.wantsLayer = true
+        pill.layer?.cornerRadius = 8
+        pill.layer?.backgroundColor = NSColor(white: 1.0, alpha: 0.08).cgColor
+        pill.isHidden = true
+
+        let dot = NSView(frame: NSRect(x: 0, y: 0, width: 7, height: 7))
+        dot.wantsLayer = true
+        dot.layer?.cornerRadius = 3.5
+        dot.layer?.backgroundColor = NSColor.systemGreen.cgColor
+        dot.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([dot.widthAnchor.constraint(equalToConstant: 7), dot.heightAnchor.constraint(equalToConstant: 7)])
+
+        let lbl = NSTextField(labelWithString: "")
+        lbl.font = .systemFont(ofSize: 10.5, weight: .medium)
+        lbl.textColor = NSColor(white: 0.92, alpha: 1.0)
+        lbl.lineBreakMode = .byTruncatingTail
+
+        pill.addArrangedSubview(dot)
+        pill.addArrangedSubview(lbl)
+        holder.addArrangedSubview(pill)
+
+        self.badgeContainer = pill
+        self.badgeDot = dot
+        self.badgeLabel = lbl
+
+        let acc = NSTitlebarAccessoryViewController()
+        acc.view = holder
+        acc.layoutAttribute = .trailing
+        window.addTitlebarAccessoryViewController(acc)
+    }
+
+    private func applyEffectiveFPS() {
+        if minimized || isOccluded || isBossHidden {
+            client.send("fps 1")
+            return
+        }
+        if window?.isKeyWindow == true {
+            client.sendBatch(["resume", "fps \(fgFPS)"])
+        } else {
+            client.send("fps \(bgFPS)")
+        }
+    }
+
+    private func handleIPCCommand(_ obj: [String: Any]) {
+        guard let cmd = obj["cmd"] as? String else { return }
+        switch cmd {
+        case "set-frame":
+            guard let x = (obj["x"] as? NSNumber)?.doubleValue,
+                  let y = (obj["y"] as? NSNumber)?.doubleValue,
+                  let w = (obj["w"] as? NSNumber)?.doubleValue,
+                  let h = (obj["h"] as? NSNumber)?.doubleValue else { return }
+            let screenH = window.screen?.frame.height ?? NSScreen.main?.frame.height ?? 900
+            let content = NSRect(x: x, y: max(0, screenH - y - h), width: w + toolbarWidth, height: h)
+            let frameRect = window.frameRect(forContentRect: content)
+            window.setFrame(frameRect, display: true, animate: false)
+            layoutSubviews()
+            scheduleRender(force: true)
+            saveBounds()
+        case "set-title":
+            if let t = obj["title"] as? String, !t.isEmpty {
+                window.title = t
+            }
+        case "set-on-top":
+            let on = (obj["on"] as? Bool) ?? false
+            onTop = on
+            window.level = onTop ? .floating : .normal
+            pinBtn?.setSymbol(onTop ? "pin.fill" : "pin")
+            pinBtn?.activeTint = onTop ? NSColor.systemBlue : nil
+            saveBounds()
+        case "set-muted":
+            let m = (obj["muted"] as? Bool) ?? false
+            muted = m
+            muteBtn?.setSymbol(muted ? "speaker.slash" : "speaker.wave.2")
+            muteBtn?.activeTint = muted ? NSColor.systemRed : nil
+            saveBounds()
+        case "set-visible":
+            let visible = (obj["visible"] as? Bool) ?? true
+            isBossHidden = !visible
+            if visible {
+                window.orderFront(nil)
+            } else {
+                window.orderOut(nil)
+            }
+            applyEffectiveFPS()
+        case "set-fps":
+            if let fg = (obj["fg"] as? NSNumber)?.intValue { fgFPS = max(0, fg) }
+            if let bg = (obj["bg"] as? NSNumber)?.intValue { bgFPS = max(1, bg) }
+            applyEffectiveFPS()
+        case "badge":
+            let country = (obj["country"] as? String) ?? ""
+            let status = (obj["status"] as? String) ?? "direct"
+            let label = (obj["label"] as? String) ?? ""
+            let flag = flagEmoji(for: country)
+            let text: String
+            if !flag.isEmpty {
+                text = "\(flag) \(country.uppercased())"
+            } else if !country.isEmpty {
+                text = country.uppercased()
+            } else if status == "direct" {
+                text = "Direct"
+            } else {
+                text = "Proxy"
+            }
+            badgeLabel?.stringValue = text
+            badgeContainer?.toolTip = label.isEmpty ? text : label
+            let color: NSColor
+            switch status {
+            case "ok": color = .systemGreen
+            case "err": color = .systemRed
+            default: color = NSColor(white: 0.55, alpha: 1.0)
+            }
+            badgeDot?.layer?.backgroundColor = color.cgColor
+            badgeContainer?.isHidden = false
+        case "sync-role":
+            let role = (obj["role"] as? String) ?? "none"
+            let count = (obj["count"] as? NSNumber)?.intValue ?? 0
+            viewport.syncMaster = (role == "master")
+            if role == "master" {
+                syncBadgeLabel?.stringValue = count > 0 ? " SYNC · \(count) " : " MASTER "
+                syncBadgeLabel?.layer?.backgroundColor = NSColor.systemBlue.withAlphaComponent(0.85).cgColor
+                syncBadgeLabel?.isHidden = false
+            } else if role == "follower" {
+                syncBadgeLabel?.stringValue = " SYNC "
+                syncBadgeLabel?.layer?.backgroundColor = NSColor(white: 1.0, alpha: 0.16).cgColor
+                syncBadgeLabel?.isHidden = false
+            } else {
+                syncBadgeLabel?.isHidden = true
+            }
+        default:
+            break
+        }
     }
 
     private func installSignalHandler() {
@@ -1440,6 +1728,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             adb.run(["shell", "cmd media_session volume --stream 3 --set \(vol)"])
         }
         saveBounds()
+        viewIPC?.sendEvent(["ev": "mute-toggle", "muted": muted])
         showToast(muted ? "Muted" : "Unmuted")
     }
 
@@ -1464,18 +1753,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             minimized = false
             saveBounds()
         }
-        client.sendBatch(["resume", "fps 0"])
+        viewIPC?.sendEvent(["ev": "focus"])
+        applyEffectiveFPS()
     }
-    func windowDidResignKey(_ notification: Notification) { client.send("fps 15") }
+    func windowDidResignKey(_ notification: Notification) { applyEffectiveFPS() }
     func windowDidMiniaturize(_ notification: Notification) {
         minimized = true
         saveBounds()
-        client.send("fps 1")
+        applyEffectiveFPS()
     }
     func windowDidDeminiaturize(_ notification: Notification) {
         minimized = false
         saveBounds()
-        client.sendBatch(["resume", "fps 0"])
+        applyEffectiveFPS()
+    }
+    func windowDidChangeOcclusionState(_ notification: Notification) {
+        isOccluded = !window.occlusionState.contains(.visible)
+        applyEffectiveFPS()
+        if !isOccluded {
+            scheduleRender(force: true)
+        }
     }
 
     private func applyGuestAspect(w: Int, h: Int) {
@@ -1542,6 +1839,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var forceNextFrame = false
 
     private func scheduleRender(force: Bool = false) {
+        if !force && (isOccluded || isBossHidden) {
+            return
+        }
         pendingLock.lock()
         if force { forceNextFrame = true }
         if framePending {
@@ -1634,6 +1934,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 }
 
 var controlPath = ""
+var viewSockPath = ""
 var title = "AnyProfile Mobile"
 var winX: Double = 1040
 var winY: Double = 80
@@ -1653,6 +1954,7 @@ let args = CommandLine.arguments
 while i < args.count {
     switch args[i] {
     case "--control":     if i + 1 < args.count { controlPath = args[i + 1]; i += 1 }
+    case "--view-sock":   if i + 1 < args.count { viewSockPath = args[i + 1]; i += 1 }
     case "--title":       if i + 1 < args.count { title = args[i + 1]; i += 1 }
     case "--x":           if i + 1 < args.count { winX = Double(args[i + 1]) ?? winX; i += 1 }
     case "--y":           if i + 1 < args.count { winY = Double(args[i + 1]) ?? winY; i += 1 }
@@ -1679,7 +1981,7 @@ guard !controlPath.isEmpty else {
 signal(SIGPIPE, SIG_IGN)
 let app = NSApplication.shared
 app.setActivationPolicy(.accessory)
-let delegate = AppDelegate(controlPath: controlPath, title: title,
+let delegate = AppDelegate(controlPath: controlPath, viewSockPath: viewSockPath, title: title,
                            rect: NSRect(x: winX, y: winY, width: winW, height: winH),
                            onTop: onTop, muted: muted, appMode: appMode, ownerPID: ownerPID,
                            noFocus: noFocus, boundsFile: boundsFile,

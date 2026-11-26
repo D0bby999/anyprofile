@@ -15,8 +15,12 @@ type Props = {
   proxies: service.ProxyRow[]
   canUse: boolean
   working: boolean
+  hostRunning?: boolean
   onClose: () => void
   onOpen: (app: store.MobileAPK) => void
+  onCloseApp?: (app: store.MobileAPK) => void
+  onClearCache?: (app: store.MobileAPK) => void
+  onClearData?: (app: store.MobileAPK) => void
   onCreateShortcut: (pkg: string) => void
   onRemove: (app: store.MobileAPK) => void
   onChanged: () => void
@@ -24,7 +28,7 @@ type Props = {
 
 /** Standalone APK editor panel: mirrors ProfileDrawer's split-drawer design next to the table. */
 export function ApkDrawer({
-  app, proxies, canUse, working, onClose, onOpen, onCreateShortcut, onRemove, onChanged,
+  app, proxies, canUse, working, hostRunning = false, onClose, onOpen, onCloseApp, onClearCache, onClearData, onCreateShortcut, onRemove, onChanged,
 }: Props) {
   const toast = useToast()
   const [proxyId, setProxyId] = useState(app.proxyId || '')
@@ -77,6 +81,17 @@ export function ApkDrawer({
           <span className="chip">{app.abis?.length ? app.abis[0] : t.apk.universalAbi}</span>
           {app.shortcutPath && <span className="chip ok">{t.apk.shortcutCreated}</span>}
           <span className="spacer" />
+          {hostRunning && onCloseApp && (
+            <button
+              type="button"
+              className="btn sm"
+              disabled={!canUse || working}
+              onClick={() => onCloseApp(app)}
+            >
+              <Icon name="stop" className="icon sm" />
+              {t.apk.closeApp}
+            </button>
+          )}
           <button
             type="button"
             className={`btn sm primary actbtn${working ? ' busy' : ''}`}
@@ -219,6 +234,30 @@ export function ApkDrawer({
               </span>
               {app.lastOpenAt && (
                 <span className="dfacts">{relativeTime(app.lastOpenAt)}</span>
+              )}
+              {(onClearCache || onClearData) && (
+                <div className="row" style={{ flexWrap: 'wrap' }}>
+                  {onClearCache && (
+                    <button
+                      type="button"
+                      className="btn sm"
+                      disabled={!hostRunning || working}
+                      onClick={() => onClearCache(app)}
+                    >
+                      <Icon name="layers" className="icon sm" />{t.apk.clearCache}
+                    </button>
+                  )}
+                  {onClearData && (
+                    <button
+                      type="button"
+                      className="btn sm"
+                      disabled={!hostRunning || working}
+                      onClick={() => onClearData(app)}
+                    >
+                      <Icon name="refresh" className="icon sm" />{t.apk.clearData}
+                    </button>
+                  )}
+                </div>
               )}
               <button
                 type="button"

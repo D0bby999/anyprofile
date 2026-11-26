@@ -6,25 +6,25 @@ package vm
 
 import "testing"
 
-// A phone window stands at the right edge in iPhone 19.5:9 proportion, and
-// every device opened after it stands beside it instead of landing on the same spot.
+// A phone window stands cleanly from left to right in iPhone 19.5:9 proportion,
+// and every device opened after it stands beside it instead of overlapping.
 func TestDefaultWindowStandsPhonesSideBySide(t *testing.T) {
 	area := windowRect{X: 0, Y: 30, W: 1440, H: 812}
 	first := defaultWindowIn(area, 0, 0, 0)
-	// h = 732; w = 732 * 780 / 1688 = 338 (iPhone 19.5:9)
-	if first != (windowState{X: 1074, Y: 70, W: 338, H: 732}) {
+	// h = 732; w = 732 * 780 / 1688 = 338 (iPhone 19.5:9), left margin 16, vertically centered.
+	if first != (windowState{X: 16, Y: 70, W: 338, H: 732}) {
 		t.Fatalf("first = %+v", first)
 	}
-	// Four 338-point phones and three 8-point gaps fit across the work area.
+	// Four 338-point phones and three 10-point gaps fit across the work area left-to-right.
 	for n := 0; n < 4; n++ {
 		got := defaultWindowIn(area, n, 780, 1688)
-		want := first.X - n*(first.W+windowGap)
+		want := first.X + n*(first.W+windowGap)
 		if got.X != want || got.Y != first.Y {
 			t.Fatalf("phone %d = %+v, want x %d y %d", n, got, want, first.Y)
 		}
 	}
-	// The fifth does not fit: it steps off the first column.
-	if got := defaultWindowIn(area, 4, 780, 1688); got.X != first.X-windowCascade || got.Y != first.Y+windowCascade {
+	// The fifth does not fit in one row: it steps off the first column.
+	if got := defaultWindowIn(area, 4, 780, 1688); got.X != first.X+windowCascade || got.Y != first.Y+windowCascade {
 		t.Fatalf("fifth = %+v", got)
 	}
 	// Retina 3x iPhone (1170x2532) keeps the same 19.5:9 window width.

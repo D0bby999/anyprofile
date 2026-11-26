@@ -13,6 +13,8 @@ import {pro} from '../models';
 
 export function APIStatus():Promise<main.APIStatus>;
 
+export function APKHostStatus():Promise<service.APKHostInfo>;
+
 export function AddAPK(arg1:service.APKInput):Promise<store.MobileAPK>;
 
 export function AddExtension(arg1:boolean):Promise<store.Extension>;
@@ -43,6 +45,10 @@ export function CheckProxy(arg1:string):Promise<store.Proxy>;
 
 export function CheckUpdate():Promise<service.UpdateStatus>;
 
+export function ClearAPKCache(arg1:string):Promise<void>;
+
+export function ClearAPKData(arg1:string):Promise<void>;
+
 export function ClearAccountPassword(arg1:string,arg2:string):Promise<void>;
 
 export function ClearCache():Promise<number>;
@@ -50,6 +56,14 @@ export function ClearCache():Promise<number>;
 export function ClearTOTP(arg1:string,arg2:string):Promise<void>;
 
 export function ClearUploads():Promise<number>;
+
+export function CloneMobileDevice(arg1:string,arg2:string,arg3:number,arg4:boolean):Promise<Array<store.MobileDevice>>;
+
+export function CloseAPK(arg1:string,arg2:boolean):Promise<void>;
+
+export function CompactAPKHostDisk():Promise<service.CompactDiskResult>;
+
+export function CompactMobileDisk(arg1:string):Promise<service.CompactDiskResult>;
 
 export function CopyAPIToken():Promise<void>;
 
@@ -117,6 +131,10 @@ export function FileVaultOn():Promise<boolean>;
 
 export function FinishOnboarding():Promise<void>;
 
+export function FixAPKHostPlayProtect():Promise<void>;
+
+export function FixMobilePlayProtect(arg1:string):Promise<void>;
+
 export function FocusProfile(arg1:string):Promise<boolean>;
 
 export function ForgetAccount(arg1:string,arg2:string):Promise<void>;
@@ -178,6 +196,8 @@ export function MaxConcurrentLaunches():Promise<number>;
 export function MobileAvailability():Promise<service.MobileAvailability>;
 
 export function MobileFastStart():Promise<boolean>;
+
+export function MobileHostStats():Promise<mobile.HostStats>;
 
 export function MobileMacroRecording():Promise<string>;
 
@@ -309,7 +329,13 @@ export function SetLanguage(arg1:string):Promise<void>;
 
 export function SetMaxConcurrentLaunches(arg1:number):Promise<void>;
 
+export function SetMobileEcoMode(arg1:boolean):Promise<void>;
+
 export function SetMobileFastStart(arg1:boolean):Promise<void>;
+
+export function SetMobileFocusAudio(arg1:boolean):Promise<void>;
+
+export function SetMobileHotkeysEnabled(arg1:boolean):Promise<void>;
 
 export function SetMobileLocation(arg1:string,arg2:number,arg3:number):Promise<void>;
 
@@ -354,6 +380,8 @@ export function StartProfileAgent(arg1:string):Promise<void>;
 export function StartProfiles(arg1:Array<string>):Promise<Record<string, string>>;
 
 export function StartupError():Promise<string>;
+
+export function StopAPKHost():Promise<void>;
 
 export function StopMacroRecord():Promise<macro.Script>;
 

@@ -40,6 +40,10 @@ const setPreviewMode = (id: string, state: string, mode: string) => {
   emitEvent('launch:changed', { profileId: id, state, mode, pid: state === 'running' ? 1234 : 0, cdpPort: row.cdpPort, error: '' })
 }
 
+let previewEco = false
+let previewFocusAudio = true
+let previewHotkeys = true
+const previewMobileDevices: Array<Record<string, unknown>> = (mobileDevices as unknown as Array<Record<string, unknown>>).map((d) => ({ ...d }))
 const answers: Record<string, unknown> = {
   Language: async () => (params.get('lang') === 'vi' ? 'vi' : 'en'),
   Onboarded: async () => true,
@@ -96,8 +100,42 @@ const answers: Record<string, unknown> = {
     { id: 'youtube', name: 'YouTube', group: 'video', domains: ['youtube.com'], startUrl: 'https://www.youtube.com/', icon: 'youtube', color: '#FF0000' },
     { id: 'other', name: 'Other', group: '', domains: [], startUrl: '', icon: '', color: '#64748B' },
   ],
-  ListMobileDevices: async () => mobileDevices,
+  ListMobileDevices: async () => previewMobileDevices,
   MobileAvailability: async () => ({ ...(mobileAvailability as Record<string, unknown>), pro: proActive }),
+  MobileHostStats: async () => ({
+    totalRamMb: 16384,
+    usedRamMb: 8602,
+    availableRamMb: 7782,
+    cpuPercent: 24.5,
+    cpuCores: 10,
+    runningDevices: previewMobileDevices.filter((d) => d.state === 'running').length,
+    recommendedExtra: previewEco ? 2 : 1,
+    ecoMode: previewEco,
+    focusAudio: previewFocusAudio,
+    hotkeysEnabled: previewHotkeys,
+  }),
+  SetMobileEcoMode: async (on: boolean) => { previewEco = on },
+  SetMobileFocusAudio: async (on: boolean) => { previewFocusAudio = on },
+  SetMobileHotkeysEnabled: async (on: boolean) => { previewHotkeys = on },
+  FixMobilePlayProtect: async () => {},
+  CompactMobileDisk: async () => ({ beforeMb: 4820, afterMb: 3410, freedMb: 1410 }),
+  CloneMobileDevice: async (srcId: string, baseName: string, count: number) => {
+    const src = previewMobileDevices.find((d) => d.id === srcId) ?? previewMobileDevices[0]
+    const n = Math.max(1, Math.min(10, count || 1))
+    const made = []
+    for (let i = 0; i < n; i++) {
+      const copy = {
+        ...src,
+        id: `clone-${Date.now()}-${i}`,
+        name: n === 1 ? baseName || `${src.name} Copy` : `${baseName || src.name} #${i + 1}`,
+        state: 'stopped',
+        proxyId: '',
+      }
+      previewMobileDevices.push(copy)
+      made.push(copy)
+    }
+    return made
+  },
   ListAPKs: async () => previewAPKs,
   PickAPKFile: async () => '/Users/dobby/Downloads/TikTok-37.4.xapk',
   InspectAPK: async () => ({
@@ -245,6 +283,13 @@ const answers: Record<string, unknown> = {
     abiWarning: '',
   }),
   LaunchAPK: async () => {},
+  CloseAPK: async () => {},
+  APKHostStatus: async () => ({ hostId: 'apk-runner', state: 'running', diskMb: 4920 }),
+  StopAPKHost: async () => {},
+  CompactAPKHostDisk: async () => ({ beforeMb: 4920, afterMb: 3580, freedMb: 1340 }),
+  FixAPKHostPlayProtect: async () => {},
+  ClearAPKCache: async () => {},
+  ClearAPKData: async () => {},
   MobileFastStart: async () => true,
   MaxConcurrentLaunches: async () => 0,
   SetMaxConcurrentLaunches: async () => {},

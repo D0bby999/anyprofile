@@ -43,6 +43,9 @@ type Props = {
   onRestore: (id: string) => void
   onInstallAurora: (id: string) => void
   onInstallApps: (id: string) => void
+  onClone?: (row: service.MobileRow) => void
+  onCompact?: (id: string) => void
+  onFixPlayProtect?: (id: string) => void
   onTrash: (row: service.MobileRow) => void
   recording?: boolean
   busy?: boolean
@@ -52,7 +55,8 @@ type Props = {
 /** Everything about one Android mobile device, edited in place next to the table. */
 export function MobileDrawer({
   row, proxies, knownTags, onClose, onStart, onStop, onShow, onView, onScreenshot,
-  onRecord, onTop, onBackup, onRestore, onInstallAurora, onInstallApps, onTrash,
+  onRecord, onTop, onBackup, onRestore, onInstallAurora, onInstallApps,
+  onClone, onCompact, onFixPlayProtect, onTrash,
   recording = false, busy = false, onChanged,
 }: Props) {
   const toast = useToast()
@@ -238,7 +242,22 @@ export function MobileDrawer({
                     <dt>{t.mobile.adbPort}</dt>
                     <dd className="mono">{row.adbPort ? `127.0.0.1:${row.adbPort}` : '—'}</dd>
                   </dl>
-                  <div className="row" style={{ marginTop: 8 }}>
+                  <div className="row" style={{ marginTop: 8, flexWrap: 'wrap' }}>
+                    {onClone && (
+                      <button type="button" className="btn sm" disabled={row.state !== 'stopped' || isBusy} onClick={() => onClone(row)}>
+                        <Icon name="copy" className="icon sm" />{t.mobile.clone}
+                      </button>
+                    )}
+                    {onCompact && (
+                      <button type="button" className="btn sm" disabled={isBusy} onClick={() => onCompact(row.id)}>
+                        <Icon name="layers" className="icon sm" />{t.mobile.compactDisk}
+                      </button>
+                    )}
+                    {onFixPlayProtect && (
+                      <button type="button" className="btn sm" disabled={!running || isBusy} onClick={() => onFixPlayProtect(row.id)}>
+                        <Icon name="refresh" className="icon sm" />{t.mobile.fixPlayProtect}
+                      </button>
+                    )}
                     <button type="button" className="btn sm" disabled={row.state !== 'stopped' || isBusy} onClick={() => onBackup(row.id)}>
                       <Icon name="download" className="icon sm" />{t.mobile.backup}
                     </button>

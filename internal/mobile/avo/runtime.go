@@ -60,7 +60,7 @@ func Locate(avoRoot string) (Runtime, error) {
 	r := Runtime{
 		Root:         avoRoot,
 		VMM:          filepath.Join(engRoot, "bin", "anyprofile-vmm"),
-		View:         filepath.Join(engRoot, "bin", "anyprofile-view"),
+		View:         bundledOrEngineView(engRoot),
 		ADB:          filepath.Join(engRoot, "bin", "adb"),
 		GfxstreamDir: filepath.Join(engRoot, "gfxstream"),
 		ProfilesDir:  filepath.Join(engRoot, "profiles"),
@@ -89,6 +89,16 @@ func Locate(avoRoot string) (Runtime, error) {
 		}
 	}
 	return r, nil
+}
+
+func bundledOrEngineView(engRoot string) string {
+	if exe, err := os.Executable(); err == nil {
+		bundled := filepath.Join(filepath.Dir(exe), "..", "Resources", "anyprofile-view")
+		if exists(bundled) {
+			return bundled
+		}
+	}
+	return filepath.Join(engRoot, "bin", "anyprofile-view")
 }
 
 func exists(p string) bool {

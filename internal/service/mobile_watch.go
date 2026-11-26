@@ -83,16 +83,42 @@ func (s *Service) watchMobileProxies(ctx context.Context, misses map[string]int)
 					s.notify("proxies")
 				}
 			}
+			if misses[id] >= proxyWatchMisses {
+				lbl := px.Label
+				if lbl == "" {
+					lbl = px.Host
+				}
+				s.updateProxyBadges(id, px.Country, "err", lbl+" — Proxy offline")
+			}
 			continue
 		}
 		misses[id] = 0
 		if px.FailedAt != "" {
 			_, _ = s.CheckProxyByID(ctx, id)
+			lbl := px.Label
+			if lbl == "" {
+				lbl = px.Host
+			}
+			s.updateProxyBadges(id, px.Country, "ok", lbl)
 		}
 	}
 	for id := range misses {
 		if !seen[id] {
 			delete(misses, id)
+		}
+	}
+}
+
+func (s *Service) updateProxyBadges(proxyID, country, status, label string) {
+	if s.Mobile == nil {
+		return
+	}
+	for _, in := range s.Mobile.List() {
+		if in.State != mobile.Running {
+			continue
+		}
+		if d, err := s.Store.GetMobileDevice(in.DeviceID); err == nil && d.ProxyID == proxyID {
+			s.pushMobileBadge(d.ID, country, status, label)
 		}
 	}
 }

@@ -2,6 +2,7 @@
 WAILS       ?= $(shell command -v wails 2>/dev/null || echo $(HOME)/go/bin/wails)
 GOVULNCHECK ?= $(shell command -v govulncheck 2>/dev/null || echo $(HOME)/go/bin/govulncheck)
 FURY_CONFIG := tools/fury-config/target/release/fury-config
+ANYPROFILE_VIEW := build/anyprofile-view
 APP         := build/bin/AnyProfile.app
 # The app's version, from wails.json; the in-app updater compares against it.
 VERSION     ?= $(shell sed -n 's/.*"productVersion": *"\([^"]*\)".*/\1/p' wails.json)
@@ -11,10 +12,16 @@ MOBILE_RUNTIME ?= $(HOME)/Library/Application Support/AnyProfile/mobile/runtime
 BENCH_RUNS     ?= 3
 BENCH_OUT      ?= build/mobile-bench
 
-.PHONY: dev build build-windows fury-config test test-integration lint mobile-bench mobile-faststart
+.PHONY: dev build build-windows fury-config anyprofile-view test test-integration lint mobile-bench mobile-faststart
 
 fury-config:
 	cd tools/fury-config && cargo build --release --locked
+
+anyprofile-view: tools/anyprofile-view/main.swift
+	@mkdir -p build
+	swiftc -O -framework AppKit -framework AVFoundation -framework CoreGraphics \
+		-framework CoreImage -framework ImageIO -framework Metal -framework QuartzCore \
+		tools/anyprofile-view/main.swift -o $(ANYPROFILE_VIEW)
 
 dev: fury-config
 	$(WAILS) dev
@@ -33,10 +40,12 @@ SIGN_FLAGS ?=
 # not a bare executable sitting in Resources: fury-config kept the ad hoc
 # signature Rust gives arm64 binaries, and Apple's notary service rejected the
 # archive for it. It is signed on its own first, then sealed by the bundle.
-build: fury-config
+build: fury-config anyprofile-view
 	$(WAILS) build -clean -platform darwin/arm64 -ldflags "$(LDFLAGS)"
 	cp $(FURY_CONFIG) $(APP)/Contents/Resources/fury-config
+	cp $(ANYPROFILE_VIEW) $(APP)/Contents/Resources/anyprofile-view
 	codesign --force $(SIGN_FLAGS) --sign "$(SIGN_ID)" $(APP)/Contents/Resources/fury-config
+	codesign --force $(SIGN_FLAGS) --entitlements tools/anyprofile-view/entitlements.plist --sign "$(SIGN_ID)" $(APP)/Contents/Resources/anyprofile-view
 	codesign --force --deep $(SIGN_FLAGS) --entitlements build/darwin/entitlements.plist --sign "$(SIGN_ID)" $(APP)
 	codesign --verify --deep --strict $(APP)
 

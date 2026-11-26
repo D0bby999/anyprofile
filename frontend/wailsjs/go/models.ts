@@ -249,6 +249,36 @@ export namespace mobile {
 	        this.latest = source["latest"];
 	    }
 	}
+	export class HostStats {
+	    totalRamMb: number;
+	    usedRamMb: number;
+	    availableRamMb: number;
+	    cpuPercent: number;
+	    cpuCores: number;
+	    runningDevices: number;
+	    recommendedExtra: number;
+	    ecoMode: boolean;
+	    focusAudio: boolean;
+	    hotkeysEnabled: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new HostStats(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.totalRamMb = source["totalRamMb"];
+	        this.usedRamMb = source["usedRamMb"];
+	        this.availableRamMb = source["availableRamMb"];
+	        this.cpuPercent = source["cpuPercent"];
+	        this.cpuCores = source["cpuCores"];
+	        this.runningDevices = source["runningDevices"];
+	        this.recommendedExtra = source["recommendedExtra"];
+	        this.ecoMode = source["ecoMode"];
+	        this.focusAudio = source["focusAudio"];
+	        this.hotkeysEnabled = source["hotkeysEnabled"];
+	    }
+	}
 	export class InstallStatus {
 	    runtime: Component;
 	    image: Component;
@@ -450,6 +480,22 @@ export namespace service {
 	        this.enabled = source["enabled"];
 	        this.port = source["port"];
 	        this.agentManage = source["agentManage"];
+	    }
+	}
+	export class APKHostInfo {
+	    hostId: string;
+	    state: string;
+	    diskMb: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new APKHostInfo(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.hostId = source["hostId"];
+	        this.state = source["state"];
+	        this.diskMb = source["diskMb"];
 	    }
 	}
 	export class APKImportInput {
@@ -780,6 +826,22 @@ export namespace service {
 	        this.ok = source["ok"];
 	        this.failed = source["failed"];
 	        this.errors = source["errors"];
+	    }
+	}
+	export class CompactDiskResult {
+	    beforeMb: number;
+	    afterMb: number;
+	    freedMb: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new CompactDiskResult(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.beforeMb = source["beforeMb"];
+	        this.afterMb = source["afterMb"];
+	        this.freedMb = source["freedMb"];
 	    }
 	}
 	export class CookieImport {

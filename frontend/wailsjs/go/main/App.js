@@ -6,6 +6,10 @@ export function APIStatus() {
   return window['go']['main']['App']['APIStatus']();
 }
 
+export function APKHostStatus() {
+  return window['go']['main']['App']['APKHostStatus']();
+}
+
 export function AddAPK(arg1) {
   return window['go']['main']['App']['AddAPK'](arg1);
 }
@@ -66,6 +70,14 @@ export function CheckUpdate() {
   return window['go']['main']['App']['CheckUpdate']();
 }
 
+export function ClearAPKCache(arg1) {
+  return window['go']['main']['App']['ClearAPKCache'](arg1);
+}
+
+export function ClearAPKData(arg1) {
+  return window['go']['main']['App']['ClearAPKData'](arg1);
+}
+
 export function ClearAccountPassword(arg1, arg2) {
   return window['go']['main']['App']['ClearAccountPassword'](arg1, arg2);
 }
@@ -80,6 +92,22 @@ export function ClearTOTP(arg1, arg2) {
 
 export function ClearUploads() {
   return window['go']['main']['App']['ClearUploads']();
+}
+
+export function CloneMobileDevice(arg1, arg2, arg3, arg4) {
+  return window['go']['main']['App']['CloneMobileDevice'](arg1, arg2, arg3, arg4);
+}
+
+export function CloseAPK(arg1, arg2) {
+  return window['go']['main']['App']['CloseAPK'](arg1, arg2);
+}
+
+export function CompactAPKHostDisk() {
+  return window['go']['main']['App']['CompactAPKHostDisk']();
+}
+
+export function CompactMobileDisk(arg1) {
+  return window['go']['main']['App']['CompactMobileDisk'](arg1);
 }
 
 export function CopyAPIToken() {
@@ -214,6 +242,14 @@ export function FinishOnboarding() {
   return window['go']['main']['App']['FinishOnboarding']();
 }
 
+export function FixAPKHostPlayProtect() {
+  return window['go']['main']['App']['FixAPKHostPlayProtect']();
+}
+
+export function FixMobilePlayProtect(arg1) {
+  return window['go']['main']['App']['FixMobilePlayProtect'](arg1);
+}
+
 export function FocusProfile(arg1) {
   return window['go']['main']['App']['FocusProfile'](arg1);
 }
@@ -336,6 +372,10 @@ export function MobileAvailability() {
 
 export function MobileFastStart() {
   return window['go']['main']['App']['MobileFastStart']();
+}
+
+export function MobileHostStats() {
+  return window['go']['main']['App']['MobileHostStats']();
 }
 
 export function MobileMacroRecording() {
@@ -598,8 +638,20 @@ export function SetMaxConcurrentLaunches(arg1) {
   return window['go']['main']['App']['SetMaxConcurrentLaunches'](arg1);
 }
 
+export function SetMobileEcoMode(arg1) {
+  return window['go']['main']['App']['SetMobileEcoMode'](arg1);
+}
+
 export function SetMobileFastStart(arg1) {
   return window['go']['main']['App']['SetMobileFastStart'](arg1);
+}
+
+export function SetMobileFocusAudio(arg1) {
+  return window['go']['main']['App']['SetMobileFocusAudio'](arg1);
+}
+
+export function SetMobileHotkeysEnabled(arg1) {
+  return window['go']['main']['App']['SetMobileHotkeysEnabled'](arg1);
 }
 
 export function SetMobileLocation(arg1, arg2, arg3) {
@@ -688,6 +740,10 @@ export function StartProfiles(arg1) {
 
 export function StartupError() {
   return window['go']['main']['App']['StartupError']();
+}
+
+export function StopAPKHost() {
+  return window['go']['main']['App']['StopAPKHost']();
 }
 
 export function StopMacroRecord() {
