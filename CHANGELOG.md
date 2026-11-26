@@ -3,6 +3,11 @@
 The notes of each release tag are shown in the app's update prompt; this file
 keeps them together.
 
+## 1.2.1 (2026-11-26)
+
+- Upgraded macOS Agent Mode to **Stealth Hidden Headful** Chrome: runs real headful Chromium (no `--headless=new`, preserving real Metal GPU, Retina DPR, window/screen geometry, and codecs against anti-bot/fingerprint checks) hidden at the macOS OS layer (`[NSRunningApplication hide]`) with a background `keepHidden` / `Behind` guard so AI agents never steal screen focus.
+- Added instant `0ms` `Agent ↔ Normal` mode switching on macOS without restarting Chromium: clicking **Open** or **Focus** on a hidden Agent profile unhides it immediately with all tabs, forms, and uploads intact, and `StartAgent` hides a running Normal profile in place.
+
 ## 1.2.0 (2026-11-26)
 
 - Added MuMu-class window management for AnyMobile and APK: bundled `anyprofile-view` inside `AnyProfile.app` with a live `view.sock` IPC channel for zero-flicker 1-frame tiling (`set-frame`), overlap-free left-to-right slot placement, live `set-title` switching for standalone APKs, Focus Audio auto-muting for background phones, and macOS global hotkeys (`⌘⇧A` tile, `⌘⇧M` mute all, `⌘⇧B` boss hide/show).
