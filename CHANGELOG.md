@@ -3,6 +3,10 @@
 The notes of each release tag are shown in the app's update prompt; this file
 keeps them together.
 
+## 1.2.2 (2026-11-26)
+
+- Fixed macOS Space switching and Chrome window flicker during Agent mode open/close/automation: switched macOS Agent mode back to `--headless=new` (zero OS `NSWindow`, zero Dock icon, zero WindowServer Space jumps) while automatically injecting realistic screen `--window-size` and macOS Retina `--force-device-scale-factor=2` alongside AnyBrowser's full fingerprint patches.
+
 ## 1.2.1 (2026-11-26)
 
 - Upgraded macOS Agent Mode to **Stealth Hidden Headful** Chrome: runs real headful Chromium (no `--headless=new`, preserving real Metal GPU, Retina DPR, window/screen geometry, and codecs against anti-bot/fingerprint checks) hidden at the macOS OS layer (`[NSRunningApplication hide]`) with a background `keepHidden` / `Behind` guard so AI agents never steal screen focus.
