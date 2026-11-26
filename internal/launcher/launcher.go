@@ -9,6 +9,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"os"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -180,44 +181,62 @@ func (l *Launcher) set(p *proc, s State, errMsg string) {
 
 // Start opens the profile's browser in normal mode. A profile already open in
 // normal mode is brought to the front; one open in agent mode is switched to
-// normal mode (preserving its tabs) and brought to the front.
+// normal mode (instant unhide on macOS, or clean restart on headless platforms).
 func (l *Launcher) Start(ctx context.Context, profileID string) error {
-	return l.open(ctx, profileID, false, false, false)
+	return l.open(ctx, profileID, false, ModeNormal, false)
 }
 
 // StartBehind opens the profile's browser in normal mode behind the user's app.
 // An already open profile is left where it is.
 func (l *Launcher) StartBehind(ctx context.Context, profileID string) error {
-	return l.open(ctx, profileID, true, false, false)
+	return l.open(ctx, profileID, true, ModeNormal, false)
 }
 
-// StartHeadless opens the profile's browser in agent-only mode (no window so
-// only the agent can operate on it). An already open profile is left as it is.
+// StartHeadless opens the profile's browser in agent-only mode (hidden headful
+// on macOS for a 100% authentic Chrome fingerprint with zero focus stealing, or
+// --headless=new where OS app hiding is unavailable). An already open profile
+// is left as it is.
 func (l *Launcher) StartHeadless(ctx context.Context, profileID string) error {
-	return l.open(ctx, profileID, true, true, false)
+	return l.open(ctx, profileID, true, ModeAgent, false)
 }
 
 // StartAgent opens the profile's browser in agent-only mode. If it is already
-// running in normal mode, it cleanly restarts in agent mode with tabs preserved.
+// running in normal mode, macOS hides it instantly (0ms, no restart); other
+// platforms cleanly restart in headless mode with tabs preserved.
 func (l *Launcher) StartAgent(ctx context.Context, profileID string) error {
 	l.mu.Lock()
 	p, ok := l.procs[profileID]
-	runningNormal := ok && p.info.State == Running && !p.headless
-	l.mu.Unlock()
-	if runningNormal {
+	if ok && p.info.State == Running && p.info.Mode != ModeAgent {
+		if supportsHiddenHeadful() {
+			p.info.Mode = ModeAgent
+			p.behind = true
+			pid := p.info.PID
+			info := p.info
+			l.mu.Unlock()
+			l.onChange(info)
+			front := frontPID()
+			if front == pid {
+				front = os.Getpid()
+			}
+			setHidden(pid, true)
+			go l.keepHidden(p, pid, front)
+			return nil
+		}
+		l.mu.Unlock()
 		if err := l.Stop(profileID); err != nil {
 			return err
 		}
-		return l.open(ctx, profileID, true, true, true)
+		return l.open(ctx, profileID, true, ModeAgent, true)
 	}
-	return l.open(ctx, profileID, true, true, false)
+	l.mu.Unlock()
+	return l.open(ctx, profileID, true, ModeAgent, false)
 }
 
 // claimFront records that the user has asked for a window now, so a browser
 // still being kept behind from an earlier launch stops fighting for it.
 func (l *Launcher) claimFront() { l.focusEpoch.Add(1) }
 
-func (l *Launcher) open(ctx context.Context, profileID string, behind, headless, forceRestore bool) error {
+func (l *Launcher) open(ctx context.Context, profileID string, behind bool, mode Mode, forceRestore bool) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}
@@ -227,30 +246,41 @@ func (l *Launcher) open(ctx context.Context, profileID string, behind, headless,
 		return fmt.Errorf("launcher is stopping all profiles")
 	}
 	if p, ok := l.procs[profileID]; ok {
-		pid, state, wasHeadless := p.info.PID, p.info.State, p.headless
-		l.mu.Unlock()
+		pid, state, curMode, wasHeadless := p.info.PID, p.info.State, p.info.Mode, p.headless
 		if state == Running {
-			if !behind && wasHeadless {
-				// User clicked Open on an agent-mode profile: take over in normal mode.
+			if !behind && curMode == ModeAgent {
+				if !wasHeadless {
+					// Instant 0ms takeover: unhide the already-running headful browser without losing tabs/forms.
+					p.info.Mode = ModeNormal
+					p.behind = false
+					info := p.info
+					l.mu.Unlock()
+					l.onChange(info)
+					l.claimFront()
+					setHidden(pid, false)
+					activate(pid)
+					return nil
+				}
+				l.mu.Unlock()
+				// Headless fallback: restart in normal mode with tabs preserved.
 				if err := l.Stop(profileID); err != nil {
 					return err
 				}
-				return l.open(ctx, profileID, false, false, true)
+				return l.open(ctx, profileID, false, ModeNormal, true)
 			}
+			l.mu.Unlock()
 			if !behind {
 				l.claimFront()
 				activate(pid)
 			}
 			return nil
 		}
+		l.mu.Unlock()
 		return fmt.Errorf("profile is %s", state)
 	}
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	mode := ModeNormal
-	if headless {
-		mode = ModeAgent
-	}
+	headless := mode == ModeAgent && !supportsHiddenHeadful()
 	p := &proc{info: Info{ProfileID: profileID, State: Queued, Mode: mode}, done: make(chan struct{}), behind: behind, headless: headless, forceRestore: forceRestore, cancel: cancel}
 	// Reserve the profile before waiting so duplicate requests cannot queue a
 	// second launch, and Stop/Trash can find and cancel the pending request.

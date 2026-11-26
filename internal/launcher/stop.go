@@ -117,12 +117,12 @@ func (l *Launcher) Focus(profileID string) bool {
 		l.mu.Unlock()
 		return false
 	}
-	state, pid, headless := p.info.State, p.info.PID, p.headless
+	state, pid, mode, headless := p.info.State, p.info.PID, p.info.Mode, p.headless
 	l.mu.Unlock()
 	if state != Running {
 		return false
 	}
-	if headless {
+	if headless || mode == ModeAgent {
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 		return l.Start(ctx, profileID) == nil

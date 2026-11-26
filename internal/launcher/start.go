@@ -142,7 +142,9 @@ func (l *Launcher) start(ctx context.Context, p *proc) error {
 			_ = l.st.EndSession(p.sessionID)
 		}
 	}()
-	if p.behind && !isHeadless {
+	if p.info.Mode == ModeAgent && !isHeadless {
+		go l.keepHidden(p, pid, front)
+	} else if p.behind && !isHeadless {
 		epoch := l.focusEpoch.Load()
 		go l.keepBehind(pid, front, 12*time.Second, epoch, p.done)
 	}
@@ -337,6 +339,55 @@ func (l *Launcher) keepBehind(pid, front int, d time.Duration, epoch int64, done
 	}
 }
 
+// keepHidden keeps a stealth headful Agent-mode browser hidden at the OS layer
+// for its entire Agent session so it carries a 100% authentic Chrome fingerprint
+// (no --headless=new tells) while never appearing on screen or stealing focus.
+func (l *Launcher) keepHidden(p *proc, pid, front int) {
+	if pid == 0 {
+		return
+	}
+	enforce := func() {
+		if frontPID() == pid {
+			setHidden(pid, true)
+			if front == os.Getpid() {
+				activateSelf()
+			} else if front != 0 && front != pid {
+				activate(front)
+			}
+			return
+		}
+		if !isHidden(pid) {
+			setHidden(pid, true)
+		}
+	}
+	// Tight poll during Chromium's startup window (macOS activates the app once
+	// at process launch and again when the first NSWindow maps).
+	fastEnd := time.Now().Add(6 * time.Second)
+	for {
+		select {
+		case <-p.done:
+			return
+		default:
+		}
+		l.mu.Lock()
+		stillAgent := p.info.Mode == ModeAgent
+		l.mu.Unlock()
+		if !stillAgent {
+			return
+		}
+		enforce()
+		interval := 250 * time.Millisecond
+		if time.Now().Before(fastEnd) {
+			interval = 25 * time.Millisecond
+		}
+		select {
+		case <-p.done:
+			return
+		case <-time.After(interval):
+		}
+	}
+}
+
 // Behind is agent.Hub.Behind: when the browser comes in front of the app the
 // user is in during the call it wraps, that app is put back in front.
 func (l *Launcher) Behind(profileID string) func() {
@@ -344,13 +395,29 @@ func (l *Launcher) Behind(profileID string) func() {
 	p, ok := l.procs[profileID]
 	var pid int
 	var headless bool
+	var agentMode bool
 	if ok {
-		pid, headless = p.info.PID, p.headless
+		pid, headless, agentMode = p.info.PID, p.headless, p.info.Mode == ModeAgent
 	}
 	l.mu.Unlock()
 	front := frontPID()
-	if !ok || headless || pid == 0 || front == 0 || front == pid {
-		return func() {} // headless, user is looking at this browser, or we cannot tell
+	if !ok || headless || pid == 0 {
+		return func() {}
+	}
+	if agentMode {
+		return func() {
+			if frontPID() == pid || !isHidden(pid) {
+				setHidden(pid, true)
+				if front == os.Getpid() {
+					activateSelf()
+				} else if front != 0 && front != pid {
+					activate(front)
+				}
+			}
+		}
+	}
+	if front == 0 || front == pid {
+		return func() {} // user is looking at this browser, or we cannot tell
 	}
 	return func() {
 		if waitFront(pid, true, 400*time.Millisecond) {
