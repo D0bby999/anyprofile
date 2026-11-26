@@ -143,8 +143,8 @@ func TestStartWithDevToolsThenStop(t *testing.T) {
 	if code != 200 || out["state"] != "running" || out["devtoolsPort"].(float64) != 9333 || out["webSocketDebuggerUrl"] == "" {
 		t.Fatalf("start = %d %v", code, out)
 	}
-	if !f.devtools || len(f.started) != 1 {
-		t.Fatalf("backend start = %v devtools=%v", f.started, f.devtools)
+	if !f.devtools || !f.headless || len(f.started) != 1 {
+		t.Fatalf("backend start = %v devtools=%v headless=%v", f.started, f.devtools, f.headless)
 	}
 	if code, _ := do(h, "POST", "/v1/profiles/p1/stop", "", nil); code != 200 || len(f.stopped) != 1 {
 		t.Fatalf("stop = %d %v", code, f.stopped)
@@ -152,6 +152,22 @@ func TestStartWithDevToolsThenStop(t *testing.T) {
 	code, out = do(h, "GET", "/v1/profiles", "", nil)
 	if ps, _ := out["profiles"].([]any); code != 200 || len(ps) != 1 {
 		t.Fatalf("list = %d %v", code, out)
+	}
+}
+
+func TestStartDefaultsToAgentModeAndHonorsNormalOverride(t *testing.T) {
+	f, h := setup()
+	if code, _ := do(h, "POST", "/v1/profiles/p1/start", "", nil); code != 200 || !f.headless {
+		t.Fatalf("empty body start: code=%d headless=%v, want agent mode", code, f.headless)
+	}
+	if code, _ := do(h, "POST", "/v1/profiles/p1/start", `{"mode": "normal"}`, nil); code != 200 || f.headless {
+		t.Fatalf("mode=normal start: code=%d headless=%v, want normal mode", code, f.headless)
+	}
+	if code, _ := do(h, "POST", "/v1/profiles/p1/start", `{"headless": false}`, nil); code != 200 || f.headless {
+		t.Fatalf("headless=false start: code=%d headless=%v, want normal mode", code, f.headless)
+	}
+	if code, _ := do(h, "POST", "/v1/profiles/p1/start", `{"mode": "agent"}`, nil); code != 200 || !f.headless {
+		t.Fatalf("mode=agent start: code=%d headless=%v, want agent mode", code, f.headless)
 	}
 }
 

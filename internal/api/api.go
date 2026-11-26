@@ -195,10 +195,27 @@ func (s *Server) get(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, p)
 }
 
+// wantAgentMode defaults API and MCP launches to headless agent mode so agents
+// never pop up a window or steal screen focus while the user is working.
+// Callers only get a visible normal window when they explicitly ask for it.
+func wantAgentMode(mode string, headless *bool) bool {
+	m := strings.TrimSpace(mode)
+	if strings.EqualFold(m, "normal") {
+		return false
+	}
+	if strings.EqualFold(m, "agent") {
+		return true
+	}
+	if headless != nil {
+		return *headless
+	}
+	return true
+}
+
 func (s *Server) start(w http.ResponseWriter, r *http.Request) {
 	var in struct {
 		DevTools bool   `json:"devtools"`
-		Headless bool   `json:"headless"`
+		Headless *bool  `json:"headless"`
 		Mode     string `json:"mode"`
 	}
 	body, err := io.ReadAll(io.LimitReader(r.Body, 4096))
@@ -215,7 +232,7 @@ func (s *Server) start(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	start := s.backend.Start
-	if in.Headless || strings.EqualFold(in.Mode, "agent") {
+	if wantAgentMode(in.Mode, in.Headless) {
 		start = s.backend.StartHeadless
 	}
 	if err := start(r.Context(), id, in.DevTools); err != nil {
