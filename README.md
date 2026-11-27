@@ -12,6 +12,8 @@ Status: beta. macOS 13+ on Apple Silicon, and Windows 10/11 x64.
 Website: [anytools.world/anyprofile](https://anytools.world/en/anyprofile)
 ([Tiếng Việt](https://anytools.world/vi/anyprofile)).
 
+> **Black Friday 2026 (through Dec 1, 23:59 UTC):** AnyProfile Core (Web Antidetect + Local MCP) is **100% Free Forever (AGPL-3.0)**. Get **50% OFF AnyProfile Pro** (Native Android 16 Multi-Phone Farm) on your first billing cycle — **$4 first month** or **$32 first year** — with promo code **`BF2026`** in **Settings → Pro**.
+
 [![Watch AnyProfile Demo](https://anytools.world/apps/anyprofile-demo-poster.jpg?v=20261111)](https://anytools.world/en/anyprofile#ap-demo)
 
 *Watch the walkthrough demo on [anytools.world/anyprofile](https://anytools.world/en/anyprofile#ap-demo) ([Tiếng Việt](https://anytools.world/vi/anyprofile#ap-demo)), or download directly from [GitHub Releases](https://github.com/D0bby999/anyprofile/releases/latest): [16:9 Demo (EN)](https://github.com/D0bby999/anyprofile/releases/latest/download/anyprofile-demo-en.mp4) · [16:9 Demo (VI)](https://github.com/D0bby999/anyprofile/releases/latest/download/anyprofile-demo-vi.mp4) · [9:16 Short (EN)](https://github.com/D0bby999/anyprofile/releases/latest/download/anyprofile-short-en.mp4) · [9:16 Short (VI)](https://github.com/D0bby999/anyprofile/releases/latest/download/anyprofile-short-vi.mp4).*
