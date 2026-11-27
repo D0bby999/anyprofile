@@ -38,9 +38,28 @@ type Identity struct {
 
 // Carrier holds SIM/network operator properties matching a proxy's country.
 type Carrier struct {
-	Alpha   string
-	Numeric string
-	ISO     string
+	Alpha        string
+	Numeric      string
+	ISO          string
+	CallingCode  string
+	MobilePrefix string
+	NSNLen       int // national significant number length (excluding calling code)
+}
+
+// SIMProfile holds a deterministic, realistic per-device SIM and modem identity
+// passed to anyprofile-vmm's modem simulator over control.sock.
+type SIMProfile struct {
+	PLMN     string
+	Operator string
+	IMSI     string
+	ICCID    string
+	MSISDN   string
+	IMEI     string
+}
+
+// ControlCommand formats the `sim` control.sock command for anyprofile-vmm.
+func (s SIMProfile) ControlCommand() string {
+	return fmt.Sprintf("sim %s %s %s %s %s %s", s.PLMN, s.IMSI, s.ICCID, s.MSISDN, s.IMEI, s.Operator)
 }
 
 var identityTemplates = []Identity{
@@ -227,21 +246,21 @@ var identityTemplates = []Identity{
 }
 
 var countryCarriers = map[string]Carrier{
-	"VN": {Alpha: "Viettel", Numeric: "45204", ISO: "vn"},
-	"US": {Alpha: "T-Mobile", Numeric: "310260", ISO: "us"},
-	"GB": {Alpha: "Vodafone UK", Numeric: "23415", ISO: "gb"},
-	"DE": {Alpha: "Telekom.de", Numeric: "26201", ISO: "de"},
-	"FR": {Alpha: "Orange F", Numeric: "20801", ISO: "fr"},
-	"JP": {Alpha: "NTT DOCOMO", Numeric: "44010", ISO: "jp"},
-	"KR": {Alpha: "SKTelecom", Numeric: "45005", ISO: "kr"},
-	"SG": {Alpha: "Singtel", Numeric: "52501", ISO: "sg"},
-	"TH": {Alpha: "AIS", Numeric: "52003", ISO: "th"},
-	"ID": {Alpha: "Telkomsel", Numeric: "51010", ISO: "id"},
-	"AU": {Alpha: "Telstra", Numeric: "50501", ISO: "au"},
-	"CA": {Alpha: "Rogers", Numeric: "302720", ISO: "ca"},
-	"MY": {Alpha: "Maxis", Numeric: "50212", ISO: "my"},
-	"PH": {Alpha: "Globe", Numeric: "51502", ISO: "ph"},
-	"BR": {Alpha: "Vivo", Numeric: "72410", ISO: "br"},
+	"VN": {Alpha: "Viettel", Numeric: "45204", ISO: "vn", CallingCode: "84", MobilePrefix: "98", NSNLen: 9},
+	"US": {Alpha: "T-Mobile", Numeric: "310260", ISO: "us", CallingCode: "1", MobilePrefix: "415", NSNLen: 10},
+	"GB": {Alpha: "Vodafone UK", Numeric: "23415", ISO: "gb", CallingCode: "44", MobilePrefix: "77", NSNLen: 10},
+	"DE": {Alpha: "Telekom.de", Numeric: "26201", ISO: "de", CallingCode: "49", MobilePrefix: "151", NSNLen: 11},
+	"FR": {Alpha: "Orange F", Numeric: "20801", ISO: "fr", CallingCode: "33", MobilePrefix: "6", NSNLen: 9},
+	"JP": {Alpha: "NTT DOCOMO", Numeric: "44010", ISO: "jp", CallingCode: "81", MobilePrefix: "90", NSNLen: 10},
+	"KR": {Alpha: "SKTelecom", Numeric: "45005", ISO: "kr", CallingCode: "82", MobilePrefix: "10", NSNLen: 10},
+	"SG": {Alpha: "Singtel", Numeric: "52501", ISO: "sg", CallingCode: "65", MobilePrefix: "9", NSNLen: 8},
+	"TH": {Alpha: "AIS", Numeric: "52003", ISO: "th", CallingCode: "66", MobilePrefix: "81", NSNLen: 9},
+	"ID": {Alpha: "Telkomsel", Numeric: "51010", ISO: "id", CallingCode: "62", MobilePrefix: "812", NSNLen: 11},
+	"AU": {Alpha: "Telstra", Numeric: "50501", ISO: "au", CallingCode: "61", MobilePrefix: "4", NSNLen: 9},
+	"CA": {Alpha: "Rogers", Numeric: "302720", ISO: "ca", CallingCode: "1", MobilePrefix: "416", NSNLen: 10},
+	"MY": {Alpha: "Maxis", Numeric: "50212", ISO: "my", CallingCode: "60", MobilePrefix: "12", NSNLen: 9},
+	"PH": {Alpha: "Globe", Numeric: "51502", ISO: "ph", CallingCode: "63", MobilePrefix: "917", NSNLen: 10},
+	"BR": {Alpha: "Vivo", Numeric: "72410", ISO: "br", CallingCode: "55", MobilePrefix: "119", NSNLen: 11},
 }
 
 // IdentityTemplates returns the built-in mobile hardware template IDs.
@@ -493,6 +512,98 @@ func MarshalIdentity(id Identity) string {
 func CarrierFor(country string) (Carrier, bool) {
 	c, ok := countryCarriers[strings.ToUpper(strings.TrimSpace(country))]
 	return c, ok
+}
+
+// CountryOrTimezone returns country if known, otherwise infers a supported
+// country code from an IANA timezone name (falling back to "US").
+func CountryOrTimezone(country, tz string) string {
+	if _, ok := CarrierFor(country); ok {
+		return strings.ToUpper(strings.TrimSpace(country))
+	}
+	t := strings.ToLower(strings.TrimSpace(tz))
+	switch {
+	case strings.Contains(t, "ho_chi_minh"), strings.Contains(t, "saigon"):
+		return "VN"
+	case strings.Contains(t, "london"):
+		return "GB"
+	case strings.Contains(t, "berlin"):
+		return "DE"
+	case strings.Contains(t, "paris"):
+		return "FR"
+	case strings.Contains(t, "tokyo"):
+		return "JP"
+	case strings.Contains(t, "seoul"):
+		return "KR"
+	case strings.Contains(t, "singapore"):
+		return "SG"
+	case strings.Contains(t, "bangkok"):
+		return "TH"
+	case strings.Contains(t, "jakarta"), strings.Contains(t, "makassar"), strings.Contains(t, "jayapura"):
+		return "ID"
+	case strings.HasPrefix(t, "australia/"):
+		return "AU"
+	case strings.Contains(t, "toronto"), strings.Contains(t, "vancouver"), strings.Contains(t, "montreal"), strings.Contains(t, "edmonton"):
+		return "CA"
+	case strings.Contains(t, "kuala_lumpur"):
+		return "MY"
+	case strings.Contains(t, "manila"):
+		return "PH"
+	case strings.Contains(t, "sao_paulo"):
+		return "BR"
+	default:
+		return "US"
+	}
+}
+
+// SIMFor builds a deterministic, Luhn-valid SIMProfile for deviceID matching
+// country's carrier (falling back to US T-Mobile when country is unknown).
+func SIMFor(deviceID, country, imei string) SIMProfile {
+	c, ok := CarrierFor(country)
+	if !ok {
+		c = countryCarriers["US"]
+	}
+	if !ValidIMEI(imei) {
+		imei = IdentityFor(deviceID, "").IMEI
+	}
+	h := sha256.Sum256([]byte("anyprofile-mobile-sim:" + deviceID + ":" + c.Numeric))
+	digits := func(start, n int) string {
+		var b strings.Builder
+		b.Grow(n)
+		for i := 0; i < n; i++ {
+			b.WriteByte(byte('0' + int(h[(start+i)%len(h)])%10))
+		}
+		return b.String()
+	}
+	imsi := c.Numeric + digits(0, 15-len(c.Numeric))
+	// 20-digit Luhn-valid ICCID: "89" + calling code + MNC + device digits + check digit.
+	iccidBody := "89" + c.CallingCode + c.Numeric[3:]
+	iccidBody += digits(10, 19-len(iccidBody))
+	iccid := iccidBody + string(byte('0'+luhnCheckDigit(iccidBody)))
+	msisdn := "+" + c.CallingCode + c.MobilePrefix + digits(20, c.NSNLen-len(c.MobilePrefix))
+	return SIMProfile{
+		PLMN:     c.Numeric,
+		Operator: c.Alpha,
+		IMSI:     imsi,
+		ICCID:    iccid,
+		MSISDN:   msisdn,
+		IMEI:     imei,
+	}
+}
+
+func luhnCheckDigit(payload string) int {
+	sum := 0
+	n := len(payload)
+	for i := 0; i < n; i++ {
+		d := int(payload[i] - '0')
+		if (n-i)%2 == 1 {
+			d *= 2
+			if d > 9 {
+				d -= 9
+			}
+		}
+		sum += d
+	}
+	return (10 - (sum % 10)) % 10
 }
 
 func validPropValue(v string) bool {

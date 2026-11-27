@@ -213,10 +213,14 @@ func (d *Driver) Start(ctx context.Context, dev mobile.Device, o mobile.StartOpt
 	}
 	phase("boot")
 	dev.NoFocus = o.NoFocus
-	var onReady func(*proc)
-	if !o.Headless {
-		// Open the Metal viewport immediately (~1s) so users see Android booting live like MuMu.
-		onReady = func(p *proc) { d.showOn(ctx, dev, p) }
+	onReady := func(p *proc) {
+		if dev.IdentityJSON != "" {
+			d.applySIM(ctx, dev, o, p)
+		}
+		if !o.Headless {
+			// Open the Metal viewport immediately (~1s) so users see Android booting live like MuMu.
+			d.showOn(ctx, dev, p)
+		}
 	}
 	p, err := d.launchVMM(ctx, rt, dev, inst, vm.DialerFor(o.Upstream), bootTimeout, onReady)
 	if err != nil {
@@ -283,10 +287,6 @@ func (d *Driver) applyPostBoot(ctx context.Context, dev mobile.Device, o mobile.
 	if dev.IdentityJSON != "" {
 		batch.WriteString(vm.BatteryShellScript(dev.ID))
 		batch.WriteByte('\n')
-		if carrier := vm.CarrierShellScript(o.Country); carrier != "" {
-			batch.WriteString(carrier)
-			batch.WriteByte('\n')
-		}
 	}
 	if d.WindowMuted(dev) {
 		batch.WriteString("cmd media_session volume --stream 3 --set 0\n")
@@ -302,6 +302,25 @@ func (d *Driver) applyPostBoot(ctx context.Context, dev mobile.Device, o mobile.
 		if err := vm.ApplyLocation(ctx, p.adb, jLat, jLon); err != nil {
 			d.log.Warn("avo gps", "device", dev.ID, "err", err)
 		}
+	}
+}
+
+func (d *Driver) applySIM(ctx context.Context, dev mobile.Device, o mobile.StartOptions, p *proc) {
+	id, ok := vm.ParseIdentity(dev.IdentityJSON)
+	if !ok {
+		return
+	}
+	sim := vm.SIMFor(dev.ID, vm.CountryOrTimezone(o.Country, o.Timezone), id.IMEI)
+	c, cancel := context.WithTimeout(ctx, 4*time.Second)
+	defer cancel()
+	// Only activate cellular when the VMM supports per-device SIM identity, so
+	// older VMM binaries never expose the hardcoded 00101 / Avo test SIM.
+	if _, err := sendControl(c, p.ctrlSock, sim.ControlCommand()); err != nil {
+		d.log.Debug("avo sim skipped", "device", dev.ID, "err", err)
+		return
+	}
+	if _, err := sendControl(c, p.ctrlSock, "cellular lte 4"); err != nil {
+		d.log.Warn("avo cellular", "device", dev.ID, "err", err)
 	}
 }
 

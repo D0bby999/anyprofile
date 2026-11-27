@@ -113,3 +113,34 @@ func TestIdentityFromProfile(t *testing.T) {
 		t.Fatalf("invalid serial/imei: %q / %q", id.Serial, id.IMEI)
 	}
 }
+
+func TestSIMForDeterministicAndValid(t *testing.T) {
+	id := IdentityFor("dev-1", "pixel9")
+	vn := SIMFor("dev-1", "VN", id.IMEI)
+	vn2 := SIMFor("dev-1", "VN", id.IMEI)
+	other := SIMFor("dev-2", "VN", IdentityFor("dev-2", "pixel9").IMEI)
+	if vn != vn2 {
+		t.Fatalf("not deterministic: %+v vs %+v", vn, vn2)
+	}
+	if vn.IMSI == other.IMSI || vn.ICCID == other.ICCID || vn.MSISDN == other.MSISDN {
+		t.Fatalf("devices share SIM identifiers: %+v vs %+v", vn, other)
+	}
+	for _, cc := range []string{"VN", "US", "GB", "JP", "ZZ"} {
+		s := SIMFor("dev-1", cc, id.IMEI)
+		if len(s.IMSI) != 15 || !strings.HasPrefix(s.IMSI, s.PLMN) {
+			t.Fatalf("%s invalid IMSI %q for PLMN %q", cc, s.IMSI, s.PLMN)
+		}
+		if len(s.ICCID) != 20 || luhnCheckDigit(s.ICCID[:19]) != int(s.ICCID[19]-'0') {
+			t.Fatalf("%s invalid Luhn ICCID %q", cc, s.ICCID)
+		}
+		if !strings.HasPrefix(s.MSISDN, "+") || !ValidIMEI(s.IMEI) {
+			t.Fatalf("%s invalid MSISDN/IMEI: %+v", cc, s)
+		}
+	}
+	if got := CountryOrTimezone("", "Asia/Ho_Chi_Minh"); got != "VN" {
+		t.Fatalf("tz fallback = %q, want VN", got)
+	}
+	if got := CountryOrTimezone("gb", "Asia/Ho_Chi_Minh"); got != "GB" {
+		t.Fatalf("country should win over tz, got %q", got)
+	}
+}

@@ -303,3 +303,67 @@ func TestAvoLiveCameras(t *testing.T) {
 		t.Fatalf("expected 2 camera devices in dumpsys media.camera, got:\n%s", camDump)
 	}
 }
+
+func TestAvoLiveSIM(t *testing.T) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		t.Fatal(err)
+	}
+	qemuRuntime := filepath.Join(home, "Library", "Application Support", "AnyProfile", "mobile", "runtime")
+	if !Staged(RootFor(qemuRuntime)) {
+		t.Skip("avo runtime not staged")
+	}
+	devicesDir := t.TempDir()
+	drv := New(qemuRuntime, devicesDir, slog.New(slog.NewTextHandler(os.Stdout, nil)))
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+	defer cancel()
+
+	id := vm.IdentityFor("simlive01", "pixel9")
+	wantSIM := vm.SIMFor("simlive01", "VN", id.IMEI)
+	dev := mobile.Device{
+		ID:           "simlive01",
+		Name:         "SIM Test",
+		Driver:       "avo",
+		RAMMB:        3072,
+		CPUs:         4,
+		ScreenW:      780,
+		ScreenH:      1688,
+		Density:      320,
+		WithGMS:      false,
+		IdentityJSON: vm.MarshalIdentity(id),
+	}
+	if _, _, err := drv.Create(ctx, dev); err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+	if _, err := drv.Start(ctx, dev, mobile.StartOptions{Timezone: "Asia/Ho_Chi_Minh", Country: "VN", Headless: true}); err != nil {
+		t.Fatalf("Start: %v", err)
+	}
+	defer func() { _ = drv.Stop(context.Background(), dev) }()
+
+	a, ok := drv.ADB(dev)
+	if !ok {
+		t.Fatal("ADB missing")
+	}
+	deadline := time.Now().Add(20 * time.Second)
+	var isub, props string
+	for time.Now().Before(deadline) {
+		isub, _ = a.Shell(ctx, "dumpsys isub")
+		props, _ = a.Shell(ctx, "getprop gsm.sim.state; getprop gsm.operator.alpha; getprop gsm.operator.numeric")
+		if strings.Contains(isub, wantSIM.ICCID) && strings.Contains(props, "LOADED") {
+			break
+		}
+		time.Sleep(1 * time.Second)
+	}
+	t.Logf("gsm props:\n%s", props)
+	t.Logf("isub excerpt:\n%s", isub[:min(len(isub), 1200)])
+	for _, want := range []string{wantSIM.ICCID, wantSIM.IMSI, wantSIM.MSISDN, wantSIM.Operator, "mSimState[0]=LOADED"} {
+		if !strings.Contains(isub, want) {
+			t.Errorf("dumpsys isub missing %q", want)
+		}
+	}
+	for _, want := range []string{"LOADED", wantSIM.Operator, wantSIM.PLMN} {
+		if !strings.Contains(props, want) {
+			t.Errorf("gsm props missing %q (got %q)", want, props)
+		}
+	}
+}
