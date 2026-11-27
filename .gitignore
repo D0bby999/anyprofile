@@ -1,4 +1,5 @@
 research/
+assets/
 # Keep local plans private; version only the accepted upgrade roadmap.
 /plans/*
 !/plans/261027-1406-anyprofile-upgrade-roadmap/
