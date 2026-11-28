@@ -168,7 +168,7 @@ DB_DIR="${AP_HOMEPIN_DB_DIR:-/data/data/com.android.launcher3/databases}"
 PREFS="${AP_HOMEPIN_PREFS:-/data/data/com.android.launcher3/shared_prefs/com.android.launcher3.prefs.xml}"
 STATE="${AP_HOMEPIN_STATE:-/data/local/tmp/ap-homepin.lastid}"
 PIDFILE="${AP_HOMEPIN_PID:-/data/local/tmp/ap-homepin.pid}"
-SETTLE="${AP_HOMEPIN_SETTLE:-1}"
+SETTLE="${AP_HOMEPIN_SETTLE:-0}"
 
 q() { sqlite3 -cmd ".timeout 3000" "$DB" "$1"; }
 
@@ -213,15 +213,16 @@ relocate_new() {
     return 0
   fi
 
-  [ "$SETTLE" -gt 0 ] && sleep "$SETTLE"
-  NEW_MAX=$(q "SELECT COALESCE(MAX(_id), 0) FROM favorites;" 2>/dev/null)
-  IDS=$(q "SELECT _id FROM favorites WHERE _id > ${LAST_ID} AND container = -100 AND screen > 0 AND itemType = 0 AND spanX = 1 AND spanY = 1 ORDER BY _id;" 2>/dev/null)
-  if [ -z "$IDS" ]; then
-    [ -n "$NEW_MAX" ] && echo "$NEW_MAX" > "$STATE"
-    return 0
+  if [ "$SETTLE" -gt 0 ]; then
+    sleep "$SETTLE"
+    NEW_MAX=$(q "SELECT COALESCE(MAX(_id), 0) FROM favorites;" 2>/dev/null)
+    IDS=$(q "SELECT _id FROM favorites WHERE _id > ${LAST_ID} AND container = -100 AND screen > 0 AND itemType = 0 AND spanX = 1 AND spanY = 1 ORDER BY _id;" 2>/dev/null)
+    if [ -z "$IDS" ]; then
+      [ -n "$NEW_MAX" ] && echo "$NEW_MAX" > "$STATE"
+      return 0
+    fi
   fi
 
-  am force-stop com.android.launcher3 >/dev/null 2>&1 || true
   resolve_grid
 
   MOVED=0

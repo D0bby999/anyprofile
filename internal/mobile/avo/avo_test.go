@@ -254,6 +254,12 @@ func TestBuildLaunchSpecAndClusters(t *testing.T) {
 	for _, want := range []string{
 		"ro.product.model=SM-S928B",
 		"ro.vendor.qti.soc_model=SM8650",
+		"ro.build.display.id=AP3A.240905.015.A2",
+		"ro.build.flavor=e3qxxx-user",
+		"ro.build.description=e3qxxx-user 15 AP3A.240905.015.A2 S928BXXU4BYD9 release-keys",
+		"ro.build.product=e3q",
+		"ro.bootimage.build.tags=release-keys",
+		"ro.bootimage.build.type=user",
 		"debug.avo.gl.vendor=Qualcomm",
 		"debug.avo.gl.renderer=Adreno (TM) 750",
 		"debug.vulkan.layer.9=VK_LAYER_AVO_gfxstream_sync",

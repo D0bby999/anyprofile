@@ -1293,9 +1293,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         window.backgroundColor = NSColor(red: 0.06, green: 0.07, blue: 0.09, alpha: 1.0)
         window.appearance = NSAppearance(named: .darkAqua)
         window.minSize = NSSize(width: 240 + toolbarWidth, height: 320)
-        // Stay on the current desktop; never trigger a macOS Space switch on show.
-        window.collectionBehavior = [.moveToActiveSpace]
-        if onTop { window.level = .floating }
+        applyOnTop()
 
         let root = NSView(frame: window.contentLayoutRect)
         root.wantsLayer = true
@@ -1447,7 +1445,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         case "set-on-top":
             let on = (obj["on"] as? Bool) ?? false
             onTop = on
-            window.level = onTop ? .floating : .normal
+            applyOnTop()
             pinBtn?.setSymbol(onTop ? "pin.fill" : "pin")
             pinBtn?.activeTint = onTop ? NSColor.systemBlue : nil
             saveBounds()
@@ -1710,9 +1708,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         }
     }
 
+    private func applyOnTop() {
+        window.level = onTop ? .floating : .normal
+        window.collectionBehavior = [.moveToActiveSpace]
+    }
+
     @objc private func actionTogglePin() {
         onTop.toggle()
-        window.level = onTop ? .floating : .normal
+        applyOnTop()
         pinBtn.setSymbol(onTop ? "pin.fill" : "pin")
         pinBtn.activeTint = onTop ? NSColor.systemBlue : nil
         saveBounds()
@@ -1808,7 +1811,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         let w = Int(max(200, content.width - toolbarWidth).rounded())
         let h = Int(content.height.rounded())
         guard w >= 200, h >= 200 else { return }
-        let obj: [String: Any] = ["x": x, "y": y, "w": w, "h": h, "onTop": onTop, "muted": muted, "minimized": minimized]
+        let obj: [String: Any] = ["x": x, "y": y, "w": w, "h": h, "onTop": onTop, "unpinned": !onTop, "muted": muted, "minimized": minimized]
         if let out = try? JSONSerialization.data(withJSONObject: obj) {
             try? out.write(to: URL(fileURLWithPath: boundsFile), options: .atomic)
         }

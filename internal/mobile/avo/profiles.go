@@ -231,10 +231,34 @@ func BuildLaunchSpec(rt Runtime, d mobile.Device, enableDebugLayers bool) Launch
 			setProp("ro.product."+pfx+"device", props["ro.product.device"])
 			setProp("ro.product."+pfx+"name", props["ro.product.name"])
 		}
-		// Present a release user build to GMS Checkin (do not set ro.debuggable=0,
-		// which would break Cuttlefish adb root / su 0).
+		// Present a release user build to apps and GMS Checkin (do not set
+		// ro.debuggable=0, which would break Cuttlefish adb root / su 0).
 		setProp("ro.build.tags", "release-keys")
 		setProp("ro.build.type", "user")
+		setProp("ro.build.product", props["ro.product.device"])
+		for _, pfx := range []string{"bootimage.", "system.", "vendor.", "product.", "odm.", "system_ext."} {
+			setProp("ro."+pfx+"build.tags", "release-keys")
+			setProp("ro."+pfx+"build.type", "user")
+		}
+		if prod := props["ro.product.name"]; prod != "" {
+			setProp("ro.build.flavor", prod+"-user")
+			if bid := props["ro.build.id"]; bid != "" {
+				setProp("ro.build.display.id", bid)
+				rel := "15"
+				if fp := props["ro.build.fingerprint"]; fp != "" {
+					if parts := strings.Split(fp, "/"); len(parts) >= 3 {
+						if _, r, ok := strings.Cut(parts[2], ":"); ok && r != "" {
+							rel = r
+						}
+					}
+				}
+				inc := props["ro.build.version.incremental"]
+				if inc == "" {
+					inc = "13578691"
+				}
+				setProp("ro.build.description", fmt.Sprintf("%s-user %s %s %s release-keys", prod, rel, bid, inc))
+			}
+		}
 		setProp("ro.boot.verifiedbootstate", "green")
 		setProp("ro.boot.vbmeta.device_state", "locked")
 		setProp("ro.boot.flash.locked", "1")

@@ -310,7 +310,11 @@ func (d *Driver) applySIM(ctx context.Context, dev mobile.Device, o mobile.Start
 	if !ok {
 		return
 	}
-	sim := vm.SIMFor(dev.ID, vm.CountryOrTimezone(o.Country, o.Timezone), id.IMEI)
+	seed := id.Serial
+	if seed == "" {
+		seed = dev.ID
+	}
+	sim := vm.SIMFor(seed, vm.CountryOrTimezone(o.Country, o.Timezone), id.IMEI)
 	c, cancel := context.WithTimeout(ctx, 4*time.Second)
 	defer cancel()
 	// Only activate cellular when the VMM supports per-device SIM identity, so

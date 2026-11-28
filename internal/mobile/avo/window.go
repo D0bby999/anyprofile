@@ -32,6 +32,7 @@ func (d *Driver) loadWindow(dev mobile.Device) (vm.WindowState, bool) {
 	if json.Unmarshal(b, &s) != nil || s.W < 200 || s.H < 300 {
 		return vm.WindowState{}, false
 	}
+	s.OnTop = !s.Unpinned
 	if a, ok := vm.ScreenWorkArea(); ok {
 		if s.X+s.W < a.X+40 || s.X > a.X+a.W-40 || s.Y+s.H < a.Y+40 || s.Y > a.Y+a.H-40 {
 			return vm.WindowState{}, false
@@ -138,12 +139,13 @@ func (d *Driver) showOnAt(ctx context.Context, dev mobile.Device, p *proc, force
 			// When other phones are already open, snap cleanly into the next free
 			// MuMu slot so windows line up side-by-side instead of piling up.
 			pos = next
-			pos.OnTop, pos.Muted = saved.OnTop, saved.Muted
+			if ok {
+				pos.OnTop, pos.Unpinned, pos.Muted = saved.OnTop, saved.Unpinned, saved.Muted
+			}
 		} else if ok {
 			pos = saved
 		} else {
 			pos = vm.DefaultWindow(0, dev.ScreenW, dev.ScreenH)
-			pos.OnTop, pos.Muted = saved.OnTop, saved.Muted
 		}
 	}
 	// Reserve this slot immediately under d.mu so concurrent device boots
@@ -319,6 +321,7 @@ func (d *Driver) SetWindowOnTop(ctx context.Context, dev mobile.Device, on bool)
 		s = vm.DefaultWindow(0, dev.ScreenW, dev.ScreenH)
 	}
 	s.OnTop = on
+	s.Unpinned = !on
 	if err := d.saveWindow(dev, s); err != nil {
 		return err
 	}
@@ -333,9 +336,12 @@ func (d *Driver) SetWindowOnTop(ctx context.Context, dev mobile.Device, on bool)
 	return nil
 }
 
-// WindowOnTop reports the stored always-on-top flag.
+// WindowOnTop reports the stored always-on-top flag (defaults to true).
 func (d *Driver) WindowOnTop(dev mobile.Device) bool {
-	s, _ := d.loadWindow(dev)
+	s, ok := d.loadWindow(dev)
+	if !ok {
+		return true
+	}
 	return s.OnTop
 }
 
@@ -406,9 +412,13 @@ func (d *Driver) ArrangeWindows(ctx context.Context, layout string, devs []mobil
 	}
 	slots := vm.ArrangeLayout(a, layout, len(open), open[0].ScreenW, open[0].ScreenH)
 	for i, dev := range open {
-		prev, _ := d.loadWindow(dev)
+		prev, ok := d.loadWindow(dev)
 		s := slots[i]
-		s.OnTop, s.Muted = prev.OnTop, prev.Muted
+		if ok {
+			s.OnTop, s.Unpinned, s.Muted = prev.OnTop, prev.Unpinned, prev.Muted
+		} else {
+			s.OnTop = true
+		}
 		_ = d.saveWindow(dev, s)
 		if p := d.proc(dev.ID); p != nil {
 			d.mu.Lock()

@@ -319,7 +319,7 @@ func TestAvoLiveSIM(t *testing.T) {
 	defer cancel()
 
 	id := vm.IdentityFor("simlive01", "pixel9")
-	wantSIM := vm.SIMFor("simlive01", "VN", id.IMEI)
+	wantSIM := vm.SIMFor(id.Serial, "VN", id.IMEI)
 	dev := mobile.Device{
 		ID:           "simlive01",
 		Name:         "SIM Test",
@@ -364,6 +364,16 @@ func TestAvoLiveSIM(t *testing.T) {
 	for _, want := range []string{"LOADED", wantSIM.Operator, wantSIM.PLMN} {
 		if !strings.Contains(props, want) {
 			t.Errorf("gsm props missing %q (got %q)", want, props)
+		}
+	}
+	buildProps, _ := a.Shell(ctx, "getprop ro.boot.serialno; getprop ro.build.display.id; getprop ro.build.flavor; getprop ro.build.description; getprop ro.bootimage.build.tags; getprop ro.bootimage.build.type")
+	t.Logf("clean build props:\n%s", buildProps)
+	if !strings.Contains(buildProps, id.Serial) || strings.Contains(buildProps, "AVO00001") {
+		t.Errorf("ro.boot.serialno leaked or mismatch (want %q): %q", id.Serial, buildProps)
+	}
+	for _, bad := range []string{"aosp_cf", "test-keys", "userdebug"} {
+		if strings.Contains(buildProps, bad) {
+			t.Errorf("build props leaked %q:\n%s", bad, buildProps)
 		}
 	}
 }

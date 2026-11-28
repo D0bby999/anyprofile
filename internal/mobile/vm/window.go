@@ -12,6 +12,7 @@ type windowState struct {
 	W         int  `json:"w"`
 	H         int  `json:"h"`
 	OnTop     bool `json:"onTop"`
+	Unpinned  bool `json:"unpinned,omitempty"`
 	Muted     bool `json:"muted,omitempty"`
 	Minimized bool `json:"minimized,omitempty"`
 }
@@ -67,7 +68,7 @@ func defaultWindowIn(a windowRect, n, sw, sh int) windowState {
 	y := baseY + row*windowCascade
 	maxX := max(a.X+a.W-w-8, a.X+8)
 	maxY := max(a.Y+a.H-h-8, a.Y+8)
-	return windowState{X: min(max(x, a.X+8), maxX), Y: min(max(y, a.Y+8), maxY), W: w, H: h}
+	return windowState{X: min(max(x, a.X+8), maxX), Y: min(max(y, a.Y+8), maxY), W: w, H: h, OnTop: true}
 }
 
 func gridSlots(a windowRect, cols, rows, count, sw, sh int) []windowState {

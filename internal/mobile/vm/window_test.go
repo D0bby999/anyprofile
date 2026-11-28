@@ -12,7 +12,7 @@ func TestDefaultWindowStandsPhonesSideBySide(t *testing.T) {
 	area := windowRect{X: 0, Y: 30, W: 1440, H: 812}
 	first := defaultWindowIn(area, 0, 0, 0)
 	// h = 732; w = 732 * 780 / 1688 = 338 (iPhone 19.5:9), left margin 16, vertically centered.
-	if first != (windowState{X: 16, Y: 70, W: 338, H: 732}) {
+	if first != (windowState{X: 16, Y: 70, W: 338, H: 732, OnTop: true}) {
 		t.Fatalf("first = %+v", first)
 	}
 	// Four 338-point phones and three 10-point gaps fit across the work area left-to-right.
