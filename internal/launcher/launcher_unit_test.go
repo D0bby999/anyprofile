@@ -201,20 +201,33 @@ func TestStartHeadlessClampsStartURLsAndSkipsBehind(t *testing.T) {
 }
 
 func TestApplyHeadlessArgsSetsWindowSizeAndMacRetinaDPR(t *testing.T) {
-	args := applyHeadlessArgs(nil, func() (Rect, bool) { return Rect{W: 1512, H: 945}, true })
+	largeMonitor := func() (Rect, bool) { return Rect{W: 1920, H: 1083}, true }
+	args := applyHeadlessArgs(nil, largeMonitor, Rect{W: 1512, H: 982})
 	if !slices.Contains(args, "--headless=new") {
 		t.Fatalf("missing --headless=new in %v", args)
 	}
-	if !slices.Contains(args, "--window-size=1512,945") {
-		t.Fatalf("missing screen --window-size in %v", args)
+	if !slices.Contains(args, "--window-size=1280,800") {
+		t.Fatalf("expected 1280,800 capped within profile screen in %v", args)
 	}
 	if runtime.GOOS == "darwin" && !slices.Contains(args, "--force-device-scale-factor=2") {
 		t.Fatalf("missing macOS Retina scale factor in %v", args)
 	}
-	// Fallback when Screen is nil uses realistic desktop size instead of 800x600.
-	fallback := applyHeadlessArgs([]string{"--headless=new"}, nil)
-	if !slices.Contains(fallback, "--window-size=1440,900") {
-		t.Fatalf("missing fallback --window-size in %v", fallback)
+	// Smaller profile screen clamps window-size so headless never exceeds it.
+	small := applyHeadlessArgs(nil, largeMonitor, Rect{W: 1024, H: 768})
+	if !slices.Contains(small, "--window-size=1024,768") {
+		t.Fatalf("expected 1024,768 clamped to profile screen in %v", small)
+	}
+	// Unknown or corrupted (400x300) baseline uses safe 1280x720 desktop size.
+	fallback := applyHeadlessArgs([]string{"--headless=new"}, largeMonitor, Rect{})
+	if !slices.Contains(fallback, "--window-size=1280,720") {
+		t.Fatalf("missing safe fallback --window-size=1280,720 in %v", fallback)
+	}
+	corrupt := applyHeadlessArgs(nil, nil, Rect{W: 400, H: 300})
+	if !slices.Contains(corrupt, "--window-size=1280,720") {
+		t.Fatalf("corrupted 400x300 baseline should fall back to 1280,720 in %v", corrupt)
+	}
+	if got := baselineScreen(`{"screen":"1512x982"}`); got != (Rect{W: 1512, H: 982}) {
+		t.Fatalf("baselineScreen = %+v, want 1512x982", got)
 	}
 }
 

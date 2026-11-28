@@ -4,12 +4,14 @@ package launcher
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 
@@ -108,7 +110,8 @@ func (l *Launcher) start(ctx context.Context, p *proc) error {
 	}
 	spec.Args = append(spec.Args, l.TestArgs...)
 	if p.headless {
-		spec.Args = applyHeadlessArgs(spec.Args, l.Screen)
+		base, _ := l.st.FingerprintBaseline(prof.ID)
+		spec.Args = applyHeadlessArgs(spec.Args, l.Screen, baselineScreen(base))
 	}
 	// The first window a profile ever shows is the one nobody sized yet.
 	// Chromium restores the bounds of every later one, so the user's own size
@@ -341,7 +344,10 @@ func (l *Launcher) keepBehind(pid, front int, d time.Duration, epoch int64, done
 // applyHeadlessArgs adds --headless=new and realistic screen/Retina geometry so
 // Agent-mode Chromium never creates an OS window, switches macOS Spaces, or
 // flickers, while avoiding headless 800x600 / DPR=1 fingerprint tells.
-func applyHeadlessArgs(args []string, screen func() (Rect, bool)) []string {
+// --window-size must never exceed the profile's spoofed screen: in AnyBrowser's
+// --headless=new, even 1 px past screen.width or screen.height makes Chromium
+// fall back to a 400x300 screen on every tab.
+func applyHeadlessArgs(args []string, screen func() (Rect, bool), profileScreen Rect) []string {
 	hasPrefix := func(prefix string) bool {
 		return slices.ContainsFunc(args, func(a string) bool { return strings.HasPrefix(a, prefix) })
 	}
@@ -349,10 +355,13 @@ func applyHeadlessArgs(args []string, screen func() (Rect, bool)) []string {
 		args = append(args, "--headless=new")
 	}
 	if !hasPrefix("--window-size") {
-		w, h := 1440, 900
+		w, h := 1280, 720
+		if profileScreen.W >= 800 && profileScreen.H >= 600 {
+			w, h = min(1280, profileScreen.W), min(800, profileScreen.H)
+		}
 		if screen != nil {
 			if area, ok := screen(); ok && area.W > 0 && area.H > 0 {
-				w, h = area.W, area.H
+				w, h = min(w, area.W), min(h, area.H)
 			}
 		}
 		args = append(args, fmt.Sprintf("--window-size=%d,%d", w, h))
@@ -361,6 +370,28 @@ func applyHeadlessArgs(args []string, screen func() (Rect, bool)) []string {
 		args = append(args, "--force-device-scale-factor=2")
 	}
 	return args
+}
+
+func baselineScreen(baseJSON string) Rect {
+	if baseJSON == "" {
+		return Rect{}
+	}
+	var b struct {
+		Screen string `json:"screen"`
+	}
+	if json.Unmarshal([]byte(baseJSON), &b) != nil {
+		return Rect{}
+	}
+	ws, hs, ok := strings.Cut(b.Screen, "x")
+	if !ok {
+		return Rect{}
+	}
+	w, errW := strconv.Atoi(ws)
+	h, errH := strconv.Atoi(hs)
+	if errW != nil || errH != nil || w <= 0 || h <= 0 {
+		return Rect{}
+	}
+	return Rect{W: w, H: h}
 }
 
 // Behind is agent.Hub.Behind: when the browser comes in front of the app the
